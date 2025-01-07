@@ -83,7 +83,6 @@ contract mipo12 is HybridProposal {
         );
 
         // Validate initial parameters
-        assertEq(wrapper.earlyUpdateWindow(), 30, "Wrong early update window"); // Default 30 seconds
         assertEq(wrapper.feeMultiplier(), 99, "Wrong fee multiplier"); // Default 99
 
         // Validate interface implementation
@@ -103,6 +102,8 @@ contract mipo12 is HybridProposal {
             "Wrong version"
         );
 
+        uint256 lastRoundId = wrapper.originalFeed().latestRound();
+
         // Validate latestRoundData returns original feed data
 
         (
@@ -111,7 +112,7 @@ contract mipo12 is HybridProposal {
             uint256 expectedStartedAt,
             uint256 expectedUpdatedAt,
             uint80 expectedAnsweredInRound
-        ) = wrapper.originalFeed().latestRoundData();
+        ) = wrapper.originalFeed().getRoundData(uint80(lastRoundId));
 
         (
             uint80 actualRoundId,
@@ -130,5 +131,8 @@ contract mipo12 is HybridProposal {
             expectedAnsweredInRound,
             "Wrong answeredInRound"
         );
+
+        // Validate round id and timestamp are cached
+        assertEq(wrapper.cachedRoundId(), lastRoundId, "Wrong cachedRoundId");
     }
 }

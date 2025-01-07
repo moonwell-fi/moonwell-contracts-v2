@@ -19,11 +19,12 @@ contract DeployChainlinkOEVWrapper is Script {
     ) public returns (ChainlinkFeedOEVWrapper wrapper) {
         wrapper = new ChainlinkFeedOEVWrapper(
             addresses.getAddress(feed),
-            30 seconds,
             99,
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress("MOONWELL_WETH"),
-            addresses.getAddress("WETH")
+            addresses.getAddress("WETH"),
+            uint8(10),
+            uint8(10)
         );
 
         addresses.addAddress(

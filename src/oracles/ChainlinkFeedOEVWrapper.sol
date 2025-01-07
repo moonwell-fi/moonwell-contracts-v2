@@ -12,20 +12,28 @@ import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 /// @dev This contract implements the AggregatorV3Interface and adds OEV (Oracle Extractable Value) functionality
 contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @notice Emitted when the fee multiplier is changed
+    /// @param oldFee The old fee multiplier value
     /// @param newFee The new fee multiplier value
-    event FeeMultiplierChanged(uint16 newFee);
-
-    /// @notice Emitted when the early update window is changed
-    /// @param newWindow The new early update window value
-    event EarlyUpdateWindowChanged(uint256 newWindow);
+    event FeeMultiplierChanged(uint8 oldFee, uint8 newFee);
 
     /// @notice Emitted when the price is updated
     /// @param receiver The address that received the update
     /// @param revenueAdded The amount of ETH added to the ETH market
     event ProtocolOEVRevenueUpdated(
         address indexed receiver,
-        uint256 revenueAdded
+        uint256 revenueAdded,
+        uint256 roundId
     );
+
+    /// @notice Emitted when the max decrements value is changed
+    /// @param oldMaxDecrements The old maximum number of decrements
+    /// @param newMaxDecrements The new maximum number of decrements
+    event MaxDecrementsChanged(uint8 oldMaxDecrements, uint8 newMaxDecrements);
+
+    /// @notice Emitted when the max round delay is changed
+    /// @param oldMaxRoundDelay The old maximum round delay
+    /// @param newMaxRoundDelay The new maximum round delay
+    event NewMaxRoundDelay(uint8 oldMaxRoundDelay, uint8 newMaxRoundDelay);
 
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
@@ -38,51 +46,49 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice The fee multiplier applied to the original feed's fee
     /// @dev Represented as a percentage
-    uint16 public feeMultiplier;
+    uint8 public feeMultiplier;
 
-    /// @notice The time window before the next update where early updates are allowed
-    uint256 public earlyUpdateWindow;
+    /// @notice The maximum number of times to decrement the round before falling back to latest price
+    uint8 public maxDecrements;
 
-    /// @notice The timestamp of the last cached price update
-    uint256 public cachedTimestamp;
+    /// @notice The max delay a round can have before falling back to latest price
+    uint8 public maxRoundDelay;
 
-    /// @notice The last cached price value
-    int256 public cachedPrice;
+    /// @notice The last cached round id
+    uint256 public cachedRoundId;
 
     /// @notice Constructor to initialize the wrapper
     /// @param _originalFeed Address of the original Chainlink feed
-    /// @param _earlyUpdateWindow Time window for early updates
-    /// @param _feeMultiplier Multiplier for the fee calculation
+    /// @param _feeMultiplier The fee multiplier to apply to the original feed's fee
     /// @param _owner Address of the contract owner
     /// @param _ethMarket Address of the ETH market
     /// @param _weth Address of the WETH contract
+    /// @param _maxDecrements The maximum number of decrements before falling back to latest price
+    /// @param _maxRoundDelay The max delay a round can have before falling back to latest price
     constructor(
         address _originalFeed,
-        uint256 _earlyUpdateWindow,
-        uint16 _feeMultiplier,
+        uint8 _feeMultiplier,
         address _owner,
         address _ethMarket,
-        address _weth
+        address _weth,
+        uint8 _maxDecrements,
+        uint8 _maxRoundDelay
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
         WETHMarket = MErc20(_ethMarket);
         WETH = WETH9(_weth);
 
-        earlyUpdateWindow = _earlyUpdateWindow;
         feeMultiplier = _feeMultiplier;
+        maxDecrements = _maxDecrements;
+        maxRoundDelay = _maxRoundDelay;
 
-        // Initialize cache with current data
-        (, int256 price, , uint256 timestamp, ) = originalFeed
-            .latestRoundData();
-
-        cachedPrice = price;
-        cachedTimestamp = timestamp;
+        cachedRoundId = originalFeed.latestRound();
 
         transferOwnership(_owner);
     }
 
     /// @notice Get the latest round data
-    /// @dev Returns cached data if within early update window, otherwise fetches from original feed
+    /// @dev Returns cached data if the current round is the same as the cached round and 10 seconds have not passed
     /// @return roundId The round ID
     /// @return answer The price
     /// @return startedAt The timestamp when the round started
@@ -100,57 +106,45 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             uint80 answeredInRound
         )
     {
-        if (block.timestamp >= cachedTimestamp + earlyUpdateWindow) {
-            (
-                roundId,
-                answer,
-                startedAt,
-                updatedAt,
-                answeredInRound
-            ) = originalFeed.latestRoundData();
-            require(answer > 0, "Chainlink price cannot be lower than 0");
-            require(updatedAt != 0, "Round is in incompleted state");
-            require(answeredInRound >= roundId, "Stale price");
-        } else {
-            return (0, cachedPrice, 0, cachedTimestamp, 0);
+        (roundId, answer, startedAt, updatedAt, answeredInRound) = originalFeed
+            .latestRoundData();
+
+        // Return the current round data if either:
+        // 1. This round has already been cached (meaning someone paid for it)
+        // 2. The round is too old
+        if (
+            roundId == cachedRoundId ||
+            block.timestamp >= updatedAt + maxRoundDelay
+        ) {
+            _validateRoundData(roundId, answer, updatedAt, answeredInRound);
+            return (roundId, answer, startedAt, updatedAt, answeredInRound);
         }
-    }
 
-    /// @notice Update the price earlier than the standard update interval
-    /// @dev Requires payment of a fee based on gas price and fee multiplier
-    function updatePriceEarly() external payable returns (int256) {
-        require(
-            msg.value >= (tx.gasprice - block.basefee) * uint256(feeMultiplier),
-            "ChainlinkOEVWrapper: Insufficient tax"
-        );
-        require(
-            block.timestamp > cachedTimestamp,
-            "ChainlinkOEVWrapper: New timestamp must be greater than current"
-        );
-        (
-            uint80 roundId,
-            int256 price,
-            ,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        ) = originalFeed.latestRoundData();
+        uint256 startRoundId = roundId;
 
-        require(price > 0, "Chainlink price cannot be lower than 0");
-        require(updatedAt != 0, "Round is in incompleted state");
-        require(answeredInRound >= roundId, "Stale price");
+        // If the current round is not too old and hasn't been paid for,
+        // attempt to find the most recent valid round by checking previous rounds
+        for (uint256 i = 0; i < maxDecrements && --startRoundId > 0; i++) {
+            try originalFeed.getRoundData(uint80(startRoundId)) returns (
+                uint80 r,
+                int256 a,
+                uint256 s,
+                uint256 u,
+                uint80 ar
+            ) {
+                _validateRoundData(r, a, u, ar);
 
-        cachedPrice = price;
-        cachedTimestamp = block.timestamp;
+                roundId = r;
+                answer = a;
+                startedAt = s;
+                updatedAt = u;
+                answeredInRound = ar;
+                return (roundId, answer, startedAt, updatedAt, answeredInRound);
+            } catch {}
+        }
 
-        // wrap the ETH send into WETH and add to ETH market reserves
-        WETH.deposit{value: msg.value}();
-        WETH.approve(address(WETHMarket), msg.value);
-        uint256 success = WETHMarket._addReserves(msg.value);
-        require(success == 0, "ChainlinkOEVWrapper: Failed to add reserves");
-
-        emit ProtocolOEVRevenueUpdated(address(WETHMarket), msg.value);
-
-        return price;
+        // Validate round data if we fall back to the latest price
+        _validateRoundData(roundId, answer, updatedAt, answeredInRound);
     }
 
     /// @notice Get the number of decimals in the feed
@@ -192,22 +186,107 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             uint80 answeredInRound
         )
     {
-        return originalFeed.getRoundData(_roundId);
+        (roundId, answer, startedAt, updatedAt, answeredInRound) = originalFeed
+            .getRoundData(_roundId);
+    }
+
+    /// @notice Get the latest round ID
+    /// @return The latest round ID
+    function latestRound() external view override returns (uint256) {
+        return originalFeed.latestRound();
+    }
+
+    /// @notice Update the price earlier than the standard update interval
+    /// @return The latest round ID
+    /// @dev Requires payment of a fee based on gas price and fee multiplier
+    function updatePriceEarly() external payable returns (uint256) {
+        require(
+            msg.value >= (tx.gasprice - block.basefee) * uint256(feeMultiplier),
+            "ChainlinkOEVWrapper: Insufficient tax"
+        );
+
+        // Get latest round data and validate it
+        (
+            uint256 latestRoundId,
+            int256 latestAnswer,
+            ,
+            uint256 latestUpdatedAt,
+            uint80 latestAnsweredInRound
+        ) = originalFeed.latestRoundData();
+
+        _validateRoundData(
+            uint80(latestRoundId),
+            latestAnswer,
+            latestUpdatedAt,
+            latestAnsweredInRound
+        );
+
+        require(
+            latestRoundId > cachedRoundId,
+            "ChainlinkOEVWrapper: New round is not higher than cached"
+        );
+
+        // Convert ETH to WETH and approve it for the ETH market
+        WETH.deposit{value: msg.value}();
+        WETH.approve(address(WETHMarket), msg.value);
+
+        // Add the ETH to the market's reserves
+        require(
+            WETHMarket._addReserves(msg.value) == 0,
+            "ChainlinkOEVWrapper: Failed to add reserves"
+        );
+
+        emit ProtocolOEVRevenueUpdated(
+            address(WETHMarket),
+            msg.value,
+            latestRoundId
+        );
+
+        cachedRoundId = latestRoundId;
+        return cachedRoundId;
     }
 
     /// @notice Set a new fee multiplier for early updates
     /// @param newMultiplier The new fee multiplier to set
     /// @dev Only callable by the contract owner
-    function setFeeMultiplier(uint16 newMultiplier) public onlyOwner {
+    function setFeeMultiplier(uint8 newMultiplier) external onlyOwner {
+        uint8 oldMultiplier = feeMultiplier;
         feeMultiplier = newMultiplier;
-        emit FeeMultiplierChanged(newMultiplier);
+
+        emit FeeMultiplierChanged(oldMultiplier, newMultiplier);
     }
 
-    /// @notice Set a new early update window
-    /// @param newWindow The new early update window duration in seconds
-    /// @dev Only callable by the contract owner
-    function setEarlyUpdateWindow(uint256 newWindow) public onlyOwner {
-        earlyUpdateWindow = newWindow;
-        emit EarlyUpdateWindowChanged(newWindow);
+    /// @notice Set the maximum number of decrements before falling back to latest price
+    /// @param _maxDecrements The new maximum number of decrements
+    function setMaxDecrements(uint8 _maxDecrements) external onlyOwner {
+        uint8 oldMaxDecrements = maxDecrements;
+        maxDecrements = _maxDecrements;
+
+        emit MaxDecrementsChanged(oldMaxDecrements, _maxDecrements);
+    }
+
+    /// @notice Set the maximum round delay
+    /// @param _maxRoundDelay The new maximum round delay
+    function setMaxRoundDelay(uint8 _maxRoundDelay) external onlyOwner {
+        uint8 oldMaxRoundDelay = maxRoundDelay;
+        maxRoundDelay = _maxRoundDelay;
+
+        emit NewMaxRoundDelay(oldMaxRoundDelay, maxRoundDelay);
+    }
+
+    /// @notice Validate the round data from Chainlink
+    /// @param roundId The round ID to validate
+    /// @param answer The price to validate
+    /// @param updatedAt The timestamp when the round was updated
+    /// @param answeredInRound The round ID in which the answer was computed
+    function _validateRoundData(
+        uint80 roundId,
+        int256 answer,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    ) internal pure {
+        require(answer > 0, "Chainlink price cannot be lower or equal to 0");
+        require(updatedAt != 0, "Round is in incompleted state");
+        require(answeredInRound >= roundId, "Stale price");
     }
 }
