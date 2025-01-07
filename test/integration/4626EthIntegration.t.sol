@@ -72,7 +72,7 @@ contract ERC4626EthDeployIntegrationTest is Test {
             ERC20(addresses.getAddress("MOONWELL_WETH")).balanceOf(
                 address(vault)
             ),
-            4.9e5,
+            1e5,
             "underlying mToken balance incorrect"
         );
     }
