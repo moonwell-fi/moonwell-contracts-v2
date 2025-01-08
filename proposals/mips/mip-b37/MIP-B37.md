@@ -64,9 +64,13 @@ based on WELL's volatility and market liquidity:
   37.5M accordingly to adjust for kink level and provide sufficient buffer to
   prevent any governance exploits given the quorum requirements.
 
-- **Interest Rate Curve:** | Utilization | Borrow APR | Supply APR | |
-  ----------- | ---------- | ---------- | | 0% | 0% | 0% | | 45% | 9.9% | 3.3% |
-  | 100% | 174.4% | 131.3% |
+- **Interest Rate Curve:**
+
+| Utilization | Borrow APR | Supply APR |
+| ----------- | ---------- | ---------- |
+| 0%          | 0%         | 0%         |
+| 45%         | 9.9%       | 3.3%       |
+| 100%        | 174.4%     | 131.3%     |
 
 The interest rate curve features a kink at 45%, ensuring competitive rates while
 incentivizing balanced utilization.
