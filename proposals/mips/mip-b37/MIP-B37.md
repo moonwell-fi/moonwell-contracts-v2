@@ -41,8 +41,8 @@ Contract:**
 | Parameter       | Base Value |
 | --------------- | ---------- |
 | Base Rate       | 0          |
-| Kink            | 0.045      |
-| Multiplier      | 0.022      |
+| Kink            | 0.45       |
+| Multiplier      | 0.22       |
 | Jump Multiplier | 3          |
 
 ### Supporting Data
