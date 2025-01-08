@@ -846,6 +846,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         uint256 payment = (tx.gasprice - block.basefee) *
             uint256(wrapper.feeMultiplier());
 
+        vm.deal(address(this), payment);
+
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(
