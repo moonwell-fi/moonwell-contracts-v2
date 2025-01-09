@@ -970,6 +970,28 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 )
             );
         }
+
+        uint256 amountToWithdraw = ERC20(addresses.getAddress("xWELL_PROXY"))
+            .balanceOf(addresses.getAddress("ERC20_HOLDING_DEPOSIT"));
+
+        // withdraw reserves from the Market Reserve ERC20 Holding Deposit contract
+        _pushAction(
+            addresses.getAddress("ERC20_HOLDING_DEPOSIT"),
+            abi.encodeWithSignature(
+                "withdrawERC20Token(address,address,uint256)",
+                addresses.getAddress("xWELL_PROXY"),
+                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
+                amountToWithdraw
+            ),
+            string(
+                abi.encodePacked(
+                    "Withdraw ",
+                    vm.toString(amountToWithdraw / 1e18),
+                    " WELL from the Market Reserve ERC20 Holding Deposit contract on ",
+                    _chainId.chainIdToName()
+                )
+            )
+        );
     }
 
     function _validateMoonbeam(Addresses addresses) private {
