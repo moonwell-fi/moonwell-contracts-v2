@@ -2,7 +2,6 @@ pragma solidity =0.8.19;
 
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {MErc20} from "@protocol/MErc20.sol";
