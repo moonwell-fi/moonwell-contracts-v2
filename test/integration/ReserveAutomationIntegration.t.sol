@@ -13,6 +13,12 @@ import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract ReserveAutomationLiveIntegrationTest is Test {
+    event ERC20Withdrawn(
+        address indexed tokenAddress,
+        address indexed to,
+        uint256 amount
+    );
+
     ERC20 public underlying;
     ERC20 public well;
 
@@ -76,7 +82,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
     function testSetup() public view {
         assertEq(vault.maxDiscount(), 1e17, "incorrect max discount");
         assertEq(
-            vault.discountDecayPeriod(),
+            vault.discountApplicationPeriod(),
             1 weeks,
             "incorrect discount decay period"
         );
@@ -295,6 +301,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
     }
 
     function testPurchaseReservesFailsSaleNotActive() public {
+        /// sale not started which causes failure
         vm.expectRevert("ReserveAutomationModule: sale not active");
         vault.getReserves(0, 0);
 
@@ -315,6 +322,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
 
         vm.warp(block.timestamp + vault.SALE_WINDOW());
 
+        /// sale is over which causes failure
         vm.expectRevert("ReserveAutomationModule: sale not active");
         vault.getReserves(0, 0);
     }
@@ -330,6 +338,122 @@ contract ReserveAutomationLiveIntegrationTest is Test {
 
         vm.expectRevert("ReserveAutomationModule: amount in is 0");
         vault.getReserves(0, 0);
+    }
+
+    function testPurchaseReservesFailsInsufficientBuffer() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(1);
+
+        vm.warp(block.timestamp + 1);
+
+        vm.expectRevert(
+            "ReserveAutomationModule: amount bought exceeds buffer"
+        );
+        vault.getReserves(1_000e18, 0);
+
+        vm.warp(block.timestamp + 7 days);
+
+        uint256 buyAmount = vault.getAmountWellOut(vault.buffer() + 1e6);
+        vm.expectRevert(
+            "ReserveAutomationModule: amount bought exceeds buffer"
+        );
+        vault.getReserves(buyAmount, 0);
+    }
+
+    function testPurchaseReservesFailsAmountOutNotGteMinAmtOut() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(1);
+
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 wellBuyAmount = vault.getAmountWellOut(vault.buffer());
+
+        deal(address(well), address(this), wellBuyAmount);
+        well.approve(address(vault), wellBuyAmount);
+
+        uint256 currBuffer = vault.buffer();
+
+        vm.expectRevert("ReserveAutomationModule: not enough out");
+        vault.getReserves(wellBuyAmount, currBuffer + 1);
+    }
+
+    function testPurchaseReservesFailsNoWellApproval() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(1);
+
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 wellBuyAmount = vault.getAmountWellOut(vault.buffer());
+
+        deal(address(well), address(this), wellBuyAmount);
+
+        vm.expectRevert("ERC20: insufficient allowance");
+        vault.getReserves(wellBuyAmount, 1);
+    }
+
+    /// we never expect this state to be reachable but test it anyway for completeness
+    function testPurchaseReservesFailsNoAssets() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(1);
+
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 wellBuyAmount = vault.getAmountWellOut(vault.buffer());
+
+        deal(address(well), address(this), wellBuyAmount);
+        well.approve(address(vault), wellBuyAmount);
+
+        deal(address(underlying), address(vault), 0);
+
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        vault.getReserves(wellBuyAmount, 1);
+    }
+
+    function testAmountInTolerance(uint256 amountWellIn) public view {
+        amountWellIn = _bound(amountWellIn, 1e18, uint256(type(uint128).max));
+
+        uint256 getAmountReservesOut = vault.getAmountReservesOut(amountWellIn);
+        uint256 getAmountIn = vault.getAmountWellOut(getAmountReservesOut);
+
+        /// must be within 1 basis point
+        assertApproxEqRel(
+            getAmountIn,
+            amountWellIn,
+            1e14,
+            "amount in not within tolerance"
+        );
+    }
+
+    function testAmountOutTolerance(uint256 amountReservesIn) public view {
+        amountReservesIn = _bound(
+            amountReservesIn,
+            uint256(1e6),
+            uint256(1_000_000_000e6)
+        );
+
+        uint256 getAmountWellOut = vault.getAmountWellOut(amountReservesIn);
+        uint256 getAmountReservesOut = vault.getAmountReservesOut(
+            getAmountWellOut
+        );
+
+        assertApproxEqRel(
+            amountReservesIn,
+            getAmountReservesOut,
+            1.0001e12,
+            "amount reserves out not within tolerance"
+        );
     }
 
     function testSwapWellForUSDC() public {
@@ -365,7 +489,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
 
         vm.warp(block.timestamp + SALE_WINDOW - 1);
 
-        uint256 wellAmount = vault.getAmountWellIn(vault.buffer());
+        uint256 wellAmount = vault.getAmountWellOut(vault.buffer());
         deal(address(well), address(this), wellAmount);
 
         well.approve(address(vault), wellAmount);
@@ -373,7 +497,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         uint256 initialHolderWellBalance = well.balanceOf(address(holder));
         uint256 initialUSDCBalance = underlying.balanceOf(address(this));
 
-        uint256 expectedOut = vault.getAmountOut(wellAmount);
+        uint256 expectedOut = vault.getAmountReservesOut(wellAmount);
 
         uint256 actualAmountOut = vault.getReserves(wellAmount, expectedOut);
 
@@ -454,7 +578,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
 
         vm.warp(block.timestamp + SALE_WINDOW - 1);
 
-        uint256 wellAmount = wethVault.getAmountWellIn(wethVault.buffer());
+        uint256 wellAmount = wethVault.getAmountWellOut(wethVault.buffer());
         deal(address(well), address(this), wellAmount);
 
         well.approve(address(wethVault), wellAmount);
@@ -462,7 +586,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         uint256 initialHolderWellBalance = holder.balance();
         uint256 initialWETHBalance = weth.balanceOf(address(this));
 
-        uint256 expectedOut = wethVault.getAmountOut(wellAmount);
+        uint256 expectedOut = wethVault.getAmountReservesOut(wellAmount);
 
         uint256 actualAmountOut = wethVault.getReserves(
             wellAmount,
@@ -517,12 +641,12 @@ contract ReserveAutomationLiveIntegrationTest is Test {
             expectedDiscount = 0;
         } else {
             uint256 discountTime = timeElapsed - nonDiscountPeriod;
-            if (discountTime >= vault.discountDecayPeriod()) {
+            if (discountTime >= vault.discountApplicationPeriod()) {
                 expectedDiscount = vault.maxDiscount();
             } else {
                 expectedDiscount =
                     (vault.maxDiscount() * discountTime) /
-                    vault.discountDecayPeriod();
+                    vault.discountApplicationPeriod();
             }
         }
 
@@ -579,20 +703,20 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         );
     }
 
-    function testSetDecayWindowRevertNonOwner() public {
+    function testSetDiscountApplicationPeriodRevertNonOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
-        vault.setDecayWindow(2 weeks);
+        vault.setDiscountApplicationPeriod(2 weeks);
     }
 
-    function testSetDecayWindow() public {
+    function testSetDiscountApplicationPeriod() public {
         uint256 newDecayWindow = 2 weeks;
-        uint256 oldDecayWindow = vault.discountDecayPeriod();
+        uint256 oldDecayWindow = vault.discountApplicationPeriod();
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.setDecayWindow(newDecayWindow);
+        vault.setDiscountApplicationPeriod(newDecayWindow);
 
         assertEq(
-            vault.discountDecayPeriod(),
+            vault.discountApplicationPeriod(),
             newDecayWindow,
             "decay window not updated"
         );
@@ -622,6 +746,53 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         assertTrue(
             oldRecipient != newRecipient,
             "recipient address should have changed"
+        );
+    }
+
+    function testWithdrawERC20TokenRevertNonOwner() public {
+        uint256 amount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), amount);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        vault.withdrawERC20Token(address(underlying), address(this), amount);
+    }
+
+    function testWithdrawERC20TokenRevertZeroAddress() public {
+        uint256 amount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), amount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.expectRevert("ERC20HoldingDeposit: to address cannot be 0");
+        vault.withdrawERC20Token(address(underlying), address(0), amount);
+    }
+
+    function testWithdrawERC20TokenRevertZeroAmount() public {
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.expectRevert("ERC20HoldingDeposit: amount must be greater than 0");
+        vault.withdrawERC20Token(address(underlying), address(this), 0);
+    }
+
+    function testWithdrawERC20TokenSucceeds() public {
+        uint256 amount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), amount);
+
+        uint256 initialBalance = underlying.balanceOf(address(this));
+
+        vm.expectEmit(true, true, false, true);
+        emit ERC20Withdrawn(address(underlying), address(this), amount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.withdrawERC20Token(address(underlying), address(this), amount);
+
+        assertEq(
+            underlying.balanceOf(address(this)) - initialBalance,
+            amount,
+            "recipient balance did not increase correctly"
+        );
+        assertEq(
+            underlying.balanceOf(address(vault)),
+            0,
+            "vault balance not zero after withdrawal"
         );
     }
 }
