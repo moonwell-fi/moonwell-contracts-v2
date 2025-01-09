@@ -44,8 +44,8 @@ contract ReserveAutomation is ERC20Mover {
     /// must be less than 1 (1e18) as no discounts over or equal to 100% are allowed
     uint256 public maxDiscount;
 
-    /// @notice the duration the discount decays over
-    uint256 public discountDecayPeriod;
+    /// @notice the duration the discount is applied over
+    uint256 public discountApplicationPeriod;
 
     /// @notice how long to wait since the last bid time until the discount
     /// is applied to the price
@@ -103,8 +103,8 @@ contract ReserveAutomation is ERC20Mover {
     struct InitParams {
         /// @notice maximum discount allowed for the sale
         uint256 maxDiscount;
-        /// @notice period over which the discount decays
-        uint256 discountDecayPeriod;
+        /// @notice period over which the discount is applied
+        uint256 discountApplicationPeriod;
         /// @notice period before discount starts applying
         uint256 nonDiscountPeriod;
         /// @notice address to receive sale proceeds
@@ -199,7 +199,7 @@ contract ReserveAutomation is ERC20Mover {
         address _guardian
     ) ERC20Mover(_owner) {
         maxDiscount = params.maxDiscount;
-        discountDecayPeriod = params.discountDecayPeriod;
+        discountApplicationPeriod = params.discountApplicationPeriod;
         nonDiscountPeriod = params.nonDiscountPeriod;
         recipientAddress = params.recipientAddress;
         wellToken = params.wellToken;
@@ -265,21 +265,21 @@ contract ReserveAutomation is ERC20Mover {
             nonDiscountPeriod;
 
         /// you should never be able to get a discount greater than the max discount
-        if (discountDecayTime >= discountDecayPeriod) {
+        if (discountDecayTime >= discountApplicationPeriod) {
             return maxDiscount;
         }
 
         /// return the discount as a percentage of the max discount
-        return (maxDiscount * discountDecayTime) / discountDecayPeriod;
+        return (maxDiscount * discountDecayTime) / discountApplicationPeriod;
     }
 
     /// @notice Calculates the amount of WELL needed to purchase a given amount of reserves
-    /// @param amountReserveAssetOut The amount of reserves to purchase
-    /// @return amountWellIn The amount of WELL needed to purchase the given amount of reserves
+    /// @param amountReserveAssetIn The amount of reserves to purchase
+    /// @return amountWellOut The amount of WELL needed to purchase the given amount of reserves
     /// @dev Uses Chainlink price feeds and applies current discount if applicable
-    function getAmountWellIn(
-        uint256 amountReserveAssetOut
-    ) public view returns (uint256 amountWellIn) {
+    function getAmountWellOut(
+        uint256 amountReserveAssetIn
+    ) public view returns (uint256 amountWellOut) {
         /// get the current WELL price in USD
         uint256 normalizedWellPrice;
         {
@@ -316,18 +316,18 @@ contract ReserveAutomation is ERC20Mover {
 
         /// normalize decimals up to 18 if reserve asset has less than 18 decimals
         if (reserveAssetDecimals != 18) {
-            amountReserveAssetOut =
-                amountReserveAssetOut *
+            amountReserveAssetIn =
+                amountReserveAssetIn *
                 (10 ** uint256(18 - reserveAssetDecimals));
         }
 
         /// calculate the reserve asset dollar value
-        uint256 reserveAssetValue = amountReserveAssetOut *
+        uint256 reserveAssetValue = amountReserveAssetIn *
             normalizedReservePrice;
 
         /// divide the reserve asset amount out by the WELL price in USD
         /// since both are scaled by 1e18, the result loses the scaling
-        amountWellIn = reserveAssetValue / normalizedWellPrice;
+        amountWellOut = reserveAssetValue / normalizedWellPrice;
     }
 
     /// @notice returns the amount of reserves that can be purchased at the
@@ -335,7 +335,7 @@ contract ReserveAutomation is ERC20Mover {
     /// @param amountWellIn the amount of WELL tokens to purchase reserves with
     /// @return amountOut the amount of reserves that can be purchased with the given amount of WELL
     /// @dev this function does not revert if the amount of reserves is greater than the buffer
-    function getAmountOut(
+    function getAmountReservesOut(
         uint256 amountWellIn
     ) public view returns (uint256 amountOut) {
         /// get the current WELL price in USD
@@ -443,7 +443,7 @@ contract ReserveAutomation is ERC20Mover {
     /// @param newMaxDiscount The new maximum discount value (must be less than 1e18)
     function setMaxDiscount(uint256 newMaxDiscount) external onlyOwner {
         require(
-            newMaxDiscount < 1e18,
+            newMaxDiscount < SCALAR,
             "ReserveAutomationModule: max discount must be less than 1"
         );
         uint256 previousMaxDiscount = maxDiscount;
@@ -468,9 +468,11 @@ contract ReserveAutomation is ERC20Mover {
 
     /// @notice Sets the window over which the discount decays
     /// @param decayWindow The new decay window duration
-    function setDecayWindow(uint256 decayWindow) external onlyOwner {
-        uint256 previousDecayWindow = discountDecayPeriod;
-        discountDecayPeriod = decayWindow;
+    function setDiscountApplicationPeriod(
+        uint256 decayWindow
+    ) external onlyOwner {
+        uint256 previousDecayWindow = discountApplicationPeriod;
+        discountApplicationPeriod = decayWindow;
 
         emit DecayWindowUpdate(previousDecayWindow, decayWindow);
     }
@@ -554,7 +556,7 @@ contract ReserveAutomation is ERC20Mover {
 
         require(amountWellIn != 0, "ReserveAutomationModule: amount in is 0");
 
-        amountOut = getAmountOut(amountWellIn);
+        amountOut = getAmountReservesOut(amountWellIn);
 
         /// check that the amount of reserves is less than or equal to the buffer
         require(

@@ -31,8 +31,8 @@ contract AutomationDeploy {
             "maxDiscount must be less than 10%"
         );
         require(
-            params.discountDecayPeriod > 0,
-            "discountDecayPeriod must be greater than 0"
+            params.discountApplicationPeriod > 0,
+            "discountApplicationPeriod must be greater than 0"
         );
         require(
             params.nonDiscountPeriod <= 2 weeks,
