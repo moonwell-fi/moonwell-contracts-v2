@@ -199,11 +199,6 @@ contract ReserveAutomation is ERC20Mover {
         address _mTokenMarket,
         address _guardian
     ) ERC20Mover(_owner) {
-        require(
-            _mTokenMarket != address(0),
-            "ReserveAutomationModule: mToken market cannot be zero address"
-        );
-
         maxDiscount = params.maxDiscount;
         discountDecayPeriod = params.discountDecayPeriod;
         nonDiscountPeriod = params.nonDiscountPeriod;
