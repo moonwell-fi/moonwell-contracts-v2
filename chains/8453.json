@@ -728,5 +728,20 @@
         "addr": "0xF08CEF2EE2e5BE584a581209637B02637F312072",
         "isContract": true,
         "name": "CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE"
+    },
+    {
+        "addr": "0xc15d9944dAefE2dB03e53bef8DDA25a56832C5fe",
+        "isContract": true,
+        "name": "CHAINLINK_WELL_USD"
+    },
+    {
+        "addr": "0x2A62AC4f8BE9E07bB0686c070A811027452D4dA1",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_WELL"
+    },
+    {
+        "addr": "0xdC7810B47eAAb250De623F0eE07764afa5F71ED1",
+        "isContract": true,
+        "name": "MOONWELL_WELL"
     }
 ]
