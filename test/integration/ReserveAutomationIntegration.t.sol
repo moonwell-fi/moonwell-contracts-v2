@@ -5,8 +5,9 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {ReserveRegistry} from "@protocol/market/ReserveRegistry.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
+import {MockERC20Decimals} from "@test/mock/MockERC20Decimals.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -16,28 +17,35 @@ contract ReserveAutomationLiveIntegrationTest is Test {
     ERC20 public well;
 
     ReserveAutomation public vault;
+    MErc20 public mToken;
 
     ERC20HoldingDeposit public holder;
 
-    Addresses addresses;
+    Addresses private _addresses;
+
+    address private _guardian;
+
+    uint256 public constant SALE_WINDOW = 14 days;
 
     function setUp() public {
-        addresses = new Addresses();
+        _addresses = new Addresses();
+        _guardian = address(0x123);
 
-        underlying = ERC20(addresses.getAddress("USDC"));
+        underlying = ERC20(_addresses.getAddress("USDC"));
+        mToken = MErc20(_addresses.getAddress("MOONWELL_USDC"));
 
         uint256 mintAmount = 10 ** 6;
 
         deal(address(underlying), address(this), mintAmount);
 
-        well = ERC20(addresses.getAddress("xWELL_PROXY"));
+        well = ERC20(_addresses.getAddress("xWELL_PROXY"));
 
         AutomationDeploy deployer = new AutomationDeploy();
 
         holder = ERC20HoldingDeposit(
             deployer.deployERC20HoldingDeposit(
                 address(well),
-                addresses.getAddress("TEMPORAL_GOVERNOR")
+                _addresses.getAddress("TEMPORAL_GOVERNOR")
             )
         );
 
@@ -51,14 +59,16 @@ contract ReserveAutomationLiveIntegrationTest is Test {
                 address(holder),
                 address(well),
                 address(underlying),
-                addresses.getAddress("CHAINLINK_WELL_USD"),
-                addresses.getAddress("USDC_ORACLE")
+                _addresses.getAddress("CHAINLINK_WELL_USD"),
+                _addresses.getAddress("USDC_ORACLE")
             );
 
         vault = ReserveAutomation(
             deployer.deployReserveAutomation(
                 params,
-                addresses.getAddress("TEMPORAL_GOVERNOR")
+                _addresses.getAddress("TEMPORAL_GOVERNOR"),
+                address(mToken),
+                _guardian
             )
         );
     }
@@ -92,12 +102,12 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         );
         assertEq(
             vault.wellChainlinkFeed(),
-            addresses.getAddress("CHAINLINK_WELL_USD"),
+            _addresses.getAddress("CHAINLINK_WELL_USD"),
             "incorrect well chainlink feed"
         );
         assertEq(
             vault.reserveChainlinkFeed(),
-            addresses.getAddress("USDC_ORACLE"),
+            _addresses.getAddress("USDC_ORACLE"),
             "incorrect reserve chainlink feed"
         );
         assertEq(
@@ -105,9 +115,15 @@ contract ReserveAutomationLiveIntegrationTest is Test {
             ERC20(address(underlying)).decimals(),
             "incorrect reserve asset decimals"
         );
+        assertEq(
+            vault.mTokenMarket(),
+            address(mToken),
+            "incorrect mToken market"
+        );
+        assertEq(vault.guardian(), _guardian, "incorrect guardian");
 
         assertEq(vault.lastBidTime(), 0, "incorrect last bid time");
-        assertEq(vault.saleEndTime(), 0, "incorrect sale end time");
+        assertEq(vault.saleStartTime(), 0, "incorrect sale start time");
         assertEq(vault.periodSaleAmount(), 0, "incorrect period sale amount");
         assertEq(vault.buffer(), 0, "incorrect buffer");
         assertEq(vault.bufferCap(), 0, "incorrect buffer cap");
@@ -124,16 +140,209 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         );
     }
 
+    function testConstructionFailsReserveAssetDecimalsGt18() public {
+        AutomationDeploy deployer = new AutomationDeploy();
+        MockERC20Decimals mockUnderlying = new MockERC20Decimals(
+            "USDC",
+            "USDC",
+            19
+        );
+
+        ReserveAutomation.InitParams memory params = ReserveAutomation
+            .InitParams(
+                1e17,
+                1 weeks,
+                1 days,
+                address(holder),
+                address(well),
+                address(mockUnderlying),
+                _addresses.getAddress("CHAINLINK_WELL_USD"),
+                _addresses.getAddress("USDC_ORACLE")
+            );
+
+        address governor = _addresses.getAddress("TEMPORAL_GOVERNOR");
+
+        vm.expectRevert(
+            "ReserveAutomationModule: reserve asset has too many decimals"
+        );
+        ReserveAutomation(
+            deployer.deployReserveAutomation(
+                params,
+                governor,
+                address(mToken),
+                _guardian
+            )
+        );
+    }
+
+    function testSetGuardianRevertNonOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        vault.setGuardian(address(0x456));
+    }
+
+    function testSetGuardianSucceedsOwner() public {
+        address newGuardian = address(0x456);
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.setGuardian(newGuardian);
+        assertEq(vault.guardian(), newGuardian, "guardian not set correctly");
+    }
+
+    function testCancelAuctionRevertNonGuardian() public {
+        vm.expectRevert("ReserveAutomationModule: only guardian");
+        vault.cancelAuction();
+    }
+
+    function testCancelAuctionRevertNoAuction() public {
+        vm.prank(_guardian);
+        vm.expectRevert(
+            "ReserveAutomationModule: auction already active or not initiated"
+        );
+        vault.cancelAuction();
+    }
+
+    function testCancelAuctionRevertAlreadyActive() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(0);
+
+        vm.warp(block.timestamp + 14 days + 1);
+
+        vm.prank(_guardian);
+        vm.expectRevert(
+            "ReserveAutomationModule: auction already active or not initiated"
+        );
+        vault.cancelAuction();
+    }
+
+    function testCancelAuction() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(1 days);
+
+        mToken.accrueInterest();
+
+        uint256 totalReserves = mToken.totalReserves();
+
+        vm.prank(_guardian);
+        vault.cancelAuction();
+
+        assertEq(vault.guardian(), address(0), "guardian not revoked");
+        assertEq(vault.saleStartTime(), 0, "sale start time not reset");
+        assertEq(vault.periodSaleAmount(), 0, "period sale amount not reset");
+        assertEq(vault.lastBidTime(), 0, "last bid time not reset");
+        assertEq(vault.buffer(), 0, "buffer not reset");
+        assertEq(vault.bufferCap(), 0, "buffer cap not reset");
+        assertEq(vault.rateLimitPerSecond(), 0, "rate limit not reset");
+        assertEq(
+            underlying.balanceOf(address(vault)),
+            0,
+            "vault balance not 0 post auction cancel"
+        );
+        assertEq(
+            mToken.totalReserves() - totalReserves,
+            usdcAmount,
+            "total reserves should increase post auction cancel"
+        );
+    }
+
+    function testCancelAuctionFailedMarketReturn() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(1 days);
+
+        vm.mockCall(
+            address(mToken),
+            abi.encodeWithSelector(MErc20._addReserves.selector, usdcAmount),
+            abi.encode(1)
+        );
+
+        vm.prank(_guardian);
+        vm.expectRevert("ReserveAutomationModule: add reserves failure");
+        vault.cancelAuction();
+    }
+
+    function testInitiateSaleFailsAlreadyActive() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(1 days);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.expectRevert("ReserveAutomationModule: sale already active");
+        vault.initiateSale(1 days);
+    }
+
+    function testInitiateSaleFailsNoReserves() public {
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.expectRevert("ReserveAutomationModule: no reserves to sell");
+        vault.initiateSale(1 days);
+    }
+
+    function testInitiateSaleFailsExceedsMaxDelay() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.expectRevert("ReserveAutomationModule: delay exceeds max");
+        vault.initiateSale(14 days + 1);
+    }
+
+    function testPurchaseReservesFailsSaleNotActive() public {
+        vm.expectRevert("ReserveAutomationModule: sale not active");
+        vault.getReserves(0, 0);
+
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(1);
+
+        vm.expectRevert("ReserveAutomationModule: sale not active");
+        vault.getReserves(0, 0);
+
+        deal(address(well), address(this), 1_000e18);
+        well.approve(address(vault), 1_000e18);
+
+        vm.warp(block.timestamp + 1);
+        vault.getReserves(1, 0);
+
+        vm.warp(block.timestamp + vault.SALE_WINDOW());
+
+        vm.expectRevert("ReserveAutomationModule: sale not active");
+        vault.getReserves(0, 0);
+    }
+
+    function testPurchaseReservesFailsZeroAmount() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(1);
+
+        vm.warp(block.timestamp + 1);
+
+        vm.expectRevert("ReserveAutomationModule: amount in is 0");
+        vault.getReserves(0, 0);
+    }
+
     function testSwapWellForUSDC() public {
         uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
         deal(address(underlying), address(vault), usdcAmount);
 
-        vault.initiateSale();
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(0);
 
         assertEq(
-            vault.saleEndTime(),
-            block.timestamp + 14 days,
-            "incorrect sale end time"
+            vault.saleStartTime(),
+            block.timestamp,
+            "incorrect sale start time"
         );
         assertEq(
             vault.periodSaleAmount(),
@@ -143,7 +352,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         assertEq(vault.bufferCap(), usdcAmount, "incorrect buffer cap");
         assertEq(
             vault.rateLimitPerSecond(),
-            usdcAmount / 14 days,
+            usdcAmount / SALE_WINDOW,
             "incorrect rate limit per second"
         );
         assertEq(vault.buffer(), 0, "incorrect initial buffer");
@@ -154,7 +363,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
             "incorrect discount post discount decay period"
         );
 
-        vm.warp(block.timestamp + 14 days - 1);
+        vm.warp(block.timestamp + SALE_WINDOW - 1);
 
         uint256 wellAmount = vault.getAmountWellIn(vault.buffer());
         deal(address(well), address(this), wellAmount);
@@ -190,7 +399,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
     function testSwapWellForWETH() public {
         AutomationDeploy deployer = new AutomationDeploy();
 
-        ERC20 weth = ERC20(addresses.getAddress("WETH"));
+        ERC20 weth = ERC20(_addresses.getAddress("WETH"));
 
         ReserveAutomation.InitParams memory params = ReserveAutomation
             .InitParams(
@@ -200,26 +409,29 @@ contract ReserveAutomationLiveIntegrationTest is Test {
                 address(holder),
                 address(well),
                 address(weth),
-                addresses.getAddress("CHAINLINK_WELL_USD"),
-                addresses.getAddress("ETH_ORACLE")
+                _addresses.getAddress("CHAINLINK_WELL_USD"),
+                _addresses.getAddress("ETH_ORACLE")
             );
 
         ReserveAutomation wethVault = ReserveAutomation(
             deployer.deployReserveAutomation(
                 params,
-                addresses.getAddress("TEMPORAL_GOVERNOR")
+                _addresses.getAddress("TEMPORAL_GOVERNOR"),
+                address(mToken),
+                _guardian
             )
         );
 
         uint256 wethAmount = 10 * 10 ** ERC20(address(weth)).decimals();
         deal(address(weth), address(wethVault), wethAmount);
 
-        wethVault.initiateSale();
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        wethVault.initiateSale(0);
 
         assertEq(
-            wethVault.saleEndTime(),
-            block.timestamp + 14 days,
-            "incorrect sale end time"
+            wethVault.saleStartTime(),
+            block.timestamp,
+            "incorrect sale start time"
         );
         assertEq(
             wethVault.periodSaleAmount(),
@@ -229,7 +441,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         assertEq(wethVault.bufferCap(), wethAmount, "incorrect buffer cap");
         assertEq(
             wethVault.rateLimitPerSecond(),
-            wethAmount / 14 days,
+            wethAmount / SALE_WINDOW,
             "incorrect rate limit per second"
         );
         assertEq(wethVault.buffer(), 0, "incorrect initial buffer");
@@ -240,7 +452,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
             "incorrect discount post discount decay period"
         );
 
-        vm.warp(block.timestamp + 14 days - 1);
+        vm.warp(block.timestamp + SALE_WINDOW - 1);
 
         uint256 wellAmount = wethVault.getAmountWellIn(wethVault.buffer());
         deal(address(well), address(this), wellAmount);
@@ -280,12 +492,13 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
         deal(address(underlying), address(vault), usdcAmount);
 
-        vault.initiateSale();
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(0);
 
         assertEq(
-            vault.saleEndTime(),
-            block.timestamp + 14 days,
-            "incorrect sale end time"
+            vault.saleStartTime(),
+            block.timestamp,
+            "incorrect sale start time"
         );
         assertEq(
             vault.lastBidTime(),
@@ -329,7 +542,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         uint256 newMaxDiscount = 5e16;
         uint256 oldMaxDiscount = vault.maxDiscount();
 
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
         vault.setMaxDiscount(newMaxDiscount);
 
         assertEq(
@@ -352,7 +565,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         uint256 newNonDiscountPeriod = 2 days;
         uint256 oldNonDiscountPeriod = vault.nonDiscountPeriod();
 
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
         vault.setNonDiscountPeriod(newNonDiscountPeriod);
 
         assertEq(
@@ -375,7 +588,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         uint256 newDecayWindow = 2 weeks;
         uint256 oldDecayWindow = vault.discountDecayPeriod();
 
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
         vault.setDecayWindow(newDecayWindow);
 
         assertEq(
@@ -398,7 +611,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         address newRecipient = address(1);
         address oldRecipient = vault.recipientAddress();
 
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
         vault.setRecipientAddress(newRecipient);
 
         assertEq(
