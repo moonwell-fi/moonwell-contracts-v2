@@ -63,7 +63,7 @@ contract ReserveAutomation is ERC20Mover {
     /// @notice the time the last bid was made
     uint256 public lastBidTime;
 
-    /// @notice the end time of the sale period
+    /// @notice the start time of the sale period
     uint256 public saleStartTime;
 
     /// @notice set to the contract balance when a sale is initiated
