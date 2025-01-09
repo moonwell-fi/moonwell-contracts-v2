@@ -1,13 +1,14 @@
 pragma solidity =0.8.19;
 
-import {ReserveRegistry} from "@protocol/market/ReserveRegistry.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
 
 contract AutomationDeploy {
     function deployReserveAutomation(
         ReserveAutomation.InitParams memory params,
-        address owner
+        address owner,
+        address mTokenMarket,
+        address guardian
     ) public returns (address) {
         require(params.wellToken.code.length > 0, "wellToken must be set");
         require(params.reserveAsset.code.length > 0, "mToken must be set");
@@ -21,8 +22,9 @@ contract AutomationDeploy {
         );
         require(
             params.recipientAddress.code.length > 0,
-            "reserveChainlinkFeed must be set"
+            "recipientAddress must be set"
         );
+        require(mTokenMarket.code.length > 0, "mTokenMarket must be set");
 
         require(
             params.maxDiscount <= 1e17,
@@ -37,7 +39,12 @@ contract AutomationDeploy {
             "non discount period cannot be greater than sale period"
         );
 
-        ReserveAutomation automation = new ReserveAutomation(params, owner);
+        ReserveAutomation automation = new ReserveAutomation(
+            params,
+            owner,
+            mTokenMarket,
+            guardian
+        );
         return address(automation);
     }
 
