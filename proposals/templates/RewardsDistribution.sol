@@ -971,7 +971,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             );
         }
 
-        uint256 amountToWithdraw = ERC20(addresses.getAddress("xWELL_PROXY"))
+        uint256 amountToWithdraw = IERC20(addresses.getAddress("xWELL_PROXY"))
             .balanceOf(addresses.getAddress("ERC20_HOLDING_DEPOSIT"));
 
         // withdraw reserves from the Market Reserve ERC20 Holding Deposit contract
