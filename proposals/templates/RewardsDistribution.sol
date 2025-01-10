@@ -47,6 +47,12 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         string token;
     }
 
+    struct WithdrawERC20 {
+        uint256 amount;
+        string to;
+        string token;
+    }
+
     struct AddRewardInfo {
         uint256 amount;
         uint256 endTimestamp;
@@ -82,6 +88,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         SetMRDRewardSpeed[] setRewardSpeed;
         int256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
+        WithdrawERC20[] withdrawERC20Token;
     }
 
     JsonSpecMoonbeam moonbeamActions;
@@ -533,6 +540,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             );
         }
 
+        uint256 ecosystemReserveProxyAmount = 0;
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             if (
                 addresses.getAddress(spec.transferFroms[i].to) ==
@@ -581,41 +589,47 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     _chainId
                 ].transferFroms[j];
 
-                require(
-                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
-                        keccak256("MRD_IMPL"),
-                    "should not transfer funds to MRD logic contract"
-                );
-
-                require(
-                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
-                        keccak256("ECOSYSTEM_RESERVE_IMPL"),
-                    "should not transfer funds to Ecosystem Reserve logic contract"
-                );
-                require(
-                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
-                        keccak256("STK_GOVTOKEN_IMPL"),
-                    "should not transfer funds to Safety Module logic contract"
-                );
+                _validateTransferDestination(existingTransferFrom.to);
             }
 
             if (
                 addresses.getAddress(spec.transferFroms[i].to) ==
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
-                assertApproxEqAbs(
-                    int256(spec.transferFroms[i].amount),
-                    spec.stkWellEmissionsPerSecond *
-                        int256(endTimeStamp - startTimeStamp),
-                    1e18,
-                    "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
-                );
+                ecosystemReserveProxyAmount += spec.transferFroms[i].amount;
             }
 
             externalChainActions[_chainId].transferFroms.push(
                 spec.transferFroms[i]
             );
         }
+
+        for (uint256 i = 0; i < spec.withdrawERC20Token.length; i++) {
+            WithdrawERC20 memory withdrawERC20Token = spec.withdrawERC20Token[
+                i
+            ];
+
+            _validateTransferDestination(withdrawERC20Token.to);
+
+            if (
+                addresses.getAddress(withdrawERC20Token.to) ==
+                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
+            ) {
+                ecosystemReserveProxyAmount += withdrawERC20Token.amount;
+            }
+
+            externalChainActions[_chainId].withdrawERC20Token.push(
+                withdrawERC20Token
+            );
+        }
+
+        assertApproxEqAbs(
+            int256(ecosystemReserveProxyAmount),
+            spec.stkWellEmissionsPerSecond *
+                int256(endTimeStamp - startTimeStamp),
+            1e18,
+            "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
+        );
     }
 
     function _buildMoonbeamActions(Addresses addresses) private {
@@ -971,27 +985,28 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             );
         }
 
-        uint256 amountToWithdraw = IERC20(addresses.getAddress("xWELL_PROXY"))
-            .balanceOf(addresses.getAddress("ERC20_HOLDING_DEPOSIT"));
-
         // withdraw reserves from the Market Reserve ERC20 Holding Deposit contract
-        _pushAction(
-            addresses.getAddress("ERC20_HOLDING_DEPOSIT"),
-            abi.encodeWithSignature(
-                "withdrawERC20Token(address,address,uint256)",
-                addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
-                amountToWithdraw
-            ),
-            string(
-                abi.encodePacked(
-                    "Withdraw ",
-                    vm.toString(amountToWithdraw / 1e18),
-                    " WELL from the Market Reserve ERC20 Holding Deposit contract on ",
-                    _chainId.chainIdToName()
+        for (uint256 i = 0; i < spec.withdrawERC20Token.length; i++) {
+            _pushAction(
+                addresses.getAddress("ERC20_HOLDING_DEPOSIT"),
+                abi.encodeWithSignature(
+                    "withdrawERC20Token(address,address,uint256)",
+                    addresses.getAddress(spec.withdrawERC20Token[i].token),
+                    addresses.getAddress(spec.withdrawERC20Token[i].to),
+                    spec.withdrawERC20Token[i].amount
+                ),
+                string(
+                    abi.encodePacked(
+                        "Withdraw ",
+                        vm.toString(spec.withdrawERC20Token[i].amount / 1e18),
+                        " ",
+                        spec.withdrawERC20Token[i].token,
+                        " from the Market Reserve ERC20 Holding Deposit contract on ",
+                        _chainId.chainIdToName()
+                    )
                 )
-            )
-        );
+            );
+        }
     }
 
     function _validateMoonbeam(Addresses addresses) private {
@@ -1314,5 +1329,25 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 }
             }
         }
+    }
+
+    function _validateTransferDestination(
+        string memory destination
+    ) internal pure {
+        require(
+            keccak256(abi.encodePacked(destination)) != keccak256("MRD_IMPL"),
+            "should not transfer funds to MRD logic contract"
+        );
+
+        require(
+            keccak256(abi.encodePacked(destination)) !=
+                keccak256("ECOSYSTEM_RESERVE_IMPL"),
+            "should not transfer funds to Ecosystem Reserve logic contract"
+        );
+        require(
+            keccak256(abi.encodePacked(destination)) !=
+                keccak256("STK_GOVTOKEN_IMPL"),
+            "should not transfer funds to Safety Module logic contract"
+        );
     }
 }
