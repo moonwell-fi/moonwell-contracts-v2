@@ -56,27 +56,21 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         );
 
         ReserveAutomation.InitParams memory params = ReserveAutomation
-            .InitParams(
-                1e17,
-                /// 1 week discount decay period
-                1 weeks,
-                /// 1 day non-discount period
-                1 days,
-                address(holder),
-                address(well),
-                address(underlying),
-                _addresses.getAddress("CHAINLINK_WELL_USD"),
-                _addresses.getAddress("USDC_ORACLE")
-            );
+            .InitParams({
+                maxDiscount: 1e17,
+                discountApplicationPeriod: 1 weeks,
+                nonDiscountPeriod: 1 days,
+                recipientAddress: address(holder),
+                wellToken: address(well),
+                reserveAsset: address(underlying),
+                wellChainlinkFeed: _addresses.getAddress("CHAINLINK_WELL_USD"),
+                reserveChainlinkFeed: _addresses.getAddress("USDC_ORACLE"),
+                owner: _addresses.getAddress("TEMPORAL_GOVERNOR"),
+                mTokenMarket: address(mToken),
+                guardian: _guardian
+            });
 
-        vault = ReserveAutomation(
-            deployer.deployReserveAutomation(
-                params,
-                _addresses.getAddress("TEMPORAL_GOVERNOR"),
-                address(mToken),
-                _guardian
-            )
-        );
+        vault = ReserveAutomation(deployer.deployReserveAutomation(params));
     }
 
     function testSetup() public view {
@@ -155,30 +149,24 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         );
 
         ReserveAutomation.InitParams memory params = ReserveAutomation
-            .InitParams(
-                1e17,
-                1 weeks,
-                1 days,
-                address(holder),
-                address(well),
-                address(mockUnderlying),
-                _addresses.getAddress("CHAINLINK_WELL_USD"),
-                _addresses.getAddress("USDC_ORACLE")
-            );
-
-        address governor = _addresses.getAddress("TEMPORAL_GOVERNOR");
+            .InitParams({
+                maxDiscount: 1e17,
+                discountApplicationPeriod: 1 weeks,
+                nonDiscountPeriod: 1 days,
+                recipientAddress: address(holder),
+                wellToken: address(well),
+                reserveAsset: address(mockUnderlying),
+                wellChainlinkFeed: _addresses.getAddress("CHAINLINK_WELL_USD"),
+                reserveChainlinkFeed: _addresses.getAddress("USDC_ORACLE"),
+                owner: _addresses.getAddress("TEMPORAL_GOVERNOR"),
+                mTokenMarket: address(mToken),
+                guardian: _guardian
+            });
 
         vm.expectRevert(
             "ReserveAutomationModule: reserve asset has too many decimals"
         );
-        ReserveAutomation(
-            deployer.deployReserveAutomation(
-                params,
-                governor,
-                address(mToken),
-                _guardian
-            )
-        );
+        ReserveAutomation(deployer.deployReserveAutomation(params));
     }
 
     function testSetGuardianRevertNonOwner() public {
@@ -526,24 +514,22 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         ERC20 weth = ERC20(_addresses.getAddress("WETH"));
 
         ReserveAutomation.InitParams memory params = ReserveAutomation
-            .InitParams(
-                1e17,
-                1 weeks,
-                1 days,
-                address(holder),
-                address(well),
-                address(weth),
-                _addresses.getAddress("CHAINLINK_WELL_USD"),
-                _addresses.getAddress("ETH_ORACLE")
-            );
+            .InitParams({
+                maxDiscount: 1e17,
+                discountApplicationPeriod: 1 weeks,
+                nonDiscountPeriod: 1 days,
+                recipientAddress: address(holder),
+                wellToken: address(well),
+                reserveAsset: address(weth),
+                wellChainlinkFeed: _addresses.getAddress("CHAINLINK_WELL_USD"),
+                reserveChainlinkFeed: _addresses.getAddress("ETH_ORACLE"),
+                owner: _addresses.getAddress("TEMPORAL_GOVERNOR"),
+                mTokenMarket: address(mToken),
+                guardian: _guardian
+            });
 
         ReserveAutomation wethVault = ReserveAutomation(
-            deployer.deployReserveAutomation(
-                params,
-                _addresses.getAddress("TEMPORAL_GOVERNOR"),
-                address(mToken),
-                _guardian
-            )
+            deployer.deployReserveAutomation(params)
         );
 
         uint256 wethAmount = 10 * 10 ** ERC20(address(weth)).decimals();
