@@ -176,7 +176,8 @@
                 "to": "ECOSYSTEM_RESERVE_PROXY",
                 "token": "xWELL_PROXY"
             }
-        ]
+        ],
+        "withdrawERC20Token": []
     },
     "1284": {
         "bridgeToRecipient": [
@@ -515,7 +516,8 @@
                 "to": "ECOSYSTEM_RESERVE_PROXY",
                 "token": "xWELL_PROXY"
             }
-        ]
+        ],
+        "withdrawERC20Token": []
     },
     "endTimeSTamp": 1730431800,
     "startTimeStamp": 1728012600
