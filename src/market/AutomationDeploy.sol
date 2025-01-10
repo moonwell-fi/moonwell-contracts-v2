@@ -5,10 +5,7 @@ import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
 
 contract AutomationDeploy {
     function deployReserveAutomation(
-        ReserveAutomation.InitParams memory params,
-        address owner,
-        address mTokenMarket,
-        address guardian
+        ReserveAutomation.InitParams memory params
     ) public returns (address) {
         require(params.wellToken.code.length > 0, "wellToken must be set");
         require(params.reserveAsset.code.length > 0, "mToken must be set");
@@ -24,7 +21,12 @@ contract AutomationDeploy {
             params.recipientAddress.code.length > 0,
             "recipientAddress must be set"
         );
-        require(mTokenMarket.code.length > 0, "mTokenMarket must be set");
+        require(
+            params.mTokenMarket.code.length > 0,
+            "mTokenMarket must be set"
+        );
+        require(params.owner != address(0), "owner must be set");
+        require(params.guardian != address(0), "guardian must be set");
 
         require(
             params.maxDiscount <= 1e17,
@@ -34,17 +36,23 @@ contract AutomationDeploy {
             params.discountApplicationPeriod > 0,
             "discountApplicationPeriod must be greater than 0"
         );
+
+        require(
+            params.discountApplicationPeriod <= 2 weeks,
+            "discountApplicationPeriod must be less than 2 weeks"
+        );
         require(
             params.nonDiscountPeriod <= 2 weeks,
             "non discount period cannot be greater than sale period"
         );
 
-        ReserveAutomation automation = new ReserveAutomation(
-            params,
-            owner,
-            mTokenMarket,
-            guardian
+        require(
+            params.nonDiscountPeriod + params.discountApplicationPeriod <
+                2 weeks,
+            "discount and non discount period should be less than 2 weeks"
         );
+
+        ReserveAutomation automation = new ReserveAutomation(params);
         return address(automation);
     }
 

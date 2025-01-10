@@ -117,6 +117,12 @@ contract ReserveAutomation is ERC20Mover {
         address wellChainlinkFeed;
         /// @notice address of the Chainlink feed for reserve asset
         address reserveChainlinkFeed;
+        /// @notice address of the contract owner
+        address owner;
+        /// @notice address of the market to add reserves back to
+        address mTokenMarket;
+        /// @notice address of the initial guardian
+        address guardian;
     }
 
     /// ------------------------------------------------------------
@@ -189,15 +195,7 @@ contract ReserveAutomation is ERC20Mover {
 
     /// @notice Initializes the contract with the given parameters
     /// @param params struct containing initialization parameters
-    /// @param _owner address of the contract owner
-    /// @param _mTokenMarket address of the market to add reserves back to
-    /// @param _guardian address of the initial guardian
-    constructor(
-        InitParams memory params,
-        address _owner,
-        address _mTokenMarket,
-        address _guardian
-    ) ERC20Mover(_owner) {
+    constructor(InitParams memory params) ERC20Mover(params.owner) {
         maxDiscount = params.maxDiscount;
         discountApplicationPeriod = params.discountApplicationPeriod;
         nonDiscountPeriod = params.nonDiscountPeriod;
@@ -207,8 +205,8 @@ contract ReserveAutomation is ERC20Mover {
         wellChainlinkFeed = params.wellChainlinkFeed;
         reserveChainlinkFeed = params.reserveChainlinkFeed;
         reserveAssetDecimals = ERC20(params.reserveAsset).decimals();
-        mTokenMarket = _mTokenMarket;
-        guardian = _guardian;
+        mTokenMarket = params.mTokenMarket;
+        guardian = params.guardian;
 
         /// sanity check that reserve asset does not have more than 18 decimals
         require(
