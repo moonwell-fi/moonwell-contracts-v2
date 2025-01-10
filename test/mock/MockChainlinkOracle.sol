@@ -86,4 +86,8 @@ contract MockChainlinkOracle is AggregatorV3Interface {
     function version() external pure override returns (uint256) {
         return 1;
     }
+
+    function latestRound() external view override returns (uint256) {
+        return _roundId;
+    }
 }

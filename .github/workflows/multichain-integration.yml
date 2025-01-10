@@ -85,7 +85,7 @@ jobs:
            timeout_minutes: 20
            retry_wait_seconds: 60
            max_attempts: 3
-           command: time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
+           command: time forge test --mc LiveProposalsIntegrationTest -vvv --ffi
                     
 
   run-on-chain-calldata-check:

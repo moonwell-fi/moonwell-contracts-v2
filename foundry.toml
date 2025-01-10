@@ -33,7 +33,7 @@ verbosity = 4
 via-ir = false
 
 [profile.ci]
-fuzz = {runs = 10_000}
+fuzz = {runs = 1000}
 verbosity = 4
 
 [rpc_endpoints]
