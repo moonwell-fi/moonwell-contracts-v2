@@ -35,7 +35,7 @@ contract ReserveAutomationDeploy is Script, Test {
     AutomationDeploy private _deployer;
     Addresses public addresses;
 
-    function setUp() public {
+    function setUp() public virtual {
         addresses = new Addresses();
     }
 
