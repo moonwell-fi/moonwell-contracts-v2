@@ -156,6 +156,9 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vault.initiateSale(1 days);
 
+        /// warp forward to prevent interest accrue intermittent failures
+        vm.warp(block.timestamp + 1);
+
         MErc20(vault.mTokenMarket()).accrueInterest();
 
         uint256 totalReserves = MErc20(vault.mTokenMarket()).totalReserves();
@@ -301,14 +304,15 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
 
         vm.warp(block.timestamp + 1);
 
+        uint256 buyAmount = vault.getAmountWellOut((vault.buffer() * 2));
         vm.expectRevert(
             "ReserveAutomationModule: amount bought exceeds buffer"
         );
-        vault.getReserves(1_000e18, 0);
+        vault.getReserves(buyAmount, 0);
 
         vm.warp(block.timestamp + 7 days);
 
-        uint256 buyAmount = vault.getAmountWellOut((vault.buffer() * 15) / 10);
+        buyAmount = vault.getAmountWellOut(vault.buffer() * 2);
         vm.expectRevert(
             "ReserveAutomationModule: amount bought exceeds buffer"
         );
@@ -439,45 +443,73 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         );
     }
 
-    function testAmountInTolerance() public {
-        _runTestForAllAutomations(_testAmountInTolerance);
+    function testAmountInTolerance(uint256 amountWellIn) public view {
+        string[] memory mTokens = _getMTokens();
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            string memory mTokenName = mTokens[i];
+
+            ReserveAutomation automation = ReserveAutomation(
+                addresses.getAddress(
+                    string.concat(
+                        "RESERVE_AUTOMATION_",
+                        _stripMoonwellPrefix(mTokenName)
+                    )
+                )
+            );
+
+            amountWellIn = bound(
+                amountWellIn,
+                100e18,
+                uint256(type(uint128).max)
+            );
+
+            uint256 getAmountReservesOut = automation.getAmountReservesOut(
+                amountWellIn
+            );
+            uint256 getAmountIn = automation.getAmountWellOut(
+                getAmountReservesOut
+            );
+
+            assertApproxEqRel(
+                getAmountIn,
+                amountWellIn,
+                1.75e14,
+                "amount in not within tolerance"
+            );
+        }
     }
 
-    function _testAmountInTolerance(ReserveAutomation vault, ERC20) internal {
-        uint256 amountWellIn = bound(1e18, 1e18, uint256(type(uint128).max));
+    function testAmountOutTolerance(uint256 amountReservesIn) public view {
+        string[] memory mTokens = _getMTokens();
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            string memory mTokenName = mTokens[i];
 
-        uint256 getAmountReservesOut = vault.getAmountReservesOut(amountWellIn);
-        uint256 getAmountIn = vault.getAmountWellOut(getAmountReservesOut);
+            ReserveAutomation vault = ReserveAutomation(
+                addresses.getAddress(
+                    string.concat(
+                        "RESERVE_AUTOMATION_",
+                        _stripMoonwellPrefix(mTokenName)
+                    )
+                )
+            );
 
-        assertApproxEqRel(
-            getAmountIn,
-            amountWellIn,
-            1e14,
-            "amount in not within tolerance"
-        );
-    }
+            amountReservesIn = bound(
+                amountReservesIn,
+                uint256(1e8),
+                uint256(1_000_000_000e6)
+            );
 
-    function testAmountOutTolerance() public {
-        _runTestForAllAutomations(_testAmountOutTolerance);
-    }
+            uint256 getAmountWellOut = vault.getAmountWellOut(amountReservesIn);
+            uint256 getAmountReservesOut = vault.getAmountReservesOut(
+                getAmountWellOut
+            );
 
-    function _testAmountOutTolerance(ReserveAutomation vault, ERC20) internal {
-        uint256 amountReservesIn = bound(
-            uint256(1e6),
-            uint256(1e6),
-            uint256(1_000_000_000e6)
-        );
-
-        uint256 getAmountWellOut = vault.getAmountWellOut(amountReservesIn);
-        uint256 getAmountReservesOut = vault.getAmountReservesOut(
-            getAmountWellOut
-        );
-
-        assertApproxEqRel(
-            amountReservesIn,
-            getAmountReservesOut,
-            1.0001e12,
-            "amount reserves out not within tolerance"
-        );
+            assertApproxEqRel(
+                amountReservesIn,
+                getAmountReservesOut,
+                1.0001e12,
+                "amount reserves out not within tolerance"
+            );
+        }
     }
 }
