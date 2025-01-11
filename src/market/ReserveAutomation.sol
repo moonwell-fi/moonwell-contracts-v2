@@ -540,6 +540,14 @@ contract ReserveAutomation is ERC20Mover {
     /// @param minAmountOut The minimum amount of reserves to receive
     /// @return amountOut The amount of reserves received
     /// @dev Applies current discount and updates rate limiting buffer
+    /// The discount mechanism is designed with the following considerations:
+    /// 1. For purchases greater than a full period's rate limit, lastBidTime is set to current time
+    /// 2. For smaller purchases, lastBidTime increases proportionally to amount purchased
+    /// 3. While there's a theoretical edge case where users could maintain discounts with repeated
+    ///    partial purchases, this is mitigated by:
+    ///    - Gas costs making small frequent purchases unprofitable
+    ///    - MEV bots naturally arbitraging when discounts become profitable
+    ///    - Market competition driving efficient price discovery
     function getReserves(
         uint256 amountWellIn,
         uint256 minAmountOut
@@ -555,10 +563,11 @@ contract ReserveAutomation is ERC20Mover {
         require(amountWellIn != 0, "ReserveAutomationModule: amount in is 0");
 
         amountOut = getAmountReservesOut(amountWellIn);
+        uint256 currBuffer = buffer();
 
         /// check that the amount of reserves is less than or equal to the buffer
         require(
-            amountOut <= buffer(),
+            amountOut <= currBuffer,
             "ReserveAutomationModule: amount bought exceeds buffer"
         );
 
@@ -573,7 +582,28 @@ contract ReserveAutomation is ERC20Mover {
         /// deplete the buffer by the amount of reserves being sold
         _saleRateLimit.depleteBuffer(amountOut);
 
-        lastBidTime = block.timestamp;
+        /// desired behavior:
+        ///     lastBidTime increases to the current timestamp based on the %
+        ///     of the buffer that was used
+
+        /// if the amount of reserves is greater than or equal to buffer from a single sale period,
+        /// then we can set lastBidTime to the current timestamp
+        if (
+            amountOut >=
+            (nonDiscountPeriod + discountApplicationPeriod) *
+                rateLimitPerSecond()
+        ) {
+            lastBidTime = block.timestamp;
+        } else {
+            /// never allow lastBidTime increase based on a period longer than the maximum time difference
+            uint256 maxTimeDiff = nonDiscountPeriod + discountApplicationPeriod;
+            uint256 actualTimeDiff = block.timestamp - lastBidTime;
+            uint256 effectiveTimeDiff = actualTimeDiff > maxTimeDiff
+                ? maxTimeDiff
+                : actualTimeDiff;
+
+            lastBidTime += ((effectiveTimeDiff * amountOut) / currBuffer);
+        }
 
         /// transfer the WELL tokens from the user to the recipient contract address
         IERC20(wellToken).safeTransferFrom(
