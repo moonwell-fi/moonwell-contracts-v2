@@ -472,7 +472,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         assertEq(
             vault.currentDiscount(),
             0,
-            "incorrect discount post discount decay period"
+            "incorrect discount post discount application period"
         );
 
         vm.warp(block.timestamp + SALE_WINDOW - 1);
