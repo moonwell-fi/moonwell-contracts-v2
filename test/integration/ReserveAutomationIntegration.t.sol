@@ -217,7 +217,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
         vault.initiateSale(1 days);
 
-        vm.warp(block.timestamp + 1);
+        vm.warp(block.timestamp + 43200);
 
         mToken.accrueInterest();
 
