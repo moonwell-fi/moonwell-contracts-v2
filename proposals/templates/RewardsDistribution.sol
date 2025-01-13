@@ -8,6 +8,7 @@ import "@protocol/utils/String.sol";
 
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
+import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
@@ -45,6 +46,12 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         string from;
         string to;
         string token;
+    }
+
+    struct TransferReserves {
+        uint256 amount;
+        string market;
+        string to;
     }
 
     struct WithdrawERC20 {
@@ -88,6 +95,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         SetMRDRewardSpeed[] setRewardSpeed;
         int256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
+        TransferReserves[] transferReserves;
         WithdrawERC20[] withdrawERC20Token;
     }
 
@@ -630,6 +638,14 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             1e18,
             "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
         );
+
+        for (uint256 i = 0; i < spec.transferReserves.length; i++) {
+            TransferReserves memory transferReserves = spec.transferReserves[i];
+
+            externalChainActions[_chainId].transferReserves.push(
+                transferReserves
+            );
+        }
     }
 
     function _buildMoonbeamActions(Addresses addresses) private {
@@ -988,7 +1004,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         // withdraw reserves from the Market Reserve ERC20 Holding Deposit contract
         for (uint256 i = 0; i < spec.withdrawERC20Token.length; i++) {
             _pushAction(
-                addresses.getAddress("ERC20_HOLDING_DEPOSIT"),
+                addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT"),
                 abi.encodeWithSignature(
                     "withdrawERC20Token(address,address,uint256)",
                     addresses.getAddress(spec.withdrawERC20Token[i].token),
@@ -1001,11 +1017,97 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         vm.toString(spec.withdrawERC20Token[i].amount / 1e18),
                         " ",
                         spec.withdrawERC20Token[i].token,
-                        " from the Market Reserve ERC20 Holding Deposit contract on ",
+                        " from the WELL Reserve Holding Deposit Contract on ",
                         _chainId.chainIdToName()
                     )
                 )
             );
+        }
+
+        for (uint256 i = 0; i < spec.transferReserves.length; i++) {
+            IERC20 underlying = IERC20(
+                MErc20(addresses.getAddress(spec.transferReserves[i].market))
+                    .underlying()
+            );
+
+            _pushAction(
+                addresses.getAddress(spec.transferReserves[i].market),
+                abi.encodeWithSignature(
+                    "_reduceReserves(uint256)",
+                    spec.transferReserves[i].amount
+                ),
+                string(
+                    abi.encodePacked(
+                        "Withdraw ",
+                        vm.toString(
+                            spec.transferReserves[i].amount /
+                                underlying.decimals()
+                        ),
+                        " ",
+                        underlying.symbol(),
+                        " from ",
+                        spec.transferReserves[i].market,
+                        " on ",
+                        _chainId.chainIdToName()
+                    )
+                )
+            );
+
+            // only transfer to the Market Reserve Automation if market is not WELL market
+            if (
+                addresses.getAddress(spec.transferReserves[i].market) !=
+                addresses.getAddress("MOONWELL_WELL")
+            ) {
+                _pushAction(
+                    address(underlying),
+                    abi.encodeWithSignature(
+                        "transfer(address,uint256)",
+                        addresses.getAddress(
+                            string.concat(
+                                "RESERVE_AUTOMATION_",
+                                spec.transferReserves[i].market
+                            )
+                        ),
+                        spec.transferReserves[i].amount
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Transfer ",
+                            vm.toString(
+                                spec.transferReserves[i].amount /
+                                    underlying.decimals()
+                            ),
+                            " ",
+                            underlying.symbol(),
+                            " to the Reserve Automation Contract on ",
+                            _chainId.chainIdToName()
+                        )
+                    )
+                );
+            } else {
+                // send to the RESERVE_WELL_HOLDING_DEPOSIT contract
+                _pushAction(
+                    address(underlying),
+                    abi.encodeWithSignature(
+                        "transfer(address,uint256)",
+                        addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT"),
+                        spec.transferReserves[i].amount
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Transfer ",
+                            vm.toString(
+                                spec.transferReserves[i].amount /
+                                    underlying.decimals()
+                            ),
+                            " ",
+                            underlying.symbol(),
+                            " to the WELL Reserve Holding Deposit Contract on ",
+                            _chainId.chainIdToName()
+                        )
+                    )
+                );
+            }
         }
     }
 
