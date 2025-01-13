@@ -16,7 +16,6 @@ revert_strings = "strip"
 sparse_mode = true # compiles files that match filter criteria
 bytecode_hash = "none"
 cbor_metadata = false
-via-ir = true
 
 # We can have quite some control over the optimiser when using the new IR one.
 [profile.default.optimizer_details]
@@ -30,7 +29,6 @@ stack_allocation = true   # Improves allocation of stack slots for variables.
 # information with which to debug the issue. At this level, stack traces and
 # setup traces for failing tests are displayed.
 verbosity = 4
-via-ir = false
 
 [profile.ci]
 fuzz = {runs = 1000}
