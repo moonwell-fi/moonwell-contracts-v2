@@ -191,6 +191,7 @@
                 "token": "xWELL_PROXY"
             }
         ],
+        "transferReserves": [],
         "withdrawERC20Token": []
     },
     "1284": {
@@ -545,7 +546,8 @@
                 "token": "xWELL_PROXY"
             }
         ],
-        "withdrawERC20Toke": []
+        "transferReserves": [],
+        "withdrawERC20Token": []
     },
     "endTimeSTamp": 1737689400,
     "startTimeStamp": 1735270200
