@@ -68,7 +68,7 @@ contract ReserveAutomationUnitTest is Test {
         );
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(automation.maxDiscount(), MAX_DISCOUNT);
         assertEq(
             automation.discountApplicationPeriod(),
@@ -85,14 +85,21 @@ contract ReserveAutomationUnitTest is Test {
         assertEq(automation.mTokenMarket(), address(mToken));
     }
 
+    function testSetMaxDiscountOwnerMaxDiscountGtScalarFails() public {
+        vm.expectRevert(
+            "ReserveAutomationModule: max discount must be less than 1"
+        );
+        vm.prank(OWNER);
+        automation.setMaxDiscount(1e18);
+    }
+
     function testExchangeRateWithDifferentDecimals() public {
         // Setup initial state
         uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals(); // 1000 USDC
         deal(address(reserveToken), address(automation), reserveAmount);
 
-        vm.startPrank(OWNER);
+        vm.prank(OWNER);
         automation.initiateSale(0);
-        vm.stopPrank();
 
         // Calculate expected WELL amount
         // Both assets are $1, so 1000 USDC should require 1000 WELL
@@ -113,9 +120,8 @@ contract ReserveAutomationUnitTest is Test {
         uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals(); // 1000 USDC
         deal(address(reserveToken), address(automation), reserveAmount);
 
-        vm.startPrank(OWNER);
+        vm.prank(OWNER);
         automation.initiateSale(0);
-        vm.stopPrank();
 
         // Calculate expected WELL amount
         // WELL is $2, USDC is $1, so 1000 USDC should require 500 WELL
@@ -133,9 +139,8 @@ contract ReserveAutomationUnitTest is Test {
         uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals(); // 1000 USDC
         deal(address(reserveToken), address(automation), reserveAmount);
 
-        vm.startPrank(OWNER);
+        vm.prank(OWNER);
         automation.initiateSale(0);
-        vm.stopPrank();
 
         // Move time past non-discount period and halfway through discount period
         vm.warp(
@@ -229,9 +234,8 @@ contract ReserveAutomationUnitTest is Test {
         uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals(); // 1000 USDC
         deal(address(reserveToken), address(automation), reserveAmount);
 
-        vm.startPrank(OWNER);
+        vm.prank(OWNER);
         automation.initiateSale(0);
-        vm.stopPrank();
 
         /// move time 1/4 of the way through the sale window, this is multiple sale periods
         /// so the lastBidTime should increase to the current block timestamp because we are
@@ -328,8 +332,8 @@ contract ReserveAutomationUnitTest is Test {
             1e6,
             1e12 * 10 ** reserveToken.decimals()
         );
-        wellPrice = bound(wellPrice, 1e17, 1e19); // $0.1 to $10
-        reservePrice = bound(reservePrice, 1e7, 1e9); // $0.1 to $10
+        wellPrice = bound(wellPrice, 0.01e18, 10e18); // $0.01 to $10
+        reservePrice = bound(reservePrice, 1e5, 15_000e6); // $0.1 to $15,000
 
         wellOracle.set(
             12,
@@ -362,15 +366,146 @@ contract ReserveAutomationUnitTest is Test {
         );
     }
 
+    function testFuzzExchangeRateAndDecimals(
+        uint256 timeElapsed,
+        uint256 reserveAmount,
+        uint256 wellPrice,
+        uint256 reservePrice,
+        uint8 reserveDecimals
+    ) public {
+        reserveDecimals = uint8(bound(reserveDecimals, 1, 18));
+        reserveToken = new MockERC20Decimals("USDC", "USDC", reserveDecimals);
+
+        reserveOracle = new MockChainlinkOracle(
+            int256(10 ** reserveDecimals),
+            reserveDecimals
+        ); // $1.00
+
+        {
+            AutomationDeploy deployer = new AutomationDeploy();
+
+            // Deploy automation contract
+            ReserveAutomation.InitParams memory params = ReserveAutomation
+                .InitParams({
+                    maxDiscount: MAX_DISCOUNT,
+                    discountApplicationPeriod: DISCOUNT_APPLICATION_PERIOD,
+                    nonDiscountPeriod: NON_DISCOUNT_PERIOD,
+                    recipientAddress: address(holdingDeposit),
+                    wellToken: address(wellToken),
+                    reserveAsset: address(reserveToken),
+                    wellChainlinkFeed: address(wellOracle),
+                    reserveChainlinkFeed: address(reserveOracle),
+                    owner: OWNER,
+                    mTokenMarket: address(mToken),
+                    guardian: GUARDIAN
+                });
+
+            automation = ReserveAutomation(
+                deployer.deployReserveAutomation(params)
+            );
+        }
+
+        // Bound inputs to reasonable values
+        reserveAmount = bound(
+            reserveAmount,
+            1e2,
+            100_000_000 * 10 ** reserveDecimals
+        );
+        wellPrice = bound(wellPrice, 0.01e18, 10e18); // $0.01 to $10
+        reservePrice = bound(reservePrice, 1e3, 15_000 * 10 ** reserveDecimals); // $0.1 to $15,000
+
+        wellOracle.set(
+            12,
+            int256(wellPrice),
+            block.timestamp,
+            block.timestamp,
+            12
+        );
+
+        reserveOracle.set(
+            12,
+            int256(reservePrice),
+            block.timestamp,
+            block.timestamp,
+            12
+        );
+
+        uint256 wellAmount = automation.getAmountWellOut(reserveAmount);
+
+        // Calculate expected rate manually
+        uint256 expectedWellAmount = (reserveAmount *
+            uint256(
+                automation.scalePrice(int256(reservePrice), reserveDecimals, 18)
+            ) *
+            (10 ** uint256(18 - reserveToken.decimals()))) / wellPrice;
+
+        assertEq(
+            wellAmount,
+            expectedWellAmount,
+            "Exchange rate calculation incorrect"
+        );
+        timeElapsed = bound(timeElapsed, NON_DISCOUNT_PERIOD + 1, SALE_WINDOW);
+
+        reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(0);
+
+        vm.warp(block.timestamp + timeElapsed);
+
+        /// discount is guaranteed to be non zero
+        uint256 expectedDiscount;
+        uint256 discountTime = timeElapsed - NON_DISCOUNT_PERIOD;
+        if (discountTime >= DISCOUNT_APPLICATION_PERIOD) {
+            expectedDiscount = MAX_DISCOUNT;
+        } else {
+            expectedDiscount =
+                (MAX_DISCOUNT * discountTime) /
+                DISCOUNT_APPLICATION_PERIOD;
+        }
+
+        assertEq(
+            automation.currentDiscount(),
+            expectedDiscount,
+            "Discount calculation incorrect"
+        );
+        assertTrue(
+            automation.currentDiscount() != 0,
+            "discount should be non zero in discount application period"
+        );
+
+        // Calculate expected rate manually
+        expectedWellAmount =
+            (reserveAmount *
+                /// TLDR apply the discount correctly
+
+                ((automation.currentDiscount() *
+                    uint256(
+                        automation.scalePrice(
+                            int256(reservePrice),
+                            reserveDecimals,
+                            18
+                        )
+                    )) / 1e18) *
+                (10 ** uint256(18 - reserveToken.decimals()))) /
+            wellPrice;
+
+        assertEq(
+            automation.getAmountWellOut(reserveAmount),
+            expectedWellAmount,
+            "Exchange rate calculation incorrect"
+        );
+    }
+
     function testFuzzDiscountCalculation(uint256 timeElapsed) public {
         timeElapsed = bound(timeElapsed, 0, SALE_WINDOW);
 
         uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
         deal(address(reserveToken), address(automation), reserveAmount);
 
-        vm.startPrank(OWNER);
+        vm.prank(OWNER);
         automation.initiateSale(0);
-        vm.stopPrank();
 
         vm.warp(block.timestamp + timeElapsed);
 
