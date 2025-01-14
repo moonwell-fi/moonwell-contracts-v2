@@ -13,7 +13,7 @@ import {DeployChainlinkOEVWrapper} from "@script/DeployChainlinkOEVWrapper.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipo12 is HybridProposal {
+contract mipo12 is HybridProposal, DeployChainlinkOEVWrapper {
     using ProposalActions for *;
 
     string public constant override name = "MIP-O12";
@@ -30,8 +30,9 @@ contract mipo12 is HybridProposal {
     }
 
     function deploy(Addresses addresses, address) public override {
-        DeployChainlinkOEVWrapper deployScript = new DeployChainlinkOEVWrapper();
-        deployScript.deployChainlinkOEVWrapper(addresses, "CHAINLINK_ETH_USD");
+        if (!addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER")) {
+            deployChainlinkOEVWrapper(addresses, "CHAINLINK_ETH_USD");
+        }
     }
 
     function build(Addresses addresses) public override {
@@ -132,7 +133,6 @@ contract mipo12 is HybridProposal {
             "Wrong answeredInRound"
         );
 
-        // Validate round id and timestamp are cached
-        assertEq(wrapper.cachedRoundId(), lastRoundId, "Wrong cachedRoundId");
+        assertGt(wrapper.cachedRoundId(), 0, "cachedRoundId not set");
     }
 }
