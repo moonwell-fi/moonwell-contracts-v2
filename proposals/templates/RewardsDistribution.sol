@@ -1029,12 +1029,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     address(underlying),
                     abi.encodeWithSignature(
                         "transfer(address,uint256)",
-                        addresses.getAddress(
-                            string.concat(
-                                "RESERVE_AUTOMATION_",
-                                spec.transferReserves[i].market
-                            )
-                        ),
+                        spec.transferReserves[i].to,
                         spec.transferReserves[i].amount
                     ),
                     string.concat(
