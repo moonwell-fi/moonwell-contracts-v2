@@ -30,7 +30,9 @@ contract mipo12 is HybridProposal, DeployChainlinkOEVWrapper {
     }
 
     function deploy(Addresses addresses, address) public override {
-        deployChainlinkOEVWrapper(addresses, "CHAINLINK_ETH_USD");
+        if (!addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER")) {
+            deployChainlinkOEVWrapper(addresses, "CHAINLINK_ETH_USD");
+        }
     }
 
     function build(Addresses addresses) public override {
