@@ -872,6 +872,40 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             address market = addresses.getAddress(setRewardSpeed.market);
             address mrd = addresses.getAddress("MRD_PROXY");
 
+            IMultiRewardDistributor distributor = IMultiRewardDistributor(
+                addresses.getAddress("MRD_PROXY")
+            );
+
+            try
+                distributor.getConfigForMarket(
+                    MToken(addresses.getAddress(setRewardSpeed.market)),
+                    addresses.getAddress(setRewardSpeed.emissionToken)
+                )
+            {} catch {
+                _pushAction(
+                    mrd,
+                    abi.encodeWithSignature(
+                        "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
+                        market,
+                        addresses.getAddress("TEMPORAL_GOVERNOR"),
+                        addresses.getAddress(setRewardSpeed.emissionToken),
+                        0,
+                        1,
+                        block.timestamp + 30 days
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Initiate rewards for market ",
+                            vm.getLabel(market),
+                            " on ",
+                            _chainId.chainIdToName(),
+                            "\nReward token: ",
+                            setRewardSpeed.emissionToken
+                        )
+                    )
+                );
+            }
+
             // only update if the values are different or the configuration exists
             if (setRewardSpeed.newSupplySpeed != -1) {
                 _pushAction(
