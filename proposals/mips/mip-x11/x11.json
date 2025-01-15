@@ -526,7 +526,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_WELL",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": -1,
                 "newSupplySpeed": -1
             }
