@@ -969,10 +969,10 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 uint256 borrowSpeed = setRewardSpeed.newBorrowSpeed > 1
                     ? uint256(setRewardSpeed.newBorrowSpeed)
                     : 1; // initiate with default configuration
-                uint256 endTime = setRewardSpeed.newEndTime > 0
-                    ? uint256(setRewardSpeed.newEndTime)
-                    : block.timestamp + 30 days; // initiate with default configuration
 
+                uint256 endTime = uint256(setRewardSpeed.newEndTime);
+                assertGt(endTime, 0, "End time must be greater than 0");
+                    
                 _pushAction(
                     mrd,
                     abi.encodeWithSignature(
