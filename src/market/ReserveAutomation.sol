@@ -501,10 +501,6 @@ contract ReserveAutomation is ERC20Mover {
             msg.sender == guardian,
             "ReserveAutomationModule: only guardian"
         );
-        require(
-            saleStartTime > block.timestamp,
-            "ReserveAutomationModule: auction already active or not initiated"
-        );
 
         uint256 amount = periodSaleAmount;
 
@@ -515,9 +511,6 @@ contract ReserveAutomation is ERC20Mover {
         _saleRateLimit.bufferCap = 0;
         _saleRateLimit.rateLimitPerSecond = 0;
 
-        address oldGuardian = guardian;
-        guardian = address(0);
-
         IERC20(reserveAsset).approve(mTokenMarket, amount);
 
         require(
@@ -525,8 +518,7 @@ contract ReserveAutomation is ERC20Mover {
             "ReserveAutomationModule: add reserves failure"
         );
 
-        emit AuctionCancelled(oldGuardian, amount);
-        emit GuardianUpdated(oldGuardian, address(0));
+        emit AuctionCancelled(guardian, amount);
     }
 
     //// ------------------------------------------------------------
