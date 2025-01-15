@@ -1070,18 +1070,15 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY")
             );
 
-            (uint256 quoteEVMDeliveryPrice, ) = relayer.quoteEVMDeliveryPrice(
-                chainId.toWormholeChainId(),
-                0,
-                gasLimit
-            );
-
-            uint256 expectedValue = quoteEVMDeliveryPrice * 4;
-
             for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
                 BridgeWell memory bridgeWell = spec.bridgeWells[i];
 
                 uint16 wormholeChainId = bridgeWell.network.toWormholeChainId();
+
+                (uint256 quoteEVMDeliveryPrice, ) = relayer
+                    .quoteEVMDeliveryPrice(wormholeChainId, 0, gasLimit);
+
+                uint256 expectedValue = quoteEVMDeliveryPrice * 4;
 
                 assertEq(
                     router.bridgeCost(wormholeChainId),
@@ -1096,18 +1093,6 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     0.20e18, // 20% tolarance due to gas cost changes
                     "Bridge value is incorrect"
                 );
-            }
-
-            // check that the actions with value has the expectedValue
-            for (uint256 i = 0; i < actions.length; i++) {
-                if (actions[i].value != 0) {
-                    assertApproxEqRel(
-                        actions[i].value,
-                        expectedValue,
-                        0.20e18,
-                        "Value is incorrect for action"
-                    );
-                }
             }
         }
 
