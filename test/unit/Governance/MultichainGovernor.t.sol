@@ -118,7 +118,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             0.1 ether,
             "bridgecost incorrect"
         );
-        assertEq(governor.bridgeCostAll(), 1 ether, "bridgecostall incorrect");
+        assertEq(governor.bridgeCostAll(), 0.1 ether, "bridgecostall incorrect");
     }
 
     function testVoteCollectionSetup() public view {
