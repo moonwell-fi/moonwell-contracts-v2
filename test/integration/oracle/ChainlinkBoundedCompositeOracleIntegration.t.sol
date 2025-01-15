@@ -73,7 +73,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
     function testInitializeLogicContractFails() public {
         oracle = ChainlinkBoundedCompositeOracle(
             addresses.getAddress(
-                "CHAINLINK_BOUNDED_LBTC_COMPOSITE_ORACLE_LOGIC"
+                "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_IMPL"
             )
         );
         vm.expectRevert("Initializable: contract is already initialized");
@@ -105,7 +105,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
         address mrdProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
         address oracleImplementation = addresses.getAddress(
-            "CHAINLINK_BOUNDED_LBTC_COMPOSITE_ORACLE_LOGIC"
+            "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_IMPL"
         );
 
         // Test equal bounds
