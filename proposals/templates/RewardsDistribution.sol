@@ -963,6 +963,16 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     );
                 }
             } catch {
+                uint256 supplySpeed = setRewardSpeed.newSupplySpeed > 0
+                    ? uint256(setRewardSpeed.newSupplySpeed)
+                    : 0; // initiate with default configuration
+                uint256 borrowSpeed = setRewardSpeed.newBorrowSpeed > 1
+                    ? uint256(setRewardSpeed.newBorrowSpeed)
+                    : 1; // initiate with default configuration
+                uint256 endTime = setRewardSpeed.newEndTime > 0
+                    ? uint256(setRewardSpeed.newEndTime)
+                    : block.timestamp + 30 days; // initiate with default configuration
+
                 _pushAction(
                     mrd,
                     abi.encodeWithSignature(
@@ -970,15 +980,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         market,
                         addresses.getAddress("TEMPORAL_GOVERNOR"),
                         addresses.getAddress(setRewardSpeed.emissionToken),
-                        setRewardSpeed.newSupplySpeed > 0
-                            ? uint256(setRewardSpeed.newSupplySpeed)
-                            : 0, // initiate with default configuration
-                        setRewardSpeed.newBorrowSpeed > 1
-                            ? uint256(setRewardSpeed.newBorrowSpeed)
-                            : 1, // initiate with default configuration
-                        setRewardSpeed.newEndTime > 0
-                            ? uint256(setRewardSpeed.newEndTime)
-                            : block.timestamp + 30 days // initiate with default configuration
+                        supplySpeed,
+                        borrowSpeed,
+                        endTime
                     ),
                     string(
                         abi.encodePacked(
@@ -987,7 +991,14 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                             " on ",
                             _chainId.chainIdToName(),
                             "\nReward token: ",
-                            setRewardSpeed.emissionToken
+                            setRewardSpeed.emissionToken,
+                            " Supply speed: ",
+                            vm.toString(supplySpeed),
+                            " Borrow speed: ",
+                            vm.toString(borrowSpeed),
+                            " End time: ",
+                            vm.toString(endTime)
+
                         )
                     )
                 );
