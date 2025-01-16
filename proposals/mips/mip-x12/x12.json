@@ -1,0 +1,106 @@
+{
+    "8453": {
+        "markets": [
+            {
+                "collateralFactor": -1,
+                "irm": "",
+                "market": "MOONWELL_DAI",
+                "reserveFactor": 1.0e18
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X12",
+                "market": "MOONWELL_USDC",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_X12",
+                "market": "MOONWELL_cbBTC",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": [
+            {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 9e18,
+                "kink": 0.9e18,
+                "multiplierPerYear": 0.067e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X12"
+            },
+            {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 2e18,
+                "kink": 0.35e18,
+                "multiplierPerYear": 0.07e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_X12"
+            }
+        ]
+    },
+    "10": {
+        "markets": [
+            {
+                "collateralFactor": 0.78e18,
+                "irm": "",
+                "market": "MOONWELL_weETH",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.001e18,
+                "irm": "",
+                "market": "MOONWELL_WBTC",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X12",
+                "market": "MOONWELL_USDC",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X12",
+                "market": "MOONWELL_USDT",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X12",
+                "market": "MOONWELL_DAI",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": [
+            {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 9e18,
+                "kink": 0.9e18,
+                "multiplierPerYear": 0.067e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X12"
+            }
+        ]
+    },
+    "1284": {
+        "markets": [
+            {
+                "collateralFactor": 0.36e18,
+                "irm": "",
+                "market": "mUSDCwh",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.28e18,
+                "irm": "",
+                "market": "MOONWELL_mETH",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.11e18,
+                "irm": "",
+                "market": "MOONWELL_mWBTC",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": []
+    }
+}
