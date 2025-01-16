@@ -76,6 +76,12 @@ contract MockCToken is MockERC20 {
         return error ? 1 : 0;
     }
 
+    function _addReserves(uint256 amount) external returns (uint256) {
+        token.transferFrom(msg.sender, address(this), amount);
+
+        return 0;
+    }
+
     function borrowBalanceCurrent(address) external pure returns (uint256) {
         return 1000000000000000000;
     }
