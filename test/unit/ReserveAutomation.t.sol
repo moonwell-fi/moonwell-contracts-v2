@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Test} from "@forge-std/Test.sol";
-import {console} from "@forge-std/console.sol";
+import "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
+import {console} from "@forge-std/console.sol";
+import {Test} from "@forge-std/Test.sol";
+
+import {MErc20} from "@protocol/MErc20.sol";
+import {MockCToken} from "@test/mock/MockCToken.sol";
+import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
 import {MockERC20Decimals} from "@test/mock/MockERC20Decimals.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
-import {MErc20} from "@protocol/MErc20.sol";
-import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
+import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
 
 contract ReserveAutomationUnitTest is Test {
@@ -18,16 +21,16 @@ contract ReserveAutomationUnitTest is Test {
     MockERC20Decimals public reserveToken;
     ReserveAutomation public automation;
     ERC20HoldingDeposit public holdingDeposit;
-    MErc20 public mToken;
+    MockCToken public mToken;
 
     address public constant OWNER = address(0x1);
     address public constant GUARDIAN = address(0x2);
     address public constant USER = address(0x3);
 
     uint256 public constant SALE_WINDOW = 14 days;
+    uint256 public constant MINI_AUCTION_PERIOD = 4 hours;
     uint256 public constant MAX_DISCOUNT = 1e17; // 10%
-    uint256 public constant DISCOUNT_APPLICATION_PERIOD = 4 hours;
-    uint256 public constant NON_DISCOUNT_PERIOD = 4 hours;
+    uint256 public constant STARTING_PREMIUM = 11e17; // 110%
 
     function setUp() public {
         // Setup tokens with different decimals
@@ -45,14 +48,11 @@ contract ReserveAutomationUnitTest is Test {
         );
 
         // Deploy mock mToken
-        mToken = new MErc20();
+        mToken = new MockCToken(IERC20(address(reserveToken)), false);
 
         // Deploy automation contract
         ReserveAutomation.InitParams memory params = ReserveAutomation
             .InitParams({
-                maxDiscount: MAX_DISCOUNT,
-                discountApplicationPeriod: DISCOUNT_APPLICATION_PERIOD,
-                nonDiscountPeriod: NON_DISCOUNT_PERIOD,
                 recipientAddress: address(holdingDeposit),
                 wellToken: address(wellToken),
                 reserveAsset: address(reserveToken),
@@ -69,12 +69,6 @@ contract ReserveAutomationUnitTest is Test {
     }
 
     function testSetup() public view {
-        assertEq(automation.maxDiscount(), MAX_DISCOUNT);
-        assertEq(
-            automation.discountApplicationPeriod(),
-            DISCOUNT_APPLICATION_PERIOD
-        );
-        assertEq(automation.nonDiscountPeriod(), NON_DISCOUNT_PERIOD);
         assertEq(automation.recipientAddress(), address(holdingDeposit));
         assertEq(automation.wellToken(), address(wellToken));
         assertEq(automation.reserveAsset(), address(reserveToken));
@@ -85,25 +79,139 @@ contract ReserveAutomationUnitTest is Test {
         assertEq(automation.mTokenMarket(), address(mToken));
     }
 
-    function testSetMaxDiscountOwnerMaxDiscountGtScalarFails() public {
-        vm.expectRevert(
-            "ReserveAutomationModule: max discount must be less than 1"
-        );
-        vm.prank(OWNER);
-        automation.setMaxDiscount(1e18);
-    }
-
-    function testExchangeRateWithDifferentDecimals() public {
-        // Setup initial state
-        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals(); // 1000 USDC
+    function testInitiateSale() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
         deal(address(reserveToken), address(automation), reserveAmount);
 
         vm.prank(OWNER);
-        automation.initiateSale(0);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
-        // Calculate expected WELL amount
-        // Both assets are $1, so 1000 USDC should require 1000 WELL
-        uint256 expectedWellAmount = 1000 * 10 ** wellToken.decimals();
+        assertEq(automation.saleWindow(), SALE_WINDOW);
+        assertEq(automation.miniAuctionPeriod(), MINI_AUCTION_PERIOD);
+        assertEq(automation.maxDiscount(), MAX_DISCOUNT);
+        assertEq(automation.startingPremium(), STARTING_PREMIUM);
+        assertEq(automation.periodSaleAmount(), reserveAmount);
+        assertEq(automation.saleStartTime(), block.timestamp);
+    }
+
+    function testInitiateSaleWithDelay() public {
+        uint256 delay = 1 days;
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            delay,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        assertEq(automation.saleStartTime(), block.timestamp + delay);
+    }
+
+    function testInitiateSaleFailsWithInvalidDelay() public {
+        uint256 delay = 7 days + 1; // 1 second greater than MAXIMUM_AUCTION_DELAY
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        vm.expectRevert("ReserveAutomationModule: delay exceeds max");
+        automation.initiateSale(
+            delay,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+    }
+
+    function testInitiateSaleFailsWithInvalidDiscount() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        vm.expectRevert(
+            "ReserveAutomationModule: ending discount must be less than 1"
+        );
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            1e18,
+            STARTING_PREMIUM
+        );
+    }
+
+    function testInitiateSaleFailsWithInvalidPremium() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        vm.expectRevert(
+            "ReserveAutomationModule: starting premium must be greater than 1"
+        );
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            1e18
+        );
+    }
+
+    function testInitiateSaleFailsWithInvalidPeriods() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        vm.expectRevert(
+            "ReserveAutomationModule: auction period not divisible by mini auction period"
+        );
+        automation.initiateSale(
+            0,
+            15 days,
+            4 hours - 1,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        vm.prank(OWNER);
+        vm.expectRevert(
+            "ReserveAutomationModule: auction period not greater than mini auction period"
+        );
+        automation.initiateSale(
+            0,
+            4 hours,
+            4 hours,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+    }
+
+    function testExchangeRateWithDifferentDecimals() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        uint256 expectedWellAmount = (1000 *
+            10 ** wellToken.decimals() *
+            automation.currentDiscount()) / 1e18;
         uint256 actualWellAmount = automation.getAmountWellOut(reserveAmount);
 
         assertEq(
@@ -114,18 +222,23 @@ contract ReserveAutomationUnitTest is Test {
     }
 
     function testExchangeRateWithPriceDifference() public {
-        // Set WELL price to $2
         wellOracle.set(12, int256(2e18), block.timestamp, block.timestamp, 12);
 
-        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals(); // 1000 USDC
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
         deal(address(reserveToken), address(automation), reserveAmount);
 
         vm.prank(OWNER);
-        automation.initiateSale(0);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
-        // Calculate expected WELL amount
-        // WELL is $2, USDC is $1, so 1000 USDC should require 500 WELL
-        uint256 expectedWellAmount = 500 * 10 ** wellToken.decimals();
+        uint256 expectedWellAmount = (500 *
+            10 ** wellToken.decimals() *
+            automation.currentDiscount()) / 1e18;
         uint256 actualWellAmount = automation.getAmountWellOut(reserveAmount);
 
         assertEq(
@@ -135,56 +248,23 @@ contract ReserveAutomationUnitTest is Test {
         );
     }
 
-    function testExchangeRateWithDiscount() public {
-        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals(); // 1000 USDC
-        deal(address(reserveToken), address(automation), reserveAmount);
-
-        vm.prank(OWNER);
-        automation.initiateSale(0);
-
-        // Move time past non-discount period and halfway through discount period
-        vm.warp(
-            block.timestamp +
-                NON_DISCOUNT_PERIOD +
-                (DISCOUNT_APPLICATION_PERIOD / 2)
-        );
-
-        // Expected discount should be 5% (half of MAX_DISCOUNT)
-        uint256 expectedDiscount = MAX_DISCOUNT / 2;
-        assertEq(
-            automation.currentDiscount(),
-            expectedDiscount,
-            "Discount calculation incorrect"
-        );
-
-        // Calculate expected WELL amount with discount
-        // 1000 USDC with 5% discount should require 950 WELL
-        uint256 expectedWellAmount = 950 * 10 ** wellToken.decimals();
-        uint256 actualWellAmount = automation.getAmountWellOut(reserveAmount);
-
-        assertEq(
-            actualWellAmount,
-            expectedWellAmount,
-            "Discounted exchange rate incorrect"
-        );
-    }
-
     function testCompleteSwap() public {
-        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals(); // 1000 USDC
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
         deal(address(reserveToken), address(automation), reserveAmount);
 
         vm.prank(OWNER);
-        automation.initiateSale(0);
-
-        // Move time to get max discount
-        vm.warp(
-            block.timestamp + NON_DISCOUNT_PERIOD + DISCOUNT_APPLICATION_PERIOD
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
         );
 
-        uint256 wellAmount = automation.getAmountWellOut(automation.buffer());
+        uint256 wellAmount = automation.getAmountWellOut(reserveAmount);
         deal(address(wellToken), USER, wellAmount);
 
-        vm.prank(USER);
+        vm.startPrank(USER);
         wellToken.approve(address(automation), wellAmount);
 
         uint256 preUserWellBalance = wellToken.balanceOf(USER);
@@ -196,7 +276,6 @@ contract ReserveAutomationUnitTest is Test {
             address(automation)
         );
 
-        vm.prank(USER);
         uint256 amountOut = automation.getReserves(wellAmount, 0);
 
         uint256 postUserWellBalance = wellToken.balanceOf(USER);
@@ -228,305 +307,157 @@ contract ReserveAutomationUnitTest is Test {
             amountOut,
             "Automation reserve balance decrease incorrect"
         );
-    }
-
-    function testLastBidTimePartialBuffer() public {
-        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals(); // 1000 USDC
-        deal(address(reserveToken), address(automation), reserveAmount);
-
-        vm.prank(OWNER);
-        automation.initiateSale(0);
-
-        /// move time 1/4 of the way through the sale window, this is multiple sale periods
-        /// so the lastBidTime should increase to the current block timestamp because we are
-        /// buying more than what would unlock in a single sale period
-        vm.warp(automation.SALE_WINDOW() / 4 + block.timestamp);
-
-        // Use 25% of buffer
-        uint256 partialReserveAmount = automation.buffer() / 4;
-        uint256 wellAmount = automation.getAmountWellOut(partialReserveAmount);
-        deal(address(wellToken), USER, wellAmount);
-
-        vm.startPrank(USER);
-        wellToken.approve(address(automation), wellAmount);
-
-        uint256 preLastBidTime = automation.lastBidTime();
-        automation.getReserves(wellAmount, 0);
         vm.stopPrank();
-        uint256 postLastBidTime = automation.lastBidTime();
-
-        // LastBidTime should increase to the current block timestamp
-        uint256 expectedIncrease = block.timestamp - preLastBidTime;
-        assertEq(
-            postLastBidTime - preLastBidTime,
-            expectedIncrease,
-            "Last bid time update incorrect"
-        );
     }
 
-    function testFuzzLastBidTimeUpdate(
-        uint256 bufferPercentage,
-        uint256 warpPercentage
-    ) public {
-        bufferPercentage = bound(bufferPercentage, 1, 100);
-        warpPercentage = bound(warpPercentage, 1, 99);
-
-        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals(); // 1000 USDC
-        deal(address(reserveToken), address(automation), reserveAmount);
+    function testSetRecipientAddress() public {
+        address newRecipient = address(0x123);
 
         vm.prank(OWNER);
-        automation.initiateSale(0);
+        automation.setRecipientAddress(newRecipient);
 
-        vm.warp(
-            block.timestamp + (automation.SALE_WINDOW() * warpPercentage) / 100
-        );
-
-        uint256 partialReserveAmount = (automation.buffer() *
-            bufferPercentage) / 100;
-        uint256 wellAmount = automation.getAmountWellOut(partialReserveAmount);
-        deal(address(wellToken), USER, wellAmount);
-        uint256 startingBuffer = automation.buffer();
-
-        vm.startPrank(USER);
-        wellToken.approve(address(automation), wellAmount);
-
-        uint256 preLastBidTime = automation.lastBidTime();
-        uint256 amountOut = automation.getReserves(wellAmount, 0);
-        vm.stopPrank();
-
-        uint256 expectedIncrease;
-        if (
-            amountOut >=
-            (NON_DISCOUNT_PERIOD + DISCOUNT_APPLICATION_PERIOD) *
-                automation.rateLimitPerSecond()
-        ) {
-            expectedIncrease = automation.lastBidTime() - preLastBidTime;
-        } else {
-            uint256 maxTimeDiff = NON_DISCOUNT_PERIOD +
-                DISCOUNT_APPLICATION_PERIOD;
-            uint256 actualTimeDiff = block.timestamp - preLastBidTime;
-            uint256 effectiveTimeDiff = maxTimeDiff > actualTimeDiff
-                ? actualTimeDiff
-                : maxTimeDiff;
-
-            expectedIncrease =
-                ((effectiveTimeDiff) * amountOut) /
-                startingBuffer;
-        }
-
-        assertEq(
-            automation.lastBidTime() - preLastBidTime,
-            expectedIncrease,
-            "Last bid time update incorrect"
-        );
+        assertEq(automation.recipientAddress(), newRecipient);
     }
 
-    function testFuzzExchangeRate(
-        uint256 reserveAmount,
-        uint256 wellPrice,
-        uint256 reservePrice
-    ) public {
-        // Bound inputs to reasonable values
-        reserveAmount = bound(
-            reserveAmount,
-            1e6,
-            1e12 * 10 ** reserveToken.decimals()
-        );
-        wellPrice = bound(wellPrice, 0.01e18, 10e18); // $0.01 to $10
-        reservePrice = bound(reservePrice, 1e5, 15_000e6); // $0.1 to $15,000
-
-        wellOracle.set(
-            12,
-            int256(wellPrice),
-            block.timestamp,
-            block.timestamp,
-            12
-        );
-
-        reserveOracle.set(
-            12,
-            int256(reservePrice),
-            block.timestamp,
-            block.timestamp,
-            12
-        );
-
-        uint256 wellAmount = automation.getAmountWellOut(reserveAmount);
-
-        // Calculate expected rate manually
-        uint256 expectedWellAmount = (reserveAmount *
-            uint256(automation.scalePrice(int256(reservePrice), 8, 18)) *
-            (10 ** uint256(18 - reserveToken.decimals()))) / wellPrice;
-
-        assertApproxEqRel(
-            wellAmount,
-            expectedWellAmount,
-            1e15,
-            "Exchange rate calculation incorrect"
-        );
-    }
-
-    function testFuzzExchangeRateAndDecimals(
-        uint256 timeElapsed,
-        uint256 reserveAmount,
-        uint256 wellPrice,
-        uint256 reservePrice,
-        uint8 reserveDecimals
-    ) public {
-        reserveDecimals = uint8(bound(reserveDecimals, 1, 18));
-        reserveToken = new MockERC20Decimals("USDC", "USDC", reserveDecimals);
-
-        reserveOracle = new MockChainlinkOracle(
-            int256(10 ** reserveDecimals),
-            reserveDecimals
-        ); // $1.00
-
-        {
-            AutomationDeploy deployer = new AutomationDeploy();
-
-            // Deploy automation contract
-            ReserveAutomation.InitParams memory params = ReserveAutomation
-                .InitParams({
-                    maxDiscount: MAX_DISCOUNT,
-                    discountApplicationPeriod: DISCOUNT_APPLICATION_PERIOD,
-                    nonDiscountPeriod: NON_DISCOUNT_PERIOD,
-                    recipientAddress: address(holdingDeposit),
-                    wellToken: address(wellToken),
-                    reserveAsset: address(reserveToken),
-                    wellChainlinkFeed: address(wellOracle),
-                    reserveChainlinkFeed: address(reserveOracle),
-                    owner: OWNER,
-                    mTokenMarket: address(mToken),
-                    guardian: GUARDIAN
-                });
-
-            automation = ReserveAutomation(
-                deployer.deployReserveAutomation(params)
-            );
-        }
-
-        // Bound inputs to reasonable values
-        reserveAmount = bound(
-            reserveAmount,
-            1e2,
-            100_000_000 * 10 ** reserveDecimals
-        );
-        wellPrice = bound(wellPrice, 0.01e18, 10e18); // $0.01 to $10
-        reservePrice = bound(reservePrice, 1e3, 15_000 * 10 ** reserveDecimals); // $0.1 to $15,000
-
-        wellOracle.set(
-            12,
-            int256(wellPrice),
-            block.timestamp,
-            block.timestamp,
-            12
-        );
-
-        reserveOracle.set(
-            12,
-            int256(reservePrice),
-            block.timestamp,
-            block.timestamp,
-            12
-        );
-
-        uint256 wellAmount = automation.getAmountWellOut(reserveAmount);
-
-        // Calculate expected rate manually
-        uint256 expectedWellAmount = (reserveAmount *
-            uint256(
-                automation.scalePrice(int256(reservePrice), reserveDecimals, 18)
-            ) *
-            (10 ** uint256(18 - reserveToken.decimals()))) / wellPrice;
-
-        assertEq(
-            wellAmount,
-            expectedWellAmount,
-            "Exchange rate calculation incorrect"
-        );
-        timeElapsed = bound(timeElapsed, NON_DISCOUNT_PERIOD + 1, SALE_WINDOW);
-
-        reserveAmount = 1000 * 10 ** reserveToken.decimals();
-        deal(address(reserveToken), address(automation), reserveAmount);
+    function testSetGuardian() public {
+        address newGuardian = address(0x123);
 
         vm.prank(OWNER);
-        automation.initiateSale(0);
+        automation.setGuardian(newGuardian);
 
-        vm.warp(block.timestamp + timeElapsed);
-
-        /// discount is guaranteed to be non zero
-        uint256 expectedDiscount;
-        uint256 discountTime = timeElapsed - NON_DISCOUNT_PERIOD;
-        if (discountTime >= DISCOUNT_APPLICATION_PERIOD) {
-            expectedDiscount = MAX_DISCOUNT;
-        } else {
-            expectedDiscount =
-                (MAX_DISCOUNT * discountTime) /
-                DISCOUNT_APPLICATION_PERIOD;
-        }
-
-        assertEq(
-            automation.currentDiscount(),
-            expectedDiscount,
-            "Discount calculation incorrect"
-        );
-        assertTrue(
-            automation.currentDiscount() != 0,
-            "discount should be non zero in discount application period"
-        );
-
-        // Calculate expected rate manually
-        expectedWellAmount =
-            (reserveAmount *
-                /// TLDR apply the discount correctly
-
-                ((automation.currentDiscount() *
-                    uint256(
-                        automation.scalePrice(
-                            int256(reservePrice),
-                            reserveDecimals,
-                            18
-                        )
-                    )) / 1e18) *
-                (10 ** uint256(18 - reserveToken.decimals()))) /
-            wellPrice;
-
-        assertEq(
-            automation.getAmountWellOut(reserveAmount),
-            expectedWellAmount,
-            "Exchange rate calculation incorrect"
-        );
+        assertEq(automation.guardian(), newGuardian);
     }
 
-    function testFuzzDiscountCalculation(uint256 timeElapsed) public {
-        timeElapsed = bound(timeElapsed, 0, SALE_WINDOW);
-
+    function testCancelAuction() public {
         uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
         deal(address(reserveToken), address(automation), reserveAmount);
 
         vm.prank(OWNER);
-        automation.initiateSale(0);
+        automation.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
-        vm.warp(block.timestamp + timeElapsed);
+        vm.prank(GUARDIAN);
+        automation.cancelAuction();
 
-        uint256 expectedDiscount;
-        if (timeElapsed <= NON_DISCOUNT_PERIOD) {
-            expectedDiscount = 0;
-        } else {
-            uint256 discountTime = timeElapsed - NON_DISCOUNT_PERIOD;
-            if (discountTime >= DISCOUNT_APPLICATION_PERIOD) {
-                expectedDiscount = MAX_DISCOUNT;
-            } else {
-                expectedDiscount =
-                    (MAX_DISCOUNT * discountTime) /
-                    DISCOUNT_APPLICATION_PERIOD;
-            }
-        }
+        assertEq(automation.saleStartTime(), 0);
+        assertEq(automation.periodSaleAmount(), 0);
+    }
+
+    function testGetCurrentPeriodStartTime() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        assertEq(automation.getCurrentPeriodStartTime(), block.timestamp + 1);
+
+        uint256 periodStartTime = automation.getCurrentPeriodStartTime();
+
+        /// Move to middle of first period
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD / 2);
+        assertEq(
+            automation.getCurrentPeriodStartTime(),
+            periodStartTime,
+            "Current period start time incorrect"
+        );
+
+        /// Move to middle of second period
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD);
+        assertEq(
+            automation.getCurrentPeriodStartTime(),
+            automation.saleStartTime() + MINI_AUCTION_PERIOD + 1,
+            "Current period start time incorrect"
+        );
+    }
+
+    function testGetCurrentPeriodEndTime() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         assertEq(
-            automation.currentDiscount(),
-            expectedDiscount,
-            "Discount calculation incorrect"
+            automation.getCurrentPeriodEndTime(),
+            block.timestamp + MINI_AUCTION_PERIOD + 1
         );
+    }
+
+    function testGetCurrentPeriodRemainingReserves() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        assertEq(automation.getCurrentPeriodRemainingReserves(), reserveAmount);
+
+        // Perform a swap for half the reserves
+        uint256 wellAmount = automation.getAmountWellOut(reserveAmount / 2);
+        deal(address(wellToken), USER, wellAmount);
+
+        vm.startPrank(USER);
+        wellToken.approve(address(automation), wellAmount);
+        automation.getReserves(wellAmount, 0);
+        vm.stopPrank();
+
+        assertEq(
+            automation.getCurrentPeriodRemainingReserves(),
+            reserveAmount / 2
+        );
+    }
+
+    function testFuzzScalePrice(
+        int256 price,
+        uint8 priceDecimals,
+        uint8 expectedDecimals
+    ) public view {
+        price = bound(price, 1, 1e18);
+        priceDecimals = uint8(bound(priceDecimals, 1, 18));
+        expectedDecimals = uint8(bound(expectedDecimals, 1, 18));
+
+        int256 scaledPrice = automation.scalePrice(
+            price,
+            priceDecimals,
+            expectedDecimals
+        );
+
+        if (priceDecimals < expectedDecimals) {
+            assertEq(
+                scaledPrice,
+                price * int256(10 ** (expectedDecimals - priceDecimals))
+            );
+        } else if (priceDecimals > expectedDecimals) {
+            assertEq(
+                scaledPrice,
+                price / int256(10 ** (priceDecimals - expectedDecimals))
+            );
+        } else {
+            assertEq(scaledPrice, price);
+        }
     }
 }

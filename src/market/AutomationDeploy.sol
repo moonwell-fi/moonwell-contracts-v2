@@ -28,30 +28,6 @@ contract AutomationDeploy {
         require(params.owner != address(0), "owner must be set");
         require(params.guardian != address(0), "guardian must be set");
 
-        require(
-            params.maxDiscount <= 1e17,
-            "maxDiscount must be less than 10%"
-        );
-        require(
-            params.discountApplicationPeriod > 0,
-            "discountApplicationPeriod must be greater than 0"
-        );
-
-        require(
-            params.discountApplicationPeriod <= 2 weeks,
-            "discountApplicationPeriod must be less than 2 weeks"
-        );
-        require(
-            params.nonDiscountPeriod <= 2 weeks,
-            "non discount period cannot be greater than sale period"
-        );
-
-        require(
-            params.nonDiscountPeriod + params.discountApplicationPeriod <
-                2 weeks,
-            "discount and non discount period should be less than 2 weeks"
-        );
-
         ReserveAutomation automation = new ReserveAutomation(params);
         return address(automation);
     }

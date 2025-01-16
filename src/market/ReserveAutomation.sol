@@ -8,19 +8,12 @@ import {MErc20} from "@protocol/MErc20.sol";
 
 import {ERC20Mover} from "@protocol/market/ERC20Mover.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
-import {RateLimitCommonLibrary} from "@zelt/src/lib/RateLimitCommonLibrary.sol";
-import {RateLimit, RateLimitedLibrary} from "@zelt/src/lib/RateLimitedLibrary.sol";
 
 /// @notice Contract that automates the sale of reserves for WELL tokens
 /// @dev Uses Chainlink price feeds to determine exchange rates and implements a discount mechanism
 contract ReserveAutomation is ERC20Mover {
-    using RateLimitCommonLibrary for RateLimit;
-    using RateLimitedLibrary for RateLimit;
     using SafeERC20 for IERC20;
     using SafeCast for *;
-
-    /// @notice period of time the sale is open for
-    uint256 public constant SALE_WINDOW = 14 days;
 
     /// @notice the value to scale values
     uint256 public constant SCALAR = 1e18;
@@ -28,30 +21,35 @@ contract ReserveAutomation is ERC20Mover {
     /// @notice the maximum amount of time to wait for the auction to start
     uint256 public constant MAXIMUM_AUCTION_DELAY = 7 days;
 
+    /// @notice address of the mToken market to add reserves back to
+    address public immutable mTokenMarket;
+
     /// ------------------------------------------------------------
     /// ------------------------------------------------------------
     /// --------------------- Mutable Variables --------------------
     /// ------------------------------------------------------------
     /// ------------------------------------------------------------
 
-    /// @notice address of the guardian who can cancel auctions
-    address public guardian;
+    /// @notice period of time the sale is open for
+    uint256 public saleWindow;
 
-    /// @notice address of the mToken market to add reserves back to
-    address public immutable mTokenMarket;
+    /// @notice the period each mini auction within the larger sale lasts
+    uint256 public miniAuctionPeriod;
 
-    /// @notice maximum discount in percentage terms scaled to 1e18
-    /// must be less than 1 (1e18) as no discounts over or equal to 100% are allowed
+    /// @notice maximum discount reached during a mini auction in percentage
+    /// terms scaled to 1e18 must be less than 1 (1e18) as no discounts over or
+    /// equal to 100% are allowed
     uint256 public maxDiscount;
 
-    /// @notice the duration the discount is applied over
-    uint256 public discountApplicationPeriod;
+    /// @notice the starting premium on the price of the reserve asset
+    uint256 public startingPremium;
 
-    /// @notice how long to wait since the last bid time until the discount
-    /// is applied to the price
-    uint256 public nonDiscountPeriod;
+    /// @notice address of the guardian, can cancel auctions sending reserves
+    /// back to the market
+    address public guardian;
 
-    /// @notice the address to send the proceeds of the sale to
+    /// @notice the address to send the proceeds of the sale to. Initially will
+    /// be the ERC20Holding Deposit address that holds WELL.
     address public recipientAddress;
 
     /// ------------------------------------------------------------
@@ -60,17 +58,29 @@ contract ReserveAutomation is ERC20Mover {
     /// ------------------------------------------------------------
     /// ------------------------------------------------------------
 
-    /// @notice the time the last bid was made
-    uint256 public lastBidTime;
-
     /// @notice the start time of the sale period
     uint256 public saleStartTime;
 
     /// @notice set to the contract balance when a sale is initiated
     uint256 public periodSaleAmount;
 
-    /// @notice the rate limit on the reserve sale, how many units can be sold per second
-    RateLimit private _saleRateLimit;
+    /// TODO integrate this mapping into the getPriceAndDecimals function for view only methods
+    /// and then integrate this into the getReserves function and cache the chainlink price iff
+    /// a new period is active for the given sale and there is not a cached price
+
+    struct CachedChainlinkPrices {
+        int256 wellPrice;
+        int256 reservePrice;
+    }
+
+    /// @notice mapping that stores the periodsale start time and corresponding
+    /// cached chainlink price. Can only be cached once per period.
+    mapping(uint256 => CachedChainlinkPrices)
+        public startPeriodTimestampCachedChainlinkPrice;
+
+    /// @notice mapping that stores the period start time and corresponding
+    /// amount of reserves sold during that period
+    mapping(uint256 => uint256) public periodStartSaleAmount;
 
     /// ------------------------------------------------------------
     /// ------------------------------------------------------------
@@ -101,12 +111,6 @@ contract ReserveAutomation is ERC20Mover {
 
     /// @notice struct of the parameters to initialize the contract
     struct InitParams {
-        /// @notice maximum discount allowed for the sale
-        uint256 maxDiscount;
-        /// @notice period over which the discount is applied
-        uint256 discountApplicationPeriod;
-        /// @notice period before discount starts applying
-        uint256 nonDiscountPeriod;
         /// @notice address to receive sale proceeds
         address recipientAddress;
         /// @notice address of the WELL token
@@ -146,7 +150,14 @@ contract ReserveAutomation is ERC20Mover {
     /// @notice emitted when a sale is started
     /// @param saleStartTime timestamp when the sale begins
     /// @param periodSaleAmount total amount of reserves available for sale
-    event SaleInitiated(uint256 saleStartTime, uint256 periodSaleAmount);
+    /// @param saleWindow the period of time the sale is open for
+    /// @param miniAuctionPeriod the period of time each mini auction within the sale window lasts
+    event SaleInitiated(
+        uint256 saleStartTime,
+        uint256 periodSaleAmount,
+        uint256 saleWindow,
+        uint256 miniAuctionPeriod
+    );
 
     /// @notice emitted when the maximum discount is updated
     /// @param previousMaxDiscount the previous maximum discount value
@@ -154,22 +165,6 @@ contract ReserveAutomation is ERC20Mover {
     event MaxDiscountUpdate(
         uint256 previousMaxDiscount,
         uint256 newMaxDiscount
-    );
-
-    /// @notice emitted when the non discount period is updated
-    /// @param previousNonDiscountPeriod the previous non-discount period
-    /// @param newNonDiscountPeriod the new non-discount period
-    event NonDiscountPeriodUpdate(
-        uint256 previousNonDiscountPeriod,
-        uint256 newNonDiscountPeriod
-    );
-
-    /// @notice emitted when the decay window is updated
-    /// @param previousDecayWindow the previous decay window duration
-    /// @param newDecayWindow the new decay window duration
-    event DecayWindowUpdate(
-        uint256 previousDecayWindow,
-        uint256 newDecayWindow
     );
 
     /// @notice emitted when the recipient address is updated
@@ -196,9 +191,6 @@ contract ReserveAutomation is ERC20Mover {
     /// @notice Initializes the contract with the given parameters
     /// @param params struct containing initialization parameters
     constructor(InitParams memory params) ERC20Mover(params.owner) {
-        maxDiscount = params.maxDiscount;
-        discountApplicationPeriod = params.discountApplicationPeriod;
-        nonDiscountPeriod = params.nonDiscountPeriod;
         recipientAddress = params.recipientAddress;
         wellToken = params.wellToken;
         reserveAsset = params.reserveAsset;
@@ -221,54 +213,98 @@ contract ReserveAutomation is ERC20Mover {
     //// ------------------------------------------------------------
     //// ------------------------------------------------------------
 
-    /// @notice Returns the current buffer amount available for sales
-    /// @return The amount of action used before hitting limit
-    /// @dev replenishes at rateLimitPerSecond per second up to bufferCap
-    function buffer() public view returns (uint256) {
-        return _saleRateLimit.buffer();
-    }
+    /// TODO verify that both periods are non overlapping, i.e. the end time of period n is 1 less than the start time of period n + 1
+    /// put another way, both periods should be non overlapping
 
-    /// @notice Returns the maximum buffer capacity
-    /// @return The cap of the buffer
-    function bufferCap() public view returns (uint256) {
-        return _saleRateLimit.bufferCap;
-    }
-
-    /// @notice Returns the rate at which the buffer replenishes
-    /// @return The amount the buffer replenishes per second
-    function rateLimitPerSecond() public view returns (uint256) {
-        return _saleRateLimit.rateLimitPerSecond;
-    }
-
-    /// @notice Calculates the current discount rate for reserve purchases
-    /// @return The current discount as a percentage scaled to 1e18, returns 0 if no discount is applied
-    /// @dev Does not apply discount if sale is not active
-    function currentDiscount() public view returns (uint256) {
+    /// @notice Returns the start time of the current mini auction period
+    /// @return startTime The timestamp when the current mini auction period started
+    /// @dev Returns 0 if no sale is active or if the sale hasn't started yet
+    /// @dev If the sale has ended, returns the start time of the last period
+    function getCurrentPeriodStartTime()
+        public
+        view
+        returns (uint256 startTime)
+    {
         if (
             saleStartTime == 0 ||
             block.timestamp < saleStartTime ||
-            block.timestamp > saleStartTime + SALE_WINDOW
+            block.timestamp > saleStartTime + saleWindow
         ) {
             return 0;
         }
 
-        if (block.timestamp - lastBidTime < nonDiscountPeriod) {
+        // Calculate how many complete periods have passed since sale start
+        uint256 periodsPassed = (block.timestamp - saleStartTime) /
+            miniAuctionPeriod;
+
+        // Calculate the start time of the current period
+        // Each period starts 1 second after the previous period ends
+        return saleStartTime + (periodsPassed * miniAuctionPeriod) + 1;
+    }
+
+    /// @notice Returns the end time of the current mini auction period
+    /// @return The timestamp when the current mini auction period ends
+    /// @dev Returns 0 if no sale is active or if the sale hasn't started yet
+    /// @dev Each period is exactly miniAuctionPeriod in length
+    function getCurrentPeriodEndTime() public view returns (uint256) {
+        uint256 startTime = getCurrentPeriodStartTime();
+        if (startTime == 0) {
             return 0;
         }
 
-        /// should never revert because discount window is active, which means that
-        ///   block.timestamp >= lastBidTime - nonDiscountPeriod
-        uint256 discountDecayTime = block.timestamp -
-            lastBidTime -
-            nonDiscountPeriod;
+        return startTime + miniAuctionPeriod;
+    }
 
-        /// you should never be able to get a discount greater than the max discount
-        if (discountDecayTime >= discountApplicationPeriod) {
-            return maxDiscount;
+    /// @notice gives the remaining amount of reserves for sale in the current
+    /// period. If not in an active period, returns 0 as no tokens are
+    /// available for sale
+    function getCurrentPeriodRemainingReserves() public view returns (uint256) {
+        uint256 startTime = getCurrentPeriodStartTime();
+        if (startTime == 0) {
+            return 0;
         }
 
-        /// return the discount as a percentage of the max discount
-        return (maxDiscount * discountDecayTime) / discountApplicationPeriod;
+        return periodSaleAmount - periodStartSaleAmount[startTime];
+    }
+
+    /// @notice Calculates the current discount or premium rate for reserve purchases
+    /// @return The current discount as a percentage scaled to 1e18, returns
+    /// 1e18 if no discount is applied
+    /// @dev Does not apply discount or premium if the sale is not active
+    function currentDiscount() public view returns (uint256) {
+        if (
+            saleStartTime == 0 ||
+            block.timestamp < saleStartTime ||
+            block.timestamp > saleStartTime + saleWindow
+        ) {
+            return SCALAR;
+        }
+
+        uint256 decayDelta = startingPremium - maxDiscount;
+
+        uint256 timeIntoSale = getCurrentPeriodEndTime() - block.timestamp;
+
+        /// calculate the current premium or discount at the current time based
+        /// on the length you are into the current period
+        return
+            startingPremium - (decayDelta * timeIntoSale) / miniAuctionPeriod;
+    }
+
+    /// @notice helper function to get normalized price for a token, using cached price if available
+    /// @param oracleAddress The address of the chainlink oracle for the token
+    /// @param cachedPrice The cached price from the current period, if any
+    /// @return normalizedPrice The normalized price with 18 decimals
+    function getNormalizedPrice(
+        address oracleAddress,
+        int256 cachedPrice
+    ) internal view returns (uint256 normalizedPrice) {
+        (int256 price, uint8 decimals) = getPriceAndDecimals(oracleAddress);
+
+        // Use cached price if available, otherwise use current price
+        price = cachedPrice != 0 ? cachedPrice : price;
+
+        // Scale price to 18 decimals and convert to uint256
+        normalizedPrice = scalePrice(price, decimals, 18).toUint256();
     }
 
     /// @notice Calculates the amount of WELL needed to purchase a given amount of reserves
@@ -278,38 +314,26 @@ contract ReserveAutomation is ERC20Mover {
     function getAmountWellOut(
         uint256 amountReserveAssetIn
     ) public view returns (uint256 amountWellOut) {
-        /// get the current WELL price in USD
-        uint256 normalizedWellPrice;
-        {
-            (int256 wellPrice, uint8 wellDecimals) = getPriceAndDecimals(
-                wellChainlinkFeed
-            );
-            normalizedWellPrice = scalePrice(wellPrice, wellDecimals, 18)
-                .toUint256();
-        }
+        CachedChainlinkPrices memory cachedPrices = getCachedChainlinkPrices();
 
-        /// get the current reserve asset price in USD
-        uint256 normalizedReservePrice;
-        {
-            (int256 reservePrice, uint8 reserveDecimals) = getPriceAndDecimals(
-                reserveChainlinkFeed
-            );
-            normalizedReservePrice = scalePrice(
-                reservePrice,
-                reserveDecimals,
-                18
-            ).toUint256();
-        }
+        // Get normalized prices for both tokens
+        uint256 normalizedWellPrice = getNormalizedPrice(
+            wellChainlinkFeed,
+            cachedPrices.wellPrice
+        );
+        uint256 normalizedReservePrice = getNormalizedPrice(
+            reserveChainlinkFeed,
+            cachedPrices.reservePrice
+        );
 
-        /// if we are in the discount period, apply the discount to the reserve asset price
+        /// apply the premium or discount to the reserve asset price
         ///    reserve asset price = reserve asset price * (1 - discount)
         {
             uint256 discount = currentDiscount();
-            if (discount > 0) {
-                normalizedReservePrice =
-                    (normalizedReservePrice * (SCALAR - discount)) /
-                    SCALAR;
-            }
+
+            normalizedReservePrice =
+                (normalizedReservePrice * discount) /
+                SCALAR;
         }
 
         /// normalize decimals up to 18 if reserve asset has less than 18 decimals
@@ -336,29 +360,17 @@ contract ReserveAutomation is ERC20Mover {
     function getAmountReservesOut(
         uint256 amountWellIn
     ) public view returns (uint256 amountOut) {
-        /// get the current WELL price in USD
+        CachedChainlinkPrices memory cachedPrices = getCachedChainlinkPrices();
 
-        uint256 normalizedWellPrice;
-        {
-            (int256 wellPrice, uint8 wellDecimals) = getPriceAndDecimals(
-                wellChainlinkFeed
-            );
-            normalizedWellPrice = scalePrice(wellPrice, wellDecimals, 18)
-                .toUint256();
-        }
-
-        /// get the current reserve asset price in USD
-        uint256 normalizedReservePrice;
-        {
-            (int256 reservePrice, uint8 reserveDecimals) = getPriceAndDecimals(
-                reserveChainlinkFeed
-            );
-            normalizedReservePrice = scalePrice(
-                reservePrice,
-                reserveDecimals,
-                18
-            ).toUint256();
-        }
+        // Get normalized prices for both tokens
+        uint256 normalizedWellPrice = getNormalizedPrice(
+            wellChainlinkFeed,
+            cachedPrices.wellPrice
+        );
+        uint256 normalizedReservePrice = getNormalizedPrice(
+            reserveChainlinkFeed,
+            cachedPrices.reservePrice
+        );
 
         /// multiply the amount of WELL by WELL price in USD, result is still scaled up by 18
         uint256 wellAmountUSD = amountWellIn * normalizedWellPrice;
@@ -367,11 +379,10 @@ contract ReserveAutomation is ERC20Mover {
         ///    reserve asset price = reserve asset price * (1 - discount)
         {
             uint256 discount = currentDiscount();
-            if (discount > 0) {
-                normalizedReservePrice =
-                    (normalizedReservePrice * (SCALAR - discount)) /
-                    SCALAR;
-            }
+
+            normalizedReservePrice =
+                (normalizedReservePrice * discount) /
+                SCALAR;
         }
 
         /// divide the amount of WELL in USD being sold by the reserve asset price in USD
@@ -383,6 +394,18 @@ contract ReserveAutomation is ERC20Mover {
         if (reserveAssetDecimals != 18) {
             amountOut = amountOut / (10 ** uint256(18 - reserveAssetDecimals));
         }
+    }
+
+    /// @notice helper function to get the cached chainlink prices for the current period
+    /// @return the cached chainlink prices for the current period. Returns 0 if
+    /// the prices have not been cached yet for the current period or if there is no active sale
+    function getCachedChainlinkPrices()
+        public
+        view
+        returns (CachedChainlinkPrices memory)
+    {
+        uint256 startTime = getCurrentPeriodStartTime();
+        return startPeriodTimestampCachedChainlinkPrice[startTime];
     }
 
     /// @notice helper function to retrieve price from chainlink
@@ -437,44 +460,6 @@ contract ReserveAutomation is ERC20Mover {
     //// ------------------------------------------------------------
     //// ------------------------------------------------------------
 
-    /// @notice Sets the maximum discount that can be applied during sales
-    /// @param newMaxDiscount The new maximum discount value (must be less than 1e18)
-    function setMaxDiscount(uint256 newMaxDiscount) external onlyOwner {
-        require(
-            newMaxDiscount < SCALAR,
-            "ReserveAutomationModule: max discount must be less than 1"
-        );
-        uint256 previousMaxDiscount = maxDiscount;
-        maxDiscount = newMaxDiscount;
-
-        emit MaxDiscountUpdate(previousMaxDiscount, newMaxDiscount);
-    }
-
-    /// @notice Sets the period before discounts start applying
-    /// @param newNonDiscountPeriod The new non-discount period duration
-    function setNonDiscountPeriod(
-        uint256 newNonDiscountPeriod
-    ) external onlyOwner {
-        uint256 previousNonDiscountPeriod = nonDiscountPeriod;
-        nonDiscountPeriod = newNonDiscountPeriod;
-
-        emit NonDiscountPeriodUpdate(
-            previousNonDiscountPeriod,
-            newNonDiscountPeriod
-        );
-    }
-
-    /// @notice Sets the window over which the discount decays
-    /// @param decayWindow The new decay window duration
-    function setDiscountApplicationPeriod(
-        uint256 decayWindow
-    ) external onlyOwner {
-        uint256 previousDecayWindow = discountApplicationPeriod;
-        discountApplicationPeriod = decayWindow;
-
-        emit DecayWindowUpdate(previousDecayWindow, decayWindow);
-    }
-
     /// @notice Sets the address that receives the proceeds from sales
     /// @param recipient The new recipient address
     function setRecipientAddress(address recipient) external onlyOwner {
@@ -493,6 +478,12 @@ contract ReserveAutomation is ERC20Mover {
         emit GuardianUpdated(oldGuardian, newGuardian);
     }
 
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+    //// ---------------- Guardian Mutative Function ----------------
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+
     /// @notice Cancels an auction that has been initiated but not yet started
     /// @dev Only callable by guardian, and only when auction is in waiting period
     /// After cancelling, the guardian's role is revoked
@@ -506,10 +497,6 @@ contract ReserveAutomation is ERC20Mover {
 
         saleStartTime = 0;
         periodSaleAmount = 0;
-        lastBidTime = 0;
-        _saleRateLimit.bufferStored = 0;
-        _saleRateLimit.bufferCap = 0;
-        _saleRateLimit.rateLimitPerSecond = 0;
 
         IERC20(reserveAsset).approve(mTokenMarket, amount);
 
@@ -544,23 +531,25 @@ contract ReserveAutomation is ERC20Mover {
         uint256 amountWellIn,
         uint256 minAmountOut
     ) external returns (uint256 amountOut) {
+        /// CHECKS
+
         /// check that the sale is active
         require(
             saleStartTime > 0 &&
                 block.timestamp >= saleStartTime &&
-                block.timestamp < saleStartTime + SALE_WINDOW,
+                block.timestamp < saleStartTime + saleWindow,
             "ReserveAutomationModule: sale not active"
         );
 
         require(amountWellIn != 0, "ReserveAutomationModule: amount in is 0");
 
         amountOut = getAmountReservesOut(amountWellIn);
-        uint256 currBuffer = buffer();
 
-        /// check that the amount of reserves is less than or equal to the buffer
+        /// bound the sale amount by the amount of reserves remaining in the
+        /// current period
         require(
-            amountOut <= currBuffer,
-            "ReserveAutomationModule: amount bought exceeds buffer"
+            amountOut <= getCurrentPeriodRemainingReserves(),
+            "ReserveAutomationModule: not enough reserves remaining"
         );
 
         /// check that the amount of reserves is less than the total amount of reserves
@@ -569,33 +558,27 @@ contract ReserveAutomation is ERC20Mover {
             "ReserveAutomationModule: not enough out"
         );
 
-        uint256 discount = currentDiscount();
+        /// EFFECTS
 
-        /// deplete the buffer by the amount of reserves being sold
-        _saleRateLimit.depleteBuffer(amountOut);
+        uint256 startTime = getCurrentPeriodStartTime();
 
-        /// desired behavior:
-        ///     lastBidTime increases to the current timestamp based on the %
-        ///     of the buffer that was used
+        periodStartSaleAmount[startTime] += amountOut;
 
-        /// if the amount of reserves is greater than or equal to buffer from a single sale period,
-        /// then we can set lastBidTime to the current timestamp
+        /// cache the chainlink prices if they have not been cached for the
+        /// current period
         if (
-            amountOut >=
-            (nonDiscountPeriod + discountApplicationPeriod) *
-                rateLimitPerSecond()
+            startPeriodTimestampCachedChainlinkPrice[startTime].wellPrice == 0
         ) {
-            lastBidTime = block.timestamp;
-        } else {
-            /// never allow lastBidTime increase based on a period longer than the maximum time difference
-            uint256 maxTimeDiff = nonDiscountPeriod + discountApplicationPeriod;
-            uint256 actualTimeDiff = block.timestamp - lastBidTime;
-            uint256 effectiveTimeDiff = actualTimeDiff > maxTimeDiff
-                ? maxTimeDiff
-                : actualTimeDiff;
+            (int256 wellPrice, ) = getPriceAndDecimals(wellChainlinkFeed);
+            startPeriodTimestampCachedChainlinkPrice[startTime]
+                .wellPrice = wellPrice;
 
-            lastBidTime += ((effectiveTimeDiff * amountOut) / currBuffer);
+            (int256 reservePrice, ) = getPriceAndDecimals(reserveChainlinkFeed);
+            startPeriodTimestampCachedChainlinkPrice[startTime]
+                .reservePrice = reservePrice;
         }
+
+        /// INTERACTIONS
 
         /// transfer the WELL tokens from the user to the recipient contract address
         IERC20(wellToken).safeTransferFrom(
@@ -607,15 +590,30 @@ contract ReserveAutomation is ERC20Mover {
         /// transfer the reserves from the contract to the user
         IERC20(reserveAsset).safeTransfer(msg.sender, amountOut);
 
-        emit ReservesPurchased(msg.sender, amountWellIn, amountOut, discount);
+        emit ReservesPurchased(
+            msg.sender,
+            amountWellIn,
+            amountOut,
+            currentDiscount()
+        );
     }
 
     /// @notice Initiates a new sale of reserves
-    /// @param delay The time to wait before starting the sale
+    /// @param _delay The time to wait before starting the sale
+    /// @param _auctionPeriod The period of time the sale is open for
+    /// @param _miniAuctionPeriod The period of time each mini auction lasts
+    /// @param _periodMaxDiscount The maximum discount reached during a mini auction
+    /// @param _periodStartingPremium The starting premium on during a mini auction
     /// @dev Can only be called if there are no active sales and there are reserves available
-    function initiateSale(uint256 delay) external onlyOwner {
+    function initiateSale(
+        uint256 _delay,
+        uint256 _auctionPeriod,
+        uint256 _miniAuctionPeriod,
+        uint256 _periodMaxDiscount,
+        uint256 _periodStartingPremium
+    ) external onlyOwner {
         require(
-            saleStartTime == 0 || block.timestamp > saleStartTime + SALE_WINDOW,
+            saleStartTime == 0 || block.timestamp > saleStartTime + saleWindow,
             "ReserveAutomationModule: sale already active"
         );
         periodSaleAmount = IERC20(reserveAsset).balanceOf(address(this));
@@ -624,29 +622,43 @@ contract ReserveAutomation is ERC20Mover {
             "ReserveAutomationModule: no reserves to sell"
         );
         require(
-            delay <= MAXIMUM_AUCTION_DELAY,
+            _delay <= MAXIMUM_AUCTION_DELAY,
             "ReserveAutomationModule: delay exceeds max"
         );
 
-        saleStartTime = block.timestamp + delay;
-
-        /// set the last bid time to the current time so that the discount is
-        /// not immediately applied
-        lastBidTime = block.timestamp + delay;
-
-        /// since we use safecast, we are assuming we never sell more than
-        /// 2^128 - 1 tokens. We think this is a safe assumption due to the
-        /// token prices and decimals of assets we are working with
-
-        /// set the buffer cap to the total amount of reserves
-        _saleRateLimit.setBufferCap(periodSaleAmount.toUint128());
-        /// set the rate limit to the amount of reserves that can be sold per second
-        _saleRateLimit.setRateLimitPerSecond(
-            (periodSaleAmount / SALE_WINDOW).toUint128()
+        require(
+            _periodMaxDiscount < SCALAR,
+            "ReserveAutomationModule: ending discount must be less than 1"
         );
-        /// set the buffer to 0 so that it can replenish over time
-        _saleRateLimit.bufferStored = 0;
+        require(
+            _periodStartingPremium > SCALAR,
+            "ReserveAutomationModule: starting premium must be greater than 1"
+        );
 
-        emit SaleInitiated(saleStartTime, periodSaleAmount);
+        /// sanity check that the auction period is divisible by the mini
+        /// auction period and that the auction period is greater than the
+        /// mini auction period
+        require(
+            _auctionPeriod % _miniAuctionPeriod == 0,
+            "ReserveAutomationModule: auction period not divisible by mini auction period"
+        );
+        require(
+            _auctionPeriod / _miniAuctionPeriod > 1,
+            "ReserveAutomationModule: auction period not greater than mini auction period"
+        );
+
+        maxDiscount = _periodMaxDiscount;
+        startingPremium = _periodStartingPremium;
+
+        saleStartTime = block.timestamp + _delay;
+        saleWindow = _auctionPeriod;
+        miniAuctionPeriod = _miniAuctionPeriod;
+
+        emit SaleInitiated(
+            saleStartTime,
+            periodSaleAmount,
+            _auctionPeriod,
+            _miniAuctionPeriod
+        );
     }
 }
