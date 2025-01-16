@@ -375,6 +375,16 @@
         "isContract": true
     },
     {
+        "addr": "0x497e43aF113e71929871C85C56022893B9Ac968C",
+        "name": "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0x31d099C106cd73E731972Fdf1390Cab77F59DaDe",
+        "name": "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_PROXY",
+        "isContract": true
+    },
+    {
         "addr": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
         "name": "wstETH",
         "isContract": true
