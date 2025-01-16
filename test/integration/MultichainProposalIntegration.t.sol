@@ -101,7 +101,6 @@ contract MultichainProposalTest is PostProposalCheck {
 
         uint256 startTimestamp = block.timestamp;
 
-        vm.warp(startTimestamp);
         {
             addresses = new Addresses();
             vm.makePersistent(address(addresses));
@@ -1197,7 +1196,7 @@ contract MultichainProposalTest is PostProposalCheck {
     function testVotingOnBasestkWellSucceeds() public {
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        uint256 initialTimestamp = block.timestamp + 1 days;
+        uint256 initialTimestamp = block.timestamp + 2 days;
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
