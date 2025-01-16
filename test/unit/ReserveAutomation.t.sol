@@ -221,6 +221,88 @@ contract ReserveAutomationUnitTest is Test {
         );
     }
 
+    function testPremiumAndDiscountAppliedFuzz(uint256 warpAmount) public {
+        uint256 reserveAmount = 500 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        vm.warp(
+            block.timestamp + bound(warpAmount, 1, MINI_AUCTION_PERIOD - 1)
+        );
+
+        uint256 maxDecay = STARTING_PREMIUM - MAX_DISCOUNT;
+
+        uint256 expectedDiscount = STARTING_PREMIUM -
+            ((automation.getCurrentPeriodEndTime() - block.timestamp) *
+                maxDecay) /
+            MINI_AUCTION_PERIOD;
+
+        assertEq(
+            expectedDiscount,
+            automation.currentDiscount(),
+            "Current discount incorrect"
+        );
+    }
+
+    function testPremiumAndDiscountAppliedOverMiniAuctionDuration() public {
+        uint256 wellAmount = 500e18;
+        wellOracle.set(12, int256(1e18), block.timestamp, block.timestamp, 12);
+
+        uint256 reserveAmount = 500 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        uint256 expectedWellAmount = (wellAmount *
+            automation.currentDiscount()) / 1e18;
+        uint256 actualWellAmount = automation.getAmountWellOut(reserveAmount);
+
+        assertEq(
+            actualWellAmount,
+            expectedWellAmount,
+            "Exchange rate incorrect with premium"
+        );
+
+        // Move to middle of mini auction period
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD / 2);
+
+        expectedWellAmount = (wellAmount * automation.currentDiscount()) / 1e18;
+        actualWellAmount = automation.getAmountWellOut(reserveAmount);
+
+        assertEq(
+            actualWellAmount,
+            expectedWellAmount,
+            "Exchange rate incorrect"
+        );
+
+        // Move to end of mini auction period
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD - 1);
+
+        expectedWellAmount = (wellAmount * automation.currentDiscount()) / 1e18;
+        actualWellAmount = automation.getAmountWellOut(reserveAmount);
+
+        assertEq(
+            actualWellAmount,
+            expectedWellAmount,
+            "Exchange rate incorrect"
+        );
+    }
+
     function testExchangeRateWithPriceDifference() public {
         wellOracle.set(12, int256(2e18), block.timestamp, block.timestamp, 12);
 
