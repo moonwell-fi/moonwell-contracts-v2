@@ -109,7 +109,9 @@ contract MultichainProposalTest is PostProposalCheck {
 
             {
                 vm.selectFork(BASE_FORK_ID);
+                console.log("TIMESTAMP BEFORE WARP", block.timestamp);
                 vm.warp(startTimestamp);
+                console.log("TIMESTAMP AFTER WARP", block.timestamp);
 
                 stakedWellBase = IStakedWell(
                     addresses.getAddress("STK_GOVTOKEN_PROXY")
