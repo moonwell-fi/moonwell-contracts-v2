@@ -753,5 +753,10 @@
         "addr": "0xdC7810B47eAAb250De623F0eE07764afa5F71ED1",
         "isContract": true,
         "name": "MOONWELL_WELL"
+    },
+    {
+        "addr": "0xecac9c5f704e954931349da37f60e39f515c11c1",
+        "isContract": true,
+        "name": "LBTC"
     }
 ]

@@ -1,0 +1,23 @@
+{
+    "8453": [
+        {
+            "addressesString": "MOONWELL_LBTC",
+            "borrowCap": 37500000e18,
+            "collateralFactor": 0.65e18,
+            "initialMintAmount": 1e12,
+            "jrm": {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 3e18,
+                "kink": 0.45e18,
+                "multiplierPerYear": 0.22e18
+            },
+            "name": "Moonwell LBTC",
+            "priceFeedName": "CHAINLINK_LBTC_USD",
+            "reserveFactor": 0.25e18,
+            "seizeShare": 0.03e18,
+            "supplyCap": 75000000e18,
+            "symbol": "mLBTC",
+            "tokenAddressName": "LBTC"
+        }
+    ]
+}
