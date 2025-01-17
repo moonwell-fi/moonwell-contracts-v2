@@ -29,8 +29,8 @@ contract ReserveAutomationUnitTest is Test {
 
     uint256 public constant SALE_WINDOW = 14 days;
     uint256 public constant MINI_AUCTION_PERIOD = 4 hours;
-    uint256 public constant MAX_DISCOUNT = 1e17; // 10%
-    uint256 public constant STARTING_PREMIUM = 11e17; // 110%
+    uint256 public constant MAX_DISCOUNT = 9e17; // 90% == 10%
+    uint256 public constant STARTING_PREMIUM = 11e17; // 110% == 10% premium
 
     function setUp() public {
         // Setup tokens with different decimals
@@ -96,7 +96,7 @@ contract ReserveAutomationUnitTest is Test {
         assertEq(automation.miniAuctionPeriod(), MINI_AUCTION_PERIOD);
         assertEq(automation.maxDiscount(), MAX_DISCOUNT);
         assertEq(automation.startingPremium(), STARTING_PREMIUM);
-        assertEq(automation.periodSaleAmount(), reserveAmount);
+        assertEq(automation.periodSaleAmount(), reserveAmount / (SALE_WINDOW / MINI_AUCTION_PERIOD));
         assertEq(automation.saleStartTime(), block.timestamp);
     }
 
@@ -240,10 +240,10 @@ contract ReserveAutomationUnitTest is Test {
 
         uint256 maxDecay = STARTING_PREMIUM - MAX_DISCOUNT;
 
-        uint256 expectedDiscount = STARTING_PREMIUM -
+        uint256 expectedDiscount = MAX_DISCOUNT +
             ((automation.getCurrentPeriodEndTime() - block.timestamp) *
                 maxDecay) /
-            MINI_AUCTION_PERIOD;
+            (MINI_AUCTION_PERIOD - 1);
 
         assertEq(
             expectedDiscount,
@@ -343,7 +343,7 @@ contract ReserveAutomationUnitTest is Test {
             STARTING_PREMIUM
         );
 
-        uint256 wellAmount = automation.getAmountWellOut(reserveAmount);
+        uint256 wellAmount = automation.getAmountWellOut(reserveAmount / (SALE_WINDOW / MINI_AUCTION_PERIOD));
         deal(address(wellToken), USER, wellAmount);
 
         vm.startPrank(USER);
@@ -359,6 +359,7 @@ contract ReserveAutomationUnitTest is Test {
         );
 
         uint256 amountOut = automation.getReserves(wellAmount, 0);
+        vm.stopPrank();
 
         uint256 postUserWellBalance = wellToken.balanceOf(USER);
         uint256 postUserReserveBalance = reserveToken.balanceOf(USER);
@@ -389,7 +390,6 @@ contract ReserveAutomationUnitTest is Test {
             amountOut,
             "Automation reserve balance decrease incorrect"
         );
-        vm.stopPrank();
     }
 
     function testSetRecipientAddress() public {
@@ -443,7 +443,7 @@ contract ReserveAutomationUnitTest is Test {
             STARTING_PREMIUM
         );
 
-        assertEq(automation.getCurrentPeriodStartTime(), block.timestamp + 1);
+        assertEq(automation.getCurrentPeriodStartTime(), block.timestamp, "start time incorrect");
 
         uint256 periodStartTime = automation.getCurrentPeriodStartTime();
 
@@ -452,14 +452,14 @@ contract ReserveAutomationUnitTest is Test {
         assertEq(
             automation.getCurrentPeriodStartTime(),
             periodStartTime,
-            "Current period start time incorrect"
+            "Current period start time incorrect after warping"
         );
 
         /// Move to middle of second period
         vm.warp(block.timestamp + MINI_AUCTION_PERIOD);
         assertEq(
             automation.getCurrentPeriodStartTime(),
-            automation.saleStartTime() + MINI_AUCTION_PERIOD + 1,
+            automation.saleStartTime() + MINI_AUCTION_PERIOD,
             "Current period start time incorrect"
         );
     }
@@ -479,7 +479,7 @@ contract ReserveAutomationUnitTest is Test {
 
         assertEq(
             automation.getCurrentPeriodEndTime(),
-            block.timestamp + MINI_AUCTION_PERIOD + 1
+            block.timestamp + MINI_AUCTION_PERIOD - 1
         );
     }
 
@@ -496,20 +496,23 @@ contract ReserveAutomationUnitTest is Test {
             STARTING_PREMIUM
         );
 
-        assertEq(automation.getCurrentPeriodRemainingReserves(), reserveAmount);
+        uint256 expectedReservesRemaining = reserveAmount / (SALE_WINDOW / MINI_AUCTION_PERIOD);
 
-        // Perform a swap for half the reserves
-        uint256 wellAmount = automation.getAmountWellOut(reserveAmount / 2);
+        assertEq(automation.getCurrentPeriodRemainingReserves(), expectedReservesRemaining, "Current period remaining reserves incorrect 1");
+
+        // Perform a swap for half the reserves available for sale during this period
+        uint256 wellAmount = automation.getAmountWellOut(expectedReservesRemaining / 2);
         deal(address(wellToken), USER, wellAmount);
 
         vm.startPrank(USER);
         wellToken.approve(address(automation), wellAmount);
-        automation.getReserves(wellAmount, 0);
+        uint256 amountOut = automation.getReserves(wellAmount, 0);
         vm.stopPrank();
 
         assertEq(
             automation.getCurrentPeriodRemainingReserves(),
-            reserveAmount / 2
+            expectedReservesRemaining - amountOut,
+            "Current period remaining reserves incorrect 2"
         );
     }
 
@@ -541,5 +544,183 @@ contract ReserveAutomationUnitTest is Test {
         } else {
             assertEq(scaledPrice, price);
         }
+    }
+
+    function testGetPriceAndDecimalsFailsWithInvalidOracleData() public {
+        // Create a mock oracle that returns invalid data
+        MockChainlinkOracle invalidOracle = new MockChainlinkOracle(0, 18);
+
+        vm.expectRevert("ReserveAutomationModule: Oracle data is invalid");
+        automation.getPriceAndDecimals(address(invalidOracle));
+
+        // Test negative price
+        invalidOracle.set(1, -1, block.timestamp, block.timestamp, 1);
+        vm.expectRevert("ReserveAutomationModule: Oracle data is invalid");
+        automation.getPriceAndDecimals(address(invalidOracle));
+    }
+
+    function testInitiateSaleFailsWithActiveSale() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        vm.prank(OWNER);
+        vm.expectRevert("ReserveAutomationModule: sale already active");
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+    }
+
+    function testInitiateSaleFailsWithZeroReserves() public {
+        vm.prank(OWNER);
+        vm.expectRevert("ReserveAutomationModule: no reserves to sell");
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+    }
+
+    function testGetReservesFailsWithMinimumAmountOut() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        uint256 reserveAmountOut = reserveAmount / (SALE_WINDOW / MINI_AUCTION_PERIOD);
+
+        uint256 wellAmount = automation.getAmountWellOut(reserveAmountOut);
+        deal(address(wellToken), USER, wellAmount);
+
+        vm.startPrank(USER);
+        wellToken.approve(address(automation), wellAmount);
+
+        uint256 minAmountOut = reserveAmountOut + 1; // More than possible amount out sold during a period
+        vm.expectRevert("ReserveAutomationModule: not enough out");
+        automation.getReserves(wellAmount, minAmountOut);
+        vm.stopPrank();
+    }
+
+    function testGetReservesFailsWhenSaleNotActive() public {
+        uint256 wellAmount = 1000 * 10 ** wellToken.decimals();
+        deal(address(wellToken), USER, wellAmount);
+
+        vm.startPrank(USER);
+        wellToken.approve(address(automation), wellAmount);
+
+        vm.expectRevert("ReserveAutomationModule: sale not active");
+        automation.getReserves(wellAmount, 0);
+        vm.stopPrank();
+
+        // Test with sale not started yet
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        vm.startPrank(USER);
+        vm.expectRevert("ReserveAutomationModule: sale not active");
+        automation.getReserves(wellAmount, 0);
+        vm.stopPrank();
+
+        // Test with sale ended
+        vm.warp(block.timestamp + SALE_WINDOW + 2 days);
+        vm.startPrank(USER);
+        vm.expectRevert("ReserveAutomationModule: sale not active");
+        automation.getReserves(wellAmount, 0);
+        vm.stopPrank();
+    }
+
+    function testGetReservesFailsWithZeroAmountIn() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        vm.startPrank(USER);
+        vm.expectRevert("ReserveAutomationModule: amount in is 0");
+        automation.getReserves(0, 0);
+        vm.stopPrank();
+    }
+
+    function testCancelAuctionFailsWithNonGuardian() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        vm.prank(USER);
+        vm.expectRevert("ReserveAutomationModule: only guardian");
+        automation.cancelAuction();
+    }
+
+    function testGetReservesFailsWithInsufficientReserves() public {
+        uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
+        deal(address(reserveToken), address(automation), reserveAmount);
+
+        vm.prank(OWNER);
+        automation.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        automation.currentDiscount();
+
+        // Try to buy more than available by ~10%
+        uint256 wellAmount = automation.getAmountWellOut(reserveAmount * 12 / 10);
+        deal(address(wellToken), USER, wellAmount);
+
+        vm.startPrank(USER);
+        wellToken.approve(address(automation), wellAmount);
+        vm.expectRevert(
+            "ReserveAutomationModule: not enough reserves remaining"
+        );
+        automation.getReserves(wellAmount, 0);
+        vm.stopPrank();
     }
 }
