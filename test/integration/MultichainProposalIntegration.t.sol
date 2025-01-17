@@ -1196,7 +1196,7 @@ contract MultichainProposalTest is PostProposalCheck {
     function testVotingOnBasestkWellSucceeds() public {
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        uint256 initialTimestamp = block.timestamp + 2 days;
+        uint256 initialTimestamp = block.timestamp + 1 days;
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -1219,6 +1219,8 @@ contract MultichainProposalTest is PostProposalCheck {
         vm.prank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
         xwell.mint(address(this), xwellMintAmount);
         xwell.approve(address(stakedWellBase), xwellMintAmount);
+
+        console.log("current timestamp", block.timestamp);
 
         stakedWellBase.stake(address(this), xwellMintAmount);
 
