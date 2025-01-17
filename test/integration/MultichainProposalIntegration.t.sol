@@ -1224,7 +1224,12 @@ contract MultichainProposalTest is PostProposalCheck {
 
         stakedWellBase.stake(address(this), xwellMintAmount);
 
+        // log voting power
         vm.warp(initialTimestamp);
+        console.log(
+            "voting power:",
+            stakedWellBase.getPriorVotes(address(this), block.timestamp - 1)
+        );
 
         vm.selectFork(MOONBEAM_FORK_ID);
         vm.warp(initialTimestamp);
