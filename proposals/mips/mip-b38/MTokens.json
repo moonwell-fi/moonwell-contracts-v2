@@ -4,7 +4,7 @@
             "addressesString": "MOONWELL_LBTC",
             "borrowCap": 50e8,
             "collateralFactor": 0.65e18,
-            "initialMintAmount": 1e12,
+            "initialMintAmount": 1e5,
             "jrm": {
                 "baseRatePerYear": 0,
                 "jumpMultiplierPerYear": 3e18,
@@ -12,7 +12,7 @@
                 "multiplierPerYear": 0.22e18
             },
             "name": "Moonwell LBTC",
-            "priceFeedName": "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_PROXY",
+            "priceFeedName": "CHAINLINK_LBTC_USD",
             "reserveFactor": 0.25e18,
             "seizeShare": 0.03e18,
             "supplyCap": 100e8,
