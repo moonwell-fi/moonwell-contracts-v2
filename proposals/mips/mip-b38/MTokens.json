@@ -12,7 +12,7 @@
                 "multiplierPerYear": 0.22e18
             },
             "name": "Moonwell LBTC",
-            "priceFeedName": "CHAINLINK_LBTC_USD",
+            "priceFeedName": "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_PROXY",
             "reserveFactor": 0.25e18,
             "seizeShare": 0.03e18,
             "supplyCap": 100e8,
