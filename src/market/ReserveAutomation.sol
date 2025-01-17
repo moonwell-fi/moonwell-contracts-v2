@@ -64,10 +64,6 @@ contract ReserveAutomation is ERC20Mover {
     /// @notice set to the contract balance when a sale is initiated
     uint256 public periodSaleAmount;
 
-    /// TODO integrate this mapping into the getPriceAndDecimals function for view only methods
-    /// and then integrate this into the getReserves function and cache the chainlink price iff
-    /// a new period is active for the given sale and there is not a cached price
-
     struct CachedChainlinkPrices {
         int256 wellPrice;
         int256 reservePrice;
@@ -216,6 +212,11 @@ contract ReserveAutomation is ERC20Mover {
     /// TODO verify that both periods are non overlapping, i.e. the end time of period n is 1 less than the start time of period n + 1
     /// put another way, both periods should be non overlapping
 
+    /// periods are defined as mini auction periods
+    /// if a mini auction is 10 seconds long as a simplified example, and the sale started at 
+    /// 11, then the first period would be 11 to 20, the second period would be 21 to 30, etc.
+    /// this is because the start and end second are inclusive
+
     /// @notice Returns the start time of the current mini auction period
     /// @return startTime The timestamp when the current mini auction period started
     /// @dev Returns 0 if no sale is active or if the sale hasn't started yet
@@ -239,7 +240,7 @@ contract ReserveAutomation is ERC20Mover {
 
         // Calculate the start time of the current period
         // Each period starts 1 second after the previous period ends
-        return saleStartTime + (periodsPassed * miniAuctionPeriod) + 1;
+        return saleStartTime + (periodsPassed * miniAuctionPeriod);
     }
 
     /// @notice Returns the end time of the current mini auction period
@@ -252,7 +253,7 @@ contract ReserveAutomation is ERC20Mover {
             return 0;
         }
 
-        return startTime + miniAuctionPeriod;
+        return startTime + miniAuctionPeriod - 1;
     }
 
     /// @notice gives the remaining amount of reserves for sale in the current
@@ -281,13 +282,14 @@ contract ReserveAutomation is ERC20Mover {
         }
 
         uint256 decayDelta = startingPremium - maxDiscount;
-
-        uint256 timeIntoSale = getCurrentPeriodEndTime() - block.timestamp;
+        uint256 periodStart = getCurrentPeriodStartTime();
+        uint256 periodEnd = getCurrentPeriodEndTime();
+        uint256 saleTimeRemaining = periodEnd - block.timestamp;
 
         /// calculate the current premium or discount at the current time based
         /// on the length you are into the current period
         return
-            startingPremium - (decayDelta * timeIntoSale) / miniAuctionPeriod;
+            maxDiscount + (decayDelta * saleTimeRemaining) / (periodEnd - periodStart);
     }
 
     /// @notice helper function to get normalized price for a token, using cached price if available
@@ -484,9 +486,8 @@ contract ReserveAutomation is ERC20Mover {
     //// ------------------------------------------------------------
     //// ------------------------------------------------------------
 
-    /// @notice Cancels an auction that has been initiated but not yet started
-    /// @dev Only callable by guardian, and only when auction is in waiting period
-    /// After cancelling, the guardian's role is revoked
+    /// @notice Cancels an auction at any time
+    /// @dev Only callable by guardian
     function cancelAuction() external {
         require(
             msg.sender == guardian,
@@ -616,7 +617,9 @@ contract ReserveAutomation is ERC20Mover {
             saleStartTime == 0 || block.timestamp > saleStartTime + saleWindow,
             "ReserveAutomationModule: sale already active"
         );
-        periodSaleAmount = IERC20(reserveAsset).balanceOf(address(this));
+        /// each period sale is the total amount of reserves divided by the
+        /// number of mini auctions
+        periodSaleAmount = IERC20(reserveAsset).balanceOf(address(this)) / (_auctionPeriod / _miniAuctionPeriod);
         require(
             periodSaleAmount > 0,
             "ReserveAutomationModule: no reserves to sell"
