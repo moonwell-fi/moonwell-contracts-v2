@@ -213,7 +213,7 @@ contract ReserveAutomation is ERC20Mover {
     /// put another way, both periods should be non overlapping
 
     /// periods are defined as mini auction periods
-    /// if a mini auction is 10 seconds long as a simplified example, and the sale started at 
+    /// if a mini auction is 10 seconds long as a simplified example, and the sale started at
     /// 11, then the first period would be 11 to 20, the second period would be 21 to 30, etc.
     /// this is because the start and end second are inclusive
 
@@ -289,7 +289,9 @@ contract ReserveAutomation is ERC20Mover {
         /// calculate the current premium or discount at the current time based
         /// on the length you are into the current period
         return
-            maxDiscount + (decayDelta * saleTimeRemaining) / (periodEnd - periodStart);
+            maxDiscount +
+            (decayDelta * saleTimeRemaining) /
+            (periodEnd - periodStart);
     }
 
     /// @notice helper function to get normalized price for a token, using cached price if available
@@ -619,7 +621,9 @@ contract ReserveAutomation is ERC20Mover {
         );
         /// each period sale is the total amount of reserves divided by the
         /// number of mini auctions
-        periodSaleAmount = IERC20(reserveAsset).balanceOf(address(this)) / (_auctionPeriod / _miniAuctionPeriod);
+        periodSaleAmount =
+            IERC20(reserveAsset).balanceOf(address(this)) /
+            (_auctionPeriod / _miniAuctionPeriod);
         require(
             periodSaleAmount > 0,
             "ReserveAutomationModule: no reserves to sell"
