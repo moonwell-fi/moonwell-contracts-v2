@@ -23,15 +23,6 @@ contract ReserveAutomationDeploy is Script, Test {
     /// @notice the name of the proposal
     string public constant NAME = "Reserve Automation Deployment";
 
-    /// @notice the maximum discount allowed for reserve sales (10%)
-    uint256 public constant MAX_DISCOUNT = 1e17;
-
-    /// @notice the period over which the discount is applied (1 week)
-    uint256 public constant DISCOUNT_APPLICATION_PERIOD = 4 hours;
-
-    /// @notice the period before discount starts applying (1 day)
-    uint256 public constant NON_DISCOUNT_PERIOD = 4 hours;
-
     AutomationDeploy private _deployer;
     Addresses public addresses;
 
@@ -92,19 +83,18 @@ contract ReserveAutomationDeploy is Script, Test {
             string memory oracleName = _getOracleName(underlyingName);
 
             ReserveAutomation.InitParams memory params = ReserveAutomation
-                .InitParams(
-                    MAX_DISCOUNT,
-                    DISCOUNT_APPLICATION_PERIOD,
-                    NON_DISCOUNT_PERIOD,
-                    holdingDeposit,
-                    xWellProxy,
-                    _addresses.getAddress(underlyingName),
-                    _addresses.getAddress("CHAINLINK_WELL_USD"),
-                    _addresses.getAddress(oracleName),
-                    temporalGov,
-                    _addresses.getAddress(mTokenName),
-                    pauseGuardian
-                );
+                .InitParams({
+                    recipientAddress: holdingDeposit,
+                    wellToken: xWellProxy,
+                    reserveAsset: _addresses.getAddress(underlyingName),
+                    wellChainlinkFeed: _addresses.getAddress(
+                        "CHAINLINK_WELL_USD"
+                    ),
+                    reserveChainlinkFeed: _addresses.getAddress(oracleName),
+                    owner: temporalGov,
+                    mTokenMarket: _addresses.getAddress(mTokenName),
+                    guardian: pauseGuardian
+                });
 
             address automation = _deployer.deployReserveAutomation(params);
 
@@ -163,24 +153,6 @@ contract ReserveAutomationDeploy is Script, Test {
                 reserve.guardian(),
                 pauseGuardian,
                 string.concat("incorrect guardian for ", mTokenName)
-            );
-            assertEq(
-                reserve.maxDiscount(),
-                MAX_DISCOUNT,
-                string.concat("incorrect max discount for ", mTokenName)
-            );
-            assertEq(
-                reserve.discountApplicationPeriod(),
-                DISCOUNT_APPLICATION_PERIOD,
-                string.concat(
-                    "incorrect discount application period for ",
-                    mTokenName
-                )
-            );
-            assertEq(
-                reserve.nonDiscountPeriod(),
-                NON_DISCOUNT_PERIOD,
-                string.concat("incorrect non discount period for ", mTokenName)
             );
             assertEq(
                 reserve.recipientAddress(),
@@ -262,9 +234,10 @@ contract ReserveAutomationDeploy is Script, Test {
     function _getOracleName(
         string memory tokenName
     ) internal pure returns (string memory) {
-        if (keccak256(bytes(tokenName)) == keccak256(bytes("USDBC"))) {
-            return "USDC_ORACLE";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("USDC"))) {
+        if (
+            keccak256(bytes(tokenName)) == keccak256(bytes("USDBC")) ||
+            keccak256(bytes(tokenName)) == keccak256(bytes("USDC"))
+        ) {
             return "USDC_ORACLE";
         } else if (keccak256(bytes(tokenName)) == keccak256(bytes("DAI"))) {
             return "DAI_ORACLE";
