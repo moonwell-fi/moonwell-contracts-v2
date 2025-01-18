@@ -155,13 +155,9 @@ contract ReserveAutomation is ERC20Mover {
         uint256 miniAuctionPeriod
     );
 
-    /// @notice emitted when the maximum discount is updated
-    /// @param previousMaxDiscount the previous maximum discount value
+    /// @notice emitted when the maximum discount is set
     /// @param newMaxDiscount the new maximum discount value
-    event MaxDiscountUpdate(
-        uint256 previousMaxDiscount,
-        uint256 newMaxDiscount
-    );
+    event MaxDiscountSet(uint256 newMaxDiscount);
 
     /// @notice emitted when the recipient address is updated
     /// @param previousRecipient the previous recipient address
@@ -208,9 +204,6 @@ contract ReserveAutomation is ERC20Mover {
     //// -------------------- View Functions ------------------------
     //// ------------------------------------------------------------
     //// ------------------------------------------------------------
-
-    /// TODO verify that both periods are non overlapping, i.e. the end time of period n is 1 less than the start time of period n + 1
-    /// put another way, both periods should be non overlapping
 
     /// periods are defined as mini auction periods
     /// if a mini auction is 10 seconds long as a simplified example, and the sale started at
@@ -496,7 +489,7 @@ contract ReserveAutomation is ERC20Mover {
             "ReserveAutomationModule: only guardian"
         );
 
-        uint256 amount = periodSaleAmount;
+        uint256 amount = IERC20(reserveAsset).balanceOf(address(this));
 
         saleStartTime = 0;
         periodSaleAmount = 0;
@@ -521,15 +514,7 @@ contract ReserveAutomation is ERC20Mover {
     /// @param amountWellIn The amount of WELL tokens to spend
     /// @param minAmountOut The minimum amount of reserves to receive
     /// @return amountOut The amount of reserves received
-    /// @dev Applies current discount and updates rate limiting buffer
-    /// The discount mechanism is designed with the following considerations:
-    /// 1. For purchases greater than a full period's rate limit, lastBidTime is set to current time
-    /// 2. For smaller purchases, lastBidTime increases proportionally to amount purchased
-    /// 3. While there's a theoretical edge case where users could maintain discounts with repeated
-    ///    partial purchases, this is mitigated by:
-    ///    - Gas costs making small frequent purchases unprofitable
-    ///    - MEV bots naturally arbitraging when discounts become profitable
-    ///    - Market competition driving efficient price discovery
+    /// @dev Applies current discount/premium based on where the contract is in the auction period
     function getReserves(
         uint256 amountWellIn,
         uint256 minAmountOut
@@ -661,6 +646,7 @@ contract ReserveAutomation is ERC20Mover {
         saleWindow = _auctionPeriod;
         miniAuctionPeriod = _miniAuctionPeriod;
 
+        emit MaxDiscountSet(maxDiscount);
         emit SaleInitiated(
             saleStartTime,
             periodSaleAmount,
