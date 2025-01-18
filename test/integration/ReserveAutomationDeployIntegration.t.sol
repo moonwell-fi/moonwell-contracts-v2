@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
+import {console} from "@forge-std/console.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Test} from "@forge-std/Test.sol";
-import {console} from "@forge-std/console.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
@@ -24,6 +25,9 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
     address public guardian;
 
     uint256 public constant SALE_WINDOW = 14 days;
+    uint256 public constant MINI_AUCTION_PERIOD = 4 hours;
+    uint256 public constant MAX_DISCOUNT = 9e17; // 90% == 10% discount
+    uint256 public constant STARTING_PREMIUM = 11e17; // 110% == 10% premium
 
     function setUp() public override {
         super.setUp();
@@ -104,44 +108,6 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         vault.cancelAuction();
     }
 
-    function testCancelAuctionRevertNoAuction() public {
-        _runTestForAllAutomations(_testCancelAuctionRevertNoAuction);
-    }
-
-    function _testCancelAuctionRevertNoAuction(
-        ReserveAutomation vault,
-        ERC20
-    ) internal {
-        vm.prank(guardian);
-        vm.expectRevert(
-            "ReserveAutomationModule: auction already active or not initiated"
-        );
-        vault.cancelAuction();
-    }
-
-    function testCancelAuctionRevertAlreadyActive() public {
-        _runTestForAllAutomations(_testCancelAuctionRevertAlreadyActive);
-    }
-
-    function _testCancelAuctionRevertAlreadyActive(
-        ReserveAutomation vault,
-        ERC20 underlying
-    ) internal {
-        uint256 usdcAmount = 1000 * 10 ** underlying.decimals();
-        deal(address(underlying), address(vault), usdcAmount);
-
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(0);
-
-        vm.warp(block.timestamp + 14 days + 1);
-
-        vm.prank(guardian);
-        vm.expectRevert(
-            "ReserveAutomationModule: auction already active or not initiated"
-        );
-        vault.cancelAuction();
-    }
-
     function testCancelAuction() public {
         _runTestForAllAutomations(_testCancelAuction);
     }
@@ -154,10 +120,16 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         deal(address(underlying), address(vault), amount);
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1 days);
+        vault.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         /// warp forward to prevent interest accrue intermittent failures
-        vm.warp(block.timestamp + 1);
+        vm.warp(block.timestamp + 100);
 
         MErc20(vault.mTokenMarket()).accrueInterest();
 
@@ -166,13 +138,8 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         vm.prank(guardian);
         vault.cancelAuction();
 
-        assertEq(vault.guardian(), address(0), "guardian not revoked");
         assertEq(vault.saleStartTime(), 0, "sale start time not reset");
         assertEq(vault.periodSaleAmount(), 0, "period sale amount not reset");
-        assertEq(vault.lastBidTime(), 0, "last bid time not reset");
-        assertEq(vault.buffer(), 0, "buffer not reset");
-        assertEq(vault.bufferCap(), 0, "buffer cap not reset");
-        assertEq(vault.rateLimitPerSecond(), 0, "rate limit not reset");
         assertEq(
             underlying.balanceOf(address(vault)),
             0,
@@ -197,11 +164,23 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         deal(address(underlying), address(vault), amount);
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1 days);
+        vault.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectRevert("ReserveAutomationModule: sale already active");
-        vault.initiateSale(1 days);
+        vault.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
     }
 
     function testInitiateSaleFailsNoReserves() public {
@@ -214,7 +193,13 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
     ) internal {
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectRevert("ReserveAutomationModule: no reserves to sell");
-        vault.initiateSale(1 days);
+        vault.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
     }
 
     function testInitiateSaleFailsExceedsMaxDelay() public {
@@ -230,7 +215,13 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectRevert("ReserveAutomationModule: delay exceeds max");
-        vault.initiateSale(14 days + 1);
+        vault.initiateSale(
+            14 days + 1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
     }
 
     function testPurchaseReservesFailsSaleNotActive() public {
@@ -248,7 +239,13 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         deal(address(underlying), address(vault), amount);
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         vm.expectRevert("ReserveAutomationModule: sale not active");
         vault.getReserves(0, 0);
@@ -259,7 +256,7 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         vm.warp(block.timestamp + 1);
         vault.getReserves(1, 0);
 
-        vm.warp(block.timestamp + vault.SALE_WINDOW());
+        vm.warp(block.timestamp + SALE_WINDOW);
 
         vm.expectRevert("ReserveAutomationModule: sale not active");
         vault.getReserves(0, 0);
@@ -277,7 +274,13 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         deal(address(underlying), address(vault), amount);
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         vm.warp(block.timestamp + 1);
 
@@ -297,24 +300,32 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         deal(address(underlying), address(vault), amount);
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         deal(address(well), address(this), 1_000e18);
         well.approve(address(vault), 1_000e18);
 
         vm.warp(block.timestamp + 1);
 
-        uint256 buyAmount = vault.getAmountWellOut((vault.buffer() * 2));
+        uint256 remainingReserves = vault.getCurrentPeriodRemainingReserves();
+        uint256 buyAmount = vault.getAmountWellOut(remainingReserves * 2);
         vm.expectRevert(
-            "ReserveAutomationModule: amount bought exceeds buffer"
+            "ReserveAutomationModule: not enough reserves remaining"
         );
         vault.getReserves(buyAmount, 0);
 
         vm.warp(block.timestamp + 7 days);
 
-        buyAmount = vault.getAmountWellOut(vault.buffer() * 2);
+        remainingReserves = vault.getCurrentPeriodRemainingReserves();
+        buyAmount = vault.getAmountWellOut(remainingReserves * 2);
         vm.expectRevert(
-            "ReserveAutomationModule: amount bought exceeds buffer"
+            "ReserveAutomationModule: not enough reserves remaining"
         );
         vault.getReserves(buyAmount, 0);
     }
@@ -333,19 +344,24 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         deal(address(underlying), address(vault), amount);
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 wellBuyAmount = vault.getAmountWellOut(vault.buffer());
+        uint256 remainingReserves = vault.getCurrentPeriodRemainingReserves();
+        uint256 wellBuyAmount = vault.getAmountWellOut(remainingReserves);
 
         deal(address(well), address(this), wellBuyAmount);
         well.approve(address(vault), wellBuyAmount);
 
-        uint256 currBuffer = vault.buffer();
-
         vm.expectRevert("ReserveAutomationModule: not enough out");
-        vault.getReserves(wellBuyAmount, currBuffer + 1);
+        vault.getReserves(wellBuyAmount, remainingReserves + 1);
     }
 
     function testPurchaseReservesFailsNoWellApproval() public {
@@ -360,11 +376,18 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         deal(address(underlying), address(vault), amount);
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 wellBuyAmount = vault.getAmountWellOut(vault.buffer());
+        uint256 remainingReserves = vault.getCurrentPeriodRemainingReserves();
+        uint256 wellBuyAmount = vault.getAmountWellOut(remainingReserves);
 
         deal(address(well), address(this), wellBuyAmount);
 
@@ -384,7 +407,13 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         deal(address(underlying), address(vault), amount);
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(0);
+        vault.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         assertEq(
             vault.saleStartTime(),
@@ -393,26 +422,16 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         );
         assertEq(
             vault.periodSaleAmount(),
-            amount,
+            amount / (SALE_WINDOW / MINI_AUCTION_PERIOD),
             "incorrect period sale amount"
         );
-        assertEq(vault.bufferCap(), amount, "incorrect buffer cap");
-        assertEq(
-            vault.rateLimitPerSecond(),
-            amount / SALE_WINDOW,
-            "incorrect rate limit per second"
+
+        // Move to middle of period to test discount
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD / 2);
+
+        uint256 wellAmount = vault.getAmountWellOut(
+            vault.getCurrentPeriodRemainingReserves()
         );
-        assertEq(vault.buffer(), 0, "incorrect initial buffer");
-
-        assertEq(
-            vault.currentDiscount(),
-            0,
-            "incorrect discount post discount decay period"
-        );
-
-        vm.warp(block.timestamp + SALE_WINDOW - 1);
-
-        uint256 wellAmount = vault.getAmountWellOut(vault.buffer());
         deal(address(well), address(this), wellAmount);
 
         well.approve(address(vault), wellAmount);
@@ -434,12 +453,6 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
             underlying.balanceOf(address(this)) - initialUnderlyingBalance,
             actualAmountOut,
             "this contract underlying balance did not increase post swap"
-        );
-
-        assertEq(
-            vault.lastBidTime(),
-            block.timestamp,
-            "incorrect last bid time"
         );
     }
 
@@ -511,5 +524,81 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
                 "amount reserves out not within tolerance"
             );
         }
+    }
+
+    uint8 private _cacheCallCount = 0;
+
+    function _testPriceCachingBehavior(
+        ReserveAutomation vault,
+        ERC20 underlying
+    ) internal {
+        uint256 amount = 1000 * 10 ** underlying.decimals();
+        deal(address(underlying), address(vault), amount);
+
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        // Move to middle of first period
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD / 2);
+
+        uint256 startingReserves = vault.getCurrentPeriodRemainingReserves();
+        // Get initial prices
+        uint256 initialWellAmount = vault.getAmountWellOut(startingReserves);
+
+        deal(address(well), address(this), initialWellAmount);
+        well.approve(address(vault), initialWellAmount);
+        vault.getReserves(initialWellAmount, 0);
+
+        AggregatorV3Interface oracle = AggregatorV3Interface(
+            vault.reserveChainlinkFeed()
+        );
+
+        uint8 decimals = oracle.decimals();
+        vm.mockCall(
+            vault.reserveChainlinkFeed(),
+            abi.encodeWithSelector(
+                AggregatorV3Interface.latestRoundData.selector
+            ),
+            abi.encode(
+                1,
+                (3 + _cacheCallCount++) * 10 ** decimals,
+                block.timestamp,
+                block.timestamp,
+                1
+            )
+        );
+
+        // Get amount after price change - should be same since prices are cached
+        uint256 wellAmountAfterPriceChange = vault.getAmountWellOut(
+            startingReserves
+        );
+        assertEq(
+            initialWellAmount,
+            wellAmountAfterPriceChange,
+            "WELL amount changed after oracle price update"
+        );
+
+        // Move to next period
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD);
+
+        // Get amount in new period - should reflect new prices
+        uint256 wellAmountNewPeriod = vault.getAmountWellOut(
+            vault.getCurrentPeriodRemainingReserves()
+        );
+        assertNotEq(
+            wellAmountNewPeriod,
+            initialWellAmount,
+            "WELL amount should not be the same in the new period as prices should have changed drastically"
+        );
+    }
+
+    function testPriceCachingBehavior() public {
+        _runTestForAllAutomations(_testPriceCachingBehavior);
     }
 }
