@@ -32,6 +32,9 @@ contract ReserveAutomationLiveIntegrationTest is Test {
     address private _guardian;
 
     uint256 public constant SALE_WINDOW = 14 days;
+    uint256 public constant MINI_AUCTION_PERIOD = 4 hours;
+    uint256 public constant MAX_DISCOUNT = 9e17; // 90% == 10% discount
+    uint256 public constant STARTING_PREMIUM = 11e17; // 110% == 10% premium
 
     function setUp() public {
         _addresses = new Addresses();
@@ -57,9 +60,6 @@ contract ReserveAutomationLiveIntegrationTest is Test {
 
         ReserveAutomation.InitParams memory params = ReserveAutomation
             .InitParams({
-                maxDiscount: 1e17,
-                discountApplicationPeriod: 1 weeks,
-                nonDiscountPeriod: 1 days,
                 recipientAddress: address(holder),
                 wellToken: address(well),
                 reserveAsset: address(underlying),
@@ -74,17 +74,6 @@ contract ReserveAutomationLiveIntegrationTest is Test {
     }
 
     function testSetup() public view {
-        assertEq(vault.maxDiscount(), 1e17, "incorrect max discount");
-        assertEq(
-            vault.discountApplicationPeriod(),
-            1 weeks,
-            "incorrect discount decay period"
-        );
-        assertEq(
-            vault.nonDiscountPeriod(),
-            1 days,
-            "incorrect non discount period"
-        );
         assertEq(
             vault.recipientAddress(),
             address(holder),
@@ -122,16 +111,8 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         );
         assertEq(vault.guardian(), _guardian, "incorrect guardian");
 
-        assertEq(vault.lastBidTime(), 0, "incorrect last bid time");
         assertEq(vault.saleStartTime(), 0, "incorrect sale start time");
         assertEq(vault.periodSaleAmount(), 0, "incorrect period sale amount");
-        assertEq(vault.buffer(), 0, "incorrect buffer");
-        assertEq(vault.bufferCap(), 0, "incorrect buffer cap");
-        assertEq(
-            vault.rateLimitPerSecond(),
-            0,
-            "incorrect rate limit per second"
-        );
 
         assertEq(
             holder.token(),
@@ -150,9 +131,6 @@ contract ReserveAutomationLiveIntegrationTest is Test {
 
         ReserveAutomation.InitParams memory params = ReserveAutomation
             .InitParams({
-                maxDiscount: 1e17,
-                discountApplicationPeriod: 1 weeks,
-                nonDiscountPeriod: 1 days,
                 recipientAddress: address(holder),
                 wellToken: address(well),
                 reserveAsset: address(mockUnderlying),
@@ -186,36 +164,18 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         vault.cancelAuction();
     }
 
-    function testCancelAuctionRevertNoAuction() public {
-        vm.prank(_guardian);
-        vm.expectRevert(
-            "ReserveAutomationModule: auction already active or not initiated"
-        );
-        vault.cancelAuction();
-    }
-
     function testCancelAuctionRevertAlreadyActive() public {
         uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(0);
-
-        vm.warp(block.timestamp + 14 days + 1);
-
-        vm.prank(_guardian);
-        vm.expectRevert(
-            "ReserveAutomationModule: auction already active or not initiated"
+        vault.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
         );
-        vault.cancelAuction();
-    }
-
-    function testCancelAuction() public {
-        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
-        deal(address(underlying), address(vault), usdcAmount);
-
-        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1 days);
 
         vm.warp(block.timestamp + 43200);
 
@@ -226,13 +186,9 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         vm.prank(_guardian);
         vault.cancelAuction();
 
-        assertEq(vault.guardian(), address(0), "guardian not revoked");
+        assertEq(vault.guardian(), _guardian, "guardian still active");
         assertEq(vault.saleStartTime(), 0, "sale start time not reset");
         assertEq(vault.periodSaleAmount(), 0, "period sale amount not reset");
-        assertEq(vault.lastBidTime(), 0, "last bid time not reset");
-        assertEq(vault.buffer(), 0, "buffer not reset");
-        assertEq(vault.bufferCap(), 0, "buffer cap not reset");
-        assertEq(vault.rateLimitPerSecond(), 0, "rate limit not reset");
         assertEq(
             underlying.balanceOf(address(vault)),
             0,
@@ -250,7 +206,13 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1 days);
+        vault.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         vm.mockCall(
             address(mToken),
@@ -268,17 +230,35 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1 days);
+        vault.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectRevert("ReserveAutomationModule: sale already active");
-        vault.initiateSale(1 days);
+        vault.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
     }
 
     function testInitiateSaleFailsNoReserves() public {
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectRevert("ReserveAutomationModule: no reserves to sell");
-        vault.initiateSale(1 days);
+        vault.initiateSale(
+            1 days,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
     }
 
     function testInitiateSaleFailsExceedsMaxDelay() public {
@@ -287,7 +267,13 @@ contract ReserveAutomationLiveIntegrationTest is Test {
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectRevert("ReserveAutomationModule: delay exceeds max");
-        vault.initiateSale(14 days + 1);
+        vault.initiateSale(
+            14 days + 1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
     }
 
     function testPurchaseReservesFailsSaleNotActive() public {
@@ -299,7 +285,13 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         vm.expectRevert("ReserveAutomationModule: sale not active");
         vault.getReserves(0, 0);
@@ -310,7 +302,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         vm.warp(block.timestamp + 1);
         vault.getReserves(1, 0);
 
-        vm.warp(block.timestamp + vault.SALE_WINDOW());
+        vm.warp(block.timestamp + vault.saleWindow());
 
         /// sale is over which causes failure
         vm.expectRevert("ReserveAutomationModule: sale not active");
@@ -322,7 +314,13 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         vm.warp(block.timestamp + 1);
 
@@ -330,27 +328,29 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         vault.getReserves(0, 0);
     }
 
-    function testPurchaseReservesFailsInsufficientBuffer() public {
+    function testPurchaseReservesFailsInsufficientReserves() public {
         uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         vm.warp(block.timestamp + 1);
 
-        vm.expectRevert(
-            "ReserveAutomationModule: amount bought exceeds buffer"
-        );
-        vault.getReserves(1_000e18, 0);
+        uint256 wellAmount = vault.getAmountWellOut((usdcAmount * 12) / 10);
+        deal(address(well), address(this), wellAmount);
+        well.approve(address(vault), wellAmount);
 
-        vm.warp(block.timestamp + 7 days);
-
-        uint256 buyAmount = vault.getAmountWellOut(vault.buffer() + 1e6);
         vm.expectRevert(
-            "ReserveAutomationModule: amount bought exceeds buffer"
+            "ReserveAutomationModule: not enough reserves remaining"
         );
-        vault.getReserves(buyAmount, 0);
+        vault.getReserves(wellAmount, 0);
     }
 
     function testPurchaseReservesFailsAmountOutNotGteMinAmtOut() public {
@@ -358,19 +358,24 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD / 2);
 
-        uint256 wellBuyAmount = vault.getAmountWellOut(vault.buffer());
-
-        deal(address(well), address(this), wellBuyAmount);
-        well.approve(address(vault), wellBuyAmount);
-
-        uint256 currBuffer = vault.buffer();
+        uint256 wellAmount = vault.getAmountWellOut(
+            vault.getCurrentPeriodRemainingReserves()
+        );
+        deal(address(well), address(this), wellAmount);
+        well.approve(address(vault), wellAmount);
 
         vm.expectRevert("ReserveAutomationModule: not enough out");
-        vault.getReserves(wellBuyAmount, currBuffer + 1);
+        vault.getReserves(wellAmount, usdcAmount + 1);
     }
 
     function testPurchaseReservesFailsNoWellApproval() public {
@@ -378,16 +383,24 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD / 2);
 
-        uint256 wellBuyAmount = vault.getAmountWellOut(vault.buffer());
+        uint256 usdcPurchaseAmount = usdcAmount /
+            (SALE_WINDOW / MINI_AUCTION_PERIOD);
 
-        deal(address(well), address(this), wellBuyAmount);
+        uint256 wellAmount = vault.getAmountWellOut(usdcPurchaseAmount);
+        deal(address(well), address(this), wellAmount);
 
         vm.expectRevert("ERC20: insufficient allowance");
-        vault.getReserves(wellBuyAmount, 1);
+        vault.getReserves(wellAmount, 1);
     }
 
     /// we never expect this state to be reachable but test it anyway for completeness
@@ -396,19 +409,27 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(1);
+        vault.initiateSale(
+            1,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD / 2);
 
-        uint256 wellBuyAmount = vault.getAmountWellOut(vault.buffer());
+        uint256 usdcPurchaseAmount = usdcAmount /
+            (SALE_WINDOW / MINI_AUCTION_PERIOD);
 
-        deal(address(well), address(this), wellBuyAmount);
-        well.approve(address(vault), wellBuyAmount);
+        uint256 wellAmount = vault.getAmountWellOut(usdcPurchaseAmount);
+        deal(address(well), address(this), wellAmount);
+        well.approve(address(vault), wellAmount);
 
         deal(address(underlying), address(vault), 0);
 
         vm.expectRevert("ERC20: transfer amount exceeds balance");
-        vault.getReserves(wellBuyAmount, 1);
+        vault.getReserves(wellAmount, 1);
     }
 
     function testAmountInTolerance(uint256 amountWellIn) public view {
@@ -451,7 +472,13 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(0);
+        vault.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         assertEq(
             vault.saleStartTime(),
@@ -460,26 +487,16 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         );
         assertEq(
             vault.periodSaleAmount(),
-            usdcAmount,
+            usdcAmount / (SALE_WINDOW / MINI_AUCTION_PERIOD),
             "incorrect period sale amount"
         );
-        assertEq(vault.bufferCap(), usdcAmount, "incorrect buffer cap");
-        assertEq(
-            vault.rateLimitPerSecond(),
-            usdcAmount / SALE_WINDOW,
-            "incorrect rate limit per second"
+
+        // Move to middle of mini auction period
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD / 2);
+
+        uint256 wellAmount = vault.getAmountWellOut(
+            vault.getCurrentPeriodRemainingReserves()
         );
-        assertEq(vault.buffer(), 0, "incorrect initial buffer");
-
-        assertEq(
-            vault.currentDiscount(),
-            0,
-            "incorrect discount post discount application period"
-        );
-
-        vm.warp(block.timestamp + SALE_WINDOW - 1);
-
-        uint256 wellAmount = vault.getAmountWellOut(vault.buffer());
         deal(address(well), address(this), wellAmount);
 
         well.approve(address(vault), wellAmount);
@@ -502,12 +519,6 @@ contract ReserveAutomationLiveIntegrationTest is Test {
             actualAmountOut,
             "this contract usdc balance did not increase post swap"
         );
-
-        assertEq(
-            vault.lastBidTime(),
-            block.timestamp,
-            "incorrect last bid time"
-        );
     }
 
     function testSwapWellForWETH() public {
@@ -517,9 +528,6 @@ contract ReserveAutomationLiveIntegrationTest is Test {
 
         ReserveAutomation.InitParams memory params = ReserveAutomation
             .InitParams({
-                maxDiscount: 1e17,
-                discountApplicationPeriod: 1 weeks,
-                nonDiscountPeriod: 1 days,
                 recipientAddress: address(holder),
                 wellToken: address(well),
                 reserveAsset: address(weth),
@@ -538,7 +546,13 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         deal(address(weth), address(wethVault), wethAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        wethVault.initiateSale(0);
+        wethVault.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         assertEq(
             wethVault.saleStartTime(),
@@ -547,31 +561,21 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         );
         assertEq(
             wethVault.periodSaleAmount(),
-            wethAmount,
+            wethAmount / (SALE_WINDOW / MINI_AUCTION_PERIOD),
             "incorrect period sale amount"
         );
-        assertEq(wethVault.bufferCap(), wethAmount, "incorrect buffer cap");
-        assertEq(
-            wethVault.rateLimitPerSecond(),
-            wethAmount / SALE_WINDOW,
-            "incorrect rate limit per second"
+
+        // Move to middle of mini auction period
+        vm.warp(block.timestamp + MINI_AUCTION_PERIOD / 2);
+
+        uint256 wellAmount = wethVault.getAmountWellOut(
+            wethVault.getCurrentPeriodRemainingReserves()
         );
-        assertEq(wethVault.buffer(), 0, "incorrect initial buffer");
-
-        assertEq(
-            wethVault.currentDiscount(),
-            0,
-            "incorrect discount post discount decay period"
-        );
-
-        vm.warp(block.timestamp + SALE_WINDOW - 1);
-
-        uint256 wellAmount = wethVault.getAmountWellOut(wethVault.buffer());
         deal(address(well), address(this), wellAmount);
 
         well.approve(address(wethVault), wellAmount);
 
-        uint256 initialHolderWellBalance = holder.balance();
+        uint256 initialHolderWellBalance = well.balanceOf(address(holder));
         uint256 initialWETHBalance = weth.balanceOf(address(this));
 
         uint256 expectedOut = wethVault.getAmountReservesOut(wellAmount);
@@ -582,7 +586,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         );
 
         assertEq(
-            holder.balance() - initialHolderWellBalance,
+            well.balanceOf(address(holder)) - initialHolderWellBalance,
             wellAmount,
             "holder well balance did not increase"
         );
@@ -592,12 +596,6 @@ contract ReserveAutomationLiveIntegrationTest is Test {
             actualAmountOut,
             "this contract weth balance did not increase post swap"
         );
-
-        assertEq(
-            wethVault.lastBidTime(),
-            block.timestamp,
-            "incorrect last bid time"
-        );
     }
 
     function testFuzzDiscountCalculation(uint256 timeElapsed) public {
@@ -605,112 +603,33 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         deal(address(underlying), address(vault), usdcAmount);
 
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.initiateSale(0);
+        vault.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
 
         assertEq(
             vault.saleStartTime(),
             block.timestamp,
             "incorrect sale start time"
         );
-        assertEq(
-            vault.lastBidTime(),
-            block.timestamp,
-            "incorrect last bid time"
-        );
 
-        timeElapsed = bound(timeElapsed, 1, 2 weeks - 1);
+        timeElapsed = bound(timeElapsed, 1, MINI_AUCTION_PERIOD - 1);
 
         vm.warp(block.timestamp + timeElapsed);
 
-        uint256 expectedDiscount;
-        uint256 nonDiscountPeriod = vault.nonDiscountPeriod();
-
-        if (timeElapsed <= nonDiscountPeriod) {
-            expectedDiscount = 0;
-        } else {
-            uint256 discountTime = timeElapsed - nonDiscountPeriod;
-            if (discountTime >= vault.discountApplicationPeriod()) {
-                expectedDiscount = vault.maxDiscount();
-            } else {
-                expectedDiscount =
-                    (vault.maxDiscount() * discountTime) /
-                    vault.discountApplicationPeriod();
-            }
-        }
+        uint256 maxDecay = STARTING_PREMIUM - MAX_DISCOUNT;
+        uint256 expectedDiscount = MAX_DISCOUNT +
+            ((vault.getCurrentPeriodEndTime() - block.timestamp) * maxDecay) /
+            (MINI_AUCTION_PERIOD - 1);
 
         assertEq(
             vault.currentDiscount(),
             expectedDiscount,
             "incorrect discount calculation"
-        );
-    }
-
-    function testSetMaxDiscountRevertNonOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        vault.setMaxDiscount(5e16);
-    }
-
-    function testSetMaxDiscount() public {
-        uint256 newMaxDiscount = 5e16;
-        uint256 oldMaxDiscount = vault.maxDiscount();
-
-        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.setMaxDiscount(newMaxDiscount);
-
-        assertEq(
-            vault.maxDiscount(),
-            newMaxDiscount,
-            "max discount not updated"
-        );
-        assertTrue(
-            oldMaxDiscount != newMaxDiscount,
-            "max discount should have changed"
-        );
-    }
-
-    function testSetNonDiscountPeriodRevertNonOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        vault.setNonDiscountPeriod(2 days);
-    }
-
-    function testSetNonDiscountPeriod() public {
-        uint256 newNonDiscountPeriod = 2 days;
-        uint256 oldNonDiscountPeriod = vault.nonDiscountPeriod();
-
-        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.setNonDiscountPeriod(newNonDiscountPeriod);
-
-        assertEq(
-            vault.nonDiscountPeriod(),
-            newNonDiscountPeriod,
-            "non discount period not updated"
-        );
-        assertTrue(
-            oldNonDiscountPeriod != newNonDiscountPeriod,
-            "non discount period should have changed"
-        );
-    }
-
-    function testSetDiscountApplicationPeriodRevertNonOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        vault.setDiscountApplicationPeriod(2 weeks);
-    }
-
-    function testSetDiscountApplicationPeriod() public {
-        uint256 newDecayWindow = 2 weeks;
-        uint256 oldDecayWindow = vault.discountApplicationPeriod();
-
-        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vault.setDiscountApplicationPeriod(newDecayWindow);
-
-        assertEq(
-            vault.discountApplicationPeriod(),
-            newDecayWindow,
-            "decay window not updated"
-        );
-        assertTrue(
-            oldDecayWindow != newDecayWindow,
-            "decay window should have changed"
         );
     }
 
@@ -782,5 +701,342 @@ contract ReserveAutomationLiveIntegrationTest is Test {
             0,
             "vault balance not zero after withdrawal"
         );
+    }
+
+    function testPeriodCyclingAndAssetManagement() public {
+        uint256 usdcAmount = 1000 * 10 ** ERC20(address(underlying)).decimals();
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        // Calculate expected values
+        uint256 totalPeriods = SALE_WINDOW / MINI_AUCTION_PERIOD;
+        uint256 expectedPeriodAmount = usdcAmount / totalPeriods;
+
+        // Initial state checks
+        assertEq(
+            vault.saleStartTime(),
+            block.timestamp,
+            "incorrect sale start time"
+        );
+        assertEq(
+            vault.periodSaleAmount(),
+            expectedPeriodAmount,
+            "incorrect period sale amount"
+        );
+        assertEq(
+            vault.getCurrentPeriodRemainingReserves(),
+            expectedPeriodAmount,
+            "incorrect initial period remaining reserves"
+        );
+
+        // Test each period
+        for (uint256 i = 0; i < totalPeriods; i++) {
+            uint256 periodStart = vault.getCurrentPeriodStartTime();
+            uint256 periodEnd = vault.getCurrentPeriodEndTime();
+
+            // Verify period boundaries
+            if (i > 0) {
+                assertEq(
+                    periodStart,
+                    vault.saleStartTime() + (i * MINI_AUCTION_PERIOD),
+                    "incorrect period start time"
+                );
+                assertEq(
+                    periodEnd,
+                    periodStart + MINI_AUCTION_PERIOD - 1,
+                    "incorrect period end time"
+                );
+            }
+
+            // Test start of period
+            assertEq(
+                vault.getCurrentPeriodRemainingReserves(),
+                expectedPeriodAmount,
+                "incorrect remaining reserves at period start"
+            );
+
+            // Move to middle of period and perform a purchase
+            vm.warp(periodStart + MINI_AUCTION_PERIOD / 2);
+
+            uint256 purchaseAmount = expectedPeriodAmount / 2;
+            uint256 wellAmount = vault.getAmountWellOut(purchaseAmount);
+
+            deal(address(well), address(this), wellAmount);
+            well.approve(address(vault), wellAmount);
+
+            uint256 preVaultBalance = underlying.balanceOf(address(vault));
+            uint256 preUserBalance = underlying.balanceOf(address(this));
+            uint256 preHolderBalance = well.balanceOf(address(holder));
+
+            uint256 expectedOut = vault.getAmountReservesOut(wellAmount);
+            vault.getReserves(wellAmount, expectedOut);
+
+            // Verify balances after purchase
+            assertEq(
+                preVaultBalance - underlying.balanceOf(address(vault)),
+                expectedOut,
+                "incorrect vault balance decrease"
+            );
+            assertEq(
+                underlying.balanceOf(address(this)) - preUserBalance,
+                expectedOut,
+                "incorrect user balance increase"
+            );
+            assertEq(
+                well.balanceOf(address(holder)) - preHolderBalance,
+                wellAmount,
+                "incorrect holder well balance increase"
+            );
+            assertEq(
+                vault.getCurrentPeriodRemainingReserves(),
+                expectedPeriodAmount - expectedOut,
+                "incorrect remaining reserves after purchase"
+            );
+
+            // Move to end of period
+            vm.warp(periodEnd);
+
+            // Verify we can still purchase at the end of the period
+            uint256 remainingAmount = vault.getCurrentPeriodRemainingReserves();
+            wellAmount = vault.getAmountWellOut(remainingAmount);
+            deal(address(well), address(this), wellAmount);
+            well.approve(address(vault), wellAmount);
+            expectedOut = vault.getAmountReservesOut(wellAmount);
+            vault.getReserves(wellAmount, expectedOut);
+
+            // Move to start of next period
+            vm.warp(periodEnd + 1);
+
+            // If not the last period, verify next period starts with full amount
+            if (i < totalPeriods - 1) {
+                assertEq(
+                    vault.getCurrentPeriodRemainingReserves(),
+                    expectedPeriodAmount,
+                    "incorrect remaining reserves at start of next period"
+                );
+
+                // Verify no overlap between periods
+                assertEq(
+                    vault.getCurrentPeriodStartTime(),
+                    periodEnd + 1,
+                    "period start time overlaps with previous period"
+                );
+            }
+        }
+
+        // Verify sale is over after all periods
+        vm.warp(block.timestamp + 1);
+        vm.expectRevert("ReserveAutomationModule: sale not active");
+        vault.getReserves(1e18, 0);
+    }
+
+    function testFuzzPurchaseAtExactPeriodStart(uint256 usdcAmount) public {
+        usdcAmount = bound(
+            usdcAmount,
+            10 * 10 ** ERC20(address(underlying)).decimals(),
+            1_000_000_000 * 10 ** ERC20(address(underlying)).decimals()
+        );
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(
+            1 days, // Start in 1 day
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        // Warp to exact sale start time
+        vm.warp(block.timestamp + 1 days);
+
+        // Verify we're at exact period start
+        assertEq(
+            block.timestamp,
+            vault.getCurrentPeriodStartTime(),
+            "not at exact period start"
+        );
+
+        // Attempt purchase at exact start
+        uint256 purchaseAmount = vault.getCurrentPeriodRemainingReserves();
+        uint256 wellAmount = vault.getAmountWellOut(purchaseAmount);
+
+        deal(address(well), address(this), wellAmount);
+        well.approve(address(vault), wellAmount);
+
+        uint256 preVaultBalance = underlying.balanceOf(address(vault));
+        uint256 preUserBalance = underlying.balanceOf(address(this));
+        uint256 preHolderBalance = well.balanceOf(address(holder));
+
+        // Verify discount is at starting premium
+        assertEq(
+            vault.currentDiscount(),
+            STARTING_PREMIUM,
+            "incorrect starting discount"
+        );
+
+        uint256 expectedOut = vault.getAmountReservesOut(wellAmount);
+        vault.getReserves(wellAmount, expectedOut);
+
+        // Verify balances
+        assertEq(
+            preVaultBalance - underlying.balanceOf(address(vault)),
+            expectedOut,
+            "incorrect vault balance decrease"
+        );
+        assertEq(
+            underlying.balanceOf(address(this)) - preUserBalance,
+            expectedOut,
+            "incorrect user balance increase"
+        );
+        assertEq(
+            well.balanceOf(address(holder)) - preHolderBalance,
+            wellAmount,
+            "incorrect holder well balance increase"
+        );
+    }
+
+    function testFuzzPurchaseAtExactPeriodEnd(uint256 usdcAmount) public {
+        usdcAmount = bound(
+            usdcAmount,
+            10 * 10 ** ERC20(address(underlying)).decimals(),
+            1_000_000_000 * 10 ** ERC20(address(underlying)).decimals()
+        );
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        // Warp to exact end of first period
+        uint256 periodEnd = vault.getCurrentPeriodEndTime();
+        vm.warp(periodEnd);
+
+        // Verify we're at exact period end
+        assertEq(
+            block.timestamp,
+            vault.getCurrentPeriodEndTime(),
+            "not at exact period end"
+        );
+
+        // Attempt purchase at exact end
+        uint256 purchaseAmount = vault.getCurrentPeriodRemainingReserves();
+        uint256 wellAmount = vault.getAmountWellOut(purchaseAmount);
+
+        deal(address(well), address(this), wellAmount);
+        well.approve(address(vault), wellAmount);
+
+        uint256 preVaultBalance = underlying.balanceOf(address(vault));
+        uint256 preUserBalance = underlying.balanceOf(address(this));
+        uint256 preHolderBalance = well.balanceOf(address(holder));
+
+        // Verify discount is at maximum discount
+        assertEq(
+            vault.currentDiscount(),
+            MAX_DISCOUNT,
+            "incorrect ending discount"
+        );
+
+        uint256 expectedOut = vault.getAmountReservesOut(wellAmount);
+        vault.getReserves(wellAmount, expectedOut);
+
+        // Verify balances
+        assertEq(
+            preVaultBalance - underlying.balanceOf(address(vault)),
+            expectedOut,
+            "incorrect vault balance decrease"
+        );
+        assertEq(
+            underlying.balanceOf(address(this)) - preUserBalance,
+            expectedOut,
+            "incorrect user balance increase"
+        );
+        assertEq(
+            well.balanceOf(address(holder)) - preHolderBalance,
+            wellAmount,
+            "incorrect holder well balance increase"
+        );
+
+        // Verify next period starts correctly
+        vm.warp(periodEnd + 1);
+        assertEq(
+            vault.getCurrentPeriodStartTime(),
+            periodEnd + 1,
+            "incorrect next period start time"
+        );
+    }
+
+    function testFuzzPurchaseAtExactSaleEnd(uint256 usdcAmount) public {
+        usdcAmount = bound(
+            usdcAmount,
+            10 * 10 ** ERC20(address(underlying)).decimals(),
+            1_000_000_000 * 10 ** ERC20(address(underlying)).decimals()
+        );
+        deal(address(underlying), address(vault), usdcAmount);
+
+        vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vault.initiateSale(
+            0,
+            SALE_WINDOW,
+            MINI_AUCTION_PERIOD,
+            MAX_DISCOUNT,
+            STARTING_PREMIUM
+        );
+
+        // Warp to exact end of sale
+        uint256 saleEnd = vault.saleStartTime() + vault.saleWindow();
+        vm.warp(saleEnd - 1); // Last valid timestamp
+
+        // Verify we're at last valid timestamp
+        assertEq(block.timestamp, saleEnd - 1, "not at last valid timestamp");
+
+        // Attempt purchase at last valid moment
+        uint256 purchaseAmount = vault.getCurrentPeriodRemainingReserves();
+        uint256 wellAmount = vault.getAmountWellOut(purchaseAmount);
+
+        deal(address(well), address(this), wellAmount);
+        well.approve(address(vault), wellAmount);
+
+        uint256 preVaultBalance = underlying.balanceOf(address(vault));
+        uint256 preUserBalance = underlying.balanceOf(address(this));
+        uint256 preHolderBalance = well.balanceOf(address(holder));
+
+        uint256 expectedOut = vault.getAmountReservesOut(wellAmount);
+        vault.getReserves(wellAmount, expectedOut);
+
+        // Verify balances
+        assertEq(
+            preVaultBalance - underlying.balanceOf(address(vault)),
+            expectedOut,
+            "incorrect vault balance decrease"
+        );
+        assertEq(
+            underlying.balanceOf(address(this)) - preUserBalance,
+            expectedOut,
+            "incorrect user balance increase"
+        );
+        assertEq(
+            well.balanceOf(address(holder)) - preHolderBalance,
+            wellAmount,
+            "incorrect holder well balance increase"
+        );
+
+        // Verify sale is over at next timestamp
+        vm.warp(saleEnd);
+        vm.expectRevert("ReserveAutomationModule: sale not active");
+        vault.getReserves(1e18, 0);
     }
 }
