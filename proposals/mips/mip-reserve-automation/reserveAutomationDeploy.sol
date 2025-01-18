@@ -9,9 +9,9 @@ import {console} from "@forge-std/console.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
+import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
-import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
 import {ChainIds, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
