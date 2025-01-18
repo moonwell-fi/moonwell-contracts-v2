@@ -6,6 +6,7 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
+import {MErc20Storage} from "@protocol/MTokenInterfaces.sol";
 import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
 import {MockERC20Decimals} from "@test/mock/MockERC20Decimals.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
@@ -141,6 +142,11 @@ contract ReserveAutomationLiveIntegrationTest is Test {
                 guardian: _guardian
             });
 
+        vm.mockCall(
+            address(mToken),
+            abi.encodeWithSignature("underlying()"),
+            abi.encode(address(mockUnderlying))
+        );
         vm.expectRevert(
             "ReserveAutomationModule: reserve asset has too many decimals"
         );
@@ -534,7 +540,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
                 wellChainlinkFeed: _addresses.getAddress("CHAINLINK_WELL_USD"),
                 reserveChainlinkFeed: _addresses.getAddress("ETH_ORACLE"),
                 owner: _addresses.getAddress("TEMPORAL_GOVERNOR"),
-                mTokenMarket: address(mToken),
+                mTokenMarket: _addresses.getAddress("MOONWELL_WETH"),
                 guardian: _guardian
             });
 
