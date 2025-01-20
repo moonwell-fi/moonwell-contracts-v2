@@ -6,7 +6,7 @@ import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
-import {OPTIMISM_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
+import {BASE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// NOTE: this script is only deployable on optimism and optimism sepolia
 /// to expand functionality, add the allowed chainIds to the chainIds array
@@ -25,7 +25,7 @@ contract DeployConfigurableEthCompositeOracle is Script {
     Addresses addresses;
 
     /// only allow deployment on optimism and optimism sepolia
-    uint256[] public chainIds = [OPTIMISM_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID];
+    uint256[] public chainIds = [BASE_CHAIN_ID];
 
     function setUp() public {
         addresses = new Addresses(chainIds);
@@ -34,15 +34,16 @@ contract DeployConfigurableEthCompositeOracle is Script {
     function run() public returns (ChainlinkCompositeOracle) {
         vm.startBroadcast();
         ChainlinkCompositeOracle clco = new ChainlinkCompositeOracle(
-            addresses.getAddress("CHAINLINK_ETH_USD"),
-            addresses.getAddress(vm.envString("COMPOSITE_ORACLE")),
+            addresses.getAddress("CHAINLINK_BTC_USD"),
+            addresses.getAddress(
+                "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_PROXY"
+            ),
             address(0) /// only 2 oracles for this composite oracle
         );
 
         console.log(
             "successfully deployed chainlink composite oracle: %s, using %s",
-            address(clco),
-            vm.envString("COMPOSITE_ORACLE")
+            address(clco)
         );
 
         vm.stopBroadcast();

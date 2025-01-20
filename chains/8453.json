@@ -758,5 +758,10 @@
         "addr": "0xecac9c5f704e954931349da37f60e39f515c11c1",
         "isContract": true,
         "name": "LBTC"
+    },
+    {
+        "addr": "0xb9059d6ace87b699e67ec750fe4399d29797d232",
+        "isContract": true,
+        "name": "CHAINLINK_LBTC_BTC_COMPOSITE_ORACLE"
     }
 ]
