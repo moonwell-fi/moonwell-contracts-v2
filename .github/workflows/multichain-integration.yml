@@ -34,7 +34,7 @@ jobs:
            max_attempts: 3
            command: >
                     time forge test --match-contract MultichainProposalTest
-                    --ffi -vvvvv
+                    --ffi -vvv
 
   run-cross-chain-tests:
     name: Cross Chain Publish Message Test
