@@ -3,8 +3,8 @@ pragma solidity =0.8.19;
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
 import {MErc20} from "@protocol/MErc20.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {ERC20Mover} from "@protocol/market/ERC20Mover.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
@@ -71,12 +71,13 @@ contract ReserveAutomation is ERC20Mover {
 
     /// @notice mapping that stores the periodsale start time and corresponding
     /// cached chainlink price. Can only be cached once per period.
-    mapping(uint256 => CachedChainlinkPrices)
+    mapping(uint256 periodSaleStartTime => CachedChainlinkPrices cachedChainlinkPrice)
         public startPeriodTimestampCachedChainlinkPrice;
 
     /// @notice mapping that stores the period start time and corresponding
     /// amount of reserves sold during that period
-    mapping(uint256 => uint256) public periodStartSaleAmount;
+    mapping(uint256 periodSaleStartTime => uint256 amountSold)
+        public periodStartSaleAmount;
 
     /// ------------------------------------------------------------
     /// ------------------------------------------------------------
@@ -287,23 +288,6 @@ contract ReserveAutomation is ERC20Mover {
             (periodEnd - periodStart);
     }
 
-    /// @notice helper function to get normalized price for a token, using cached price if available
-    /// @param oracleAddress The address of the chainlink oracle for the token
-    /// @param cachedPrice The cached price from the current period, if any
-    /// @return normalizedPrice The normalized price with 18 decimals
-    function getNormalizedPrice(
-        address oracleAddress,
-        int256 cachedPrice
-    ) internal view returns (uint256 normalizedPrice) {
-        (int256 price, uint8 decimals) = getPriceAndDecimals(oracleAddress);
-
-        // Use cached price if available, otherwise use current price
-        price = cachedPrice != 0 ? cachedPrice : price;
-
-        // Scale price to 18 decimals and convert to uint256
-        normalizedPrice = scalePrice(price, decimals, 18).toUint256();
-    }
-
     /// @notice Calculates the amount of WELL needed to purchase a given amount of reserves
     /// @param amountReserveAssetIn The amount of reserves to purchase
     /// @return amountWellOut The amount of WELL needed to purchase the given amount of reserves
@@ -314,11 +298,11 @@ contract ReserveAutomation is ERC20Mover {
         CachedChainlinkPrices memory cachedPrices = getCachedChainlinkPrices();
 
         // Get normalized prices for both tokens
-        uint256 normalizedWellPrice = getNormalizedPrice(
+        uint256 normalizedWellPrice = _getNormalizedPrice(
             wellChainlinkFeed,
             cachedPrices.wellPrice
         );
-        uint256 normalizedReservePrice = getNormalizedPrice(
+        uint256 normalizedReservePrice = _getNormalizedPrice(
             reserveChainlinkFeed,
             cachedPrices.reservePrice
         );
@@ -360,11 +344,11 @@ contract ReserveAutomation is ERC20Mover {
         CachedChainlinkPrices memory cachedPrices = getCachedChainlinkPrices();
 
         // Get normalized prices for both tokens
-        uint256 normalizedWellPrice = getNormalizedPrice(
+        uint256 normalizedWellPrice = _getNormalizedPrice(
             wellChainlinkFeed,
             cachedPrices.wellPrice
         );
-        uint256 normalizedReservePrice = getNormalizedPrice(
+        uint256 normalizedReservePrice = _getNormalizedPrice(
             reserveChainlinkFeed,
             cachedPrices.reservePrice
         );
@@ -653,5 +637,22 @@ contract ReserveAutomation is ERC20Mover {
             _auctionPeriod,
             _miniAuctionPeriod
         );
+    }
+
+    /// @notice helper function to get normalized price for a token, using cached price if available
+    /// @param oracleAddress The address of the chainlink oracle for the token
+    /// @param cachedPrice The cached price from the current period, if any
+    /// @return normalizedPrice The normalized price with 18 decimals
+    function _getNormalizedPrice(
+        address oracleAddress,
+        int256 cachedPrice
+    ) private view returns (uint256 normalizedPrice) {
+        (int256 price, uint8 decimals) = getPriceAndDecimals(oracleAddress);
+
+        // Use cached price if available, otherwise use current price
+        price = cachedPrice != 0 ? cachedPrice : price;
+
+        // Scale price to 18 decimals and convert to uint256
+        normalizedPrice = scalePrice(price, decimals, 18).toUint256();
     }
 }
