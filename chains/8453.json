@@ -763,5 +763,10 @@
         "addr": "0x820c137fa70c8691f0e44dc420a5e53c168921dc",
         "isContract": true,
         "name": "USDS"
+    },
+    {
+        "addr": "0x236aa50979d5f3de3bd1eeb40e81137f22ab794b",
+        "isContract": true,
+        "name": "tBTC"
     }
 ]

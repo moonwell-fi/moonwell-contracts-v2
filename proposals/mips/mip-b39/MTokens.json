@@ -1,0 +1,23 @@
+{
+    "8453": [
+        {
+            "addressesString": "MOONWELL_TBTC",
+            "borrowCap": 18e18,
+            "collateralFactor": 0.81e18,
+            "initialMintAmount": 1e12,
+            "jrm": {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 2e18,
+                "kink": 0.35e18,
+                "multiplierPerYear": 0.07e18
+            },
+            "name": "Moonwell tBTC",
+            "priceFeedName": "CHAINLINK_TBTC_USD",
+            "reserveFactor": 0.1e18,
+            "seizeShare": 0.03e18,
+            "supplyCap": 45e18,
+            "symbol": "mTBTC",
+            "tokenAddressName": "TBTC"
+        }
+    ]
+}
