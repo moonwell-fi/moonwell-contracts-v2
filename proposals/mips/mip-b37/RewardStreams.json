@@ -1,0 +1,12 @@
+{
+    "8453": [
+        {
+            "borrowEmissionsPerSec": 1,
+            "emissionToken": "xWELL_PROXY",
+            "endTime": 1738880726,
+            "mToken": "MOONWELL_WELL",
+            "owner": "TEMPORAL_GOVERNOR",
+            "supplyEmissionPerSec": 0
+        }
+    ]
+}

@@ -375,6 +375,16 @@
         "isContract": true
     },
     {
+        "addr": "0x497e43aF113e71929871C85C56022893B9Ac968C",
+        "name": "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0x31d099C106cd73E731972Fdf1390Cab77F59DaDe",
+        "name": "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_PROXY",
+        "isContract": true
+    },
+    {
         "addr": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
         "name": "wstETH",
         "isContract": true
@@ -728,6 +738,21 @@
         "addr": "0xF08CEF2EE2e5BE584a581209637B02637F312072",
         "isContract": true,
         "name": "CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE"
+    },
+    {
+        "addr": "0xc15d9944dAefE2dB03e53bef8DDA25a56832C5fe",
+        "isContract": true,
+        "name": "CHAINLINK_WELL_USD"
+    },
+    {
+        "addr": "0x2A62AC4f8BE9E07bB0686c070A811027452D4dA1",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_WELL"
+    },
+    {
+        "addr": "0xdC7810B47eAAb250De623F0eE07764afa5F71ED1",
+        "isContract": true,
+        "name": "MOONWELL_WELL"
     },
     {
         "addr": "0x2330aaE3bca5F05169d5f4597964D44522F62930",
