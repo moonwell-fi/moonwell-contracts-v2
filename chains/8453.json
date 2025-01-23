@@ -773,5 +773,15 @@
         "addr": "0xb9059d6ace87b699e67ec750fe4399d29797d232",
         "isContract": true,
         "name": "CHAINLINK_LBTC_BTC_COMPOSITE_ORACLE"
+    },
+    {
+        "addr": "0x01177F591C4D4fC89cDEE039f7E17d7412CE9A7b",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_LBTC"
+    },
+    {
+        "addr": "0x10fF57877b79e9bd949B3815220eC87B9fc5D2ee",
+        "isContract": true,
+        "name": "MOONWELL_LBTC"
     }
 ]
