@@ -1,32 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
+
+import "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MarketAddTemplate} from "proposals/templates/MarketAdd.sol";
 
-contract MockRedstoneFeed {
-    function latestRoundData()
-        external
+contract MockMultiFeedAdapterWithoutRounds {
+    function getLastUpdateDetails(
+        bytes32
+    )
+        public
         view
+        virtual
         returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
+            uint256 lastDataTimestamp,
+            uint256 lastBlockTimestamp,
+            uint256 lastValue
         )
     {
-        return (0, 100_000e8, 0, block.timestamp, 0);
+        return (block.timestamp, block.timestamp, 100_000e8);
     }
 }
 
 contract mipb40 is MarketAddTemplate {
     function beforeSimulationHook(Addresses addresses) public override {
-        MockRedstoneFeed redstoneMock = new MockRedstoneFeed();
+        uint256 forkBefore = vm.activeFork();
+        vm.selectFork(BASE_FORK_ID);
+
+        MockMultiFeedAdapterWithoutRounds redstoneMock = new MockMultiFeedAdapterWithoutRounds();
 
         vm.etch(
-            addresses.getAddress("REDSTONE_LBTC_BTC", 8453),
+            0xf030a9ad2707c6C628f58372Fa3B355264417f56,
             address(redstoneMock).code
         );
+
+        if (vm.activeFork() != forkBefore) {
+            vm.selectFork(forkBefore);
+        }
         super.beforeSimulationHook(addresses);
     }
 }
