@@ -765,6 +765,16 @@
         "name": "USDS"
     },
     {
+        "addr": "0x310FBf531Ba386B0f4Cc207dcdE9f8BDBfdBdB52",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDS"
+    },
+    {
+        "addr": "0xb6419c6C2e60c4025D6D06eE4F913ce89425a357",
+        "isContract": true,
+        "name": "MOONWELL_USDS"
+    },
+    {
         "addr": "0x236aa50979d5f3de3bd1eeb40e81137f22ab794b",
         "isContract": true,
         "name": "TBTC"
