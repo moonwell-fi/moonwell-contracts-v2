@@ -3,7 +3,7 @@
         {
             "borrowEmissionsPerSec": 1,
             "emissionToken": "xWELL_PROXY",
-            "endTime": 1738880726,
+            "endTime": 1740323734,
             "mToken": "MOONWELL_USDS",
             "owner": "TEMPORAL_GOVERNOR",
             "supplyEmissionPerSec": 0
@@ -11,7 +11,7 @@
         {
             "borrowEmissionsPerSec": 1,
             "emissionToken": "USDC",
-            "endTime": 1738880726,
+            "endTime": 1740323734,
             "mToken": "MOONWELL_USDS",
             "owner": "TEMPORAL_GOVERNOR",
             "supplyEmissionPerSec": 0
