@@ -1,4 +1,4 @@
-# MIP-B38: Add USDS Market to Moonwell on Base
+# MIP-B39: Add USDS Market to Moonwell on Base
 
 ## Summary
 
@@ -22,7 +22,7 @@ review the [USDS token documentation](https://sky-protocol.org/docs) and
 - **Name:** USDS
 - **Token Standard:** ERC20
 - **Total Supply:** ∞ (uncapped)
-- **Circulating Supply (Base):** 1,002,682 USDS
+- **Circulating Supply (Base):** 100,338,559.43
 - **Token Contract:**
   [0x820C137fa70C8691f0e44Dc420a5e53c168921Dc](https://basescan.io/address/0x820C137fa70C8691f0e44Dc420a5e53c168921Dc)
 - **Price Feed:**
@@ -86,4 +86,4 @@ incentivizing stable utilization.
 - **Aye:** Approve the proposal to activate a core lending market for USDS on
   Base with Gauntlet's specified initial risk parameters.
 - **Nay:** Reject the proposal.
-- **Abstain:** Abstain from voting on this proposal.
+- **Abstain:** Abstain from voting on this proposal. (editado)
