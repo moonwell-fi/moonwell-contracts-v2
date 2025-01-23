@@ -770,7 +770,7 @@
         "name": "TBTC"
     },
     {
-        "addr": "0x820c137fa70c8691f0e44dc420a5e53c168921dc",
+        "addr": "0x6D75BFB5A5885f841b132198C9f0bE8c872057BF",
         "isContract": true,
         "name": "CHAINLINK_TBTC_USD"
     }
