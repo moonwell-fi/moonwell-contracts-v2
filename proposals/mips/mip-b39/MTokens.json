@@ -4,7 +4,7 @@
             "addressesString": "MOONWELL_TBTC",
             "borrowCap": 18e18,
             "collateralFactor": 0.81e18,
-            "initialMintAmount": 1e5,
+            "initialMintAmount": 0.001e18,
             "jrm": {
                 "baseRatePerYear": 0,
                 "jumpMultiplierPerYear": 2e18,
