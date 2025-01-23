@@ -1,4 +1,4 @@
-# MIP-B39: Add USDS Market to Moonwell on Base
+# MIP-B38: Add USDS Market to Moonwell on Base
 
 ## Summary
 
