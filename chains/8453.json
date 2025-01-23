@@ -783,5 +783,15 @@
         "addr": "0x6D75BFB5A5885f841b132198C9f0bE8c872057BF",
         "isContract": true,
         "name": "CHAINLINK_TBTC_USD"
+    },
+    {
+        "addr": "0x13820AA528Dc5Ce2dE39F9A4495272e9500452C2",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_TBTC"
+    },
+    {
+        "addr": "0x9A858ebfF1bEb0D3495BB0e2897c1528eD84A218",
+        "isContract": true,
+        "name": "MOONWELL_TBTC"
     }
 ]
