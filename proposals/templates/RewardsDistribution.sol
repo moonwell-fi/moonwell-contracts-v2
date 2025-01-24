@@ -1020,52 +1020,26 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 )
             );
 
-            // only transfer to the Market Reserve Automation if market is not WELL market
-            if (
-                addresses.getAddress(spec.transferReserves[i].market) !=
-                addresses.getAddress("MOONWELL_WELL")
-            ) {
-                _pushAction(
-                    address(underlying),
-                    abi.encodeWithSignature(
-                        "transfer(address,uint256)",
-                        spec.transferReserves[i].to,
-                        spec.transferReserves[i].amount
+            _pushAction(
+                address(underlying),
+                abi.encodeWithSignature(
+                    "transfer(address,uint256)",
+                    spec.transferReserves[i].to,
+                    spec.transferReserves[i].amount
+                ),
+                string.concat(
+                    "Transfer ",
+                    vm.toString(
+                        spec.transferReserves[i].amount / underlying.decimals()
                     ),
-                    string.concat(
-                        "Transfer ",
-                        vm.toString(
-                            spec.transferReserves[i].amount /
-                                underlying.decimals()
-                        ),
-                        " ",
-                        underlying.symbol(),
-                        " to the Reserve Automation Contract on ",
-                        _chainId.chainIdToName()
-                    )
-                );
-            } else {
-                // send to the RESERVE_WELL_HOLDING_DEPOSIT contract
-                _pushAction(
-                    address(underlying),
-                    abi.encodeWithSignature(
-                        "transfer(address,uint256)",
-                        addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT"),
-                        spec.transferReserves[i].amount
-                    ),
-                    string.concat(
-                        "Transfer ",
-                        vm.toString(
-                            spec.transferReserves[i].amount /
-                                underlying.decimals()
-                        ),
-                        " ",
-                        underlying.symbol(),
-                        " to the WELL Reserve Holding Deposit Contract on ",
-                        _chainId.chainIdToName()
-                    )
-                );
-            }
+                    " ",
+                    underlying.symbol(),
+                    " to ",
+                    spec.transferReserves[i].to,
+                    " on ",
+                    _chainId.chainIdToName()
+                )
+            );
         }
     }
 
