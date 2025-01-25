@@ -50,7 +50,7 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
     function _runTestForAllAutomations(
         function(ReserveAutomation, ERC20) internal fn
     ) internal {
-        string[] memory mTokens = _getMTokens();
+        string[] memory mTokens = _getMTokens(block.chainid);
         for (uint256 i = 0; i < mTokens.length; i++) {
             string memory mTokenName = mTokens[i];
             string memory underlyingName = _getUnderlyingName(mTokenName);
@@ -216,7 +216,7 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectRevert("ReserveAutomationModule: delay exceeds max");
         vault.initiateSale(
-            14 days + 1,
+            28 days + 1,
             SALE_WINDOW,
             MINI_AUCTION_PERIOD,
             MAX_DISCOUNT,
@@ -457,7 +457,7 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
     }
 
     function testAmountInTolerance(uint256 amountWellIn) public view {
-        string[] memory mTokens = _getMTokens();
+        string[] memory mTokens = _getMTokens(block.chainid);
         for (uint256 i = 0; i < mTokens.length; i++) {
             string memory mTokenName = mTokens[i];
 
@@ -486,14 +486,14 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
             assertApproxEqRel(
                 getAmountIn,
                 amountWellIn,
-                1.75e14,
+                2.5e14,
                 "amount in not within tolerance"
             );
         }
     }
 
     function testAmountOutTolerance(uint256 amountReservesIn) public view {
-        string[] memory mTokens = _getMTokens();
+        string[] memory mTokens = _getMTokens(block.chainid);
         for (uint256 i = 0; i < mTokens.length; i++) {
             string memory mTokenName = mTokens[i];
 

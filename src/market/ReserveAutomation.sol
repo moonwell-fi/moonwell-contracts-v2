@@ -3,8 +3,8 @@ pragma solidity =0.8.19;
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {MErc20} from "@protocol/MErc20.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 
 import {ERC20Mover} from "@protocol/market/ERC20Mover.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
@@ -19,7 +19,7 @@ contract ReserveAutomation is ERC20Mover {
     uint256 public constant SCALAR = 1e18;
 
     /// @notice the maximum amount of time to wait for the auction to start
-    uint256 public constant MAXIMUM_AUCTION_DELAY = 7 days;
+    uint256 public constant MAXIMUM_AUCTION_DELAY = 28 days;
 
     /// @notice address of the mToken market to add reserves back to
     address public immutable mTokenMarket;
@@ -71,13 +71,12 @@ contract ReserveAutomation is ERC20Mover {
 
     /// @notice mapping that stores the periodsale start time and corresponding
     /// cached chainlink price. Can only be cached once per period.
-    mapping(uint256 periodSaleStartTime => CachedChainlinkPrices cachedChainlinkPrice)
+    mapping(uint256 => CachedChainlinkPrices)
         public startPeriodTimestampCachedChainlinkPrice;
 
     /// @notice mapping that stores the period start time and corresponding
     /// amount of reserves sold during that period
-    mapping(uint256 periodSaleStartTime => uint256 amountSold)
-        public periodStartSaleAmount;
+    mapping(uint256 => uint256) public periodStartSaleAmount;
 
     /// ------------------------------------------------------------
     /// ------------------------------------------------------------
@@ -220,11 +219,7 @@ contract ReserveAutomation is ERC20Mover {
         view
         returns (uint256 startTime)
     {
-        if (
-            saleStartTime == 0 ||
-            block.timestamp < saleStartTime ||
-            block.timestamp > saleStartTime + saleWindow
-        ) {
+        if (!isSaleActive()) {
             return 0;
         }
 
@@ -267,11 +262,7 @@ contract ReserveAutomation is ERC20Mover {
     /// 1e18 if no discount is applied
     /// @dev Does not apply discount or premium if the sale is not active
     function currentDiscount() public view returns (uint256) {
-        if (
-            saleStartTime == 0 ||
-            block.timestamp < saleStartTime ||
-            block.timestamp > saleStartTime + saleWindow
-        ) {
+        if (!isSaleActive()) {
             return SCALAR;
         }
 
@@ -288,6 +279,23 @@ contract ReserveAutomation is ERC20Mover {
             (periodEnd - periodStart);
     }
 
+    /// @notice helper function to get normalized price for a token, using cached price if available
+    /// @param oracleAddress The address of the chainlink oracle for the token
+    /// @param cachedPrice The cached price from the current period, if any
+    /// @return normalizedPrice The normalized price with 18 decimals
+    function getNormalizedPrice(
+        address oracleAddress,
+        int256 cachedPrice
+    ) internal view returns (uint256 normalizedPrice) {
+        (int256 price, uint8 decimals) = getPriceAndDecimals(oracleAddress);
+
+        // Use cached price if available, otherwise use current price
+        price = cachedPrice != 0 ? cachedPrice : price;
+
+        // Scale price to 18 decimals and convert to uint256
+        normalizedPrice = scalePrice(price, decimals, 18).toUint256();
+    }
+
     /// @notice Calculates the amount of WELL needed to purchase a given amount of reserves
     /// @param amountReserveAssetIn The amount of reserves to purchase
     /// @return amountWellOut The amount of WELL needed to purchase the given amount of reserves
@@ -298,11 +306,11 @@ contract ReserveAutomation is ERC20Mover {
         CachedChainlinkPrices memory cachedPrices = getCachedChainlinkPrices();
 
         // Get normalized prices for both tokens
-        uint256 normalizedWellPrice = _getNormalizedPrice(
+        uint256 normalizedWellPrice = getNormalizedPrice(
             wellChainlinkFeed,
             cachedPrices.wellPrice
         );
-        uint256 normalizedReservePrice = _getNormalizedPrice(
+        uint256 normalizedReservePrice = getNormalizedPrice(
             reserveChainlinkFeed,
             cachedPrices.reservePrice
         );
@@ -344,11 +352,11 @@ contract ReserveAutomation is ERC20Mover {
         CachedChainlinkPrices memory cachedPrices = getCachedChainlinkPrices();
 
         // Get normalized prices for both tokens
-        uint256 normalizedWellPrice = _getNormalizedPrice(
+        uint256 normalizedWellPrice = getNormalizedPrice(
             wellChainlinkFeed,
             cachedPrices.wellPrice
         );
-        uint256 normalizedReservePrice = _getNormalizedPrice(
+        uint256 normalizedReservePrice = getNormalizedPrice(
             reserveChainlinkFeed,
             cachedPrices.reservePrice
         );
@@ -400,10 +408,10 @@ contract ReserveAutomation is ERC20Mover {
             uint80 roundId,
             int256 price,
             ,
-            ,
+            uint256 updatedAt,
             uint80 answeredInRound
         ) = AggregatorV3Interface(oracleAddress).latestRoundData();
-        bool valid = price > 0 && answeredInRound >= roundId;
+        bool valid = price > 0 && answeredInRound >= roundId && updatedAt != 0;
         require(valid, "ReserveAutomationModule: Oracle data is invalid");
         uint8 oracleDecimals = AggregatorV3Interface(oracleAddress).decimals();
 
@@ -433,6 +441,14 @@ contract ReserveAutomation is ERC20Mover {
         /// if priceDecimals == expectedDecimals, return price without any changes
 
         return price;
+    }
+
+    /// @notice returns whether or not there is an active sale
+    function isSaleActive() public view returns (bool) {
+        return
+            saleStartTime > 0 &&
+            block.timestamp >= saleStartTime &&
+            block.timestamp < saleStartTime + saleWindow;
     }
 
     //// ------------------------------------------------------------
@@ -506,15 +522,24 @@ contract ReserveAutomation is ERC20Mover {
         /// CHECKS
 
         /// check that the sale is active
-        require(
-            saleStartTime > 0 &&
-                block.timestamp >= saleStartTime &&
-                block.timestamp < saleStartTime + saleWindow,
-            "ReserveAutomationModule: sale not active"
-        );
+        require(isSaleActive(), "ReserveAutomationModule: sale not active");
 
         require(amountWellIn != 0, "ReserveAutomationModule: amount in is 0");
 
+        uint256 startTime = getCurrentPeriodStartTime();
+        /// cache the chainlink prices if they have not been cached for the
+        /// current period
+        if (
+            startPeriodTimestampCachedChainlinkPrice[startTime].wellPrice == 0
+        ) {
+            (int256 wellPrice, ) = getPriceAndDecimals(wellChainlinkFeed);
+            startPeriodTimestampCachedChainlinkPrice[startTime]
+                .wellPrice = wellPrice;
+
+            (int256 reservePrice, ) = getPriceAndDecimals(reserveChainlinkFeed);
+            startPeriodTimestampCachedChainlinkPrice[startTime]
+                .reservePrice = reservePrice;
+        }
         amountOut = getAmountReservesOut(amountWellIn);
 
         /// bound the sale amount by the amount of reserves remaining in the
@@ -532,23 +557,7 @@ contract ReserveAutomation is ERC20Mover {
 
         /// EFFECTS
 
-        uint256 startTime = getCurrentPeriodStartTime();
-
         periodStartSaleAmount[startTime] += amountOut;
-
-        /// cache the chainlink prices if they have not been cached for the
-        /// current period
-        if (
-            startPeriodTimestampCachedChainlinkPrice[startTime].wellPrice == 0
-        ) {
-            (int256 wellPrice, ) = getPriceAndDecimals(wellChainlinkFeed);
-            startPeriodTimestampCachedChainlinkPrice[startTime]
-                .wellPrice = wellPrice;
-
-            (int256 reservePrice, ) = getPriceAndDecimals(reserveChainlinkFeed);
-            startPeriodTimestampCachedChainlinkPrice[startTime]
-                .reservePrice = reservePrice;
-        }
 
         /// INTERACTIONS
 
@@ -637,22 +646,5 @@ contract ReserveAutomation is ERC20Mover {
             _auctionPeriod,
             _miniAuctionPeriod
         );
-    }
-
-    /// @notice helper function to get normalized price for a token, using cached price if available
-    /// @param oracleAddress The address of the chainlink oracle for the token
-    /// @param cachedPrice The cached price from the current period, if any
-    /// @return normalizedPrice The normalized price with 18 decimals
-    function _getNormalizedPrice(
-        address oracleAddress,
-        int256 cachedPrice
-    ) private view returns (uint256 normalizedPrice) {
-        (int256 price, uint8 decimals) = getPriceAndDecimals(oracleAddress);
-
-        // Use cached price if available, otherwise use current price
-        price = cachedPrice != 0 ? cachedPrice : price;
-
-        // Scale price to 18 decimals and convert to uint256
-        normalizedPrice = scalePrice(price, decimals, 18).toUint256();
     }
 }

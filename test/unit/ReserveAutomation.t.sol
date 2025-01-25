@@ -101,6 +101,11 @@ contract ReserveAutomationUnitTest is Test {
             address(mToken),
             "Incorrect mToken market address"
         );
+        assertEq(
+            automation.MAXIMUM_AUCTION_DELAY(),
+            28 days,
+            "incorrect max auction delay"
+        );
     }
 
     function testInitiateSale(uint256 reserveAmount) public {
@@ -119,6 +124,7 @@ contract ReserveAutomationUnitTest is Test {
             STARTING_PREMIUM
         );
 
+        assertTrue(automation.isSaleActive(), "sale not active");
         assertEq(automation.saleWindow(), SALE_WINDOW, "Incorrect sale window");
         assertEq(
             automation.miniAuctionPeriod(),
@@ -169,7 +175,7 @@ contract ReserveAutomationUnitTest is Test {
     }
 
     function testInitiateSaleFailsWithInvalidDelay() public {
-        uint256 delay = 7 days + 1; // 1 second greater than MAXIMUM_AUCTION_DELAY
+        uint256 delay = 28 days + 1; // 1 second greater than MAXIMUM_AUCTION_DELAY
         uint256 reserveAmount = 1000 * 10 ** reserveToken.decimals();
         deal(address(reserveToken), address(automation), reserveAmount);
 
@@ -714,6 +720,7 @@ contract ReserveAutomationUnitTest is Test {
         uint256 wellAmount = 1000 * 10 ** wellToken.decimals();
         deal(address(wellToken), USER, wellAmount);
 
+        assertFalse(automation.isSaleActive(), "sale should not be active");
         vm.startPrank(USER);
         wellToken.approve(address(automation), wellAmount);
 
@@ -733,14 +740,26 @@ contract ReserveAutomationUnitTest is Test {
             MAX_DISCOUNT,
             STARTING_PREMIUM
         );
+        assertFalse(automation.isSaleActive(), "sale should not be active");
 
         vm.startPrank(USER);
         vm.expectRevert("ReserveAutomationModule: sale not active");
         automation.getReserves(wellAmount, 0);
         vm.stopPrank();
 
+        vm.warp(block.timestamp + 1 days);
+        assertTrue(
+            automation.isSaleActive(),
+            "sale should be active at start timestamp"
+        );
+
         // Test with sale ended
         vm.warp(block.timestamp + SALE_WINDOW + 2 days);
+        assertFalse(
+            automation.isSaleActive(),
+            "sale should not be active post end timestamp"
+        );
+
         vm.startPrank(USER);
         vm.expectRevert("ReserveAutomationModule: sale not active");
         automation.getReserves(wellAmount, 0);

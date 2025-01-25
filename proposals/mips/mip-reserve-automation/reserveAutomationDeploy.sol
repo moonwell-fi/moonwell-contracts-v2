@@ -31,21 +31,17 @@ contract ReserveAutomationDeploy is Script, Test {
     }
 
     /// @notice array of mToken names to deploy automation for
-    function _getMTokens() internal pure returns (string[] memory) {
-        string[] memory tokens = new string[](12);
-        tokens[0] = "MOONWELL_USDC";
-        tokens[1] = "MOONWELL_USDBC";
-        tokens[2] = "MOONWELL_DAI";
-        tokens[3] = "MOONWELL_WETH";
-        tokens[4] = "MOONWELL_cbETH";
-        tokens[5] = "MOONWELL_wstETH";
-        tokens[6] = "MOONWELL_rETH";
-        tokens[7] = "MOONWELL_AERO";
-        tokens[8] = "MOONWELL_weETH";
-        tokens[9] = "MOONWELL_cbBTC";
-        tokens[10] = "MOONWELL_EURC";
-        tokens[11] = "MOONWELL_wrsETH";
-        return tokens;
+    function _getMTokens(
+        uint256 chainId
+    ) internal view returns (string[] memory) {
+        string memory file = vm.readFile(
+            string.concat(
+                "./proposals/mips/mip-reserve-automation/",
+                string.concat(vm.toString(chainId), ".json")
+            )
+        );
+        string[] memory mTokens = abi.decode(vm.parseJson(file), (string[]));
+        return mTokens;
     }
 
     function run() public {
@@ -76,7 +72,7 @@ contract ReserveAutomationDeploy is Script, Test {
         _addresses.addAddress("RESERVE_WELL_HOLDING_DEPOSIT", holdingDeposit);
 
         /// Deploy ReserveAutomation for each mToken
-        string[] memory mTokens = _getMTokens();
+        string[] memory mTokens = _getMTokens(block.chainid);
         for (uint256 i = 0; i < mTokens.length; i++) {
             string memory mTokenName = mTokens[i];
             string memory underlyingName = _getUnderlyingName(mTokenName);
@@ -129,7 +125,7 @@ contract ReserveAutomationDeploy is Script, Test {
         );
 
         /// Validate ReserveAutomation for each mToken
-        string[] memory mTokens = _getMTokens();
+        string[] memory mTokens = _getMTokens(block.chainid);
         for (uint256 i = 0; i < mTokens.length; i++) {
             string memory mTokenName = mTokens[i];
             string memory underlyingName = _getUnderlyingName(mTokenName);

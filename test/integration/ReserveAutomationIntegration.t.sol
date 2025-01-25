@@ -274,7 +274,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectRevert("ReserveAutomationModule: delay exceeds max");
         vault.initiateSale(
-            14 days + 1,
+            28 days + 1,
             SALE_WINDOW,
             MINI_AUCTION_PERIOD,
             MAX_DISCOUNT,
