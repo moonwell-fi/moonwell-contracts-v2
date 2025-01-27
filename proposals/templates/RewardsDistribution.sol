@@ -878,127 +878,80 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 addresses.getAddress("MRD_PROXY")
             );
 
-            try
-                distributor.getConfigForMarket(
-                    MToken(addresses.getAddress(setRewardSpeed.market)),
-                    addresses.getAddress(setRewardSpeed.emissionToken)
-                )
-            {
-                // only update if the configuration exists
-                if (setRewardSpeed.newSupplySpeed != -1) {
-                    _pushAction(
-                        mrd,
-                        abi.encodeWithSignature(
-                            "_updateSupplySpeed(address,address,uint256)",
-                            addresses.getAddress(setRewardSpeed.market),
-                            addresses.getAddress(setRewardSpeed.emissionToken),
-                            setRewardSpeed.newSupplySpeed.toUint256()
-                        ),
-                        string(
-                            abi.encodePacked(
-                                "Set reward supply speed to ",
-                                vm.toString(setRewardSpeed.newSupplySpeed),
-                                " for ",
-                                vm.getLabel(market),
-                                ".\nNetwork: ",
-                                _chainId.chainIdToName(),
-                                "\nReward token: ",
-                                setRewardSpeed.emissionToken
-                            )
-                        )
-                    );
-                }
-
-                if (setRewardSpeed.newBorrowSpeed != -1) {
-                    assertGe(
-                        setRewardSpeed.newBorrowSpeed,
-                        1,
-                        "Borrow speed must be greater or equal to 1"
-                    );
-
-                    _pushAction(
-                        mrd,
-                        abi.encodeWithSignature(
-                            "_updateBorrowSpeed(address,address,uint256)",
-                            addresses.getAddress(setRewardSpeed.market),
-                            addresses.getAddress(setRewardSpeed.emissionToken),
-                            setRewardSpeed.newBorrowSpeed.toUint256()
-                        ),
-                        string(
-                            abi.encodePacked(
-                                "Set reward borrow speed to ",
-                                vm.toString(setRewardSpeed.newBorrowSpeed),
-                                " for ",
-                                vm.getLabel(market),
-                                ".\nNetwork: ",
-                                _chainId.chainIdToName(),
-                                "\nReward token: ",
-                                setRewardSpeed.emissionToken
-                            )
-                        )
-                    );
-                }
-
-                if (setRewardSpeed.newEndTime != -1) {
-                    _pushAction(
-                        mrd,
-                        abi.encodeWithSignature(
-                            "_updateEndTime(address,address,uint256)",
-                            addresses.getAddress(setRewardSpeed.market),
-                            addresses.getAddress(setRewardSpeed.emissionToken),
-                            setRewardSpeed.newEndTime
-                        ),
-                        string(
-                            abi.encodePacked(
-                                "Set reward end time to ",
-                                vm.toString(setRewardSpeed.newEndTime),
-                                " for ",
-                                vm.getLabel(market),
-                                ".\nNetwork:",
-                                _chainId.chainIdToName(),
-                                "\nReward token: ",
-                                setRewardSpeed.emissionToken
-                            )
-                        )
-                    );
-                }
-            } catch {
-                uint256 supplySpeed = setRewardSpeed.newSupplySpeed > 0
-                    ? uint256(setRewardSpeed.newSupplySpeed)
-                    : 0; // initiate with default configuration
-                uint256 borrowSpeed = setRewardSpeed.newBorrowSpeed > 1
-                    ? uint256(setRewardSpeed.newBorrowSpeed)
-                    : 1; // initiate with default configuration
-
-                uint256 endTime = uint256(setRewardSpeed.newEndTime);
-                assertGt(endTime, 0, "End time must be greater than 0");
-                    
+            // only update if the configuration exists
+            if (setRewardSpeed.newSupplySpeed != -1) {
                 _pushAction(
                     mrd,
                     abi.encodeWithSignature(
-                        "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
-                        market,
-                        addresses.getAddress("TEMPORAL_GOVERNOR"),
+                        "_updateSupplySpeed(address,address,uint256)",
+                        addresses.getAddress(setRewardSpeed.market),
                         addresses.getAddress(setRewardSpeed.emissionToken),
-                        supplySpeed,
-                        borrowSpeed,
-                        endTime
+                        setRewardSpeed.newSupplySpeed.toUint256()
                     ),
                     string(
                         abi.encodePacked(
-                            "Initiate rewards for market ",
+                            "Set reward supply speed to ",
+                            vm.toString(setRewardSpeed.newSupplySpeed),
+                            " for ",
                             vm.getLabel(market),
-                            " on ",
+                            ".\nNetwork: ",
                             _chainId.chainIdToName(),
                             "\nReward token: ",
-                            setRewardSpeed.emissionToken,
-                            " Supply speed: ",
-                            vm.toString(supplySpeed),
-                            " Borrow speed: ",
-                            vm.toString(borrowSpeed),
-                            " End time: ",
-                            vm.toString(endTime)
+                            setRewardSpeed.emissionToken
+                        )
+                    )
+                );
+            }
 
+            if (setRewardSpeed.newBorrowSpeed != -1) {
+                assertGe(
+                    setRewardSpeed.newBorrowSpeed,
+                    1,
+                    "Borrow speed must be greater or equal to 1"
+                );
+
+                _pushAction(
+                    mrd,
+                    abi.encodeWithSignature(
+                        "_updateBorrowSpeed(address,address,uint256)",
+                        addresses.getAddress(setRewardSpeed.market),
+                        addresses.getAddress(setRewardSpeed.emissionToken),
+                        setRewardSpeed.newBorrowSpeed.toUint256()
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Set reward borrow speed to ",
+                            vm.toString(setRewardSpeed.newBorrowSpeed),
+                            " for ",
+                            vm.getLabel(market),
+                            ".\nNetwork: ",
+                            _chainId.chainIdToName(),
+                            "\nReward token: ",
+                            setRewardSpeed.emissionToken
+                        )
+                    )
+                );
+            }
+
+            if (setRewardSpeed.newEndTime != -1) {
+                _pushAction(
+                    mrd,
+                    abi.encodeWithSignature(
+                        "_updateEndTime(address,address,uint256)",
+                        addresses.getAddress(setRewardSpeed.market),
+                        addresses.getAddress(setRewardSpeed.emissionToken),
+                        setRewardSpeed.newEndTime
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Set reward end time to ",
+                            vm.toString(setRewardSpeed.newEndTime),
+                            " for ",
+                            vm.getLabel(market),
+                            ".\nNetwork:",
+                            _chainId.chainIdToName(),
+                            "\nReward token: ",
+                            setRewardSpeed.emissionToken
                         )
                     )
                 );
