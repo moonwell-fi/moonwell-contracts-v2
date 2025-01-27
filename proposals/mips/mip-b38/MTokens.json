@@ -1,0 +1,23 @@
+{
+    "8453": [
+        {
+            "addressesString": "MOONWELL_USDS",
+            "borrowCap": 690000e18,
+            "collateralFactor": 0.83e18,
+            "initialMintAmount": 1e12,
+            "jrm": {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 9e18,
+                "kink": 0.9e18,
+                "multiplierPerYear": 0.067e18
+            },
+            "name": "Moonwell USDS",
+            "priceFeedName": "CHAINLINK_USDS_USD",
+            "reserveFactor": 0.1e18,
+            "seizeShare": 0.03e18,
+            "supplyCap": 750000e18,
+            "symbol": "mUSDS",
+            "tokenAddressName": "USDS"
+        }
+    ]
+}
