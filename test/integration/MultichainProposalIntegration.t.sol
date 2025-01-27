@@ -101,7 +101,6 @@ contract MultichainProposalTest is PostProposalCheck {
 
         uint256 startTimestamp = block.timestamp;
 
-        vm.warp(startTimestamp);
         {
             addresses = new Addresses();
             vm.makePersistent(address(addresses));
@@ -1220,6 +1219,8 @@ contract MultichainProposalTest is PostProposalCheck {
         vm.prank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
         xwell.mint(address(this), xwellMintAmount);
         xwell.approve(address(stakedWellBase), xwellMintAmount);
+
+        console.log("current timestamp", block.timestamp);
 
         stakedWellBase.stake(address(this), xwellMintAmount);
 
