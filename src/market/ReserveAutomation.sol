@@ -152,12 +152,10 @@ contract ReserveAutomation is ERC20Mover {
         uint256 saleStartTime,
         uint256 periodSaleAmount,
         uint256 saleWindow,
-        uint256 miniAuctionPeriod
+        uint256 miniAuctionPeriod,
+        uint256 maxDiscount,
+        uint256 startingPremium
     );
-
-    /// @notice emitted when the maximum discount is set
-    /// @param newMaxDiscount the new maximum discount value
-    event MaxDiscountSet(uint256 newMaxDiscount);
 
     /// @notice emitted when the recipient address is updated
     /// @param previousRecipient the previous recipient address
@@ -302,7 +300,7 @@ contract ReserveAutomation is ERC20Mover {
     /// @dev Uses Chainlink price feeds and applies current discount if applicable
     function getAmountWellOut(
         uint256 amountReserveAssetIn
-    ) public view returns (uint256 amountWellOut) {
+    ) external view returns (uint256 amountWellOut) {
         CachedChainlinkPrices memory cachedPrices = getCachedChainlinkPrices();
 
         // Get normalized prices for both tokens
@@ -361,7 +359,7 @@ contract ReserveAutomation is ERC20Mover {
             cachedPrices.reservePrice
         );
 
-        /// multiply the amount of WELL by WELL price in USD, result is still scaled up by 18
+        /// multiply the amount of WELL by WELL price in USD, result is still scaled up by 18 decimals
         uint256 wellAmountUSD = amountWellIn * normalizedWellPrice;
 
         /// if we are in the discount period, apply the discount to the reserve asset price
@@ -457,7 +455,7 @@ contract ReserveAutomation is ERC20Mover {
     //// ------------------------------------------------------------
     //// ------------------------------------------------------------
 
-    /// @notice Sets the address that receives the proceeds from sales
+    /// @notice Sets the address that receives the WELL proceeds from sales
     /// @param recipient The new recipient address
     function setRecipientAddress(address recipient) external onlyOwner {
         address previousRecipient = recipientAddress;
@@ -549,7 +547,7 @@ contract ReserveAutomation is ERC20Mover {
             "ReserveAutomationModule: not enough reserves remaining"
         );
 
-        /// check that the amount of reserves is less than the total amount of reserves
+        /// check that the amount of reserves is less than the minimum amount out
         require(
             amountOut >= minAmountOut,
             "ReserveAutomationModule: not enough out"
@@ -639,12 +637,14 @@ contract ReserveAutomation is ERC20Mover {
         saleWindow = _auctionPeriod;
         miniAuctionPeriod = _miniAuctionPeriod;
 
-        emit MaxDiscountSet(maxDiscount);
+        /// update event to have max premium and discount, remove maxdiscountset
         emit SaleInitiated(
             saleStartTime,
             periodSaleAmount,
             _auctionPeriod,
-            _miniAuctionPeriod
+            _miniAuctionPeriod,
+            maxDiscount,
+            startingPremium
         );
     }
 }
