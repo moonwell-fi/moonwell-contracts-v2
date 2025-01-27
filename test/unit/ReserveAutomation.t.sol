@@ -151,6 +151,24 @@ contract ReserveAutomationUnitTest is Test {
             block.timestamp,
             "Incorrect sale start time"
         );
+
+        /// test that saleStartTime + saleWindow is not inclusive and is not active
+        vm.warp(block.timestamp + SALE_WINDOW);
+        assertFalse(automation.isSaleActive(), "sale inactive");
+        assertEq(
+            automation.currentDiscount(),
+            1e18,
+            "discount/premium not zero"
+        );
+
+        /// warp backwards to the final second of the sale and check that it is still active
+        vm.warp(block.timestamp - 1);
+        assertTrue(automation.isSaleActive(), "sale not active");
+        assertEq(
+            automation.currentDiscount(),
+            MAX_DISCOUNT,
+            "discount not final value"
+        );
     }
 
     function testInitiateSaleWithDelay() public {
