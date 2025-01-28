@@ -178,7 +178,7 @@
             }
         ],
         "transferReserves": [],
-        "withdrawERC20Token": []
+        "withdrawWell": []
     },
     "1284": {
         "bridgeToRecipient": [
@@ -519,7 +519,7 @@
             }
         ],
         "transferReserves": [],
-        "withdrawERC20Token": []
+        "withdrawWell": []
     },
     "endTimeSTamp": 1730431800,
     "startTimeStamp": 1728012600

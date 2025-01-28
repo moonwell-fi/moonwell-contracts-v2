@@ -54,10 +54,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         string to;
     }
 
-    struct WithdrawERC20 {
+    struct WithdrawWell {
         uint256 amount;
         string to;
-        string token;
     }
 
     struct AddRewardInfo {
@@ -96,7 +95,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         int256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
         TransferReserves[] transferReserves;
-        WithdrawERC20[] withdrawERC20Token;
+        WithdrawWell[] withdrawWell;
     }
 
     JsonSpecMoonbeam moonbeamActions;
@@ -612,23 +611,19 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             );
         }
 
-        for (uint256 i = 0; i < spec.withdrawERC20Token.length; i++) {
-            WithdrawERC20 memory withdrawERC20Token = spec.withdrawERC20Token[
-                i
-            ];
+        for (uint256 i = 0; i < spec.withdrawWell.length; i++) {
+            WithdrawWell memory withdrawWell = spec.withdrawWell[i];
 
-            _validateTransferDestination(withdrawERC20Token.to);
+            _validateTransferDestination(withdrawWell.to);
 
             if (
-                addresses.getAddress(withdrawERC20Token.to) ==
+                addresses.getAddress(withdrawWell.to) ==
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
-                ecosystemReserveProxyAmount += withdrawERC20Token.amount;
+                ecosystemReserveProxyAmount += withdrawWell.amount;
             }
 
-            externalChainActions[_chainId].withdrawERC20Token.push(
-                withdrawERC20Token
-            );
+            externalChainActions[_chainId].withdrawWell.push(withdrawWell);
         }
 
         assertApproxEqAbs(
@@ -974,20 +969,19 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         }
 
         // withdraw reserves from the Market Reserve ERC20 Holding Deposit contract
-        for (uint256 i = 0; i < spec.withdrawERC20Token.length; i++) {
+        for (uint256 i = 0; i < spec.withdrawWell.length; i++) {
             _pushAction(
                 addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT"),
                 abi.encodeWithSignature(
                     "withdrawERC20Token(address,address,uint256)",
-                    addresses.getAddress(spec.withdrawERC20Token[i].token),
-                    addresses.getAddress(spec.withdrawERC20Token[i].to),
-                    spec.withdrawERC20Token[i].amount
+                    addresses.getAddress("XWELL_PROXY"),
+                    addresses.getAddress(spec.withdrawWell[i].to),
+                    spec.withdrawWell[i].amount
                 ),
                 string.concat(
                     "Withdraw ",
-                    vm.toString(spec.withdrawERC20Token[i].amount / 1e18),
-                    " ",
-                    spec.withdrawERC20Token[i].token,
+                    vm.toString(spec.withdrawWell[i].amount / 1e18),
+                    " WELL ",
                     " from the WELL Reserve Holding Deposit Contract on ",
                     _chainId.chainIdToName()
                 )
