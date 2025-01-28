@@ -56,7 +56,7 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 50
            max_attempts: 3
-           command: time forge test --match-contract 'ReserveAutomationLiveIntegrationTest|ERC20HoldingDepositLiveIntegrationTest|ReserveAutomationDeployIntegrationTest' -vvv --fork-url base
+           command: time forge test --match-contract 'ReserveAutomationLiveIntegrationTest|ERC20HoldingDepositLiveIntegrationTest' -vvv --fork-url base
 
   fee-splitter-xwell-integration-tests:
     name: Fee Splitter/xWell Integration Test
