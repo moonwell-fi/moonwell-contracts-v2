@@ -101,7 +101,6 @@ contract MultichainProposalTest is PostProposalCheck {
 
         uint256 startTimestamp = block.timestamp;
 
-        vm.warp(startTimestamp);
         {
             addresses = new Addresses();
             vm.makePersistent(address(addresses));
@@ -1210,10 +1209,7 @@ contract MultichainProposalTest is PostProposalCheck {
 
         vm.roll(block.number + 1);
 
-        vm.warp(initialTimestamp);
-
         vm.selectFork(BASE_FORK_ID);
-        vm.warp(initialTimestamp - 5);
 
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         uint256 xwellMintAmount = xwell.buffer(
@@ -1224,11 +1220,14 @@ contract MultichainProposalTest is PostProposalCheck {
         xwell.mint(address(this), xwellMintAmount);
         xwell.approve(address(stakedWellBase), xwellMintAmount);
 
+        console.log("current timestamp", block.timestamp);
+
         stakedWellBase.stake(address(this), xwellMintAmount);
 
         vm.warp(initialTimestamp);
 
         vm.selectFork(MOONBEAM_FORK_ID);
+        vm.warp(initialTimestamp);
 
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);

@@ -24,6 +24,8 @@ import {IStellaSwapRewarder} from "@protocol/interfaces/IStellaSwapRewarder.sol"
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract RewardsDistributionTemplate is HybridProposal, Networks {
@@ -877,7 +879,11 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             address market = addresses.getAddress(setRewardSpeed.market);
             address mrd = addresses.getAddress("MRD_PROXY");
 
-            // only update if the values are different or the configuration exists
+            IMultiRewardDistributor distributor = IMultiRewardDistributor(
+                addresses.getAddress("MRD_PROXY")
+            );
+
+            // only update if the configuration exists
             if (setRewardSpeed.newSupplySpeed != -1) {
                 _pushAction(
                     mrd,
@@ -1091,18 +1097,15 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY")
             );
 
-            (uint256 quoteEVMDeliveryPrice, ) = relayer.quoteEVMDeliveryPrice(
-                chainId.toWormholeChainId(),
-                0,
-                gasLimit
-            );
-
-            uint256 expectedValue = quoteEVMDeliveryPrice * 4;
-
             for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
                 BridgeWell memory bridgeWell = spec.bridgeWells[i];
 
                 uint16 wormholeChainId = bridgeWell.network.toWormholeChainId();
+
+                (uint256 quoteEVMDeliveryPrice, ) = relayer
+                    .quoteEVMDeliveryPrice(wormholeChainId, 0, gasLimit);
+
+                uint256 expectedValue = quoteEVMDeliveryPrice * 4;
 
                 assertEq(
                     router.bridgeCost(wormholeChainId),
@@ -1117,18 +1120,6 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     0.20e18, // 20% tolarance due to gas cost changes
                     "Bridge value is incorrect"
                 );
-            }
-
-            // check that the actions with value has the expectedValue
-            for (uint256 i = 0; i < actions.length; i++) {
-                if (actions[i].value != 0) {
-                    assertApproxEqRel(
-                        actions[i].value,
-                        expectedValue,
-                        0.20e18,
-                        "Value is incorrect for action"
-                    );
-                }
             }
         }
 

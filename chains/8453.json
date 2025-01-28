@@ -270,6 +270,11 @@
         "isContract": true
     },
     {
+        "addr": "0xBAB813eB17de29137dBe292a82ad6b50464D948f",
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X12",
+        "isContract": true
+    },
+    {
         "addr": "0xfC7b55cc7C5BD3aE89aC679c7250AB30754C5cC5",
         "name": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_B14",
         "isContract": true
@@ -372,6 +377,16 @@
     {
         "addr": "0x5C4c8d6f6Bf79B718F3e8399AaBdFEd01cB7e48f",
         "name": "REDSTONE_LBTC_BTC",
+        "isContract": true
+    },
+    {
+        "addr": "0x497e43aF113e71929871C85C56022893B9Ac968C",
+        "name": "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0x31d099C106cd73E731972Fdf1390Cab77F59DaDe",
+        "name": "REDSTONE_LBTC_BTC_CHAINLINK_BOUNDED_ORACLE_PROXY",
         "isContract": true
     },
     {
@@ -630,6 +645,11 @@
         "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_X10"
     },
     {
+        "addr": "0x2aC1a1bb4B1c05f4410c1a76318a966d9f063236",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_X12"
+    },
+    {
         "addr": "0xF877ACaFA28c19b96727966690b2f44d35aD5976",
         "isContract": true,
         "name": "MOONWELL_cbBTC"
@@ -743,5 +763,45 @@
         "addr": "0xdC7810B47eAAb250De623F0eE07764afa5F71ED1",
         "isContract": true,
         "name": "MOONWELL_WELL"
+    },
+    {
+        "addr": "0x2330aaE3bca5F05169d5f4597964D44522F62930",
+        "isContract": true,
+        "name": "CHAINLINK_USDS_USD"
+    },
+    {
+        "addr": "0x820c137fa70c8691f0e44dc420a5e53c168921dc",
+        "isContract": true,
+        "name": "USDS"
+    },
+    {
+        "addr": "0x310FBf531Ba386B0f4Cc207dcdE9f8BDBfdBdB52",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDS"
+    },
+    {
+        "addr": "0xb6419c6C2e60c4025D6D06eE4F913ce89425a357",
+        "isContract": true,
+        "name": "MOONWELL_USDS"
+    },
+    {
+        "addr": "0x236aa50979d5f3de3bd1eeb40e81137f22ab794b",
+        "isContract": true,
+        "name": "TBTC"
+    },
+    {
+        "addr": "0x6D75BFB5A5885f841b132198C9f0bE8c872057BF",
+        "isContract": true,
+        "name": "CHAINLINK_TBTC_USD"
+    },
+    {
+        "addr": "0x13820AA528Dc5Ce2dE39F9A4495272e9500452C2",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_TBTC"
+    },
+    {
+        "addr": "0x9A858ebfF1bEb0D3495BB0e2897c1528eD84A218",
+        "isContract": true,
+        "name": "MOONWELL_TBTC"
     }
 ]
