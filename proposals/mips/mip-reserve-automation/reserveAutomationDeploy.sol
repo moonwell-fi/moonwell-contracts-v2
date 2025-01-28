@@ -24,10 +24,10 @@ contract ReserveAutomationDeploy is Script, Test {
     string public constant NAME = "Reserve Automation Deployment";
 
     AutomationDeploy private _deployer;
-    Addresses public addresses;
+    Addresses internal _addresses;
 
     function setUp() public virtual {
-        addresses = new Addresses();
+        _addresses = new Addresses();
     }
 
     /// @notice array of mToken names to deploy automation for
@@ -47,19 +47,19 @@ contract ReserveAutomationDeploy is Script, Test {
     function run() public {
         vm.startBroadcast();
 
-        deploy(addresses);
+        deploy(_addresses);
 
         vm.stopBroadcast();
 
-        addresses.printAddresses();
+        _addresses.printAddresses();
 
-        validate(addresses);
+        validate(_addresses);
     }
 
-    function deploy(Addresses _addresses) public {
-        address temporalGov = _addresses.getAddress("TEMPORAL_GOVERNOR");
-        address pauseGuardian = _addresses.getAddress("PAUSE_GUARDIAN");
-        address xWellProxy = _addresses.getAddress("xWELL_PROXY");
+    function deploy(Addresses addresses) public {
+        address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+        address xWellProxy = addresses.getAddress("xWELL_PROXY");
 
         _deployer = new AutomationDeploy();
 
@@ -69,7 +69,7 @@ contract ReserveAutomationDeploy is Script, Test {
             temporalGov
         );
 
-        _addresses.addAddress("RESERVE_WELL_HOLDING_DEPOSIT", holdingDeposit);
+        addresses.addAddress("RESERVE_WELL_HOLDING_DEPOSIT", holdingDeposit);
 
         /// Deploy ReserveAutomation for each mToken
         string[] memory mTokens = _getMTokens(block.chainid);
@@ -77,38 +77,39 @@ contract ReserveAutomationDeploy is Script, Test {
             string memory mTokenName = mTokens[i];
             string memory underlyingName = _getUnderlyingName(mTokenName);
             string memory oracleName = _getOracleName(underlyingName);
-
-            ReserveAutomation.InitParams memory params = ReserveAutomation
-                .InitParams({
-                    recipientAddress: holdingDeposit,
-                    wellToken: xWellProxy,
-                    reserveAsset: _addresses.getAddress(underlyingName),
-                    wellChainlinkFeed: _addresses.getAddress(
-                        "CHAINLINK_WELL_USD"
-                    ),
-                    reserveChainlinkFeed: _addresses.getAddress(oracleName),
-                    owner: temporalGov,
-                    mTokenMarket: _addresses.getAddress(mTokenName),
-                    guardian: pauseGuardian
-                });
-
-            address automation = _deployer.deployReserveAutomation(params);
-
-            _addresses.addAddress(
-                string.concat(
-                    "RESERVE_AUTOMATION_",
-                    _stripMoonwellPrefix(mTokenName)
-                ),
-                automation
+            string memory reserveAutomationIdentifier = string.concat(
+                "RESERVE_AUTOMATION_",
+                _stripMoonwellPrefix(mTokenName)
             );
+
+            /// avoid redeploying a contract that already exists
+            if (!addresses.isAddressSet(reserveAutomationIdentifier)) {
+                ReserveAutomation.InitParams memory params = ReserveAutomation
+                    .InitParams({
+                        recipientAddress: holdingDeposit,
+                        wellToken: xWellProxy,
+                        reserveAsset: addresses.getAddress(underlyingName),
+                        wellChainlinkFeed: addresses.getAddress(
+                            "CHAINLINK_WELL_USD"
+                        ),
+                        reserveChainlinkFeed: addresses.getAddress(oracleName),
+                        owner: temporalGov,
+                        mTokenMarket: addresses.getAddress(mTokenName),
+                        guardian: pauseGuardian
+                    });
+
+                address automation = _deployer.deployReserveAutomation(params);
+
+                addresses.addAddress(reserveAutomationIdentifier, automation);
+            }
         }
     }
 
-    function validate(Addresses _addresses) public view {
-        address temporalGov = _addresses.getAddress("TEMPORAL_GOVERNOR");
-        address pauseGuardian = _addresses.getAddress("PAUSE_GUARDIAN");
-        address xWellProxy = _addresses.getAddress("xWELL_PROXY");
-        address holdingDeposit = _addresses.getAddress(
+    function validate(Addresses addresses) public view {
+        address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+        address xWellProxy = addresses.getAddress("xWELL_PROXY");
+        address holdingDeposit = addresses.getAddress(
             "RESERVE_WELL_HOLDING_DEPOSIT"
         );
 
@@ -131,7 +132,7 @@ contract ReserveAutomationDeploy is Script, Test {
             string memory underlyingName = _getUnderlyingName(mTokenName);
             string memory oracleName = _getOracleName(underlyingName);
 
-            address automation = _addresses.getAddress(
+            address automation = addresses.getAddress(
                 string.concat(
                     "RESERVE_AUTOMATION_",
                     _stripMoonwellPrefix(mTokenName)
@@ -162,17 +163,17 @@ contract ReserveAutomationDeploy is Script, Test {
             );
             assertEq(
                 reserve.reserveAsset(),
-                _addresses.getAddress(underlyingName),
+                addresses.getAddress(underlyingName),
                 string.concat("incorrect reserve asset for ", mTokenName)
             );
             assertEq(
                 reserve.wellChainlinkFeed(),
-                _addresses.getAddress("CHAINLINK_WELL_USD"),
+                addresses.getAddress("CHAINLINK_WELL_USD"),
                 string.concat("incorrect well chainlink feed for ", mTokenName)
             );
             assertEq(
                 reserve.reserveChainlinkFeed(),
-                _addresses.getAddress(oracleName),
+                addresses.getAddress(oracleName),
                 string.concat(
                     "incorrect reserve chainlink feed for ",
                     mTokenName
@@ -180,7 +181,7 @@ contract ReserveAutomationDeploy is Script, Test {
             );
             assertEq(
                 reserve.mTokenMarket(),
-                _addresses.getAddress(mTokenName),
+                addresses.getAddress(mTokenName),
                 string.concat("incorrect mToken market for ", mTokenName)
             );
         }
