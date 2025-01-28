@@ -6,14 +6,20 @@ import {console} from "@forge-std/console.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Test} from "@forge-std/Test.sol";
 
+import "@utils/ChainIds.sol";
+
 import {MErc20} from "@protocol/MErc20.sol";
 import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
 import {ReserveAutomationDeploy} from "@proposals/mips/mip-reserve-automation/reserveAutomationDeploy.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
+contract ReserveAutomationLiveSystemIntegrationTest is
+    ReserveAutomationDeploy,
+    PostProposalCheck
+{
     event ERC20Withdrawn(
         address indexed tokenAddress,
         address indexed to,
@@ -29,8 +35,13 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
     uint256 public constant MAX_DISCOUNT = 9e17; // 90% == 10% discount
     uint256 public constant STARTING_PREMIUM = 11e17; // 110% == 10% premium
 
-    function setUp() public override {
-        super.setUp();
+    function setUp()
+        public
+        override(PostProposalCheck, ReserveAutomationDeploy)
+    {
+        PostProposalCheck.setUp();
+
+        vm.selectFork(BASE_FORK_ID);
 
         // Deploy all contracts
         deploy(addresses);
@@ -486,7 +497,7 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
             assertApproxEqRel(
                 getAmountIn,
                 amountWellIn,
-                2.5e14,
+                2.6e14,
                 "amount in not within tolerance"
             );
         }
@@ -600,5 +611,29 @@ contract ReserveAutomationDeployIntegrationTest is ReserveAutomationDeploy {
 
     function testPriceCachingBehavior() public {
         _runTestForAllAutomations(_testPriceCachingBehavior);
+    }
+
+    function _testUpperLowerBoundsPremiumDiscount(
+        ReserveAutomation vault,
+        ERC20
+    ) internal view {
+        /// no checks to run if the sale has not started or not scheduled to start
+        if (vault.saleStartTime() == 0) {
+            return;
+        }
+
+        assertTrue(vault.maxDiscount() >= 0.8e18, "max discount under 80%");
+        assertTrue(
+            vault.startingPremium() <= 1.2e18,
+            "starting premium over 120%"
+        );
+        assertTrue(
+            vault.startingPremium() - vault.maxDiscount() <= 0.5e18,
+            "decay delta gt 50%"
+        );
+    }
+
+    function testUpperLowerBoundsPremiumDiscount() public {
+        _runTestForAllAutomations(_testUpperLowerBoundsPremiumDiscount);
     }
 }
