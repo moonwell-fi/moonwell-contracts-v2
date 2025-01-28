@@ -8,6 +8,7 @@ import "@protocol/utils/String.sol";
 
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
+import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
@@ -49,6 +50,17 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         string token;
     }
 
+    struct TransferReserves {
+        uint256 amount;
+        string market;
+        string to;
+    }
+
+    struct WithdrawWell {
+        uint256 amount;
+        string to;
+    }
+
     struct AddRewardInfo {
         uint256 amount;
         uint256 endTimestamp;
@@ -84,6 +96,8 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         SetMRDRewardSpeed[] setRewardSpeed;
         int256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
+        TransferReserves[] transferReserves;
+        WithdrawWell[] withdrawWell;
     }
 
     JsonSpecMoonbeam moonbeamActions;
@@ -535,6 +549,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             );
         }
 
+        uint256 ecosystemReserveProxyAmount = 0;
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             if (
                 addresses.getAddress(spec.transferFroms[i].to) ==
@@ -583,39 +598,49 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     _chainId
                 ].transferFroms[j];
 
-                require(
-                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
-                        keccak256("MRD_IMPL"),
-                    "should not transfer funds to MRD logic contract"
-                );
-
-                require(
-                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
-                        keccak256("ECOSYSTEM_RESERVE_IMPL"),
-                    "should not transfer funds to Ecosystem Reserve logic contract"
-                );
-                require(
-                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
-                        keccak256("STK_GOVTOKEN_IMPL"),
-                    "should not transfer funds to Safety Module logic contract"
-                );
+                _validateTransferDestination(existingTransferFrom.to);
             }
 
             if (
                 addresses.getAddress(spec.transferFroms[i].to) ==
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
-                assertApproxEqAbs(
-                    int256(spec.transferFroms[i].amount),
-                    spec.stkWellEmissionsPerSecond *
-                        int256(endTimeStamp - startTimeStamp),
-                    1e18,
-                    "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
-                );
+                ecosystemReserveProxyAmount += spec.transferFroms[i].amount;
             }
 
             externalChainActions[_chainId].transferFroms.push(
                 spec.transferFroms[i]
+            );
+        }
+
+        for (uint256 i = 0; i < spec.withdrawWell.length; i++) {
+            WithdrawWell memory withdrawWell = spec.withdrawWell[i];
+
+            _validateTransferDestination(withdrawWell.to);
+
+            if (
+                addresses.getAddress(withdrawWell.to) ==
+                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
+            ) {
+                ecosystemReserveProxyAmount += withdrawWell.amount;
+            }
+
+            externalChainActions[_chainId].withdrawWell.push(withdrawWell);
+        }
+
+        assertApproxEqAbs(
+            int256(ecosystemReserveProxyAmount),
+            spec.stkWellEmissionsPerSecond *
+                int256(endTimeStamp - startTimeStamp),
+            1e18,
+            "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
+        );
+
+        for (uint256 i = 0; i < spec.transferReserves.length; i++) {
+            TransferReserves memory transferReserves = spec.transferReserves[i];
+
+            externalChainActions[_chainId].transferReserves.push(
+                transferReserves
             );
         }
     }
@@ -639,19 +664,18 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     to,
                     transferFrom.amount
                 ),
-                string(
-                    abi.encodePacked(
-                        "Transfer token ",
-                        vm.getLabel(token),
-                        " from ",
-                        vm.getLabel(from),
-                        " to ",
-                        vm.getLabel(to),
-                        " amount ",
-                        vm.toString(transferFrom.amount / 1e18),
-                        " on Moonbeam"
-                    )
-                )
+                string.concat(
+                    "Transfer token ",
+                    vm.getLabel(token),
+                    " from ",
+                    vm.getLabel(from),
+                    " to ",
+                    vm.getLabel(to),
+                    " amount ",
+                    vm.toString(transferFrom.amount / 1e18),
+                    " on Moonbeam"
+                ),
+                ActionType.Moonbeam
             );
         }
         for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
@@ -673,13 +697,11 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     router,
                     bridgeWell.amount
                 ),
-                string(
-                    abi.encodePacked(
-                        "Approve xWELL Router to spend ",
-                        vm.toString(bridgeWell.amount / 1e18),
-                        " ",
-                        vm.getLabel(well)
-                    )
+                string.concat(
+                    "Approve xWELL Router to spend ",
+                    vm.toString(bridgeWell.amount / 1e18),
+                    " ",
+                    vm.getLabel(well)
                 ),
                 ActionType.Moonbeam
             );
@@ -695,15 +717,13 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     bridgeWell.amount,
                     wormholeChainId
                 ),
-                string(
-                    abi.encodePacked(
-                        "Bridge ",
-                        vm.toString(bridgeWell.amount / 1e18),
-                        " WELL to ",
-                        vm.getLabel(target),
-                        " on ",
-                        bridgeWell.network.chainIdToName()
-                    )
+                string.concat(
+                    "Bridge ",
+                    vm.toString(bridgeWell.amount / 1e18),
+                    " WELL to ",
+                    vm.getLabel(target),
+                    " on ",
+                    bridgeWell.network.chainIdToName()
                 ),
                 ActionType.Moonbeam
             );
@@ -726,19 +746,15 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     setRewardSpeed.newSupplySpeed.toUint256(),
                     setRewardSpeed.newBorrowSpeed.toUint256()
                 ),
-                string(
-                    abi.encodePacked(
-                        "Set reward speed for market ",
-                        vm.getLabel(
-                            addresses.getAddress(setRewardSpeed.market)
-                        ),
-                        " on Moonbeam.\nSupply speed: ",
-                        vm.toString(setRewardSpeed.newSupplySpeed),
-                        "\nBorrow speed: ",
-                        vm.toString(setRewardSpeed.newBorrowSpeed),
-                        "\nReward type: ",
-                        vm.toString(setRewardSpeed.rewardType)
-                    )
+                string.concat(
+                    "Set reward speed for market ",
+                    vm.getLabel(addresses.getAddress(setRewardSpeed.market)),
+                    " on Moonbeam.\nSupply speed: ",
+                    vm.toString(setRewardSpeed.newSupplySpeed),
+                    "\nBorrow speed: ",
+                    vm.toString(setRewardSpeed.newBorrowSpeed),
+                    "\nReward type: ",
+                    vm.toString(setRewardSpeed.rewardType)
                 ),
                 ActionType.Moonbeam
             );
@@ -753,12 +769,10 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 addresses.getAddress(stellaSwapReward.target),
                 uint256(stellaSwapReward.amount)
             ),
-            string(
-                abi.encodePacked(
-                    "Approve StellaSwap spend ",
-                    vm.toString(uint256(stellaSwapReward.amount) / 1e18),
-                    " WELL"
-                )
+            string.concat(
+                "Approve StellaSwap spend ",
+                vm.toString(uint256(stellaSwapReward.amount) / 1e18),
+                " WELL"
             ),
             ActionType.Moonbeam
         );
@@ -770,15 +784,13 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 stellaSwapReward.endTimestamp,
                 stellaSwapReward.rewardPerSec
             ),
-            string(
-                abi.encodePacked(
-                    "Add reward info for pool ",
-                    vm.toString(stellaSwapReward.pid),
-                    " on StellaSwap.\nReward per second: ",
-                    vm.toString(uint256(stellaSwapReward.rewardPerSec)),
-                    "\nEnd timestamp: ",
-                    vm.toString(stellaSwapReward.endTimestamp)
-                )
+            string.concat(
+                "Add reward info for pool ",
+                vm.toString(stellaSwapReward.pid),
+                " on StellaSwap.\nReward per second: ",
+                vm.toString(uint256(stellaSwapReward.rewardPerSec)),
+                "\nEnd timestamp: ",
+                vm.toString(stellaSwapReward.endTimestamp)
             ),
             ActionType.Moonbeam
         );
@@ -791,12 +803,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
                     addresses.getAddress("STK_GOVTOKEN_PROXY")
                 ),
-                //"Set reward speed for the Safety Module on Moonbeam",
-                string(
-                    abi.encodePacked(
-                        "Set reward speed for the Safety Module on Moonbeam.\nEmissions per second: ",
-                        vm.toString(spec.stkWellEmissionsPerSecond)
-                    )
+                string.concat(
+                    "Set reward speed for the Safety Module on Moonbeam.\nEmissions per second: ",
+                    vm.toString(spec.stkWellEmissionsPerSecond)
                 ),
                 ActionType.Moonbeam
             );
@@ -827,19 +836,17 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         to,
                         transferFrom.amount
                     ),
-                    string(
-                        abi.encodePacked(
-                            "Transfer token ",
-                            vm.getLabel(token),
-                            " from ",
-                            vm.getLabel(from),
-                            " to ",
-                            vm.getLabel(to),
-                            " amount ",
-                            vm.toString(transferFrom.amount / 1e18),
-                            " on ",
-                            _chainId.chainIdToName()
-                        )
+                    string.concat(
+                        "Transfer token ",
+                        vm.getLabel(token),
+                        " from ",
+                        vm.getLabel(from),
+                        " to ",
+                        vm.getLabel(to),
+                        " amount ",
+                        vm.toString(transferFrom.amount / 1e18),
+                        " on ",
+                        _chainId.chainIdToName()
                     )
                 );
             } else {
@@ -850,19 +857,17 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         to,
                         transferFrom.amount
                     ),
-                    string(
-                        abi.encodePacked(
-                            "Transfer token ",
-                            vm.getLabel(token),
-                            " from ",
-                            vm.getLabel(from),
-                            " to ",
-                            vm.getLabel(to),
-                            " amount ",
-                            vm.toString(transferFrom.amount / 1e18),
-                            " on ",
-                            _chainId.chainIdToName()
-                        )
+                    string.concat(
+                        "Transfer token ",
+                        vm.getLabel(token),
+                        " from ",
+                        vm.getLabel(from),
+                        " to ",
+                        vm.getLabel(to),
+                        " amount ",
+                        vm.toString(transferFrom.amount / 1e18),
+                        " on ",
+                        _chainId.chainIdToName()
                     )
                 );
             }
@@ -888,17 +893,15 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         addresses.getAddress(setRewardSpeed.emissionToken),
                         setRewardSpeed.newSupplySpeed.toUint256()
                     ),
-                    string(
-                        abi.encodePacked(
-                            "Set reward supply speed to ",
-                            vm.toString(setRewardSpeed.newSupplySpeed),
-                            " for ",
-                            vm.getLabel(market),
-                            ".\nNetwork: ",
-                            _chainId.chainIdToName(),
-                            "\nReward token: ",
-                            setRewardSpeed.emissionToken
-                        )
+                    string.concat(
+                        "Set reward supply speed to ",
+                        vm.toString(setRewardSpeed.newSupplySpeed),
+                        " for ",
+                        vm.getLabel(market),
+                        ".\nNetwork: ",
+                        _chainId.chainIdToName(),
+                        "\nReward token: ",
+                        setRewardSpeed.emissionToken
                     )
                 );
             }
@@ -918,17 +921,15 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         addresses.getAddress(setRewardSpeed.emissionToken),
                         setRewardSpeed.newBorrowSpeed.toUint256()
                     ),
-                    string(
-                        abi.encodePacked(
-                            "Set reward borrow speed to ",
-                            vm.toString(setRewardSpeed.newBorrowSpeed),
-                            " for ",
-                            vm.getLabel(market),
-                            ".\nNetwork: ",
-                            _chainId.chainIdToName(),
-                            "\nReward token: ",
-                            setRewardSpeed.emissionToken
-                        )
+                    string.concat(
+                        "Set reward borrow speed to ",
+                        vm.toString(setRewardSpeed.newBorrowSpeed),
+                        " for ",
+                        vm.getLabel(market),
+                        ".\nNetwork: ",
+                        _chainId.chainIdToName(),
+                        "\nReward token: ",
+                        setRewardSpeed.emissionToken
                     )
                 );
             }
@@ -942,17 +943,15 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         addresses.getAddress(setRewardSpeed.emissionToken),
                         setRewardSpeed.newEndTime
                     ),
-                    string(
-                        abi.encodePacked(
-                            "Set reward end time to ",
-                            vm.toString(setRewardSpeed.newEndTime),
-                            " for ",
-                            vm.getLabel(market),
-                            ".\nNetwork:",
-                            _chainId.chainIdToName(),
-                            "\nReward token: ",
-                            setRewardSpeed.emissionToken
-                        )
+                    string.concat(
+                        "Set reward end time to ",
+                        vm.toString(setRewardSpeed.newEndTime),
+                        " for ",
+                        vm.getLabel(market),
+                        ".\nNetwork:",
+                        _chainId.chainIdToName(),
+                        "\nReward token: ",
+                        setRewardSpeed.emissionToken
                     )
                 );
             }
@@ -966,13 +965,79 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
                     addresses.getAddress("STK_GOVTOKEN_PROXY")
                 ),
-                string(
-                    abi.encodePacked(
-                        "Set reward speed to ",
-                        vm.toString(spec.stkWellEmissionsPerSecond),
-                        " for the Safety Module on ",
-                        _chainId.chainIdToName()
-                    )
+                string.concat(
+                    "Set reward speed to ",
+                    vm.toString(spec.stkWellEmissionsPerSecond),
+                    " for the Safety Module on ",
+                    _chainId.chainIdToName()
+                )
+            );
+        }
+
+        // withdraw reserves from the Market Reserve ERC20 Holding Deposit contract
+        for (uint256 i = 0; i < spec.withdrawWell.length; i++) {
+            _pushAction(
+                addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT"),
+                abi.encodeWithSignature(
+                    "withdrawERC20Token(address,address,uint256)",
+                    addresses.getAddress("XWELL_PROXY"),
+                    addresses.getAddress(spec.withdrawWell[i].to),
+                    spec.withdrawWell[i].amount
+                ),
+                string.concat(
+                    "Withdraw ",
+                    vm.toString(spec.withdrawWell[i].amount / 1e18),
+                    " WELL ",
+                    " from the WELL Reserve Holding Deposit Contract on ",
+                    _chainId.chainIdToName()
+                )
+            );
+        }
+
+        for (uint256 i = 0; i < spec.transferReserves.length; i++) {
+            IERC20 underlying = IERC20(
+                MErc20(addresses.getAddress(spec.transferReserves[i].market))
+                    .underlying()
+            );
+
+            _pushAction(
+                addresses.getAddress(spec.transferReserves[i].market),
+                abi.encodeWithSignature(
+                    "_reduceReserves(uint256)",
+                    spec.transferReserves[i].amount
+                ),
+                string.concat(
+                    "Withdraw ",
+                    vm.toString(
+                        spec.transferReserves[i].amount / underlying.decimals()
+                    ),
+                    " ",
+                    underlying.symbol(),
+                    " from ",
+                    spec.transferReserves[i].market,
+                    " on ",
+                    _chainId.chainIdToName()
+                )
+            );
+
+            _pushAction(
+                address(underlying),
+                abi.encodeWithSignature(
+                    "transfer(address,uint256)",
+                    spec.transferReserves[i].to,
+                    spec.transferReserves[i].amount
+                ),
+                string.concat(
+                    "Transfer ",
+                    vm.toString(
+                        spec.transferReserves[i].amount / underlying.decimals()
+                    ),
+                    " ",
+                    underlying.symbol(),
+                    " to ",
+                    spec.transferReserves[i].to,
+                    " on ",
+                    _chainId.chainIdToName()
                 )
             );
         }
@@ -995,15 +1060,13 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     well.balanceOf(to),
                     wellBalancesBefore[to],
                     1e18,
-                    "balance changed for MULTICHAIN_GOVERNOR_PROXY"
+                    string.concat("balance changed for ", vm.getLabel(to))
                 );
             } else {
                 assertEq(
                     well.balanceOf(to),
                     wellBalancesBefore[to] + transferFrom.amount,
-                    string(
-                        abi.encodePacked("balance wrong for ", vm.getLabel(to))
-                    )
+                    string.concat("balance wrong for ", vm.getLabel(to))
                 );
             }
         }
@@ -1077,12 +1140,10 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         )
                     ),
                     setRewardSpeed.newSupplySpeed,
-                    string(
-                        abi.encodePacked(
-                            "Supply speed for ",
-                            vm.getLabel(market),
-                            " is incorrect"
-                        )
+                    string.concat(
+                        "Supply speed for ",
+                        vm.getLabel(market),
+                        " is incorrect"
                     )
                 );
             }
@@ -1096,12 +1157,10 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         )
                     ),
                     setRewardSpeed.newBorrowSpeed,
-                    string(
-                        abi.encodePacked(
-                            "Borrow speed for ",
-                            vm.getLabel(market),
-                            " is incorrect"
-                        )
+                    string.concat(
+                        "Borrow speed for ",
+                        vm.getLabel(market),
+                        " is incorrect"
                     )
                 );
             }
@@ -1119,7 +1178,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 assertEq(
                     int256(emissionsPerSecond),
                     spec.stkWellEmissionsPerSecond,
-                    "Emissions per second for the Safety Module on Moonbeam is incorrect"
+                    string.concat(
+                        "Emissions per second for the Safety Module on Moonbeam is incorrect"
+                    )
                 );
             }
         }
@@ -1140,7 +1201,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             ),
             0,
             1e18,
-            "StellaSwap Rewarder should not have an open allowance after execution"
+            string.concat(
+                "StellaSwap Rewarder should not have an open allowance after execution"
+            )
         );
 
         // validate that stellaswap receive the correct amount of well
@@ -1148,7 +1211,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             well.balanceOf(stellaSwapRewarder),
             wellBalancesBefore[stellaSwapRewarder] + addRewardInfo.amount,
             1e18,
-            "StellaSwap Rewarder should have received the correct amount of WELL"
+            string.concat(
+                "StellaSwap Rewarder should have received the correct amount of WELL"
+            )
         );
 
         uint256 blockTimestamp = block.timestamp;
@@ -1159,12 +1224,12 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         assertEq(
             stellaSwap.poolRewardsPerSec(addRewardInfo.pid),
             addRewardInfo.rewardPerSec,
-            "Reward per second for StellaSwap is incorrect"
+            string.concat("Reward per second for StellaSwap is incorrect")
         );
         assertEq(
             stellaSwap.currentEndTimestamp(addRewardInfo.pid),
             addRewardInfo.endTimestamp,
-            "End timestamp for StellaSwap is incorrect"
+            string.concat("End timestamp for StellaSwap is incorrect")
         );
 
         // warp back to current block.timestamp
@@ -1190,12 +1255,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 assertEq(
                     well.balanceOf(to),
                     wellBalancesBefore[to] + spec.transferFroms[i].amount,
-                    string(
-                        abi.encodePacked(
-                            "balance changed for ",
-                            vm.getLabel(to)
-                        )
-                    )
+                    string.concat("balance changed for ", vm.getLabel(to))
                 );
             }
         }
@@ -1243,12 +1303,10 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         assertEq(
                             int256(_config.supplyEmissionsPerSec),
                             setRewardSpeed.newSupplySpeed,
-                            string(
-                                abi.encodePacked(
-                                    "Supply speed for ",
-                                    vm.getLabel(market),
-                                    " is incorrect"
-                                )
+                            string.concat(
+                                "Supply speed for ",
+                                vm.getLabel(market),
+                                " is incorrect"
                             )
                         );
                     }
@@ -1257,12 +1315,10 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         assertEq(
                             int256(_config.borrowEmissionsPerSec),
                             setRewardSpeed.newBorrowSpeed,
-                            string(
-                                abi.encodePacked(
-                                    "Borrow speed for ",
-                                    vm.getLabel(market),
-                                    " is incorrect"
-                                )
+                            string.concat(
+                                "Borrow speed for ",
+                                vm.getLabel(market),
+                                " is incorrect"
                             )
                         );
                     }
@@ -1271,17 +1327,35 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         assertEq(
                             int256(_config.endTime),
                             setRewardSpeed.newEndTime,
-                            string(
-                                abi.encodePacked(
-                                    "End time for ",
-                                    vm.getLabel(market),
-                                    " is incorrect"
-                                )
+                            string.concat(
+                                "End time for ",
+                                vm.getLabel(market),
+                                " is incorrect"
                             )
                         );
                     }
                 }
             }
         }
+    }
+
+    function _validateTransferDestination(
+        string memory destination
+    ) internal pure {
+        require(
+            keccak256(abi.encodePacked(destination)) != keccak256("MRD_IMPL"),
+            "should not transfer funds to MRD logic contract"
+        );
+
+        require(
+            keccak256(abi.encodePacked(destination)) !=
+                keccak256("ECOSYSTEM_RESERVE_IMPL"),
+            "should not transfer funds to Ecosystem Reserve logic contract"
+        );
+        require(
+            keccak256(abi.encodePacked(destination)) !=
+                keccak256("STK_GOVTOKEN_IMPL"),
+            "should not transfer funds to Safety Module logic contract"
+        );
     }
 }

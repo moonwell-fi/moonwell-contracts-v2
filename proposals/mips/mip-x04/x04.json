@@ -190,7 +190,9 @@
                 "to": "ECOSYSTEM_RESERVE_PROXY",
                 "token": "xWELL_PROXY"
             }
-        ]
+        ],
+        "transferReserves": [],
+        "withdrawWell": []
     },
     "1284": {
         "bridgeToRecipient": [
@@ -543,7 +545,9 @@
                 "to": "DEX_RELAYER",
                 "token": "xWELL_PROXY"
             }
-        ]
+        ],
+        "transferReserves": [],
+        "withdrawWell": []
     },
     "endTimeSTamp": 1732851000,
     "startTimeStamp": 1730431800
