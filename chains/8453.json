@@ -823,5 +823,15 @@
         "addr": "0x10fF57877b79e9bd949B3815220eC87B9fc5D2ee",
         "isContract": true,
         "name": "MOONWELL_LBTC"
+    },
+    {
+        "addr": "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b",
+        "isContract": true,
+        "name": "MOONWELL_VIRTUAL"
+    },
+    {
+        "addr": "0xEaf310161c9eF7c813A14f8FEF6Fb271434019F7",
+        "isContract": true,
+        "name": "CHAINLINK_VIRTUAL_USD"
     }
 ]
