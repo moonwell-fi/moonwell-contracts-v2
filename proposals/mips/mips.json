@@ -1,5 +1,19 @@
 [
     {
+        "envpath": "proposals/mips/mip-b41/b41.sh",
+        "governor": "MultichainGovernor",
+        "id": 80,
+        "path": "MarketAdd.sol/MarketAddTemplate.json",
+        "proposalType": "HybridProposal"
+    },
+    {
+        "envpath": "proposals/mips/mip-b40/b40.sh",
+        "governor": "MultichainGovernor",
+        "id": 79,
+        "path": "mipb40.sol/mipb40.json",
+        "proposalType": "HybridProposal"
+    },
+    {
         "envpath": "proposals/mips/mip-b39/b39.sh",
         "governor": "MultichainGovernor",
         "id": 78,
@@ -11,13 +25,6 @@
         "governor": "MultichainGovernor",
         "id": 77,
         "path": "MarketAdd.sol/MarketAddTemplate.json",
-        "proposalType": "HybridProposal"
-    },
-    {
-        "envpath": "proposals/mips/mip-b40/b40.sh",
-        "governor": "MultichainGovernor",
-        "id": 79,
-        "path": "mipb40.sol/mipb40.json",
         "proposalType": "HybridProposal"
     },
     {
