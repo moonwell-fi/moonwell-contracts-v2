@@ -18,9 +18,10 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {MarketAddChecker} from "@protocol/governance/MarketAddChecker.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
-import {ChainIds, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ChainIds, OPTIMISM_CHAIN_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MockRedstoneMultiFeedAdapter} from "@test/mock/MockRedstoneMultiFeedAdapter.sol";
 
 contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
     using ChainIds for uint256;
@@ -63,6 +64,16 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             for (uint256 j = 0; j < configs.length; j++) {
                 rewardsConfig[markets[i]].push(configs[j].emissionToken);
             }
+        }
+
+        if (primaryForkId == BASE_FORK_ID) {
+            // mock redstone internal call to avoid stale price error (we cannot warp more than 30 hours to the future)
+            MockRedstoneMultiFeedAdapter redstoneMock = new MockRedstoneMultiFeedAdapter();
+
+            vm.etch(
+                0xf030a9ad2707c6C628f58372Fa3B355264417f56,
+                address(redstoneMock).code
+            );
         }
 
         assertEq(mTokens.length > 0, true, "No markets found");
