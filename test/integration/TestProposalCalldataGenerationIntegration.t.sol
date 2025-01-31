@@ -65,6 +65,17 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             );
 
             HybridProposal proposal = HybridProposal(deployCode(proposalPath));
+            vm.label(
+                address(proposal),
+                string(
+                    abi.encodePacked(
+                        "Proposal ",
+                        proposal.name(),
+                        " - ",
+                        proposalPath
+                    )
+                )
+            );
             vm.makePersistent(address(proposal));
 
             vm.selectFork(proposal.primaryForkId());

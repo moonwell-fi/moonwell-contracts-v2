@@ -1,0 +1,13 @@
+#!/bin/bash
+export MTOKENS_PATH=proposals/mips/mip-b40/MTokens.json
+echo "MTOKENS_PATH=$MTOKENS_PATH"
+
+export EMISSION_CONFIGURATIONS_PATH=proposals/mips/mip-b40/RewardStreams.json
+echo "EMISSION_CONFIGURATIONS_PATH=$EMISSION_CONFIGURATIONS_PATH"
+
+export DESCRIPTION_PATH=proposals/mips/mip-b40/MIP-B40.md
+echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
+
+export PRIMARY_FORK_ID=1
+echo "PRIMARY_FORK_ID=$PRIMARY_FORK_ID"
+

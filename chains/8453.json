@@ -803,5 +803,45 @@
         "addr": "0x9A858ebfF1bEb0D3495BB0e2897c1528eD84A218",
         "isContract": true,
         "name": "MOONWELL_TBTC"
+    },
+    {
+        "addr": "0xecac9c5f704e954931349da37f60e39f515c11c1",
+        "isContract": true,
+        "name": "LBTC"
+    },
+    {
+        "addr": "0xb9059d6ace87b699e67ec750fe4399d29797d232",
+        "isContract": true,
+        "name": "CHAINLINK_LBTC_BTC_COMPOSITE_ORACLE"
+    },
+    {
+        "addr": "0x01177F591C4D4fC89cDEE039f7E17d7412CE9A7b",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_LBTC"
+    },
+    {
+        "addr": "0x10fF57877b79e9bd949B3815220eC87B9fc5D2ee",
+        "isContract": true,
+        "name": "MOONWELL_LBTC"
+    },
+    {
+        "addr": "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b",
+        "isContract": true,
+        "name": "VIRTUAL"
+    },
+    {
+        "addr": "0xEaf310161c9eF7c813A14f8FEF6Fb271434019F7",
+        "isContract": true,
+        "name": "CHAINLINK_VIRTUAL_USD"
+    },
+    {
+        "addr": "0x048442d10E4c54655440f1C580bfcd27961b5bD8",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_VIRTUAL"
+    },
+    {
+        "addr": "0xdE8Df9d942D78edE3Ca06e60712582F79CFfFC64",
+        "isContract": true,
+        "name": "MOONWELL_VIRTUAL"
     }
 ]

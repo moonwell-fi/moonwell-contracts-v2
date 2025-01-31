@@ -26,7 +26,7 @@ contract WormholeRelayerAdapter {
     // e.g of silence failure: check for refunds
     bool public silenceFailure;
 
-    uint256 public constant nativePriceQuote = 1 ether;
+    uint256 public constant nativePriceQuote = 0.1 ether;
 
     uint256 public callCounter;
 

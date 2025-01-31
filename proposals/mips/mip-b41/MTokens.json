@@ -1,0 +1,23 @@
+{
+    "8453": [
+        {
+            "addressesString": "MOONWELL_VIRTUAL",
+            "borrowCap": 2300000e18,
+            "collateralFactor": 0.65e18,
+            "initialMintAmount": 1e17,
+            "jrm": {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 5e18,
+                "kink": 0.45e18,
+                "multiplierPerYear": 0.23e18
+            },
+            "name": "Moonwell Virtual",
+            "priceFeedName": "CHAINLINK_VIRTUAL_USD",
+            "reserveFactor": 0.3e18,
+            "seizeShare": 0.03e18,
+            "supplyCap": 4500000e18,
+            "symbol": "mVIRTUAL",
+            "tokenAddressName": "VIRTUAL"
+        }
+    ]
+}
