@@ -84,6 +84,15 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         int256 newSupplySpeed;
     }
 
+    struct InitSale {
+        uint256 auctionPeriod;
+        uint256 delay;
+        uint256 miniAuctionPeriod;
+        uint256 periodMaxDiscount;
+        int256 periodStartingPremium;
+        string reserveAutomationContract;
+    }
+
     struct JsonSpecMoonbeam {
         AddRewardInfo addRewardInfo;
         BridgeWell[] bridgeWells;
@@ -93,6 +102,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
     }
 
     struct JsonSpecExternalChain {
+        InitSale[] initSales;
         SetMRDRewardSpeed[] setRewardSpeed;
         int256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
@@ -643,6 +653,12 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 transferReserves
             );
         }
+
+        for (uint256 i = 0; i < spec.initSales.length; i++) {
+            InitSale memory initSale = spec.initSales[i];
+
+            externalChainActions[_chainId].initSales.push(initSale);
+        }
     }
 
     function _buildMoonbeamActions(Addresses addresses) private {
@@ -1036,6 +1052,30 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     underlying.symbol(),
                     " to ",
                     spec.transferReserves[i].to,
+                    " on ",
+                    _chainId.chainIdToName()
+                )
+            );
+        }
+
+        for (uint256 i = 0; i < spec.initSales.length; i++) {
+            InitSale memory initSale = spec.initSales[i];
+
+            _pushAction(
+                addresses.getAddress(initSale.reserveAutomationContract),
+                abi.encodeWithSignature(
+                    "initiateSale(uint256,uint256,uint256,uint256,uint256)",
+                    initSale.delay,
+                    initSale.auctionPeriod,
+                    initSale.miniAuctionPeriod,
+                    initSale.periodMaxDiscount,
+                    initSale.periodStartingPremium
+                ),
+                string.concat(
+                    "Init reserve sale for ",
+                    vm.getLabel(
+                        addresses.getAddress(initSale.reserveAutomationContract)
+                    ),
                     " on ",
                     _chainId.chainIdToName()
                 )
