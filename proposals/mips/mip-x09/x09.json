@@ -1,5 +1,6 @@
 {
     "10": {
+        "initSales": [],
         "setMRDSpeeds": [
             {
                 "emissionToken": "xWELL_PROXY",
@@ -355,6 +356,7 @@
         "stkWellEmissionsPerSecond": 60695961920974680
     },
     "8453": {
+        "initSales": [],
         "setMRDSpeeds": [
             {
                 "emissionToken": "xWELL_PROXY",
