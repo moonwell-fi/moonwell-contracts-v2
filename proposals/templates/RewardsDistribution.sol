@@ -91,7 +91,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         uint256 miniAuctionPeriod;
         uint256 periodMaxDiscount;
         int256 periodStartingPremium;
-        string reserveAutomationContract;
+        string[] reserveAutomationContracts;
     }
 
     struct JsonSpecMoonbeam {
@@ -103,7 +103,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
     }
 
     struct JsonSpecExternalChain {
-        InitSale[] initSales;
+        InitSale initSale;
         SetMRDRewardSpeed[] setRewardSpeed;
         int256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
@@ -655,72 +655,83 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             );
         }
 
-        for (uint256 i = 0; i < spec.initSales.length; i++) {
-            InitSale memory initSale = spec.initSales[i];
+        // Only process initSale if it was provided (check if any required fields are non-zero/non-empty)
+        if (
+            spec.initSale.auctionPeriod != 0 &&
+            spec.initSale.reserveAutomationContracts.length > 0
+        ) {
+            InitSale memory initSale = spec.initSale;
 
-            // Get the ReserveAutomation contract and its reserveAsset
-            address reserveAutomationContract = addresses.getAddress(
-                initSale.reserveAutomationContract
-            );
-            address reserveAsset = ReserveAutomation(reserveAutomationContract)
-                .reserveAsset();
+            for (
+                uint256 i = 0;
+                i < initSale.reserveAutomationContracts.length;
+                i++
+            ) {
+                // Get the ReserveAutomation contract and its reserveAsset
+                address reserveAutomationContract = addresses.getAddress(
+                    initSale.reserveAutomationContracts[i]
+                );
+                address reserveAsset = ReserveAutomation(
+                    reserveAutomationContract
+                ).reserveAsset();
 
-            // Calculate periodSaleAmount
-            uint256 periodSaleAmount = IERC20(reserveAsset).balanceOf(
-                reserveAutomationContract
-            ) / (initSale.auctionPeriod / initSale.miniAuctionPeriod);
+                // Calculate periodSaleAmount
+                uint256 periodSaleAmount = IERC20(reserveAsset).balanceOf(
+                    reserveAutomationContract
+                ) / (initSale.auctionPeriod / initSale.miniAuctionPeriod);
 
-            // Sanity check: the contract must have enough reserves
-            assertGt(
-                periodSaleAmount,
-                0,
-                "RewardsDistribution: periodSaleAmount must be greater than 0"
-            );
+                // Sanity check: the contract must have enough reserves
+                assertGt(
+                    periodSaleAmount,
+                    0,
+                    "RewardsDistribution: periodSaleAmount must be greater than 0"
+                );
 
-            // Sanity check: delay must be less than or equal to MAXIMUM_AUCTION_DELAY
-            assertLe(
-                initSale.delay,
-                ReserveAutomation(reserveAutomationContract)
-                    .MAXIMUM_AUCTION_DELAY(),
-                "RewardsDistribution: delay exceeds MAXIMUM_AUCTION_DELAY"
-            );
+                // Sanity check: delay must be less than or equal to MAXIMUM_AUCTION_DELAY
+                assertLe(
+                    initSale.delay,
+                    ReserveAutomation(reserveAutomationContract)
+                        .MAXIMUM_AUCTION_DELAY(),
+                    "RewardsDistribution: delay exceeds MAXIMUM_AUCTION_DELAY"
+                );
 
-            // Sanity check: maxDiscount must be less than SCALAR (1e18)
-            assertLt(
-                initSale.periodMaxDiscount,
-                ReserveAutomation(reserveAutomationContract).SCALAR(),
-                "RewardsDistribution: periodMaxDiscount must be less than SCALAR"
-            );
+                // Sanity check: maxDiscount must be less than SCALAR (1e18)
+                assertLt(
+                    initSale.periodMaxDiscount,
+                    ReserveAutomation(reserveAutomationContract).SCALAR(),
+                    "RewardsDistribution: periodMaxDiscount must be less than SCALAR"
+                );
 
-            // Sanity check: startingPremium must be greater than SCALAR (1e18)
-            assertGt(
-                uint256(initSale.periodStartingPremium),
-                ReserveAutomation(reserveAutomationContract).SCALAR(),
-                "RewardsDistribution: periodStartingPremium must be greater than SCALAR"
-            );
+                // Sanity check: startingPremium must be greater than SCALAR (1e18)
+                assertGt(
+                    uint256(initSale.periodStartingPremium),
+                    ReserveAutomation(reserveAutomationContract).SCALAR(),
+                    "RewardsDistribution: periodStartingPremium must be greater than SCALAR"
+                );
 
-            // Sanity check: auctionPeriod must be perfectly divisible by miniAuctionPeriod
-            assertEq(
-                initSale.auctionPeriod % initSale.miniAuctionPeriod,
-                0,
-                "RewardsDistribution: auctionPeriod must be perfectly divisible by miniAuctionPeriod"
-            );
+                // Sanity check: auctionPeriod must be perfectly divisible by miniAuctionPeriod
+                assertEq(
+                    initSale.auctionPeriod % initSale.miniAuctionPeriod,
+                    0,
+                    "RewardsDistribution: auctionPeriod must be perfectly divisible by miniAuctionPeriod"
+                );
 
-            // Sanity check: must have more than one mini-auction
-            assertGt(
-                initSale.auctionPeriod / initSale.miniAuctionPeriod,
-                1,
-                "RewardsDistribution: must have more than one mini-auction"
-            );
+                // Sanity check: must have more than one mini-auction
+                assertGt(
+                    initSale.auctionPeriod / initSale.miniAuctionPeriod,
+                    1,
+                    "RewardsDistribution: must have more than one mini-auction"
+                );
 
-            // Sanity check: miniAuctionPeriod must be greater than 1
-            assertGt(
-                initSale.miniAuctionPeriod,
-                1,
-                "RewardsDistribution: miniAuctionPeriod must be greater than 1"
-            );
+                // Sanity check: miniAuctionPeriod must be greater than 1
+                assertGt(
+                    initSale.miniAuctionPeriod,
+                    1,
+                    "RewardsDistribution: miniAuctionPeriod must be greater than 1"
+                );
+            }
 
-            externalChainActions[_chainId].initSales.push(initSale);
+            externalChainActions[_chainId].initSale = initSale;
         }
     }
 
@@ -1117,28 +1128,42 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             );
         }
 
-        for (uint256 i = 0; i < spec.initSales.length; i++) {
-            InitSale memory initSale = spec.initSales[i];
+        // Only process initSale if it was provided (check if any required fields are non-zero/non-empty)
+        if (
+            spec.initSale.auctionPeriod != 0 &&
+            spec.initSale.reserveAutomationContracts.length > 0
+        ) {
+            InitSale memory initSale = spec.initSale;
 
-            _pushAction(
-                addresses.getAddress(initSale.reserveAutomationContract),
-                abi.encodeWithSignature(
-                    "initiateSale(uint256,uint256,uint256,uint256,uint256)",
-                    initSale.delay,
-                    initSale.auctionPeriod,
-                    initSale.miniAuctionPeriod,
-                    initSale.periodMaxDiscount,
-                    initSale.periodStartingPremium
-                ),
-                string.concat(
-                    "Init reserve sale for ",
-                    vm.getLabel(
-                        addresses.getAddress(initSale.reserveAutomationContract)
+            for (
+                uint256 i = 0;
+                i < initSale.reserveAutomationContracts.length;
+                i++
+            ) {
+                _pushAction(
+                    addresses.getAddress(
+                        initSale.reserveAutomationContracts[i]
                     ),
-                    " on ",
-                    _chainId.chainIdToName()
-                )
-            );
+                    abi.encodeWithSignature(
+                        "initiateSale(uint256,uint256,uint256,uint256,uint256)",
+                        initSale.delay,
+                        initSale.auctionPeriod,
+                        initSale.miniAuctionPeriod,
+                        initSale.periodMaxDiscount,
+                        initSale.periodStartingPremium
+                    ),
+                    string.concat(
+                        "Init reserve sale for ",
+                        vm.getLabel(
+                            addresses.getAddress(
+                                initSale.reserveAutomationContracts[i]
+                            )
+                        ),
+                        " on ",
+                        _chainId.chainIdToName()
+                    )
+                );
+            }
         }
     }
 
