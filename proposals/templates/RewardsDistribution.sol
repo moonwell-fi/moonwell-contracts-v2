@@ -16,15 +16,16 @@ import {Networks} from "@proposals/utils/Networks.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {IStellaSwapRewarder} from "@protocol/interfaces/IStellaSwapRewarder.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
@@ -693,7 +694,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
             // Sanity check: startingPremium must be greater than SCALAR (1e18)
             assertGt(
-                initSale.periodStartingPremium,
+                uint256(initSale.periodStartingPremium),
                 ReserveAutomation(reserveAutomationContract).SCALAR(),
                 "RewardsDistribution: periodStartingPremium must be greater than SCALAR"
             );
@@ -956,10 +957,6 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
             address market = addresses.getAddress(setRewardSpeed.market);
             address mrd = addresses.getAddress("MRD_PROXY");
-
-            IMultiRewardDistributor distributor = IMultiRewardDistributor(
-                addresses.getAddress("MRD_PROXY")
-            );
 
             // only update if the configuration exists
             if (setRewardSpeed.newSupplySpeed != -1) {
