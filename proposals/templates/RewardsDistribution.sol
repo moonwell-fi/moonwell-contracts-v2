@@ -657,6 +657,68 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         for (uint256 i = 0; i < spec.initSales.length; i++) {
             InitSale memory initSale = spec.initSales[i];
 
+            // Get the ReserveAutomation contract and its reserveAsset
+            address reserveAutomationContract = addresses.getAddress(
+                initSale.reserveAutomationContract
+            );
+            address reserveAsset = ReserveAutomation(reserveAutomationContract)
+                .reserveAsset();
+
+            // Calculate periodSaleAmount
+            uint256 periodSaleAmount = IERC20(reserveAsset).balanceOf(
+                reserveAutomationContract
+            ) / (initSale.auctionPeriod / initSale.miniAuctionPeriod);
+
+            // Sanity check: the contract must have enough reserves
+            assertGt(
+                periodSaleAmount,
+                0,
+                "RewardsDistribution: periodSaleAmount must be greater than 0"
+            );
+
+            // Sanity check: delay must be less than or equal to MAXIMUM_AUCTION_DELAY
+            assertLe(
+                initSale.delay,
+                ReserveAutomation(reserveAutomationContract)
+                    .MAXIMUM_AUCTION_DELAY(),
+                "RewardsDistribution: delay exceeds MAXIMUM_AUCTION_DELAY"
+            );
+
+            // Sanity check: maxDiscount must be less than SCALAR (1e18)
+            assertLt(
+                initSale.periodMaxDiscount,
+                ReserveAutomation(reserveAutomationContract).SCALAR(),
+                "RewardsDistribution: periodMaxDiscount must be less than SCALAR"
+            );
+
+            // Sanity check: startingPremium must be greater than SCALAR (1e18)
+            assertGt(
+                initSale.periodStartingPremium,
+                ReserveAutomation(reserveAutomationContract).SCALAR(),
+                "RewardsDistribution: periodStartingPremium must be greater than SCALAR"
+            );
+
+            // Sanity check: auctionPeriod must be perfectly divisible by miniAuctionPeriod
+            assertEq(
+                initSale.auctionPeriod % initSale.miniAuctionPeriod,
+                0,
+                "RewardsDistribution: auctionPeriod must be perfectly divisible by miniAuctionPeriod"
+            );
+
+            // Sanity check: must have more than one mini-auction
+            assertGt(
+                initSale.auctionPeriod / initSale.miniAuctionPeriod,
+                1,
+                "RewardsDistribution: must have more than one mini-auction"
+            );
+
+            // Sanity check: miniAuctionPeriod must be greater than 1
+            assertGt(
+                initSale.miniAuctionPeriod,
+                1,
+                "RewardsDistribution: miniAuctionPeriod must be greater than 1"
+            );
+
             externalChainActions[_chainId].initSales.push(initSale);
         }
     }
