@@ -1,6 +1,13 @@
 {
     "10": {
-        "initSale": {},
+        "initSale": {
+            "auctionPeriod": 0,
+            "delay": 0,
+            "miniAuctionPeriod": 0,
+            "periodMaxDiscount": 0,
+            "periodStartingPremium": 0,
+            "reserveAutomationContracts": []
+        },
         "setMRDSpeeds": [
             {
                 "emissionToken": "xWELL_PROXY",
@@ -348,7 +355,14 @@
         "stkWellEmissionsPerSecond": 199856874801030100
     },
     "8453": {
-        "initSale": {},
+        "initSale": {
+            "auctionPeriod": 0,
+            "delay": 0,
+            "miniAuctionPeriod": 0,
+            "periodMaxDiscount": 0,
+            "periodStartingPremium": 0,
+            "reserveAutomationContracts": []
+        },
         "setMRDSpeeds": [
             {
                 "emissionToken": "xWELL_PROXY",
