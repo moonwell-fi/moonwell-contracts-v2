@@ -655,9 +655,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             );
         }
 
-        // Only process initSale if it was provided (check if any required fields are non-zero/non-empty)
+        // Process initSale if it exists in the JSON and has valid data
         if (
-            spec.initSale.auctionPeriod != 0 &&
+            spec.initSale.auctionPeriod != 0 ||
             spec.initSale.reserveAutomationContracts.length > 0
         ) {
             InitSale memory initSale = spec.initSale;
@@ -1128,9 +1128,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             );
         }
 
-        // Only process initSale if it was provided (check if any required fields are non-zero/non-empty)
+        // Process initSale if it exists in the JSON and has valid data
         if (
-            spec.initSale.auctionPeriod != 0 &&
+            spec.initSale.auctionPeriod != 0 ||
             spec.initSale.reserveAutomationContracts.length > 0
         ) {
             InitSale memory initSale = spec.initSale;
