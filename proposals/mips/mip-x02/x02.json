@@ -1,5 +1,6 @@
 {
     "10": {
+        "initSales": [],
         "setMRDSpeeds": [
             {
                 "emissionToken": "xWELL_PROXY",
@@ -176,7 +177,9 @@
                 "to": "ECOSYSTEM_RESERVE_PROXY",
                 "token": "xWELL_PROXY"
             }
-        ]
+        ],
+        "transferReserves": [],
+        "withdrawWell": []
     },
     "1284": {
         "bridgeToRecipient": [
@@ -345,6 +348,7 @@
         "stkWellEmissionsPerSecond": 199856874801030100
     },
     "8453": {
+        "initSales": [],
         "setMRDSpeeds": [
             {
                 "emissionToken": "xWELL_PROXY",
@@ -515,7 +519,9 @@
                 "to": "ECOSYSTEM_RESERVE_PROXY",
                 "token": "xWELL_PROXY"
             }
-        ]
+        ],
+        "transferReserves": [],
+        "withdrawWell": []
     },
     "endTimeSTamp": 1730431800,
     "startTimeStamp": 1728012600
