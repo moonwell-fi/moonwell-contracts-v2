@@ -43,6 +43,8 @@ contract ReserveAutomationLiveSystemIntegrationTest is
 
         vm.selectFork(BASE_FORK_ID);
 
+        vm.warp(proposalStartTime);
+
         // Deploy all contracts
         deploy(addresses);
 

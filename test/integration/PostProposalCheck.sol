@@ -25,6 +25,10 @@ contract PostProposalCheck is LiveProposalCheck {
     /// @notice array of proposals in development
     Proposal[] public proposals;
 
+    /// @notice store the proposal start time so that tests can go back in time
+    /// to this point if needed. Used in ReserveAutomationDeploy Integration Test
+    uint256 public proposalStartTime;
+
     function setUp() public virtual override {
         super.setUp();
 
