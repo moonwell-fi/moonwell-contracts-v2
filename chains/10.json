@@ -488,5 +488,70 @@
         "addr": "0x7F102e5b4C32e0861293E97DE85e6E0dB3530605",
         "isContract": true,
         "name": "CHAINLINK_WELL_USD"
+    },
+    {
+        "addr": "0x03fB594Ff49883A6D0eE835010CAF63871a2902d",
+        "isContract": true,
+        "name": "RESERVE_WELL_HOLDING_DEPOSIT"
+    },
+    {
+        "addr": "0x475d7c6999dc27E640d260aBf9f2fA9333E472CF",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_USDC"
+    },
+    {
+        "addr": "0x9E58891D8DF4e6Dd8bAfD3082A59B72C51202841",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_USDT"
+    },
+    {
+        "addr": "0xE6Aea947c0F082c5Dc751BB9C7f44Ce059590962",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_DAI"
+    },
+    {
+        "addr": "0x080D64570a58FF87E14CC5Cb91d1aaB26b15CFDc",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_WETH"
+    },
+    {
+        "addr": "0x8455D94e412A498Df8727D904252892Fb111a4cD",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_cbETH"
+    },
+    {
+        "addr": "0x01c369a6238226702E48C9C3fBB1de33F4b05D74",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_wstETH"
+    },
+    {
+        "addr": "0x9E530e9F3f9b1046e223cc3eB97fA0bBab5Dd993",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_rETH"
+    },
+    {
+        "addr": "0x6427D36153dE11b694d70604B0715790769024f7",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_OP"
+    },
+    {
+        "addr": "0x589F59fBDB5952920fA557c924F6f5CFf184b155",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_VELO"
+    },
+    {
+        "addr": "0x3B40085872eaEA59CF39FCafFb3dc36085aE48f6",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_weETH"
+    },
+    {
+        "addr": "0xFfF466528fE1a18b95Fa910C96540A70EC2727FB",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_wrsETH"
+    },
+    {
+        "addr": "0x78a9C06188195CEE3cBf67303a1708cb8765b9ec",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_WBTC"
     }
 ]
