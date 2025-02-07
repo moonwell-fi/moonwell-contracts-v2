@@ -34,6 +34,8 @@ contract PostProposalCheck is LiveProposalCheck {
 
         MOONBEAM_FORK_ID.createForksAndSelect();
 
+        proposalStartTime = block.timestamp;
+
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
