@@ -77,9 +77,12 @@ contract ReserveAutomationDeploy is Script, Test {
                 xWellProxy,
                 temporalGov
             );
+            addresses.addAddress(
+                "RESERVE_WELL_HOLDING_DEPOSIT",
+                holdingDeposit
+            );
         }
 
-        addresses.addAddress("RESERVE_WELL_HOLDING_DEPOSIT", holdingDeposit);
         ChainlinkOracle oracle = ChainlinkOracle(
             addresses.getAddress("CHAINLINK_ORACLE")
         );
