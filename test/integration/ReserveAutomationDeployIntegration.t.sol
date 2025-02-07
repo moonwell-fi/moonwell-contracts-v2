@@ -62,9 +62,9 @@ contract ReserveAutomationLiveSystemIntegrationTest is
         function(ReserveAutomation, ERC20) internal fn
     ) internal {
         string[] memory mTokens = _getMTokens(block.chainid);
+
         for (uint256 i = 0; i < mTokens.length; i++) {
             string memory mTokenName = mTokens[i];
-            string memory underlyingName = _getUnderlyingName(mTokenName);
 
             ReserveAutomation automation = ReserveAutomation(
                 addresses.getAddress(
@@ -75,7 +75,9 @@ contract ReserveAutomationLiveSystemIntegrationTest is
                 )
             );
 
-            ERC20 underlying = ERC20(addresses.getAddress(underlyingName));
+            ERC20 underlying = ERC20(
+                MErc20(addresses.getAddress(mTokenName)).underlying()
+            );
 
             fn(automation, underlying);
         }
