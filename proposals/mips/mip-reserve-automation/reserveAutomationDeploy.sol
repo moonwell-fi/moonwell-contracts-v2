@@ -66,10 +66,18 @@ contract ReserveAutomationDeploy is Script, Test {
         _deployer = new AutomationDeploy();
 
         /// Deploy ERC20HoldingDeposit for xWELL
-        address holdingDeposit = _deployer.deployERC20HoldingDeposit(
-            xWellProxy,
-            temporalGov
-        );
+        address holdingDeposit;
+
+        if (addresses.isAddressSet("RESERVE_WELL_HOLDING_DEPOSIT")) {
+            holdingDeposit = addresses.getAddress(
+                "RESERVE_WELL_HOLDING_DEPOSIT"
+            );
+        } else {
+            holdingDeposit = _deployer.deployERC20HoldingDeposit(
+                xWellProxy,
+                temporalGov
+            );
+        }
 
         addresses.addAddress("RESERVE_WELL_HOLDING_DEPOSIT", holdingDeposit);
         ChainlinkOracle oracle = ChainlinkOracle(
