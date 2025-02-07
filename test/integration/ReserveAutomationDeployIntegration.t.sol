@@ -14,6 +14,7 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
 import {ReserveAutomationDeploy} from "@proposals/mips/mip-reserve-automation/reserveAutomationDeploy.sol";
+import {MockRedstoneMultiFeedAdapter} from "@test/mock/MockRedstoneMultiFeedAdapter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract ReserveAutomationLiveSystemIntegrationTest is
@@ -43,7 +44,16 @@ contract ReserveAutomationLiveSystemIntegrationTest is
 
         vm.selectFork(BASE_FORK_ID);
 
-        vm.warp(proposalStartTime);
+        // warp forward 100 seconds for good measure
+        vm.warp(proposalStartTime + 100);
+
+        // mock redstone internal call to avoid stale price error (we cannot warp more than 30 hours to the future)
+        MockRedstoneMultiFeedAdapter redstoneMock = new MockRedstoneMultiFeedAdapter();
+
+        vm.etch(
+            0xf030a9ad2707c6C628f58372Fa3B355264417f56,
+            address(redstoneMock).code
+        );
 
         // Deploy all contracts
         deploy(addresses);
