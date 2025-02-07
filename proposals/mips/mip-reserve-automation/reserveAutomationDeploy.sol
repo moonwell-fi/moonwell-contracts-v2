@@ -4,11 +4,13 @@ pragma solidity 0.8.19;
 import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {Script} from "@forge-std/Script.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Test} from "@forge-std/Test.sol";
-import {console} from "@forge-std/console.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
+import {MErc20} from "@protocol/MErc20.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
@@ -70,13 +72,17 @@ contract ReserveAutomationDeploy is Script, Test {
         );
 
         addresses.addAddress("RESERVE_WELL_HOLDING_DEPOSIT", holdingDeposit);
+        ChainlinkOracle oracle = ChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
 
         /// Deploy ReserveAutomation for each mToken
         string[] memory mTokens = _getMTokens(block.chainid);
         for (uint256 i = 0; i < mTokens.length; i++) {
             string memory mTokenName = mTokens[i];
-            string memory underlyingName = _getUnderlyingName(mTokenName);
-            string memory oracleName = _getOracleName(underlyingName);
+            address mTokenAddress = addresses.getAddress(mTokenName);
+            ERC20 underlyingToken = ERC20(MErc20(mTokenAddress).underlying());
+
             string memory reserveAutomationIdentifier = string.concat(
                 "RESERVE_AUTOMATION_",
                 _stripMoonwellPrefix(mTokenName)
@@ -88,11 +94,13 @@ contract ReserveAutomationDeploy is Script, Test {
                     .InitParams({
                         recipientAddress: holdingDeposit,
                         wellToken: xWellProxy,
-                        reserveAsset: addresses.getAddress(underlyingName),
+                        reserveAsset: address(underlyingToken),
                         wellChainlinkFeed: addresses.getAddress(
                             "CHAINLINK_WELL_USD"
                         ),
-                        reserveChainlinkFeed: addresses.getAddress(oracleName),
+                        reserveChainlinkFeed: address(
+                            oracle.getFeed(underlyingToken.symbol())
+                        ),
                         owner: temporalGov,
                         mTokenMarket: addresses.getAddress(mTokenName),
                         guardian: pauseGuardian
@@ -125,12 +133,14 @@ contract ReserveAutomationDeploy is Script, Test {
             "incorrect holding deposit owner"
         );
 
+        ChainlinkOracle oracle = ChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+
         /// Validate ReserveAutomation for each mToken
         string[] memory mTokens = _getMTokens(block.chainid);
         for (uint256 i = 0; i < mTokens.length; i++) {
             string memory mTokenName = mTokens[i];
-            string memory underlyingName = _getUnderlyingName(mTokenName);
-            string memory oracleName = _getOracleName(underlyingName);
 
             address automation = addresses.getAddress(
                 string.concat(
@@ -162,106 +172,33 @@ contract ReserveAutomationDeploy is Script, Test {
                 string.concat("incorrect well token for ", mTokenName)
             );
             assertEq(
-                reserve.reserveAsset(),
-                addresses.getAddress(underlyingName),
-                string.concat("incorrect reserve asset for ", mTokenName)
-            );
-            assertEq(
                 reserve.wellChainlinkFeed(),
                 addresses.getAddress("CHAINLINK_WELL_USD"),
                 string.concat("incorrect well chainlink feed for ", mTokenName)
-            );
-            assertEq(
-                reserve.reserveChainlinkFeed(),
-                addresses.getAddress(oracleName),
-                string.concat(
-                    "incorrect reserve chainlink feed for ",
-                    mTokenName
-                )
             );
             assertEq(
                 reserve.mTokenMarket(),
                 addresses.getAddress(mTokenName),
                 string.concat("incorrect mToken market for ", mTokenName)
             );
-        }
-    }
 
-    /// @notice Helper function to get the underlying token name from an mToken name
-    /// @param mTokenName The name of the mToken
-    /// @return The name of the underlying token
-    function _getUnderlyingName(
-        string memory mTokenName
-    ) internal pure returns (string memory) {
-        string memory token = _stripMoonwellPrefix(mTokenName);
-        if (keccak256(bytes(token)) == keccak256(bytes("USDBC"))) {
-            return "USDBC";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("USDC"))) {
-            return "USDC";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("DAI"))) {
-            return "DAI";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("WETH"))) {
-            return "WETH";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("cbETH"))) {
-            return "cbETH";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("wstETH"))) {
-            return "wstETH";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("rETH"))) {
-            return "rETH";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("AERO"))) {
-            return "AERO";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("weETH"))) {
-            return "weETH";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("cbBTC"))) {
-            return "cbBTC";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("EURC"))) {
-            return "EURC";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("wrsETH"))) {
-            return "wrsETH";
-        } else if (keccak256(bytes(token)) == keccak256(bytes("WELL"))) {
-            return "xWELL_PROXY";
-        } else {
-            revert("unknown mToken");
-        }
-    }
+            ERC20 underlyingToken = ERC20(
+                MErc20(addresses.getAddress(mTokenName)).underlying()
+            );
 
-    /// @notice Helper function to get the oracle name for a token
-    /// @param tokenName The name of the token
-    /// @return The name of the oracle for the token
-    function _getOracleName(
-        string memory tokenName
-    ) internal pure returns (string memory) {
-        if (
-            keccak256(bytes(tokenName)) == keccak256(bytes("USDBC")) ||
-            keccak256(bytes(tokenName)) == keccak256(bytes("USDC"))
-        ) {
-            return "USDC_ORACLE";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("DAI"))) {
-            return "DAI_ORACLE";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("WETH"))) {
-            return "CHAINLINK_ETH_USD";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("cbETH"))) {
-            return "cbETH_ORACLE";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("wstETH"))) {
-            return "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("rETH"))) {
-            return "CHAINLINK_RETH_ETH_COMPOSITE_ORACLE";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("AERO"))) {
-            return "CHAINLINK_AERO_ORACLE";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("weETH"))) {
-            return "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("cbBTC"))) {
-            return "CHAINLINK_BTC_USD";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("EURC"))) {
-            return "CHAINLINK_EURC_USD";
-        } else if (keccak256(bytes(tokenName)) == keccak256(bytes("wrsETH"))) {
-            return "CHAINLINK_wrsETH_COMPOSITE_ORACLE";
-        } else if (
-            keccak256(bytes(tokenName)) == keccak256(bytes("xWELL_PROXY"))
-        ) {
-            return "CHAINLINK_WELL_USD";
-        } else {
-            revert("unknown token");
+            assertEq(
+                reserve.reserveAsset(),
+                address(underlyingToken),
+                string.concat("incorrect reserve asset for ", mTokenName)
+            );
+            assertEq(
+                reserve.reserveChainlinkFeed(),
+                address(oracle.getFeed(underlyingToken.symbol())),
+                string.concat(
+                    "incorrect reserve chainlink feed for ",
+                    mTokenName
+                )
+            );
         }
     }
 
