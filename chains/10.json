@@ -483,5 +483,10 @@
         "addr": "0x502510FA35Da0db798452a7A33138F14343FebAc",
         "isContract": true,
         "name": "CHAINLINK_ETH_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0x7F102e5b4C32e0861293E97DE85e6E0dB3530605",
+        "isContract": true,
+        "name": "CHAINLINK_WELL_USD"
     }
 ]
