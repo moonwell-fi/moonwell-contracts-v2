@@ -671,21 +671,6 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 address reserveAutomationContract = addresses.getAddress(
                     initSale.reserveAutomationContracts[i]
                 );
-                address reserveAsset = ReserveAutomation(
-                    reserveAutomationContract
-                ).reserveAsset();
-
-                // Calculate periodSaleAmount
-                uint256 periodSaleAmount = IERC20(reserveAsset).balanceOf(
-                    reserveAutomationContract
-                ) / (initSale.auctionPeriod / initSale.miniAuctionPeriod);
-
-                // Sanity check: the contract must have enough reserves
-                assertGt(
-                    periodSaleAmount,
-                    0,
-                    "RewardsDistribution: periodSaleAmount must be greater than 0"
-                );
 
                 // Sanity check: delay must be less than or equal to MAXIMUM_AUCTION_DELAY
                 assertLe(
@@ -1140,10 +1125,23 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 i < initSale.reserveAutomationContracts.length;
                 i++
             ) {
+                address reserveAutomationContract = addresses.getAddress(
+                    initSale.reserveAutomationContracts[i]
+                );
+                // Calculate periodSaleAmount
+                uint256 periodSaleAmount = IERC20(
+                    ReserveAutomation(reserveAutomationContract).reserveAsset()
+                ).balanceOf(reserveAutomationContract) /
+                    (initSale.auctionPeriod / initSale.miniAuctionPeriod);
+
+                // Sanity check: the contract must have enough reserves
+                assertGt(
+                    periodSaleAmount,
+                    0,
+                    "RewardsDistribution: periodSaleAmount must be greater than 0"
+                );
                 _pushAction(
-                    addresses.getAddress(
-                        initSale.reserveAutomationContracts[i]
-                    ),
+                    reserveAutomationContract,
                     abi.encodeWithSignature(
                         "initiateSale(uint256,uint256,uint256,uint256,uint256)",
                         initSale.delay,
