@@ -199,7 +199,8 @@
                 "market": "MOONWELL_WBTC",
                 "to": "RESERVE_AUTOMATION_WBTC"
             }
-        ]
+        ],
+        "withdrawWell": []
     },
     "1284": {
         "bridgeToRecipient": [
@@ -645,7 +646,8 @@
                 "market": "MOONWELL_DAI",
                 "to": "RESERVE_AUTOMATION_DAI"
             }
-        ]
+        ],
+        "withdrawWell": []
     },
     "endTimeSTamp": 1742527800,
     "startTimeStamp": 1740108600
