@@ -1,5 +1,13 @@
 {
     "10": {
+        "initSale": {
+            "auctionPeriod": 1209600,
+            "delay": 3600,
+            "miniAuctionPeriod": 21600,
+            "periodMaxDiscount": 800000000000000000,
+            "periodStartingPremium": 1200000000000000000,
+            "reserveAutomationContracts": ["RESERVE_AUTOMATION_WBTC"]
+        },
         "setMRDSpeeds": [
             {
                 "emissionToken": "xWELL_PROXY",
@@ -191,15 +199,7 @@
                 "market": "MOONWELL_WBTC",
                 "to": "RESERVE_AUTOMATION_WBTC"
             }
-        ],
-        "initSale": {
-            "auctionPeriod": 1209600,
-            "delay": 3600,
-            "miniAuctionPeriod": 21600,
-            "periodMaxDiscount": 800000000000000000,
-            "periodStartingPremium": 1200000000000000000,
-            "reserveAutomationContracts": ["RESERVE_AUTOMATION_WBTC"]
-        }
+        ]
     },
     "1284": {
         "bridgeToRecipient": [
@@ -362,6 +362,17 @@
         "stkWellEmissionsPerSecond": 66921322618129860
     },
     "8453": {
+        "initSale": {
+            "auctionPeriod": 1209600,
+            "delay": 3600,
+            "miniAuctionPeriod": 21600,
+            "periodMaxDiscount": 800000000000000000,
+            "periodStartingPremium": 1200000000000000000,
+            "reserveAutomationContracts": [
+                "RESERVE_AUTOMATION_USDBC",
+                "RESERVE_AUTOMATION_DAI"
+            ]
+        },
         "setMRDSpeeds": [
             {
                 "emissionToken": "xWELL_PROXY",
@@ -634,18 +645,7 @@
                 "market": "MOONWELL_DAI",
                 "to": "RESERVE_AUTOMATION_DAI"
             }
-        ],
-        "initSale": {
-            "auctionPeriod": 1209600,
-            "delay": 3600,
-            "miniAuctionPeriod": 21600,
-            "periodMaxDiscount": 800000000000000000,
-            "periodStartingPremium": 1200000000000000000,
-            "reserveAutomationContracts": [
-                "RESERVE_AUTOMATION_USDBC",
-                "RESERVE_AUTOMATION_DAI"
-            ]
-        }
+        ]
     },
     "endTimeSTamp": 1742527800,
     "startTimeStamp": 1740108600
