@@ -19,6 +19,10 @@ contract AutomationDeploy {
             "reserveChainlinkFeed must be set"
         );
         require(
+            params.reserveChainlinkFeed != address(0),
+            "reserveChainlinkFeed address not set"
+        );
+        require(
             params.recipientAddress.code.length > 0,
             "recipientAddress must be set"
         );

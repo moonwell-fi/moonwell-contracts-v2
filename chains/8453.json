@@ -843,5 +843,90 @@
         "addr": "0xdE8Df9d942D78edE3Ca06e60712582F79CFfFC64",
         "isContract": true,
         "name": "MOONWELL_VIRTUAL"
+    },
+    {
+        "addr": "0xE1bBF1304584895A215eB3478eAdEF2AaFF5D63f",
+        "isContract": true,
+        "name": "RESERVE_WELL_HOLDING_DEPOSIT"
+    },
+    {
+        "addr": "0x8373155335839e3D078f3F224E8B6618Fc26eF17",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_USDC"
+    },
+    {
+        "addr": "0x89b89c30E2f60Bd30059c3924eF5b8c0Fcd1B64A",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_USDBC"
+    },
+    {
+        "addr": "0x9f2ca3c6Cd1dddb7aD473a0a893C3104E2af15Ad",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_DAI"
+    },
+    {
+        "addr": "0x064D8Cb3B7a22F4cFBdd602eBC7E722Bb71405D8",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_WETH"
+    },
+    {
+        "addr": "0x48bc4876D33Db30929c373c3B949b66CB8d641F3",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_cbETH"
+    },
+    {
+        "addr": "0xbd22DaFeF550094A32f388CD256FE133a0A14387",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_wstETH"
+    },
+    {
+        "addr": "0xEfE30785362225106367039971d82715dcB35192",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_rETH"
+    },
+    {
+        "addr": "0xc7840e86A0aa22c23BCbC153CE61f6009733bf2C",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_AERO"
+    },
+    {
+        "addr": "0x75494780E76bB41c0fDf29DBA4b2Ce82501c12b0",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_weETH"
+    },
+    {
+        "addr": "0x83D37e3df05F1507667AF4dfc83Ec8A38Cf2dA08",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_cbBTC"
+    },
+    {
+        "addr": "0x7bBe5972e01BAc64fE3AD7EFfBa6D164f0a1F15f",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_EURC"
+    },
+    {
+        "addr": "0xe34D7D109B97e1b1DAc9A9920e6A6769814Ac7eE",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_wrsETH"
+    },
+    {
+        "addr": "0xA078017f827DC7B8540C98A3bF7b2153B2aF6cB3",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_USDS"
+    },
+    {
+        "addr": "0x84C74431200Bcd3Ba4b557024734891857b43354",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_TBTC"
+    },
+    {
+        "addr": "0xf8f7b937a4CC6Cc16b600B3611ce0c1152a5b3F9",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_LBTC"
+    },
+    {
+        "addr": "0x665B7dD0260AE7a7Dd57E7F4278efdb6262c6993",
+        "isContract": true,
+        "name": "RESERVE_AUTOMATION_VIRTUAL"
     }
 ]
