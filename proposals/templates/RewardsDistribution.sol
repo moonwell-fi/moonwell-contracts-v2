@@ -175,7 +175,6 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 vm.selectFork(networks[i].forkId);
                 _saveExternalChainActions(addresses, encodedJson, chainId);
 
-                // save well balances before so we can check if the transferFrom was successful
                 IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
                 address mrd = addresses.getAddress("MRD_PROXY");
                 wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
@@ -711,8 +710,8 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 // Sanity check: miniAuctionPeriod must be greater than 1
                 assertGt(
                     initSale.miniAuctionPeriod,
-                    1,
-                    "RewardsDistribution: miniAuctionPeriod must be greater than 1"
+                    10000,
+                    "RewardsDistribution: miniAuctionPeriod must be greater than 10000"
                 );
             }
 
@@ -1366,8 +1365,91 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
         JsonSpecExternalChain memory spec = externalChainActions[_chainId];
 
-        // validate transfer calls
-        IERC20 well = IERC20(addresses.getAddress("xWELL_PROXY"));
+        // Validate that each reserveAutomationContract has been properly initialized
+        if (spec.initSale.reserveAutomationContracts.length > 0) {
+            for (
+                uint256 i = 0;
+                i < spec.initSale.reserveAutomationContracts.length;
+                i++
+            ) {
+                address reserveAutomationContract = addresses.getAddress(
+                    spec.initSale.reserveAutomationContracts[i]
+                );
+
+                ReserveAutomation automation = ReserveAutomation(
+                    reserveAutomationContract
+                );
+
+                // Check that periodSaleAmount is set and greater than 0
+                assertGt(
+                    automation.periodSaleAmount(),
+                    0,
+                    "ReserveAutomation: periodSaleAmount not initialized"
+                );
+
+                // Check that saleStartTime is set to a future timestamp
+                assertGt(
+                    automation.saleStartTime(),
+                    block.timestamp,
+                    "ReserveAutomation: saleStartTime not initialized or in the past"
+                );
+
+                // Check that saleWindow matches the auction period
+                assertEq(
+                    automation.saleWindow(),
+                    spec.initSale.auctionPeriod,
+                    "ReserveAutomation: saleWindow not initialized correctly"
+                );
+
+                // Check that miniAuctionPeriod is set correctly
+                assertEq(
+                    automation.miniAuctionPeriod(),
+                    spec.initSale.miniAuctionPeriod,
+                    "ReserveAutomation: miniAuctionPeriod not initialized correctly"
+                );
+
+                // Verify auction period is divisible by mini auction period
+                assertEq(
+                    automation.saleWindow() % automation.miniAuctionPeriod(),
+                    0,
+                    "ReserveAutomation: auction period not divisible by mini auction period"
+                );
+
+                // Get the reserve asset token
+                address reserveAssetToken = automation.reserveAsset();
+                IERC20 reserveAsset = IERC20(reserveAssetToken);
+
+                // Calculate expected total reserves based on periodSaleAmount and number of mini auctions
+                uint256 numMiniAuctions = automation.saleWindow() /
+                    automation.miniAuctionPeriod();
+                uint256 expectedTotalReserves = automation.periodSaleAmount() *
+                    numMiniAuctions;
+
+                // Verify the contract has the expected amount of reserves
+                uint256 actualReserves = reserveAsset.balanceOf(
+                    reserveAutomationContract
+                );
+                assertEq(
+                    actualReserves,
+                    expectedTotalReserves,
+                    "ReserveAutomation: incorrect reserve balance"
+                );
+
+                // Verify that the reserves match any transferReserves operation targeting this contract
+                for (uint256 j = 0; j < spec.transferReserves.length; j++) {
+                    if (
+                        addresses.getAddress(spec.transferReserves[j].to) ==
+                        reserveAutomationContract
+                    ) {
+                        assertEq(
+                            actualReserves,
+                            spec.transferReserves[j].amount,
+                            "ReserveAutomation: reserves do not match transferReserves amount"
+                        );
+                    }
+                }
+            }
+        }
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             address to = addresses.getAddress(spec.transferFroms[i].to);
@@ -1375,7 +1457,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
             if (token == addresses.getAddress("xWELL_PROXY")) {
                 assertEq(
-                    well.balanceOf(to),
+                    IERC20(token).balanceOf(to),
                     wellBalancesBefore[to] + spec.transferFroms[i].amount,
                     string.concat("balance changed for ", vm.getLabel(to))
                 );
