@@ -256,6 +256,7 @@ contract ReserveAutomationLiveIntegrationTest is Test {
     }
 
     function testInitiateSaleFailsNoReserves() public {
+        deal(address(underlying), address(vault), 0);
         vm.prank(_addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectRevert("ReserveAutomationModule: no reserves to sell");
         vault.initiateSale(
