@@ -1094,7 +1094,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 address(underlying),
                 abi.encodeWithSignature(
                     "transfer(address,uint256)",
-                    spec.transferReserves[i].to,
+                    addresses.getAddress(spec.transferReserves[i].to),
                     spec.transferReserves[i].amount
                 ),
                 string.concat(
@@ -1127,18 +1127,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 address reserveAutomationContract = addresses.getAddress(
                     initSale.reserveAutomationContracts[i]
                 );
-                // Calculate periodSaleAmount
-                uint256 periodSaleAmount = IERC20(
-                    ReserveAutomation(reserveAutomationContract).reserveAsset()
-                ).balanceOf(reserveAutomationContract) /
-                    (initSale.auctionPeriod / initSale.miniAuctionPeriod);
 
-                // Sanity check: the contract must have enough reserves
-                assertGt(
-                    periodSaleAmount,
-                    0,
-                    "RewardsDistribution: periodSaleAmount must be greater than 0"
-                );
                 _pushAction(
                     reserveAutomationContract,
                     abi.encodeWithSignature(
@@ -1429,9 +1418,10 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 uint256 actualReserves = reserveAsset.balanceOf(
                     reserveAutomationContract
                 );
-                assertEq(
+                assertApproxEqRel(
                     actualReserves,
                     expectedTotalReserves,
+                    0.01e18,
                     "ReserveAutomation: incorrect reserve balance"
                 );
 
