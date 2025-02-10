@@ -64,6 +64,8 @@ contract ReserveAutomationLiveSystemIntegrationTest is
         holder = ERC20HoldingDeposit(
             addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT")
         );
+
+        vm.warp(block.timestamp + 30 days);
     }
 
     function testValidate() public view {
