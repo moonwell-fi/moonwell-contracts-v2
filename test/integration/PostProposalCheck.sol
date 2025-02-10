@@ -30,7 +30,7 @@ contract PostProposalCheck is LiveProposalCheck {
     uint256 public proposalStartTime;
 
     function setUp() public virtual override {
-        uint256 primaryForkBefore = vm.envUint("PRIMARY_FORK_ID");
+        uint256 primaryForkBefore = vm.envOr("PRIMARY_FORK_ID", 0);
         super.setUp();
 
         MOONBEAM_FORK_ID.createForksAndSelect();
