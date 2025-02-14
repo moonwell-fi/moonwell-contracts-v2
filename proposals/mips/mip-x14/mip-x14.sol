@@ -10,6 +10,7 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {OPTIMISM_FORK_ID, BASE_FORK_ID, OPTIMISM_CHAIN_ID, BASE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ChainlinkFeedOEVWrapper} from "@protocol/oracles/ChainlinkFeedOEVWrapper.sol";
 import {DeployChainlinkOEVWrapper} from "@script/DeployChainlinkOEVWrapper.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
@@ -57,25 +58,10 @@ contract MipO12 is HybridProposal, DeployChainlinkOEVWrapper {
             OracleConfig("CHAINLINK_WBTC_USD", "WBTC", "MOONWELL_WBTC")
         );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_WSTETH_ETH", "wstETH", "MOONWELL_wstETH")
-        );
-        _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_cbETH_ETH", "cbETH", "MOONWELL_cbETH")
-        );
-        _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_RETH_ETH", "rETH", "MOONWELL_rETH")
-        );
-        _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_WEETH_ORACLE", "weETH", "MOONWELL_weETH")
-        );
-        _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_OP_USD", "OP", "MOONWELL_OP")
         );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_VELO_USD", "VELO", "MOONWELL_VELO")
-        );
-        _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_rsETH_ETH", "wrsETH", "MOONWELL_wrsETH")
         );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_WELL_USD", "WELL", "MOONWELL_WELL")
@@ -84,15 +70,6 @@ contract MipO12 is HybridProposal, DeployChainlinkOEVWrapper {
         // Initialize oracle configurations for Base
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
-        );
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_STETH_ETH", "wstETH", "MOONWELL_wstETH")
-        );
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_RETH_ETH", "rETH", "MOONWELL_rETH")
-        );
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_WEETH_ORACLE", "weETH", "MOONWELL_weETH")
         );
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_BTC_USD", "cbBTC", "MOONWELL_cbBTC")
@@ -115,6 +92,22 @@ contract MipO12 is HybridProposal, DeployChainlinkOEVWrapper {
     }
 
     function deploy(Addresses addresses, address) public override {
+        // Deploy composite oracle for weETH on Optimism
+        vm.selectFork(OPTIMISM_FORK_ID);
+        // Only deploy if not already set
+        ChainlinkCompositeOracle weethCompositeOracle = new ChainlinkCompositeOracle(
+                addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"),
+                addresses.getAddress("CHAINLINK_WEETH_ORACLE"),
+                address(0) // No second multiplier needed
+            );
+
+        addresses.changeAddress(
+            "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
+            address(weethCompositeOracle),
+            OPTIMISM_CHAIN_ID,
+            true
+        );
+
         // Deploy for Optimism
         vm.selectFork(OPTIMISM_FORK_ID);
         for (uint i = 0; i < _oracleConfigs[OPTIMISM_CHAIN_ID].length; i++) {
@@ -151,6 +144,18 @@ contract MipO12 is HybridProposal, DeployChainlinkOEVWrapper {
     }
 
     function build(Addresses addresses) public override {
+        // Set the weETH composite oracle in the Chainlink oracle on Optimism
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _pushAction(
+            addresses.getAddress("CHAINLINK_ORACLE"),
+            abi.encodeWithSignature(
+                "setFeed(string,address)",
+                "weETH",
+                addresses.getAddress("CHAINLINK_WEETH_USD_COMPOSITE_ORACLE")
+            ),
+            "Set composite price feed for weETH"
+        );
+
         // Build for Optimism
         vm.selectFork(OPTIMISM_FORK_ID);
         for (uint i = 0; i < _oracleConfigs[OPTIMISM_CHAIN_ID].length; i++) {
@@ -224,6 +229,38 @@ contract MipO12 is HybridProposal, DeployChainlinkOEVWrapper {
         Addresses addresses,
         uint256 chainId
     ) internal view {
+        // Validate composite oracle if on Optimism
+        if (chainId == OPTIMISM_CHAIN_ID) {
+            ChainlinkCompositeOracle compositeOracle = ChainlinkCompositeOracle(
+                addresses.getAddress("CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE")
+            );
+
+            // Validate composite oracle configuration
+            assertEq(
+                compositeOracle.base(),
+                addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"),
+                "Wrong base oracle for weETH composite"
+            );
+            assertEq(
+                compositeOracle.multiplier(),
+                addresses.getAddress("CHAINLINK_WEETH_ORACLE"),
+                "Wrong multiplier oracle for weETH composite"
+            );
+            assertEq(
+                compositeOracle.secondMultiplier(),
+                address(0),
+                "Second multiplier should be zero for weETH composite"
+            );
+
+            // Validate price feed is working
+            (, int256 price, , , ) = compositeOracle.latestRoundData();
+            assertGt(
+                uint256(price),
+                0,
+                "weETH composite oracle returned zero price"
+            );
+        }
+
         for (uint i = 0; i < _oracleConfigs[chainId].length; i++) {
             _validateWrapper(addresses, chainId, i);
         }
