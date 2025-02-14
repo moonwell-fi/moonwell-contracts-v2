@@ -64,7 +64,7 @@ contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
             OracleConfig("CHAINLINK_VELO_USD", "VELO", "MOONWELL_VELO")
         );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_WELL_USD", "WELL", "MOONWELL_WELL")
+            OracleConfig("CHAINLINK_WELL_USD", "xWELL_PROXY", "MOONWELL_WELL")
         );
 
         // Initialize oracle configurations for Base
@@ -78,7 +78,7 @@ contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
             OracleConfig("CHAINLINK_EURC_USD", "EURC", "MOONWELL_EURC")
         );
         _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_WELL_USD", "WELL", "MOONWELL_WELL")
+            OracleConfig("CHAINLINK_WELL_USD", "xWELL_PROXY", "MOONWELL_WELL")
         );
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_USDS_USD", "USDS", "MOONWELL_USDS")
@@ -185,7 +185,7 @@ contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
             abi.encodeWithSignature(
                 "setFeed(string,address)",
                 "weETH",
-                addresses.getAddress("CHAINLINK_WEETH_USD_COMPOSITE_ORACLE")
+                addresses.getAddress("CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE")
             ),
             "Set composite price feed for weETH"
         );
@@ -360,7 +360,7 @@ contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
     ) internal view {
         assertEq(
             address(wrapper.WETHMarket()),
-            addresses.getAddress(_oracleConfigs[chainId][index].marketName),
+            addresses.getAddress("MOONWELL_WETH"),
             _errorMessage("market", tokenName)
         );
     }
