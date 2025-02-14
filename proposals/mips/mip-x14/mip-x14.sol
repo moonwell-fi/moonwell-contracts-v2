@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
@@ -16,6 +17,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
     using ProposalActions for *;
+    using ChainIds for uint256;
 
     function name() external pure override returns (string memory) {
         return "MIP-X14";
@@ -89,9 +91,41 @@ contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
         );
     }
 
+    function run() public override {
+        primaryForkId().createForksAndSelect();
+
+        Addresses addresses = new Addresses();
+        vm.makePersistent(address(addresses));
+
+        initProposal(addresses);
+
+        (, address deployerAddress, ) = vm.readCallers();
+
+        if (DO_DEPLOY) deploy(addresses, deployerAddress);
+        if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
+
+        if (DO_BUILD) build(addresses);
+        if (DO_RUN) run(addresses, deployerAddress);
+        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
+        if (DO_VALIDATE) {
+            validate(addresses, deployerAddress);
+            console.log("Validation completed for proposal ", this.name());
+        }
+        if (DO_PRINT) {
+            printProposalActionSteps();
+
+            addresses.removeAllRestrictions();
+            printCalldata(addresses);
+
+            _printAddressesChanges(addresses);
+        }
+    }
+
     function deploy(Addresses addresses, address) public override {
         // Deploy composite oracle for weETH on Optimism
         vm.selectFork(OPTIMISM_FORK_ID);
+        vm.startBroadcast();
+
         // Only deploy if not already set
         ChainlinkCompositeOracle weethCompositeOracle = new ChainlinkCompositeOracle(
                 addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"),
@@ -106,8 +140,6 @@ contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
             true
         );
 
-        // Deploy for Optimism
-        vm.selectFork(OPTIMISM_FORK_ID);
         for (uint i = 0; i < _oracleConfigs[OPTIMISM_CHAIN_ID].length; i++) {
             string memory wrapperName = string(
                 abi.encodePacked(
@@ -122,9 +154,11 @@ contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
                 );
             }
         }
+        vm.stopBroadcast();
 
         // Deploy for Base
         vm.selectFork(BASE_FORK_ID);
+        vm.startBroadcast();
         for (uint i = 0; i < _oracleConfigs[BASE_CHAIN_ID].length; i++) {
             string memory wrapperName = string(
                 abi.encodePacked(
@@ -139,6 +173,8 @@ contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
                 );
             }
         }
+
+        vm.stopBroadcast();
     }
 
     function build(Addresses addresses) public override {
