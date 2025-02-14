@@ -14,7 +14,7 @@ import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOrac
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract MipO12 is HybridProposal, DeployChainlinkOEVWrapper {
+contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
     using ProposalActions for *;
 
     string public constant NAME = "MIP-X14";
