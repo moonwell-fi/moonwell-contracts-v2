@@ -17,10 +17,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 contract MipX14 is HybridProposal, DeployChainlinkOEVWrapper {
     using ProposalActions for *;
 
-    string public constant NAME = "MIP-X14";
-
     function name() external pure override returns (string memory) {
-        return NAME;
+        return "MIP-X14";
     }
 
     function primaryForkId() public pure override returns (uint256) {
