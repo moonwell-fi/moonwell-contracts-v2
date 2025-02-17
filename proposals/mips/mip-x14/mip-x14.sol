@@ -41,6 +41,29 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         );
         _setProposalDescription(proposalDescription);
 
+        // Initialize oracle configurations for Base
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
+        );
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_BTC_USD", "cbBTC", "MOONWELL_cbBTC")
+        );
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_EURC_USD", "EURC", "MOONWELL_EURC")
+        );
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_WELL_USD", "xWELL_PROXY", "MOONWELL_WELL")
+        );
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_USDS_USD", "USDS", "MOONWELL_USDS")
+        );
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_TBTC_USD", "TBTC", "MOONWELL_TBTC")
+        );
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_VIRTUAL_USD", "VIRTUAL", "MOONWELL_VIRTUAL")
+        );
+
         // Initialize oracle configurations for Optimism
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
@@ -65,29 +88,6 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_WELL_USD", "xWELL_PROXY", "MOONWELL_WELL")
-        );
-
-        // Initialize oracle configurations for Base
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
-        );
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_BTC_USD", "cbBTC", "MOONWELL_cbBTC")
-        );
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_EURC_USD", "EURC", "MOONWELL_EURC")
-        );
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_WELL_USD", "xWELL_PROXY", "MOONWELL_WELL")
-        );
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_USDS_USD", "USDS", "MOONWELL_USDS")
-        );
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_TBTC_USD", "TBTC", "MOONWELL_TBTC")
-        );
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_VIRTUAL_USD", "VIRTUAL", "MOONWELL_VIRTUAL")
         );
     }
 
