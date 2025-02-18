@@ -10,7 +10,7 @@ runs:
         submodules: recursive
 
     - name: Cache Foundry toolchain
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.foundry
         key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml') }}
