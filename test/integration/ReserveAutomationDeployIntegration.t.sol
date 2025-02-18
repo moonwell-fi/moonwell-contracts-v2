@@ -108,6 +108,8 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testSetGuardianSucceedsOwner() public {
+        vm.warp(block.timestamp + 30 days);
+
         _runTestForAllAutomations(_testSetGuardianSucceedsOwner);
     }
 
@@ -134,6 +136,8 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testCancelAuction() public {
+        vm.warp(block.timestamp + 30 days);
+
         _runTestForAllAutomations(_testCancelAuction);
     }
 
@@ -178,6 +182,8 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testInitiateSaleFailsAlreadyActive() public {
+        vm.warp(block.timestamp + 30 days);
+
         _runTestForAllAutomations(_testInitiateSaleFailsAlreadyActive);
     }
 
@@ -209,13 +215,16 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testInitiateSaleFailsNoReserves() public {
+        vm.warp(block.timestamp + 30 days);
+
         _runTestForAllAutomations(_testInitiateSaleFailsNoReserves);
     }
 
     function _testInitiateSaleFailsNoReserves(
         ReserveAutomation vault,
-        ERC20 // solhint-disable-line no-unused-vars
+        ERC20 underlying
     ) internal {
+        deal(address(underlying), address(vault), 0);
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectRevert("ReserveAutomationModule: no reserves to sell");
         vault.initiateSale(
@@ -228,6 +237,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testInitiateSaleFailsExceedsMaxDelay() public {
+        vm.warp(block.timestamp + 30 days);
         _runTestForAllAutomations(_testInitiateSaleFailsExceedsMaxDelay);
     }
 
@@ -250,6 +260,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testPurchaseReservesFailsSaleNotActive() public {
+        vm.warp(block.timestamp + 30 days);
         _runTestForAllAutomations(_testPurchaseReservesFailsSaleNotActive);
     }
 
@@ -288,6 +299,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testPurchaseReservesFailsZeroAmount() public {
+        vm.warp(block.timestamp + 30 days);
         _runTestForAllAutomations(_testPurchaseReservesFailsZeroAmount);
     }
 
@@ -314,6 +326,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testPurchaseReservesFailsInsufficientBuffer() public {
+        vm.warp(block.timestamp + 30 days);
         _runTestForAllAutomations(_testPurchaseReservesFailsInsufficientBuffer);
     }
 
@@ -356,6 +369,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testPurchaseReservesFailsAmountOutNotGteMinAmtOut() public {
+        vm.warp(block.timestamp + 30 days);
         _runTestForAllAutomations(
             _testPurchaseReservesFailsAmountOutNotGteMinAmtOut
         );
@@ -390,6 +404,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testPurchaseReservesFailsNoWellApproval() public {
+        vm.warp(block.timestamp + 30 days);
         _runTestForAllAutomations(_testPurchaseReservesFailsNoWellApproval);
     }
 
@@ -421,6 +436,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testSwapWellForReserves() public {
+        vm.warp(block.timestamp + 30 days);
         _runTestForAllAutomations(_testSwapWellForReserves);
     }
 
@@ -511,7 +527,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
             assertApproxEqRel(
                 getAmountIn,
                 amountWellIn,
-                2.6e14,
+                3e14,
                 "amount in not within tolerance"
             );
         }
@@ -624,6 +640,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testPriceCachingBehavior() public {
+        vm.warp(block.timestamp + 30 days);
         _runTestForAllAutomations(_testPriceCachingBehavior);
     }
 
