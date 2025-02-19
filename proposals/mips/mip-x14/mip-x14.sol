@@ -126,7 +126,7 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         vm.selectFork(OPTIMISM_FORK_ID);
         vm.startBroadcast();
 
-        if (!addresses.isAddressSet("CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE")) {
+        if (!addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER")) {
             // Only deploy if not already set
             ChainlinkCompositeOracle weethCompositeOracle = new ChainlinkCompositeOracle(
                     addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"),
@@ -134,8 +134,8 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
                     address(0) // No second multiplier needed
                 );
 
-            addresses.changeAddress(
-                "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
+            addresses.addAddress(
+                "CHAINLINK_ETH_USD_OEV_WRAPPER",
                 address(weethCompositeOracle),
                 OPTIMISM_CHAIN_ID,
                 true
