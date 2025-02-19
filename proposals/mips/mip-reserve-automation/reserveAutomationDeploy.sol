@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {Script} from "@forge-std/Script.sol";
+import {stdJson} from "@forge-std/StdJson.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Test} from "@forge-std/Test.sol";
 
@@ -19,8 +20,14 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// how to run locally:
 ///       forge script proposals/mips/mip-reserve-automation/reserveAutomationDeploy.sol:ReserveAutomationDeploy --rpc-url base
+struct MarketConfig {
+    string chainlinkFeed;
+    string market;
+}
+
 contract ReserveAutomationDeploy is Script, Test {
     using ChainIds for uint256;
+    using stdJson for string;
 
     /// @notice the name of the proposal
     string public constant NAME = "Reserve Automation Deployment";
@@ -32,18 +39,21 @@ contract ReserveAutomationDeploy is Script, Test {
         _addresses = new Addresses();
     }
 
-    /// @notice array of mToken names to deploy automation for
+    /// @notice array of market configs to deploy automation for
     function _getMTokens(
         uint256 chainId
-    ) internal view returns (string[] memory) {
+    ) internal view returns (MarketConfig[] memory) {
         string memory file = vm.readFile(
             string.concat(
                 "./proposals/mips/mip-reserve-automation/",
                 string.concat(vm.toString(chainId), ".json")
             )
         );
-        string[] memory mTokens = abi.decode(vm.parseJson(file), (string[]));
-        return mTokens;
+        MarketConfig[] memory configs = abi.decode(
+            vm.parseJson(file),
+            (MarketConfig[])
+        );
+        return configs;
     }
 
     function run() public {
@@ -83,20 +93,16 @@ contract ReserveAutomationDeploy is Script, Test {
             );
         }
 
-        ChainlinkOracle oracle = ChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
-        );
-
-        /// Deploy ReserveAutomation for each mToken
-        string[] memory mTokens = _getMTokens(block.chainid);
-        for (uint256 i = 0; i < mTokens.length; i++) {
-            string memory mTokenName = mTokens[i];
-            address mTokenAddress = addresses.getAddress(mTokenName);
+        /// Deploy ReserveAutomation for each market config
+        MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
+        for (uint256 i = 0; i < marketConfigs.length; i++) {
+            MarketConfig memory config = marketConfigs[i];
+            address mTokenAddress = addresses.getAddress(config.market);
             ERC20 underlyingToken = ERC20(MErc20(mTokenAddress).underlying());
 
             string memory reserveAutomationIdentifier = string.concat(
                 "RESERVE_AUTOMATION_",
-                _stripMoonwellPrefix(mTokenName)
+                _stripMoonwellPrefix(config.market)
             );
 
             /// avoid redeploying a contract that already exists
@@ -109,11 +115,11 @@ contract ReserveAutomationDeploy is Script, Test {
                         wellChainlinkFeed: addresses.getAddress(
                             "CHAINLINK_WELL_USD"
                         ),
-                        reserveChainlinkFeed: address(
-                            oracle.getFeed(underlyingToken.symbol())
+                        reserveChainlinkFeed: addresses.getAddress(
+                            config.chainlinkFeed
                         ),
                         owner: temporalGov,
-                        mTokenMarket: addresses.getAddress(mTokenName),
+                        mTokenMarket: addresses.getAddress(config.market),
                         guardian: pauseGuardian
                     });
 
@@ -144,19 +150,15 @@ contract ReserveAutomationDeploy is Script, Test {
             "incorrect holding deposit owner"
         );
 
-        ChainlinkOracle oracle = ChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
-        );
-
-        /// Validate ReserveAutomation for each mToken
-        string[] memory mTokens = _getMTokens(block.chainid);
-        for (uint256 i = 0; i < mTokens.length; i++) {
-            string memory mTokenName = mTokens[i];
+        /// Validate ReserveAutomation for each market config
+        MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
+        for (uint256 i = 0; i < marketConfigs.length; i++) {
+            MarketConfig memory config = marketConfigs[i];
 
             address automation = addresses.getAddress(
                 string.concat(
                     "RESERVE_AUTOMATION_",
-                    _stripMoonwellPrefix(mTokenName)
+                    _stripMoonwellPrefix(config.market)
                 )
             );
 
@@ -165,49 +167,53 @@ contract ReserveAutomationDeploy is Script, Test {
             assertEq(
                 reserve.owner(),
                 temporalGov,
-                string.concat("incorrect owner for ", mTokenName)
+                string.concat("incorrect owner for ", config.market)
             );
             assertEq(
                 reserve.guardian(),
                 pauseGuardian,
-                string.concat("incorrect guardian for ", mTokenName)
+                string.concat("incorrect guardian for ", config.market)
             );
             assertEq(
                 reserve.recipientAddress(),
                 holdingDeposit,
-                string.concat("incorrect recipient address for ", mTokenName)
+                string.concat("incorrect recipient address for ", config.market)
             );
             assertEq(
                 reserve.wellToken(),
                 xWellProxy,
-                string.concat("incorrect well token for ", mTokenName)
+                string.concat("incorrect well token for ", config.market)
             );
             assertEq(
                 reserve.wellChainlinkFeed(),
                 addresses.getAddress("CHAINLINK_WELL_USD"),
-                string.concat("incorrect well chainlink feed for ", mTokenName)
+                string.concat(
+                    "incorrect well chainlink feed for ",
+                    config.market
+                )
             );
             assertEq(
                 reserve.mTokenMarket(),
-                addresses.getAddress(mTokenName),
-                string.concat("incorrect mToken market for ", mTokenName)
+                addresses.getAddress(config.market),
+                string.concat("incorrect mToken market for ", config.market)
             );
 
             ERC20 underlyingToken = ERC20(
-                MErc20(addresses.getAddress(mTokenName)).underlying()
+                MErc20(addresses.getAddress(config.market)).underlying()
             );
 
             assertEq(
                 reserve.reserveAsset(),
                 address(underlyingToken),
-                string.concat("incorrect reserve asset for ", mTokenName)
+                string.concat("incorrect reserve asset for ", config.market)
             );
+
             assertEq(
                 reserve.reserveChainlinkFeed(),
-                address(oracle.getFeed(underlyingToken.symbol())),
+                addresses.getAddress(config.chainlinkFeed),
                 string.concat(
                     "incorrect reserve chainlink feed for ",
-                    mTokenName
+                    config.market
                 )
             );
         }
