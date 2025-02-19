@@ -265,7 +265,9 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         // Validate composite oracle if on Optimism
         if (chainId == OPTIMISM_CHAIN_ID) {
             ChainlinkCompositeOracle compositeOracle = ChainlinkCompositeOracle(
-                addresses.getAddress("CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE")
+                addresses.getAddress(
+                    "CHAINLINK_WEETH_ETH_COMPOSITE_OEV_WRAPPER"
+                )
             );
 
             // Validate composite oracle configuration
