@@ -150,14 +150,6 @@ contract ReserveAutomationDeploy is Script, Test {
             "incorrect holding deposit owner"
         );
 
-        /// Read the JSON file for chainlink feed validation
-        string memory file = vm.readFile(
-            string.concat(
-                "./chains/",
-                string.concat(vm.toString(block.chainid), ".json")
-            )
-        );
-
         /// Validate ReserveAutomation for each market config
         MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
         for (uint256 i = 0; i < marketConfigs.length; i++) {
@@ -216,19 +208,9 @@ contract ReserveAutomationDeploy is Script, Test {
                 string.concat("incorrect reserve asset for ", config.market)
             );
 
-            // Get the chainlink feed address from the JSON file
-            bytes memory chainlinkFeedBytes = vm.parseJson(
-                file,
-                string.concat(".", config.chainlinkFeed)
-            );
-            address chainlinkFeedAddress = abi.decode(
-                chainlinkFeedBytes,
-                (address)
-            );
-
             assertEq(
                 reserve.reserveChainlinkFeed(),
-                chainlinkFeedAddress,
+                addresses.getAddress(config.chainlinkFeed),
                 string.concat(
                     "incorrect reserve chainlink feed for ",
                     config.market
