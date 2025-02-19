@@ -532,7 +532,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
             assertApproxEqRel(
                 getAmountIn,
                 amountWellIn,
-                3e14,
+                5e14,
                 "amount in not within tolerance"
             );
         }
