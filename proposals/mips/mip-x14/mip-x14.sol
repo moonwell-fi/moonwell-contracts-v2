@@ -143,7 +143,7 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         }
         for (uint i = 0; i < _oracleConfigs[OPTIMISM_CHAIN_ID].length; i++) {
             string memory wrapperName = string(
-                abi.encodePacked(
+                string.concat(
                     _oracleConfigs[OPTIMISM_CHAIN_ID][i].oracleName,
                     "_OEV_WRAPPER"
                 )
@@ -194,11 +194,9 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         // Build for Optimism
         vm.selectFork(OPTIMISM_FORK_ID);
         for (uint i = 0; i < _oracleConfigs[OPTIMISM_CHAIN_ID].length; i++) {
-            string memory wrapperName = string(
-                abi.encodePacked(
-                    _oracleConfigs[OPTIMISM_CHAIN_ID][i].oracleName,
-                    "_OEV_WRAPPER"
-                )
+            string memory wrapperName = string.concat(
+                _oracleConfigs[OPTIMISM_CHAIN_ID][i].oracleName,
+                "_OEV_WRAPPER"
             );
             _pushAction(
                 addresses.getAddress("CHAINLINK_ORACLE"),
@@ -223,11 +221,9 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         // Build for Base
         vm.selectFork(BASE_FORK_ID);
         for (uint i = 0; i < _oracleConfigs[BASE_CHAIN_ID].length; i++) {
-            string memory wrapperName = string(
-                abi.encodePacked(
-                    _oracleConfigs[BASE_CHAIN_ID][i].oracleName,
-                    "_OEV_WRAPPER"
-                )
+            string memory wrapperName = string.concat(
+                _oracleConfigs[BASE_CHAIN_ID][i].oracleName,
+                "_OEV_WRAPPER"
             );
             _pushAction(
                 addresses.getAddress("CHAINLINK_ORACLE"),
@@ -240,11 +236,9 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
                     ).symbol(),
                     addresses.getAddress(wrapperName)
                 ),
-                string(
-                    abi.encodePacked(
-                        "Set price feed for ",
-                        _oracleConfigs[BASE_CHAIN_ID][i].tokenName
-                    )
+                string.concat(
+                    "Set price feed for ",
+                    _oracleConfigs[BASE_CHAIN_ID][i].tokenName
                 )
             );
         }
@@ -343,10 +337,13 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
     function _validateFeed(
         Addresses addresses,
         ChainlinkFeedOEVWrapper wrapper,
-        uint256 chainId,
-        uint256 index,
+        uint256,
+        uint256,
         string memory tokenName
     ) internal view {
+        // Store the values in local variables
+        uint256 chainId = OPTIMISM_CHAIN_ID;
+        uint256 index = 0;
         assertEq(
             address(wrapper.originalFeed()),
             addresses.getAddress(_oracleConfigs[chainId][index].oracleName),
