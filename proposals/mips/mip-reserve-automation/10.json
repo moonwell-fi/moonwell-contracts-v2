@@ -1,14 +1,50 @@
 [
-    "MOONWELL_USDC",
-    "MOONWELL_USDT",
-    "MOONWELL_DAI",
-    "MOONWELL_WETH",
-    "MOONWELL_cbETH",
-    "MOONWELL_wstETH",
-    "MOONWELL_rETH",
-    "MOONWELL_OP",
-    "MOONWELL_VELO",
-    "MOONWELL_weETH",
-    "MOONWELL_wrsETH",
-    "MOONWELL_WBTC"
+    {
+        "chainlinkFeed": "CHAINLINK_USDC_USD",
+        "market": "MOONWELL_USDC"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_USDT_USD",
+        "market": "MOONWELL_USDT"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_DAI_USD",
+        "market": "MOONWELL_DAI"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_ETH_USD_OEV_WRAPPER",
+        "market": "MOONWELL_WETH"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_cbETH_USD_COMPOSITE_ORACLE",
+        "market": "MOONWELL_cbETH"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_WSTETH_USD_COMPOSITE_ORACLE",
+        "market": "MOONWELL_wstETH"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_RETH_USD_COMPOSITE_ORACLE",
+        "market": "MOONWELL_rETH"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_OP_USD",
+        "market": "MOONWELL_OP"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_VELO_USD",
+        "market": "MOONWELL_VELO"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
+        "market": "MOONWELL_weETH"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
+        "market": "MOONWELL_wrsETH"
+    },
+    {
+        "chainlinkFeed": "CHAINLINK_WBTC_USD",
+        "market": "MOONWELL_WBTC"
+    }
 ]

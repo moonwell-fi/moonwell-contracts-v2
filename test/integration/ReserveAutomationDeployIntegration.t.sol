@@ -13,7 +13,7 @@ import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
-import {ReserveAutomationDeploy} from "@proposals/mips/mip-reserve-automation/reserveAutomationDeploy.sol";
+import {ReserveAutomationDeploy, MarketConfig} from "@proposals/mips/mip-reserve-automation/reserveAutomationDeploy.sol";
 import {MockRedstoneMultiFeedAdapter} from "@test/mock/MockRedstoneMultiFeedAdapter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
@@ -35,6 +35,11 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     uint256 public constant MINI_AUCTION_PERIOD = 4 hours;
     uint256 public constant MAX_DISCOUNT = 9e17; // 90% == 10% discount
     uint256 public constant STARTING_PREMIUM = 11e17; // 110% == 10% premium
+
+    struct ChainlinkConfig {
+        string chainlinkFeed;
+        string market;
+    }
 
     function setUp()
         public
@@ -68,27 +73,86 @@ contract ReserveAutomationLiveSystemIntegrationTest is
 
     function testValidate() public view {
         validate(addresses);
+
+        // Read the JSON file based on chain ID
+        string memory jsonPath = string.concat(
+            "proposals/mips/mip-reserve-automation/",
+            vm.toString(block.chainid),
+            ".json"
+        );
+        string memory json = vm.readFile(jsonPath);
+        ChainlinkConfig[] memory configs = abi.decode(
+            vm.parseJson(json),
+            (ChainlinkConfig[])
+        );
+
+        MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
+
+        // Validate each market's chainlink feed matches the JSON config
+        for (uint256 i = 0; i < marketConfigs.length; i++) {
+            MarketConfig memory marketConfig = marketConfigs[i];
+            bool found = false;
+
+            for (uint256 j = 0; j < configs.length; j++) {
+                if (
+                    keccak256(bytes(configs[j].market)) ==
+                    keccak256(bytes(marketConfig.market))
+                ) {
+                    found = true;
+                    ReserveAutomation automation = ReserveAutomation(
+                        addresses.getAddress(
+                            string.concat(
+                                "RESERVE_AUTOMATION_",
+                                _stripMoonwellPrefix(marketConfig.market)
+                            )
+                        )
+                    );
+
+                    address configuredFeed = addresses.getAddress(
+                        configs[j].chainlinkFeed
+                    );
+                    address actualFeed = automation.reserveChainlinkFeed();
+
+                    require(
+                        configuredFeed == actualFeed,
+                        string.concat(
+                            "Chainlink feed mismatch for market ",
+                            marketConfig.market
+                        )
+                    );
+                    break;
+                }
+            }
+
+            require(
+                found,
+                string.concat(
+                    "Market not found in JSON config: ",
+                    marketConfig.market
+                )
+            );
+        }
     }
 
     function _runTestForAllAutomations(
         function(ReserveAutomation, ERC20) internal fn
     ) internal {
-        string[] memory mTokens = _getMTokens(block.chainid);
+        MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
 
-        for (uint256 i = 0; i < mTokens.length; i++) {
-            string memory mTokenName = mTokens[i];
+        for (uint256 i = 0; i < marketConfigs.length; i++) {
+            MarketConfig memory config = marketConfigs[i];
 
             ReserveAutomation automation = ReserveAutomation(
                 addresses.getAddress(
                     string.concat(
                         "RESERVE_AUTOMATION_",
-                        _stripMoonwellPrefix(mTokenName)
+                        _stripMoonwellPrefix(config.market)
                     )
                 )
             );
 
             ERC20 underlying = ERC20(
-                MErc20(addresses.getAddress(mTokenName)).underlying()
+                MErc20(addresses.getAddress(config.market)).underlying()
             );
 
             fn(automation, underlying);
@@ -498,15 +562,15 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testAmountInTolerance(uint256 amountWellIn) public view {
-        string[] memory mTokens = _getMTokens(block.chainid);
-        for (uint256 i = 0; i < mTokens.length; i++) {
-            string memory mTokenName = mTokens[i];
+        MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
+        for (uint256 i = 0; i < marketConfigs.length; i++) {
+            MarketConfig memory config = marketConfigs[i];
 
             ReserveAutomation automation = ReserveAutomation(
                 addresses.getAddress(
                     string.concat(
                         "RESERVE_AUTOMATION_",
-                        _stripMoonwellPrefix(mTokenName)
+                        _stripMoonwellPrefix(config.market)
                     )
                 )
             );
@@ -534,15 +598,15 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testAmountOutTolerance(uint256 amountReservesIn) public view {
-        string[] memory mTokens = _getMTokens(block.chainid);
-        for (uint256 i = 0; i < mTokens.length; i++) {
-            string memory mTokenName = mTokens[i];
+        MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
+        for (uint256 i = 0; i < marketConfigs.length; i++) {
+            MarketConfig memory config = marketConfigs[i];
 
             ReserveAutomation vault = ReserveAutomation(
                 addresses.getAddress(
                     string.concat(
                         "RESERVE_AUTOMATION_",
-                        _stripMoonwellPrefix(mTokenName)
+                        _stripMoonwellPrefix(config.market)
                     )
                 )
             );
