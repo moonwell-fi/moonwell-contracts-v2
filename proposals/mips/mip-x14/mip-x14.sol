@@ -126,7 +126,9 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         vm.selectFork(OPTIMISM_FORK_ID);
         vm.startBroadcast();
 
-        if (!addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER")) {
+        if (
+            !addresses.isAddressSet("CHAINLINK_WEETH_ETH_COMPOSITE_OEV_WRAPPER")
+        ) {
             // Only deploy if not already set
             ChainlinkCompositeOracle weethCompositeOracle = new ChainlinkCompositeOracle(
                     addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"),
@@ -135,7 +137,7 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
                 );
 
             addresses.addAddress(
-                "CHAINLINK_ETH_USD_OEV_WRAPPER",
+                "CHAINLINK_WEETH_ETH_COMPOSITE_OEV_WRAPPER",
                 address(weethCompositeOracle),
                 OPTIMISM_CHAIN_ID,
                 true
@@ -186,7 +188,9 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
             abi.encodeWithSignature(
                 "setFeed(string,address)",
                 "weETH",
-                addresses.getAddress("CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE")
+                addresses.getAddress(
+                    "CHAINLINK_WEETH_ETH_COMPOSITE_OEV_WRAPPER"
+                )
             ),
             "Set composite price feed for weETH"
         );
@@ -315,7 +319,7 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
 
         _validateOwnership(addresses, wrapper, tokenName); // Verify correct ownership
         _validateFeed(addresses, wrapper, chainId, index, tokenName); // Verify feed configuration
-        _validateMarket(addresses, wrapper, chainId, index, tokenName); // Verify market settings
+        _validateMarket(addresses, wrapper, index, tokenName); // Verify market settings
         _validateFeeMultiplier(wrapper, tokenName); // Verify fee multiplier
         _validateInterface(wrapper, tokenName); // Verify interface compatibility
         _validateRoundData(wrapper, tokenName); // Verify price data functionality
@@ -337,13 +341,10 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
     function _validateFeed(
         Addresses addresses,
         ChainlinkFeedOEVWrapper wrapper,
-        uint256,
-        uint256,
+        uint256 chainId,
+        uint256 index,
         string memory tokenName
     ) internal view {
-        // Store the values in local variables
-        uint256 chainId = OPTIMISM_CHAIN_ID;
-        uint256 index = 0;
         assertEq(
             address(wrapper.originalFeed()),
             addresses.getAddress(_oracleConfigs[chainId][index].oracleName),
@@ -354,7 +355,6 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
     function _validateMarket(
         Addresses addresses,
         ChainlinkFeedOEVWrapper wrapper,
-        uint256 chainId,
         uint256 index,
         string memory tokenName
     ) internal view {
