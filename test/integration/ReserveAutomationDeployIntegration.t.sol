@@ -36,6 +36,11 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     uint256 public constant MAX_DISCOUNT = 9e17; // 90% == 10% discount
     uint256 public constant STARTING_PREMIUM = 11e17; // 110% == 10% premium
 
+    struct ChainlinkConfig {
+        string chainlinkFeed;
+        string market;
+    }
+
     function setUp()
         public
         override(PostProposalCheck, ReserveAutomationDeploy)
@@ -68,6 +73,65 @@ contract ReserveAutomationLiveSystemIntegrationTest is
 
     function testValidate() public view {
         validate(addresses);
+
+        // Read the JSON file based on chain ID
+        string memory jsonPath = string.concat(
+            "proposals/mips/mip-reserve-automation/",
+            vm.toString(block.chainid),
+            ".json"
+        );
+        string memory json = vm.readFile(jsonPath);
+        ChainlinkConfig[] memory configs = abi.decode(
+            vm.parseJson(json),
+            (ChainlinkConfig[])
+        );
+
+        MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
+
+        // Validate each market's chainlink feed matches the JSON config
+        for (uint256 i = 0; i < marketConfigs.length; i++) {
+            MarketConfig memory marketConfig = marketConfigs[i];
+            bool found = false;
+
+            for (uint256 j = 0; j < configs.length; j++) {
+                if (
+                    keccak256(bytes(configs[j].market)) ==
+                    keccak256(bytes(marketConfig.market))
+                ) {
+                    found = true;
+                    ReserveAutomation automation = ReserveAutomation(
+                        addresses.getAddress(
+                            string.concat(
+                                "RESERVE_AUTOMATION_",
+                                _stripMoonwellPrefix(marketConfig.market)
+                            )
+                        )
+                    );
+
+                    address configuredFeed = addresses.getAddress(
+                        configs[j].chainlinkFeed
+                    );
+                    address actualFeed = automation.reserveChainlinkFeed();
+
+                    require(
+                        configuredFeed == actualFeed,
+                        string.concat(
+                            "Chainlink feed mismatch for market ",
+                            marketConfig.market
+                        )
+                    );
+                    break;
+                }
+            }
+
+            require(
+                found,
+                string.concat(
+                    "Market not found in JSON config: ",
+                    marketConfig.market
+                )
+            );
+        }
     }
 
     function _runTestForAllAutomations(
