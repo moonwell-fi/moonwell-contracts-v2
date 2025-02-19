@@ -126,20 +126,21 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         vm.selectFork(OPTIMISM_FORK_ID);
         vm.startBroadcast();
 
-        // Only deploy if not already set
-        ChainlinkCompositeOracle weethCompositeOracle = new ChainlinkCompositeOracle(
-                addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"),
-                addresses.getAddress("CHAINLINK_WEETH_ORACLE"),
-                address(0) // No second multiplier needed
+        if (!addresses.isAddressSet("CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE")) {
+            // Only deploy if not already set
+            ChainlinkCompositeOracle weethCompositeOracle = new ChainlinkCompositeOracle(
+                    addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"),
+                    addresses.getAddress("CHAINLINK_WEETH_ORACLE"),
+                    address(0) // No second multiplier needed
+                );
+
+            addresses.changeAddress(
+                "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
+                address(weethCompositeOracle),
+                OPTIMISM_CHAIN_ID,
+                true
             );
-
-        addresses.changeAddress(
-            "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
-            address(weethCompositeOracle),
-            OPTIMISM_CHAIN_ID,
-            true
-        );
-
+        }
         for (uint i = 0; i < _oracleConfigs[OPTIMISM_CHAIN_ID].length; i++) {
             string memory wrapperName = string(
                 abi.encodePacked(
@@ -305,23 +306,25 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         uint256 chainId,
         uint256 index
     ) internal view {
+        // Construct the wrapper name by appending "_OEV_WRAPPER" to the oracle name
         string memory wrapperName = string(
             abi.encodePacked(
                 _oracleConfigs[chainId][index].oracleName,
                 "_OEV_WRAPPER"
             )
         );
+
         ChainlinkFeedOEVWrapper wrapper = ChainlinkFeedOEVWrapper(
             addresses.getAddress(wrapperName)
         );
         string memory tokenName = _oracleConfigs[chainId][index].tokenName;
 
-        _validateOwnership(addresses, wrapper, tokenName);
-        _validateFeed(addresses, wrapper, chainId, index, tokenName);
-        _validateMarket(addresses, wrapper, chainId, index, tokenName);
-        _validateParameters(wrapper, tokenName);
-        _validateInterface(wrapper, tokenName);
-        _validateRoundData(wrapper, tokenName);
+        _validateOwnership(addresses, wrapper, tokenName); // Verify correct ownership
+        _validateFeed(addresses, wrapper, chainId, index, tokenName); // Verify feed configuration
+        _validateMarket(addresses, wrapper, chainId, index, tokenName); // Verify market settings
+        _validateFeeMultiplier(wrapper, tokenName); // Verify fee multiplier
+        _validateInterface(wrapper, tokenName); // Verify interface compatibility
+        _validateRoundData(wrapper, tokenName); // Verify price data functionality
     }
 
     function _validateOwnership(
@@ -365,7 +368,7 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         );
     }
 
-    function _validateParameters(
+    function _validateFeeMultiplier(
         ChainlinkFeedOEVWrapper wrapper,
         string memory tokenName
     ) internal view {
