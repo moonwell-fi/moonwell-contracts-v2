@@ -319,7 +319,7 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
 
         _validateOwnership(addresses, wrapper, tokenName); // Verify correct ownership
         _validateFeed(addresses, wrapper, chainId, index, tokenName); // Verify feed configuration
-        _validateMarket(addresses, wrapper, index, tokenName); // Verify market settings
+        _validateMarket(addresses, wrapper, tokenName); // Verify market settings
         _validateFeeMultiplier(wrapper, tokenName); // Verify fee multiplier
         _validateInterface(wrapper, tokenName); // Verify interface compatibility
         _validateRoundData(wrapper, tokenName); // Verify price data functionality
@@ -355,7 +355,6 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
     function _validateMarket(
         Addresses addresses,
         ChainlinkFeedOEVWrapper wrapper,
-        uint256 index,
         string memory tokenName
     ) internal view {
         assertEq(
