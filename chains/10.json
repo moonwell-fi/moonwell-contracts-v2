@@ -107,11 +107,6 @@
     {
         "addr": "0x512CE44e4F69A98bC42A57ceD8257e65e63cD74f",
         "isContract": true,
-        "name": "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE_OEV_WRAPPER"
-    },
-    {
-        "addr": "0x512CE44e4F69A98bC42A57ceD8257e65e63cD74f",
-        "isContract": true,
         "name": "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE"
     },
     {
