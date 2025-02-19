@@ -13,7 +13,7 @@ import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
-import {ReserveAutomationDeploy} from "@proposals/mips/mip-reserve-automation/reserveAutomationDeploy.sol";
+import {ReserveAutomationDeploy, MarketConfig} from "@proposals/mips/mip-reserve-automation/reserveAutomationDeploy.sol";
 import {MockRedstoneMultiFeedAdapter} from "@test/mock/MockRedstoneMultiFeedAdapter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
@@ -73,22 +73,22 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     function _runTestForAllAutomations(
         function(ReserveAutomation, ERC20) internal fn
     ) internal {
-        string[] memory mTokens = _getMTokens(block.chainid);
+        MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
 
-        for (uint256 i = 0; i < mTokens.length; i++) {
-            string memory mTokenName = mTokens[i];
+        for (uint256 i = 0; i < marketConfigs.length; i++) {
+            MarketConfig memory config = marketConfigs[i];
 
             ReserveAutomation automation = ReserveAutomation(
                 addresses.getAddress(
                     string.concat(
                         "RESERVE_AUTOMATION_",
-                        _stripMoonwellPrefix(mTokenName)
+                        _stripMoonwellPrefix(config.market)
                     )
                 )
             );
 
             ERC20 underlying = ERC20(
-                MErc20(addresses.getAddress(mTokenName)).underlying()
+                MErc20(addresses.getAddress(config.market)).underlying()
             );
 
             fn(automation, underlying);
@@ -498,15 +498,15 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testAmountInTolerance(uint256 amountWellIn) public view {
-        string[] memory mTokens = _getMTokens(block.chainid);
-        for (uint256 i = 0; i < mTokens.length; i++) {
-            string memory mTokenName = mTokens[i];
+        MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
+        for (uint256 i = 0; i < marketConfigs.length; i++) {
+            MarketConfig memory config = marketConfigs[i];
 
             ReserveAutomation automation = ReserveAutomation(
                 addresses.getAddress(
                     string.concat(
                         "RESERVE_AUTOMATION_",
-                        _stripMoonwellPrefix(mTokenName)
+                        _stripMoonwellPrefix(config.market)
                     )
                 )
             );
@@ -534,15 +534,15 @@ contract ReserveAutomationLiveSystemIntegrationTest is
     }
 
     function testAmountOutTolerance(uint256 amountReservesIn) public view {
-        string[] memory mTokens = _getMTokens(block.chainid);
-        for (uint256 i = 0; i < mTokens.length; i++) {
-            string memory mTokenName = mTokens[i];
+        MarketConfig[] memory marketConfigs = _getMTokens(block.chainid);
+        for (uint256 i = 0; i < marketConfigs.length; i++) {
+            MarketConfig memory config = marketConfigs[i];
 
             ReserveAutomation vault = ReserveAutomation(
                 addresses.getAddress(
                     string.concat(
                         "RESERVE_AUTOMATION_",
-                        _stripMoonwellPrefix(mTokenName)
+                        _stripMoonwellPrefix(config.market)
                     )
                 )
             );
