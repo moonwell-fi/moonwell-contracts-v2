@@ -938,5 +938,40 @@
         "addr": "0x665B7dD0260AE7a7Dd57E7F4278efdb6262c6993",
         "isContract": true,
         "name": "RESERVE_AUTOMATION_VIRTUAL"
+    },
+    {
+        "addr": "0xc2dA00D538237822e3c7dcb95114FA1474e4c884",
+        "isContract": true,
+        "name": "CHAINLINK_ETH_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0x6F0cC02e5a7640B28F538fcc06bCA3BdFA57d1BB",
+        "isContract": true,
+        "name": "CHAINLINK_BTC_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0x48F86A23aDE243F7a1028108aA65274FC84f382F",
+        "isContract": true,
+        "name": "CHAINLINK_EURC_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0x1E0E8bcFb5FFa86749B8b89fb6e055337Ba74A39",
+        "isContract": true,
+        "name": "CHAINLINK_WELL_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0xAeC8E8E3696fc5fcd954eb3ebC26B72FC2FE8E8e",
+        "isContract": true,
+        "name": "CHAINLINK_USDS_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0x94423903EaAf8638bDE262c417fEEf5E2Ec507E5",
+        "isContract": true,
+        "name": "CHAINLINK_TBTC_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0x6aa41dF8FB0deC976B59bf0824FC5fFB88ccA958",
+        "isContract": true,
+        "name": "CHAINLINK_VIRTUAL_USD_OEV_WRAPPER"
     }
 ]
