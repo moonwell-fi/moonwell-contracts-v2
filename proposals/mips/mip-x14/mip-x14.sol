@@ -127,7 +127,7 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         vm.startBroadcast();
 
         if (
-            !addresses.isAddressSet("CHAINLINK_WEETH_ETH_COMPOSITE_OEV_WRAPPER")
+            !addresses.isAddressSet("CHAINLINK_WEETH_USD_COMPOSITE_OEV_WRAPPER")
         ) {
             // Only deploy if not already set
             ChainlinkCompositeOracle weethCompositeOracle = new ChainlinkCompositeOracle(
@@ -137,7 +137,7 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
                 );
 
             addresses.addAddress(
-                "CHAINLINK_WEETH_ETH_COMPOSITE_OEV_WRAPPER",
+                "CHAINLINK_WEETH_USD_COMPOSITE_OEV_WRAPPER",
                 address(weethCompositeOracle),
                 OPTIMISM_CHAIN_ID,
                 true
@@ -189,7 +189,7 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
                 "setFeed(string,address)",
                 "weETH",
                 addresses.getAddress(
-                    "CHAINLINK_WEETH_ETH_COMPOSITE_OEV_WRAPPER"
+                    "CHAINLINK_WEETH_USD_COMPOSITE_OEV_WRAPPER"
                 )
             ),
             "Set composite price feed for weETH"
@@ -266,7 +266,7 @@ contract mipx14 is HybridProposal, DeployChainlinkOEVWrapper {
         if (chainId == OPTIMISM_CHAIN_ID) {
             ChainlinkCompositeOracle compositeOracle = ChainlinkCompositeOracle(
                 addresses.getAddress(
-                    "CHAINLINK_WEETH_ETH_COMPOSITE_OEV_WRAPPER"
+                    "CHAINLINK_WEETH_USD_COMPOSITE_OEV_WRAPPER"
                 )
             );
 

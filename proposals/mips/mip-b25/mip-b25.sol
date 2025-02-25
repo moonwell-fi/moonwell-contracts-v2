@@ -75,9 +75,9 @@ contract mipb25 is HybridProposal, Configs {
             cTokenConfigs = getCTokenConfigurations(block.chainid);
         }
 
-        if (!addresses.isAddressSet("CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE")) {
+        if (!addresses.isAddressSet("CHAINLINK_WEETH_USD_COMPOSITE_ORACLE")) {
             addresses.addAddress(
-                "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
+                "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE",
                 address(
                     new ChainlinkCompositeOracle(
                         addresses.getAddress("CHAINLINK_ETH_USD"),
@@ -582,7 +582,7 @@ contract mipb25 is HybridProposal, Configs {
 
         {
             ChainlinkCompositeOracle oracle = ChainlinkCompositeOracle(
-                addresses.getAddress("CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE")
+                addresses.getAddress("CHAINLINK_WEETH_USD_COMPOSITE_ORACLE")
             );
             (, int256 compositePrice, , , ) = oracle.latestRoundData();
 
