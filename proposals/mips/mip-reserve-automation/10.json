@@ -36,7 +36,7 @@
         "market": "MOONWELL_VELO"
     },
     {
-        "chainlinkFeed": "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
+        "chainlinkFeed": "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE",
         "market": "MOONWELL_weETH"
     },
     {

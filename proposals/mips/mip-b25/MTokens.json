@@ -6,7 +6,7 @@
         "collateralFactor": 0.74e18,
         "initialMintAmount": 1e12,
         "name": "Moonwell weETH",
-        "priceFeedName": "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
+        "priceFeedName": "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE",
         "reserveFactor": 0.15e18,
         "seizeShare": 0.03e18,
         "symbol": "mweETH",
