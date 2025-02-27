@@ -1,9 +1,9 @@
 # How to use Moonwell OEV system to update Chainlink feed earlier and liquidate users
 
-## TLDR
+## Overview
 
-- Moonwell's Oracle Extracted Value (OEV) system allows early price updates for
-  liquidations
+- Moonwell's Oracle Extractable Value (OEV) system allows early price updates
+  for liquidations
 - Each Chainlink feed has a 10-second delay by default
 - To update price early: call `updatePriceEarly()` and pay MEV tax (99x your
   priority fee)
