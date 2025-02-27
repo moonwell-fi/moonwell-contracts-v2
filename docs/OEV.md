@@ -61,6 +61,8 @@ Recent successful OEV liquidations on OP Mainnet:
 
 - [Example 1](https://optimistic.etherscan.io/tx/0x1e41a6e70674c421dc27a96cc29f6b201b589eeb9e8ce374d21df8f105448051)
 - [Example 2](https://optimistic.etherscan.io/tx/0x44aea3f66f5a938645616ee7159b18ee1c081d965caafcbf3331a2af123206c0)
+- [Example 3](https://basescan.org/tx/0x41f632ac09cee6c8107edd091627e20bdd27c704de4f01be5b0b65d8c3c2fbc4)
+- [Example 4](https://basescan.org/tx/0xc04990567c3637ba3250831e805b99cbb6cee5d353ea5154e8e17d05ac62b3a6)
 
 ## Additional Resources
 
@@ -74,19 +76,21 @@ Recent successful OEV liquidations on OP Mainnet:
 ### Optimism
 
 - ETH/USD:
-  [`0x13e3Ee699D1909E989722E753853AE30b17e08c5`](https://optimistic.etherscan.io/address/0x13e3Ee699D1909E989722E753853AE30b17e08c5)
+  [`0x502510FA35Da0db798452a7A33138F14343FebAc`](https://optimistic.etherscan.io/address/0x502510FA35Da0db798452a7A33138F14343FebAc)
 - USDC/USD:
-  [`0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3`](https://optimistic.etherscan.io/address/0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3)
+  [`0x6F0cC02e5a7640B28F538fcc06bCA3BdFA57d1BB`](https://optimistic.etherscan.io/address/0x6F0cC02e5a7640B28F538fcc06bCA3BdFA57d1BB)
 - DAI/USD:
-  [`0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6`](https://optimistic.etherscan.io/address/0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6)
+  [`0x48F86A23aDE243F7a1028108aA65274FC84f382F`](https://optimistic.etherscan.io/address/0x48F86A23aDE243F7a1028108aA65274FC84f382F)
 - USDT/USD:
-  [`0xECef79E109e997bCA29c1c0897ec9d7b03647F5E`](https://optimistic.etherscan.io/address/0xECef79E109e997bCA29c1c0897ec9d7b03647F5E)
+  [`0x1E0E8bcFb5FFa86749B8b89fb6e055337Ba74A39`](https://optimistic.etherscan.io/address/0x1E0E8bcFb5FFa86749B8b89fb6e055337Ba74A39)
 - WBTC/USD:
-  [`0x718A5788b89454aAE3A028AE9c111A29Be6c2a6F`](https://optimistic.etherscan.io/address/0x718A5788b89454aAE3A028AE9c111A29Be6c2a6F)
+  [`0xAeC8E8E3696fc5fcd954eb3ebC26B72FC2FE8E8e`](https://optimistic.etherscan.io/address/0xAeC8E8E3696fc5fcd954eb3ebC26B72FC2FE8E8e)
 - OP/USD:
-  [`0x0D276FC14719f9292D5C1eA2198673d1f4269246`](https://optimistic.etherscan.io/address/0x0D276FC14719f9292D5C1eA2198673d1f4269246)
+  [`0x94423903EaAf8638bDE262c417fEEf5E2Ec507E5`](https://optimistic.etherscan.io/address/0x94423903EaAf8638bDE262c417fEEf5E2Ec507E5)
 - VELO/USD:
-  [`0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120`](https://optimistic.etherscan.io/address/0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120)
+  [`0x6aa41dF8FB0deC976B59bf0824FC5fFB88ccA958`](https://optimistic.etherscan.io/address/0x6aa41dF8FB0deC976B59bf0824FC5fFB88ccA958)
+- WELL/USD:
+  [`0xfeA5a5927645C0DC5C1E740Ec1B24AD320c7e58f`](https://optimistic.etherscan.io/address/0xfeA5a5927645C0DC5C1E740Ec1B24AD320c7e58f)
 
 ### Base
 
