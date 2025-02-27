@@ -8,8 +8,8 @@
 - To update price early: call `updatePriceEarly()` and pay MEV tax (99x your
   priority fee)
 - Example: If you set 0.1 GWEI priority fee, you'll pay 9.9 GWEI as MEV tax
-- If no early updates occur, regular liquidations proceed after the 10-second
-  delay
+- If no early updates occur, the price will automatically update to the latest
+  value after the 10-second delay
 
 ## Technical Overview
 
@@ -85,8 +85,6 @@ Recent successful OEV liquidations on OP Mainnet:
   [`0x718A5788b89454aAE3A028AE9c111A29Be6c2a6F`](https://optimistic.etherscan.io/address/0x718A5788b89454aAE3A028AE9c111A29Be6c2a6F)
 - OP/USD:
   [`0x0D276FC14719f9292D5C1eA2198673d1f4269246`](https://optimistic.etherscan.io/address/0x0D276FC14719f9292D5C1eA2198673d1f4269246)
-- VELO/USD:
-  [`0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120`](https://optimistic.etherscan.io/address/0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120)
 - VELO/USD:
   [`0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120`](https://optimistic.etherscan.io/address/0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120)
 
