@@ -2,9 +2,8 @@
 
 **Author(s):** Block Analitica and B.Protocol **Related Discussions:**
 [Moonwell MetaMorpho Vaults - Next Gen DeFi Lending](https://forum.moonwell.fi/t/introducing-moonwell-metamorpho-vaults-next-gen-defi-lending/960/16)
-[Superchain Expansion Proposal](
-https://forum.moonwell.fi/t/proposal-to-launch-moonwell-flagship-usdc-vault-on-OP
-Mainnet/1540) **Submission Date:** March 3, 2025
+[Superchain Expansion Proposal](https://forum.moonwell.fi/t/proposal-to-launch-moonwell-flagship-usdc-vault-on-OP-Mainnet/1540)
+**Submission Date:** March 3, 2025
 
 ## Proposal Summary
 
