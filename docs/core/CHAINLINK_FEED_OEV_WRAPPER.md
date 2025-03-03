@@ -21,6 +21,7 @@ functional even without early updates.
    - Configurable maximum decrements for finding valid rounds
    - WETH contract reference for handling fees (immutable)
    - ETH market reference for adding reserves (immutable)
+   - Temporal Governor will own all deployed instances of `ChainlinkFeedOEVWrapper`
 
 ## Core Functionality
 
