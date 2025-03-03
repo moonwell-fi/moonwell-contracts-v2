@@ -10,8 +10,7 @@
 Following the success of Moonwell Flagship and Frontier vaults on Base, which
 currently hold more than $85M in total value locked (TVL) across ETH, USDC,
 EURC, and cbBTC, this proposal seeks to expand our strategic footprint by
-accepting ownership of the Flagship Moonwell USDC Vault on OP Mainnet (OP
-Mainnet).
+accepting ownership of the Flagship Moonwell USDC Vault on OP Mainnet.
 
 With this initiative, we aim to attract USDC depositors, deepen network
 liquidity for this important stablecoin, and further establish Moonwell as a
