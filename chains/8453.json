@@ -122,7 +122,7 @@
     {
         "addr": "0xe44b816FE6bc5047C22b9fA5e4D4c5c9747476b3",
         "isContract": true,
-        "name": "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE"
+        "name": "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE"
     },
     {
         "addr": "0x6ac79dF84FA8A704711a2fb8c3763e48Ed2c0Ed6",
