@@ -1,0 +1,107 @@
+{
+    "8453": {
+        "markets": [
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X15",
+                "market": "MOONWELL_USDC",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_X15",
+                "market": "MOONWELL_WETH",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": [
+            {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 9e18,
+                "kink": 0.9e18,
+                "multiplierPerYear": 0.0615e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X15"
+            },
+            {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 8e18,
+                "kink": 0.9e18,
+                "multiplierPerYear": 0.0135e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_X15"
+            }
+        ]
+    },
+    "10": {
+        "markets": [
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X15",
+                "market": "MOONWELL_USDC",
+                "reserveFactor": 0.1e18
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X15",
+                "market": "MOONWELL_USDT",
+                "reserveFactor": 0.1e18
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X15",
+                "market": "MOONWELL_DAI",
+                "reserveFactor": 0.1e18
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_X15",
+                "market": "MOONWELL_WETH",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": [
+            {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 9e18,
+                "kink": 0.9e18,
+                "multiplierPerYear": 0.0615e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X15"
+            },
+            {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 8e18,
+                "kink": 0.9e18,
+                "multiplierPerYear": 0.0135e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_X15"
+            }
+        ]
+    },
+    "1284": {
+        "markets": [
+            {
+                "collateralFactor": 0.49e18,
+                "irm": "",
+                "market": "mFRAX",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.32e18,
+                "irm": "",
+                "market": "mUSDCwh",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.55e18,
+                "irm": "",
+                "market": "mGLIMMER",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "",
+                "market": "mxcDOT",
+                "reserveFactor": 0.2e18
+            }
+        ],
+        "irModels": []
+    }
+}

@@ -1,5 +1,12 @@
 [
     {
+        "envpath": "proposals/mips/mip-x15/x15.sh",
+        "governor": "MultichainGovernor",
+        "id": 83,
+        "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
+        "proposalType": "HybridProposal"
+    },
+    {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 82,
