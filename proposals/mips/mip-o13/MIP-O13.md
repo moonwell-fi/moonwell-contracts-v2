@@ -6,16 +6,18 @@
 
 ## Proposal Summary
 
-After the established collaboration between the Moonwell DAO, Morpho DAO, Block
-Analitica, and B.Protocol to
-[deploy, manage, and incentivize Moonwell Flagship ETH and USDC Morpho Vaults](https://moonwell.fi/governance/proposal/moonbeam?id=100),
-this proposal seeks to expand vault listings by accepting ownership of a new
-Flagship USDC Vault on Optimism. With this initiative, we aim to attract new
-capital and activity to the Moonwell ecosystem, targeting USDC users seeking
-risk-adjusted yield on Optimism. The USDC vault is proposed with the same role
-assignments as the ones present for existing Flagship vaults. A 15% performance
-fee will be implemented, with the Moonwell DAO's share being directed to
-Moonwell's USDC Core Market protocol reserves.
+Following the success of Moonwell Flagship and Frontier vaults on Base, which
+currently hold more than $160M in total value locked (TVL) across ETH, USDC,
+EURC, and cbBTC, this proposal seeks to expand our strategic footprint by
+accepting ownership of the Flagship Moonwell USDC Vault on Optimism (OP
+Mainnet).
+
+With this initiative, we aim to attract USDC depositors, deepen network
+liquidity for this important stablecoin, and further establish Moonwell as a
+leading contributor in the Morpho ecosystem. The USDC vault is proposed with the
+same role assignments as those present for existing Flagship vaults. A 15%
+performance fee will be implemented, with the Moonwell DAO's share being
+directed to Moonwell's USDC Core Market protocol reserves.
 
 This MIP proposes:
 
@@ -24,13 +26,24 @@ This MIP proposes:
 
 ## Background and Rationale
 
-Building on the successful collaboration between the Moonwell DAO, Block
-Analitica, B.Protocol, and Morpho DAO, this proposal seeks to attract new
-capital and USDC users seeking risk-adjusted yield on Optimism. Our
-[existing vaults](https://moonwell.fi/vaults) have already attracted significant
-TVL, and the addition of a USDC Flagship Vault on Optimism creates yield
-opportunities for USDC users, potentially attracting substantial new capital and
-users to the Moonwell ecosystem on Optimism.
+Last summer, MIP-B21 kicked off Moonwell DAO's collaboration with Block
+Analitica and B.Protocol, paving the way for the development of the Moonwell
+Flagship and Frontier series of Morpho vaults. Today, these vaults stand among
+the largest by TVL in the Base ecosystem, highlighting their strong adoption and
+significance.
+
+Building on this successful model, we propose expanding to Optimism to attract
+new capital and USDC users seeking risk-adjusted yield. By being the first to
+offer a fully integrated Morpho vault experience on Optimism—where the Morpho
+frontend is currently unavailable—we position ourselves to capture early market
+share and pave the way for future expansion across Superchain-aligned networks.
+
+This proposal aligns with the Morpho Everywhere expansion plan, which aims to
+establish Morpho infrastructure across multiple Ethereum L1 and L2 networks,
+including Optimism. This could be the first of multiple vaults launched by
+Moonwell DAO and Block Analytica/B.Protocol on Superchain-aligned networks,
+supporting our broader vision of scaling Ethereum lending infrastructure across
+the Superchain.
 
 ## Contract Addresses
 
@@ -47,11 +60,44 @@ The USDC Flagship Vault will be configured as follows:
 
 - **Owner:** Moonwell DAO (via the Moonwell Temporal Governor contract)
 - **Curator:** Block Analitica & B.Protocol
-- **Allocator:** Public allocator contract and Risk Manager Multisig
+- **Allocator:** Block Analitica & B.Protocol
 - **Guardian:** Moonwell Security Council
 - **Timelock period:** 4 days
 - **Vault name:** Moonwell Flagship USDC Vault
 - **Symbol:** mwUSDC
+
+## Proposed Markets
+
+Block Analitica has proposed listing two markets for the USDC vault on Optimism:
+
+### wstETH/USDC Market
+
+- **Loan token:** USDC -
+  [0x0b2c639c533813f4aa9d7837caf62653d097ff85](https://optimistic.etherscan.io/address/0x0b2c639c533813f4aa9d7837caf62653d097ff85)
+- **Collateral token:** wstETH -
+  [0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb](https://optimistic.etherscan.io/address/0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb)
+- **Oracle:** Morpho Chainlink -
+  [0x1ec408D4131686f727F3Fd6245CF85Bc5c9DAD70](https://optimistic.etherscan.io/address/0x1ec408D4131686f727F3Fd6245CF85Bc5c9DAD70)
+- **IRM:** Adaptive Curve IRM -
+  [0x8cD70A8F399428456b29546BC5dBe10ab6a06ef6](https://optimistic.etherscan.io/address/0x8cD70A8F399428456b29546BC5dBe10ab6a06ef6)
+- **LLTV:** 86%
+- **Supply Cap:** 30M USDC
+
+### WETH/USDC Market
+
+- **Loan token:** USDC -
+  [0x0b2c639c533813f4aa9d7837caf62653d097ff85](https://optimistic.etherscan.io/address/0x0b2c639c533813f4aa9d7837caf62653d097ff85)
+- **Collateral token:** WETH -
+  [0x4200000000000000000000000000000000000006](https://optimistic.etherscan.io/address/0x4200000000000000000000000000000000000006)
+- **Oracle:** Morpho Chainlink -
+  [0x1ec408D4131686f727F3Fd6245CF85Bc5c9DAD70](https://optimistic.etherscan.io/address/0x1ec408D4131686f727F3Fd6245CF85Bc5c9DAD70)
+- **IRM:** Adaptive Curve IRM -
+  [0x8cD70A8F399428456b29546BC5dBe10ab6a06ef6](https://optimistic.etherscan.io/address/0x8cD70A8F399428456b29546BC5dBe10ab6a06ef6)
+- **LLTV:** 86%
+- **Supply Cap:** 30M USDC
+
+These market listings were executed on February 19, 2025, at 10:50:31 AM +UTC
+and 10:50:17 AM +UTC respectively.
 
 ## Performance Fee and Incentives
 
@@ -59,6 +105,11 @@ This proposal implements a **15% performance fee** for the USDC Flagship Vault,
 to be split between Block Analitica/B.Protocol and the Moonwell DAO. The
 Moonwell DAO's portion will be added to Moonwell's USDC Core Market protocol
 reserves on Optimism.
+
+Note that the launch of this new vault does not imply a new WELL token grant for
+liquidity incentives. However, there may be opportunities to receive OP
+incentives through initiatives such as Season 7 Optimism Grants Council Grants,
+which focus on bolstering Superchain TVL.
 
 ## Implementation
 
@@ -82,5 +133,8 @@ risk management expertise of Block Analitica and B Protocol, we aim to replicate
 the success of our existing vaults and tap into the growing demand for yield
 opportunities on Optimism.
 
-Approving this proposal will expand vault offerings, attract new users, and
-reinforce Moonwell's position as a leading DeFi app on Optimism.
+By being the first to offer a Morpho-integrated lending experience on Optimism,
+Moonwell has the potential to capture early market share and expand its
+influence across the Superchain. Approving this proposal will expand vault
+offerings, attract new users, and reinforce Moonwell's position as a leading
+DeFi app on Optimism.
