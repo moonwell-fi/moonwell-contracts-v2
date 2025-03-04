@@ -947,4 +947,40 @@ contract MultiRewardsTest {
             );
         }
     }
+
+    // Test function to verify recoverERC20 works for reward tokens
+    function testRecoverRewardToken() public {
+        // 1. Setup - Add reward token and notify reward amount
+        prank(rewardDistributorA);
+        multiRewards.notifyRewardAmount(address(rewardTokenA), REWARD_AMOUNT);
+
+        // Verify reward token balance in the contract
+        assertEq(
+            rewardTokenA.balanceOf(address(multiRewards)),
+            REWARD_AMOUNT,
+            "Contract should have the reward token amount"
+        );
+
+        // 2. Attempt to recover half of the reward tokens
+        uint256 amountToRecover = REWARD_AMOUNT / 2;
+        uint256 ownerBalanceBefore = rewardTokenA.balanceOf(owner);
+
+        // Call recoverERC20 as the owner
+        multiRewards.recoverERC20(address(rewardTokenA), amountToRecover);
+
+        // 3. Verify tokens were successfully transferred to the owner
+        uint256 ownerBalanceAfter = rewardTokenA.balanceOf(owner);
+        assertEq(
+            ownerBalanceAfter - ownerBalanceBefore,
+            amountToRecover,
+            "Owner should have received the recovered tokens"
+        );
+
+        // 4. Verify remaining balance in the contract
+        assertEq(
+            rewardTokenA.balanceOf(address(multiRewards)),
+            REWARD_AMOUNT - amountToRecover,
+            "Contract should have the remaining reward tokens"
+        );
+    }
 }
