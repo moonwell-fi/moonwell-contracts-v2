@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
-import {IMultiRewards} from "crv-rewards/IMultiRewards.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MultiRewardsDeploy} from "src/rewards/MultiRewardsDeploy.sol";
 
 /// test commands:
 ///
@@ -12,7 +12,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 ///
 ///      forge script DeployMultiRewards -vvv --fork-url optimism
 ///
-contract DeployMultiRewards is Script {
+contract DeployMultiRewards is Script, MultiRewardsDeploy {
     function run() public {
         Addresses addresses = new Addresses();
 
@@ -21,18 +21,8 @@ contract DeployMultiRewards is Script {
 
         vm.startBroadcast();
 
-        address multiRewards = deployCode(
-            "artifacts/foundry/MultiRewards.sol/MultiRewards.json",
-            abi.encode(owner, stakingToken)
-        );
-
-        // Verify owner and stakingToken are set correctly
-        IMultiRewards rewards = IMultiRewards(multiRewards);
-        require(rewards.owner() == owner, "Owner not set correctly");
-        require(
-            address(rewards.stakingToken()) == stakingToken,
-            "Staking token not set correctly"
-        );
+        address multiRewards = deployMultiRewards(owner, stakingToken);
+        validateMultiRewards(multiRewards, owner, stakingToken);
 
         vm.stopBroadcast();
 
