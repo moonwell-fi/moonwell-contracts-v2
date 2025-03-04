@@ -84,6 +84,7 @@ contract MultiRewardsTest {
     // Addresses
     address public owner;
     address public user;
+    address public user2;
     address public rewardDistributorA;
     address public rewardDistributorB;
 
@@ -94,6 +95,7 @@ contract MultiRewardsTest {
 
     // Events for logging test results
     event LogAssertEq(bool passed, string message);
+    event LogAssertEqUint(uint256 a, uint256 b, string message);
     event LogAssertGt(bool passed, string message);
     event LogAssertLt(bool passed, string message);
     event LogAssertTrue(bool passed, string message);
@@ -105,8 +107,9 @@ contract MultiRewardsTest {
         // Set up addresses
         owner = address(this);
         user = address(0x1);
-        rewardDistributorA = address(0x2);
-        rewardDistributorB = address(0x3);
+        user2 = address(0x2);
+        rewardDistributorA = address(0x3);
+        rewardDistributorB = address(0x4);
 
         // Deploy mock tokens
         stakingToken = new MockERC20("Staking Token", "STK", 18);
@@ -156,7 +159,7 @@ contract MultiRewardsTest {
     }
 
     function _assertEq(uint256 a, uint256 b, string memory message) internal {
-        emit LogAssertEq(a == b, message);
+        emit LogAssertEqUint(a, b, message);
         require(a == b, message);
     }
 
@@ -170,7 +173,7 @@ contract MultiRewardsTest {
         uint256 b,
         uint256 tolerance,
         string memory message
-    ) internal {
+    ) internal pure {
         bool withinTolerance = (a >= b ? a - b : b - a) <= tolerance;
         require(withinTolerance, message);
     }
@@ -431,5 +434,505 @@ contract MultiRewardsTest {
             tolerance,
             "Should have received ~all rewards for token B"
         );
+    }
+
+    // Define structs to group related variables and reduce stack usage
+    struct UserStakeInfo {
+        uint256 stakeAmount;
+        uint256 expectedReward;
+    }
+
+    struct RewardBalances {
+        uint256 tokenA_Before;
+        uint256 tokenA_After;
+        uint256 tokenB_Before;
+        uint256 tokenB_After;
+    }
+
+    struct RewardAmounts {
+        uint256 earnedA;
+        uint256 earnedB;
+        uint256 receivedA;
+        uint256 receivedB;
+        uint256 remainingA;
+        uint256 remainingB;
+        uint256 totalA;
+        uint256 totalB;
+    }
+
+    // Test function with two users staking
+    function testMultipleUsersStakeAndClaimNewRewardStream() public {
+        // Constants for this test
+        uint256 tolerance = REWARD_AMOUNT / 10000; // 0.01% tolerance
+
+        // Use memory structs to group related variables
+        UserStakeInfo memory user1Info = UserStakeInfo({
+            stakeAmount: 75 ether,
+            expectedReward: 0 // Will set this later
+        });
+
+        UserStakeInfo memory user2Info = UserStakeInfo({
+            stakeAmount: 25 ether,
+            expectedReward: 0 // Will set this later
+        });
+
+        // Setup phase - stake tokens
+        {
+            uint256 totalStakeAmount = user1Info.stakeAmount +
+                user2Info.stakeAmount;
+
+            // Mint tokens to users
+            stakingToken.mint(user, user1Info.stakeAmount);
+            stakingToken.mint(user2, user2Info.stakeAmount);
+
+            // Check initial state
+            _assertEq(
+                multiRewards.totalSupply(),
+                0,
+                "Initial total supply should be 0"
+            );
+            _assertEq(
+                multiRewards.balanceOf(user),
+                0,
+                "Initial user1 balance should be 0"
+            );
+            _assertEq(
+                multiRewards.balanceOf(user2),
+                0,
+                "Initial user2 balance should be 0"
+            );
+            _assertEq(
+                stakingToken.balanceOf(user),
+                user1Info.stakeAmount + INITIAL_STAKE_AMOUNT,
+                "User1 should have initial tokens"
+            );
+            _assertEq(
+                stakingToken.balanceOf(user2),
+                user2Info.stakeAmount,
+                "User2 should have initial tokens"
+            );
+
+            // 1. First user stakes tokens
+            _prank(user);
+            stakingToken.approve(address(multiRewards), user1Info.stakeAmount);
+            _prank(user);
+            multiRewards.stake(user1Info.stakeAmount);
+
+            // Check state after first user staking
+            _assertEq(
+                multiRewards.totalSupply(),
+                user1Info.stakeAmount,
+                "Total supply should equal user1 staked amount"
+            );
+            _assertEq(
+                multiRewards.balanceOf(user),
+                user1Info.stakeAmount,
+                "User1 balance should equal staked amount"
+            );
+            _assertEq(
+                stakingToken.balanceOf(user),
+                INITIAL_STAKE_AMOUNT,
+                "User1 should have INITIAL_STAKE_AMOUNT after staking"
+            );
+            _assertEq(
+                stakingToken.balanceOf(address(multiRewards)),
+                user1Info.stakeAmount,
+                "Contract should have user1 staked tokens"
+            );
+
+            // 2. Second user stakes tokens
+            _prank(user2);
+            stakingToken.approve(address(multiRewards), user2Info.stakeAmount);
+            _prank(user2);
+            multiRewards.stake(user2Info.stakeAmount);
+
+            // Check state after second user staking
+            _assertEq(
+                multiRewards.totalSupply(),
+                totalStakeAmount,
+                "Total supply should equal total staked amount"
+            );
+            _assertEq(
+                multiRewards.balanceOf(user2),
+                user2Info.stakeAmount,
+                "User2 balance should equal staked amount"
+            );
+            _assertEq(
+                stakingToken.balanceOf(user2),
+                0,
+                "User2 should have 0 tokens after staking"
+            );
+            _assertEq(
+                stakingToken.balanceOf(address(multiRewards)),
+                totalStakeAmount,
+                "Contract should have total staked tokens"
+            );
+        }
+
+        // 3. Notify reward amount for first reward token
+        _prank(rewardDistributorA);
+        multiRewards.notifyRewardAmount(address(rewardTokenA), REWARD_AMOUNT);
+
+        // Check reward state after notification
+        {
+            address rewardsDistributorA;
+            uint256 rewardsDurationA;
+            uint256 periodFinishA;
+            uint256 rewardRateA;
+            uint256 lastUpdateTimeA;
+
+            (
+                rewardsDistributorA,
+                rewardsDurationA,
+                periodFinishA,
+                rewardRateA,
+                lastUpdateTimeA,
+
+            ) = multiRewards.rewardData(address(rewardTokenA));
+
+            _assertEq(
+                rewardsDistributorA,
+                rewardDistributorA,
+                "Rewards distributor should be set correctly"
+            );
+            _assertEq(
+                rewardsDurationA,
+                REWARDS_DURATION,
+                "Rewards duration should be set correctly"
+            );
+            _assertEq(
+                periodFinishA,
+                block.timestamp + REWARDS_DURATION,
+                "Period finish should be set correctly"
+            );
+            _assertEq(
+                rewardRateA,
+                REWARD_AMOUNT / REWARDS_DURATION,
+                "Reward rate should be set correctly"
+            );
+            _assertEq(
+                lastUpdateTimeA,
+                block.timestamp,
+                "Last update time should be set correctly"
+            );
+        }
+
+        // 4. Add a new reward token AFTER users have staked
+        multiRewards.addReward(
+            address(rewardTokenB),
+            rewardDistributorB,
+            REWARDS_DURATION
+        );
+
+        // Check reward token was added correctly
+        {
+            address rewardsDistributorB;
+            uint256 rewardsDurationB;
+
+            (rewardsDistributorB, rewardsDurationB, , , , ) = multiRewards
+                .rewardData(address(rewardTokenB));
+
+            _assertEq(
+                rewardsDistributorB,
+                rewardDistributorB,
+                "New rewards distributor should be set correctly"
+            );
+            _assertEq(
+                rewardsDurationB,
+                REWARDS_DURATION,
+                "New rewards duration should be set correctly"
+            );
+        }
+
+        // 5. Notify reward amount for the new reward token
+        _prank(rewardDistributorB);
+        multiRewards.notifyRewardAmount(address(rewardTokenB), REWARD_AMOUNT);
+
+        // Check reward state after notification
+        {
+            uint256 periodFinishB;
+            uint256 rewardRateB;
+            uint256 lastUpdateTimeB;
+
+            (, , periodFinishB, rewardRateB, lastUpdateTimeB, ) = multiRewards
+                .rewardData(address(rewardTokenB));
+
+            _assertEq(
+                periodFinishB,
+                block.timestamp + REWARDS_DURATION,
+                "Period finish should be set correctly for token B"
+            );
+            _assertEq(
+                rewardRateB,
+                REWARD_AMOUNT / REWARDS_DURATION,
+                "Reward rate should be set correctly for token B"
+            );
+            _assertEq(
+                lastUpdateTimeB,
+                block.timestamp,
+                "Last update time should be set correctly for token B"
+            );
+        }
+
+        // 6. Fast forward time to accrue rewards (half the duration)
+        _warp(block.timestamp + REWARDS_DURATION / 2);
+
+        // 7. Check earned rewards for both users
+        RewardAmounts memory user1Rewards;
+        RewardAmounts memory user2Rewards;
+
+        user1Rewards.earnedA = multiRewards.earned(user, address(rewardTokenA));
+        user1Rewards.earnedB = multiRewards.earned(user, address(rewardTokenB));
+        user2Rewards.earnedA = multiRewards.earned(
+            user2,
+            address(rewardTokenA)
+        );
+        user2Rewards.earnedB = multiRewards.earned(
+            user2,
+            address(rewardTokenB)
+        );
+
+        // Calculate expected rewards based on stake proportions
+        // User1 has 75% of the stake, User2 has 25%
+        user1Info.expectedReward = ((REWARD_AMOUNT / 2) * 75) / 100;
+        user2Info.expectedReward = ((REWARD_AMOUNT / 2) * 25) / 100;
+
+        // Verify earned rewards are proportional to stake
+        _assertApproxEq(
+            user1Rewards.earnedA,
+            user1Info.expectedReward,
+            tolerance,
+            "User1 should have earned ~75% of half reward A"
+        );
+        _assertApproxEq(
+            user1Rewards.earnedB,
+            user1Info.expectedReward,
+            tolerance,
+            "User1 should have earned ~75% of half reward B"
+        );
+        _assertApproxEq(
+            user2Rewards.earnedA,
+            user2Info.expectedReward,
+            tolerance,
+            "User2 should have earned ~25% of half reward A"
+        );
+        _assertApproxEq(
+            user2Rewards.earnedB,
+            user2Info.expectedReward,
+            tolerance,
+            "User2 should have earned ~25% of half reward B"
+        );
+
+        // 8. Users claim rewards
+        {
+            // User1 claims
+            RewardBalances memory user1Balances;
+            user1Balances.tokenA_Before = rewardTokenA.balanceOf(user);
+            user1Balances.tokenB_Before = rewardTokenB.balanceOf(user);
+
+            _prank(user);
+            multiRewards.getReward();
+
+            user1Balances.tokenA_After = rewardTokenA.balanceOf(user);
+            user1Balances.tokenB_After = rewardTokenB.balanceOf(user);
+
+            // User2 claims
+            RewardBalances memory user2Balances;
+            user2Balances.tokenA_Before = rewardTokenA.balanceOf(user2);
+            user2Balances.tokenB_Before = rewardTokenB.balanceOf(user2);
+
+            _prank(user2);
+            multiRewards.getReward();
+
+            user2Balances.tokenA_After = rewardTokenA.balanceOf(user2);
+            user2Balances.tokenB_After = rewardTokenB.balanceOf(user2);
+
+            // 9. Verify users received correct rewards
+            user1Rewards.receivedA =
+                user1Balances.tokenA_After -
+                user1Balances.tokenA_Before;
+            user1Rewards.receivedB =
+                user1Balances.tokenB_After -
+                user1Balances.tokenB_Before;
+            user2Rewards.receivedA =
+                user2Balances.tokenA_After -
+                user2Balances.tokenA_Before;
+            user2Rewards.receivedB =
+                user2Balances.tokenB_After -
+                user2Balances.tokenB_Before;
+
+            _assertEq(
+                user1Rewards.receivedA,
+                user1Rewards.earnedA,
+                "User1 should have received earned rewards for token A"
+            );
+            _assertEq(
+                user1Rewards.receivedB,
+                user1Rewards.earnedB,
+                "User1 should have received earned rewards for token B"
+            );
+            _assertEq(
+                user2Rewards.receivedA,
+                user2Rewards.earnedA,
+                "User2 should have received earned rewards for token A"
+            );
+            _assertEq(
+                user2Rewards.receivedB,
+                user2Rewards.earnedB,
+                "User2 should have received earned rewards for token B"
+            );
+
+            // Verify rewards state was updated
+            _assertEq(
+                multiRewards.rewards(user, address(rewardTokenA)),
+                0,
+                "User1 rewards for token A should be reset to 0"
+            );
+            _assertEq(
+                multiRewards.rewards(user, address(rewardTokenB)),
+                0,
+                "User1 rewards for token B should be reset to 0"
+            );
+            _assertEq(
+                multiRewards.rewards(user2, address(rewardTokenA)),
+                0,
+                "User2 rewards for token A should be reset to 0"
+            );
+            _assertEq(
+                multiRewards.rewards(user2, address(rewardTokenB)),
+                0,
+                "User2 rewards for token B should be reset to 0"
+            );
+        }
+
+        // 10. Fast forward to the end of the reward period
+        _warp(block.timestamp + REWARDS_DURATION / 2);
+
+        // 11. Users claim remaining rewards
+        {
+            // User1 claims
+            RewardBalances memory user1Balances;
+            user1Balances.tokenA_Before = rewardTokenA.balanceOf(user);
+            user1Balances.tokenB_Before = rewardTokenB.balanceOf(user);
+
+            _prank(user);
+            multiRewards.getReward();
+
+            user1Balances.tokenA_After = rewardTokenA.balanceOf(user);
+            user1Balances.tokenB_After = rewardTokenB.balanceOf(user);
+
+            // User2 claims
+            RewardBalances memory user2Balances;
+            user2Balances.tokenA_Before = rewardTokenA.balanceOf(user2);
+            user2Balances.tokenB_Before = rewardTokenB.balanceOf(user2);
+
+            _prank(user2);
+            multiRewards.getReward();
+
+            user2Balances.tokenA_After = rewardTokenA.balanceOf(user2);
+            user2Balances.tokenB_After = rewardTokenB.balanceOf(user2);
+
+            // 12. Verify users received remaining rewards
+            user1Rewards.remainingA =
+                user1Balances.tokenA_After -
+                user1Balances.tokenA_Before;
+            user1Rewards.remainingB =
+                user1Balances.tokenB_After -
+                user1Balances.tokenB_Before;
+            user2Rewards.remainingA =
+                user2Balances.tokenA_After -
+                user2Balances.tokenA_Before;
+            user2Rewards.remainingB =
+                user2Balances.tokenB_After -
+                user2Balances.tokenB_Before;
+
+            _assertApproxEq(
+                user1Rewards.remainingA,
+                user1Info.expectedReward,
+                tolerance,
+                "User1 should have received remaining rewards for token A"
+            );
+            _assertApproxEq(
+                user1Rewards.remainingB,
+                user1Info.expectedReward,
+                tolerance,
+                "User1 should have received remaining rewards for token B"
+            );
+            _assertApproxEq(
+                user2Rewards.remainingA,
+                user2Info.expectedReward,
+                tolerance,
+                "User2 should have received remaining rewards for token A"
+            );
+            _assertApproxEq(
+                user2Rewards.remainingB,
+                user2Info.expectedReward,
+                tolerance,
+                "User2 should have received remaining rewards for token B"
+            );
+
+            // Store total rewards for verification
+            user1Rewards.totalA = user1Balances.tokenA_After;
+            user1Rewards.totalB = user1Balances.tokenB_After;
+            user2Rewards.totalA = user2Balances.tokenA_After;
+            user2Rewards.totalB = user2Balances.tokenB_After;
+        }
+
+        // 13. Verify total rewards received by both users
+        {
+            // User1 should have received ~75% of total rewards
+            uint256 expectedUser1TotalA = (REWARD_AMOUNT * 75) / 100;
+            uint256 expectedUser1TotalB = (REWARD_AMOUNT * 75) / 100;
+
+            // User2 should have received ~25% of total rewards
+            uint256 expectedUser2TotalA = (REWARD_AMOUNT * 25) / 100;
+            uint256 expectedUser2TotalB = (REWARD_AMOUNT * 25) / 100;
+
+            _assertApproxEq(
+                user1Rewards.totalA,
+                expectedUser1TotalA,
+                tolerance,
+                "User1 should have received ~75% of total rewards for token A"
+            );
+            _assertApproxEq(
+                user1Rewards.totalB,
+                expectedUser1TotalB,
+                tolerance,
+                "User1 should have received ~75% of total rewards for token B"
+            );
+            _assertApproxEq(
+                user2Rewards.totalA,
+                expectedUser2TotalA,
+                tolerance,
+                "User2 should have received ~25% of total rewards for token A"
+            );
+            _assertApproxEq(
+                user2Rewards.totalB,
+                expectedUser2TotalB,
+                tolerance,
+                "User2 should have received ~25% of total rewards for token B"
+            );
+        }
+
+        // 14. Verify that the sum of rewards equals the total rewards
+        {
+            uint256 totalRewardsDistributedA = user1Rewards.totalA +
+                user2Rewards.totalA;
+            uint256 totalRewardsDistributedB = user1Rewards.totalB +
+                user2Rewards.totalB;
+
+            _assertApproxEq(
+                totalRewardsDistributedA,
+                REWARD_AMOUNT,
+                tolerance,
+                "Total distributed rewards for token A should equal REWARD_AMOUNT"
+            );
+            _assertApproxEq(
+                totalRewardsDistributedB,
+                REWARD_AMOUNT,
+                tolerance,
+                "Total distributed rewards for token B should equal REWARD_AMOUNT"
+            );
+        }
     }
 }
