@@ -207,6 +207,12 @@ contract ProposalMap is Script {
         Addresses addresses,
         string memory proposalPath
     ) public returns (Proposal proposal) {
+        // Check if the file exists before trying to deploy it
+        require(
+            vm.exists(proposalPath),
+            string.concat("Proposal file not found: ", proposalPath)
+        );
+
         proposal = Proposal(deployCode(proposalPath));
         vm.makePersistent(address(proposal));
 
