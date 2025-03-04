@@ -643,10 +643,9 @@ contract MultiRewards is ReentrancyGuard, Pausable {
             tokenAddress != address(stakingToken),
             "Cannot withdraw staking token"
         );
-        require(
-            rewardData[tokenAddress].lastUpdateTime == 0,
-            "Cannot withdraw reward token"
-        );
+        // note: the admin (Temporal Governor) can withdraw reward tokens.
+        // the only time this should happen is for reward proposals that
+        // occur after Morpho rewards have been claimed by an autotask.
         IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
         emit Recovered(tokenAddress, tokenAmount);
     }
