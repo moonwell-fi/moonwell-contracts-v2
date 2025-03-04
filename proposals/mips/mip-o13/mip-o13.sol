@@ -22,7 +22,7 @@ contract mipo13 is HybridProposal, Configs, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-O13/MIP-O13.md")
+            vm.readFile("./proposals/mips/mip-o13/MIP-O13.md")
         );
 
         _setProposalDescription(proposalDescription);
