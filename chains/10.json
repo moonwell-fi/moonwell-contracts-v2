@@ -603,5 +603,15 @@
         "addr": "0xfeA5a5927645C0DC5C1E740Ec1B24AD320c7e58f",
         "isContract": true,
         "name": "CHAINLINK_WELL_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0x3520e1a10038131a3c00bf2158835a75e929642d",
+        "isContract": true,
+        "name": "USDC_METAMORPHO_VAULT"
+    },
+    {
+        "addr": "0x50d3E1BD46235ce1cCf133a74e10cfdc58d49E90",
+        "isContract": true,
+        "name": "USDC_METAMORPHO_FEE_SPLITTER"
     }
 ]
