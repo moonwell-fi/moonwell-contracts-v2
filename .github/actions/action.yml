@@ -30,6 +30,10 @@ runs:
       run: forge compile --contracts proposals/
       shell: bash
 
+    - name: Compile MultiRewarder
+      run: forge compile --contracts crv-rewards/
+      shell: bash
+
     - name: Compile Contracts
       run: forge build
       shell: bash
