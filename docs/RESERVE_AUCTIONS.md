@@ -12,7 +12,7 @@ bid and sell WELL tokens at a discounted rate.
 ## Auction Structure
 
 - Total Auction Duration: 2 weeks
-- Mini-Auction Periods: 84 separate 4-hour auctions
+- Mini-Auction Periods: 56 separate 6-hour auctions
 - Each market has its own dedicated auction contract
 
 ## How to Participate in Auctions
@@ -30,7 +30,7 @@ Active auctions can be monitored by:
 
 The price for reserve assets follows a sophisticated dynamic pricing mechanism:
 
-- Each mini-auction period (4 hours) starts with a premium above market price
+- Each mini-auction period (6 hours) starts with a premium above market price
 - Premium decays linearly to a maximum discount over the period
 - Pricing parameters:
   - `startingPremium`: Initial premium rate (must be > 1e18, representing >100%)
