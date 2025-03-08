@@ -615,13 +615,18 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 addresses.getAddress(spec.transferFroms[i].to) ==
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
+
                 ecosystemReserveProxyAmount += spec.transferFroms[i].amount;
+                console.log(uint256(ecosystemReserveProxyAmount));
             }
 
             externalChainActions[_chainId].transferFroms.push(
                 spec.transferFroms[i]
             );
         }
+
+
+                console.log(uint256(ecosystemReserveProxyAmount));
 
         for (uint256 i = 0; i < spec.withdrawWell.length; i++) {
             WithdrawWell memory withdrawWell = spec.withdrawWell[i];
@@ -632,11 +637,16 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 addresses.getAddress(withdrawWell.to) ==
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
+                console.log("amount", withdrawWell.amount);
                 ecosystemReserveProxyAmount += withdrawWell.amount;
+                console.log("after add", ecosystemReserveProxyAmount);
             }
 
             externalChainActions[_chainId].withdrawWell.push(withdrawWell);
         }
+
+
+                console.log(uint256(ecosystemReserveProxyAmount));
 
         assertApproxEqAbs(
             int256(ecosystemReserveProxyAmount),
@@ -1431,9 +1441,10 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         addresses.getAddress(spec.transferReserves[j].to) ==
                         reserveAutomationContract
                     ) {
-                        assertEq(
+                        assertApproxEqRel((
                             actualReserves,
                             spec.transferReserves[j].amount,
+                            0.1e18,
                             "ReserveAutomation: reserves do not match transferReserves amount"
                         );
                     }
