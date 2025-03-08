@@ -1050,7 +1050,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT"),
                 abi.encodeWithSignature(
                     "withdrawERC20Token(address,address,uint256)",
-                    addresses.getAddress("XWELL_PROXY"),
+                    addresses.getAddress("xWELL_PROXY"),
                     addresses.getAddress(spec.withdrawWell[i].to),
                     spec.withdrawWell[i].amount
                 ),
