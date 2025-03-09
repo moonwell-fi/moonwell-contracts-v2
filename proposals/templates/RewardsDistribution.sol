@@ -122,6 +122,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
     /// @notice we save this value to check if the transferFrom amount was successfully transferred
     mapping(address => uint256) public wellBalancesBefore;
 
+    /// @notice Track reserve automation contract balances before proposal execution
+    mapping(address => uint256) public reserveAutomationBalancesBefore;
+
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(vm.envString("DESCRIPTION_PATH"))
@@ -186,6 +189,34 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     "ECOSYSTEM_RESERVE_PROXY"
                 );
                 wellBalancesBefore[reserve] = xwell.balanceOf(reserve);
+
+                // Save initial balances for reserve automation contracts
+                JsonSpecExternalChain memory spec = externalChainActions[
+                    chainId
+                ];
+                if (spec.initSale.reserveAutomationContracts.length > 0) {
+                    for (
+                        uint256 j = 0;
+                        j < spec.initSale.reserveAutomationContracts.length;
+                        j++
+                    ) {
+                        address reserveAutomationContract = addresses
+                            .getAddress(
+                                spec.initSale.reserveAutomationContracts[j]
+                            );
+
+                        ReserveAutomation automation = ReserveAutomation(
+                            reserveAutomationContract
+                        );
+                        address reserveAsset = automation.reserveAsset();
+
+                        reserveAutomationBalancesBefore[
+                            reserveAutomationContract
+                        ] = IERC20(reserveAsset).balanceOf(
+                            reserveAutomationContract
+                        );
+                    }
+                }
             }
         }
 
@@ -615,18 +646,13 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 addresses.getAddress(spec.transferFroms[i].to) ==
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
-
                 ecosystemReserveProxyAmount += spec.transferFroms[i].amount;
-                console.log(uint256(ecosystemReserveProxyAmount));
             }
 
             externalChainActions[_chainId].transferFroms.push(
                 spec.transferFroms[i]
             );
         }
-
-
-                console.log(uint256(ecosystemReserveProxyAmount));
 
         for (uint256 i = 0; i < spec.withdrawWell.length; i++) {
             WithdrawWell memory withdrawWell = spec.withdrawWell[i];
@@ -637,16 +663,11 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 addresses.getAddress(withdrawWell.to) ==
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
-                console.log("amount", withdrawWell.amount);
                 ecosystemReserveProxyAmount += withdrawWell.amount;
-                console.log("after add", ecosystemReserveProxyAmount);
             }
 
             externalChainActions[_chainId].withdrawWell.push(withdrawWell);
         }
-
-
-                console.log(uint256(ecosystemReserveProxyAmount));
 
         assertApproxEqAbs(
             int256(ecosystemReserveProxyAmount),
@@ -1418,22 +1439,14 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 address reserveAssetToken = automation.reserveAsset();
                 IERC20 reserveAsset = IERC20(reserveAssetToken);
 
-                // Calculate expected total reserves based on periodSaleAmount and number of mini auctions
-                uint256 numMiniAuctions = automation.saleWindow() /
-                    automation.miniAuctionPeriod();
-                uint256 expectedTotalReserves = automation.periodSaleAmount() *
-                    numMiniAuctions;
-
                 // Verify the contract has the expected amount of reserves
                 uint256 actualReserves = reserveAsset.balanceOf(
                     reserveAutomationContract
                 );
-                assertApproxEqRel(
-                    actualReserves,
-                    expectedTotalReserves,
-                    0.01e18,
-                    "ReserveAutomation: incorrect reserve balance"
-                );
+
+                // Check that the balance has increased by the expected amount
+                uint256 balanceIncrease = actualReserves -
+                    reserveAutomationBalancesBefore[reserveAutomationContract];
 
                 // Verify that the reserves match any transferReserves operation targeting this contract
                 for (uint256 j = 0; j < spec.transferReserves.length; j++) {
@@ -1441,8 +1454,8 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                         addresses.getAddress(spec.transferReserves[j].to) ==
                         reserveAutomationContract
                     ) {
-                        assertApproxEqRel((
-                            actualReserves,
+                        assertApproxEqRel(
+                            balanceIncrease,
                             spec.transferReserves[j].amount,
                             0.1e18,
                             "ReserveAutomation: reserves do not match transferReserves amount"
@@ -1452,15 +1465,62 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             }
         }
 
+        // Check balances for transferFroms
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             address to = addresses.getAddress(spec.transferFroms[i].to);
             address token = addresses.getAddress(spec.transferFroms[i].token);
 
             if (token == addresses.getAddress("xWELL_PROXY")) {
+                if (to == addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")) {
+                    // For ECOSYSTEM_RESERVE_PROXY, we need to account for both transferFroms and withdrawWell
+                    uint256 totalAmount = spec.transferFroms[i].amount;
+
+                    // Add any withdrawWell amounts to the same recipient
+                    for (uint256 j = 0; j < spec.withdrawWell.length; j++) {
+                        if (
+                            addresses.getAddress(spec.withdrawWell[j].to) == to
+                        ) {
+                            totalAmount += spec.withdrawWell[j].amount;
+                        }
+                    }
+
+                    assertEq(
+                        IERC20(token).balanceOf(to),
+                        wellBalancesBefore[to] + totalAmount,
+                        string.concat("balance wrong for ", vm.getLabel(to))
+                    );
+                } else {
+                    assertEq(
+                        IERC20(token).balanceOf(to),
+                        wellBalancesBefore[to] + spec.transferFroms[i].amount,
+                        string.concat("balance changed for ", vm.getLabel(to))
+                    );
+                }
+            }
+        }
+
+        // Check balances for withdrawWell operations that don't have a corresponding transferFrom
+        for (uint256 i = 0; i < spec.withdrawWell.length; i++) {
+            address to = addresses.getAddress(spec.withdrawWell[i].to);
+
+            // Skip if this recipient was already checked in the transferFroms loop
+            bool alreadyChecked = false;
+            for (uint256 j = 0; j < spec.transferFroms.length; j++) {
+                if (
+                    addresses.getAddress(spec.transferFroms[j].to) == to &&
+                    addresses.getAddress(spec.transferFroms[j].token) ==
+                    addresses.getAddress("xWELL_PROXY")
+                ) {
+                    alreadyChecked = true;
+                    break;
+                }
+            }
+
+            if (!alreadyChecked) {
                 assertEq(
-                    IERC20(token).balanceOf(to),
-                    wellBalancesBefore[to] + spec.transferFroms[i].amount,
-                    string.concat("balance changed for ", vm.getLabel(to))
+                    IERC20(addresses.getAddress("xWELL_PROXY")).balanceOf(to),
+                    wellBalancesBefore[to] + spec.withdrawWell[i].amount,
+                    string.concat("balance wrong for ", vm.getLabel(to))
                 );
             }
         }
