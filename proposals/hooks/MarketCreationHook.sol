@@ -11,14 +11,16 @@ contract MarketCreationHook {
     /// private so that contracts that inherit cannot write to functionDetectors
     bytes4 private constant detector = Comptroller._supportMarket.selector;
 
-    /// ordered actions to verify
+    /// ordered actions to verify:
     /// 1. supportMarket on Comptroller
-    /// 2. acceptAdmin on mToken
-    /// 3. approve underlying on ERC20
-    /// 4. mint mToken
-    bytes4[4] public orderedActions = [
-        detector,
-        MToken._acceptAdmin.selector,
+    /// 2. set reserve factor on mToken
+    /// 3. set protocol seize share on mToken
+    /// 4. approve underlying on ERC20
+    /// 5. mint mToken
+    bytes4[5] public orderedActions = [
+        Comptroller._supportMarket.selector,
+        MToken._setReserveFactor.selector,
+        MToken._setProtocolSeizeShare.selector,
         IERC20.approve.selector,
         MErc20.mint.selector
     ];
@@ -67,28 +69,32 @@ contract MarketCreationHook {
 
                 require(
                     bytesToBytes4(datas[i + 1]) == orderedActions[1],
-                    "action 1 must accept admin"
+                    "action 1 must set reserve factor"
                 );
                 require(
                     bytesToBytes4(datas[i + 2]) == orderedActions[2],
-                    "action 2 must approve underlying"
+                    "action 2 must set protocol seize share"
                 );
                 require(
                     bytesToBytes4(datas[i + 3]) == orderedActions[3],
-                    "action 3 must mint mtoken"
+                    "action 3 must approve underlying"
+                );
+                require(
+                    bytesToBytes4(datas[i + 4]) == orderedActions[4],
+                    "action 4 must mint mtoken"
                 );
 
                 /// --------------- ARGUMENT VERIFICATION ---------------
 
                 address mtoken = extractAddress(datas[i]);
 
-                address secondMToken = targets[i + 3];
+                address secondMToken = targets[i + 4];
 
-                address approvalMToken = extractAddress(datas[i + 2]);
+                address approvalMToken = extractAddress(datas[i + 3]);
 
-                uint256 tokenAmount = getTokenAmount(datas[i + 2]);
+                uint256 tokenAmount = getTokenAmount(datas[i + 3]);
 
-                uint256 mintAmount = getMintAmount(datas[i + 3]);
+                uint256 mintAmount = getMintAmount(datas[i + 4]);
 
                 require(mintAmount != 0, "mint amount must be greater than 0");
                 require(

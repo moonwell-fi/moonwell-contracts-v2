@@ -71,7 +71,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             MockRedstoneMultiFeedAdapter redstoneMock = new MockRedstoneMultiFeedAdapter();
 
             vm.etch(
-                0xf030a9ad2707c6C628f58372Fa3B355264417f56,
+                0xb81131B6368b3F0a83af09dB4E39Ac23DA96C2Db,
                 address(redstoneMock).code
             );
         }

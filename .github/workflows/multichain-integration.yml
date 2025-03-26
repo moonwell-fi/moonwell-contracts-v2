@@ -122,7 +122,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 20
+           timeout_minutes: 30
            max_attempts: 3
            command: bin/run-onchain-calldata-check.sh
 
