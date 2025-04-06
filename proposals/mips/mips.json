@@ -1,5 +1,12 @@
 [
     {
+        "envpath": "proposals/mips/mip-b42/b42.sh",
+        "governor": "MultichainGovernor",
+        "id": 91,
+        "path": "mipb42.sol/mipb42.json",
+        "proposalType": "HybridProposal"
+    },
+    {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 90,

@@ -978,5 +978,25 @@
         "addr": "0x6aa41dF8FB0deC976B59bf0824FC5fFB88ccA958",
         "isContract": true,
         "name": "CHAINLINK_VIRTUAL_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842",
+        "isContract": true,
+        "name": "MORPHO"
+    },
+    {
+        "addr": "0xe95e258bb6615d47515Fc849f8542dA651f12bF6",
+        "isContract": true,
+        "name": "CHAINLINK_MORPHO_USD"
+    },
+    {
+        "addr": "0xfeA5a5927645C0DC5C1E740Ec1B24AD320c7e58f",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_MORPHO"
+    },
+    {
+        "addr": "0x6308204872BdB7432dF97b04B42443c714904F3E",
+        "isContract": true,
+        "name": "MOONWELL_MORPHO"
     }
 ]

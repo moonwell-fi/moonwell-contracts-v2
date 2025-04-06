@@ -146,7 +146,9 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
         address deployer
     ) public override selectPrimaryFork {}
 
-    function build(Addresses addresses) public override selectPrimaryFork {
+    function build(
+        Addresses addresses
+    ) public virtual override selectPrimaryFork {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _buildToChain(addresses, chainId);
