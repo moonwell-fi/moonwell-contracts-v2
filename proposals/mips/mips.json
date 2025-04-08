@@ -1,5 +1,12 @@
 [
     {
+        "envpath": "proposals/mips/mip-x19/x19.sh",
+        "governor": "MultichainGovernor",
+        "id": 0,
+        "path": "RewardsDistribution.sol/RewardsDistributionTemplate.json",
+        "proposalType": "HybridProposal"
+    },
+    {
         "envpath": "proposals/mips/mip-b42/b42.sh",
         "governor": "MultichainGovernor",
         "id": 91,
