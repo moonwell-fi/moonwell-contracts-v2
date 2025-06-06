@@ -1033,5 +1033,10 @@
         "addr": "0x6308204872BdB7432dF97b04B42443c714904F3E",
         "isContract": true,
         "name": "MOONWELL_MORPHO"
+    },
+    {
+        "addr": "0xd411d0b1115e83bf9110758c61153daaadbdc84f",
+        "isContract": true,
+        "name": "ANGLE_CAMPAIGN_CREATOR"
     }
 ]

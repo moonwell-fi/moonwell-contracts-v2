@@ -65,6 +65,14 @@ contract VaultRewardsDistributionTemplate is HybridProposal, Networks {
     uint32 duration;
     uint32 startTimestamp;
 
+    constructor() {
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile(vm.envString("DESCRIPTION_PATH"))
+        );
+
+        _setProposalDescription(proposalDescription);
+    }
+
     function initProposal(Addresses addresses) public override {
         rewardToken = addresses.getAddress("xWELL_PROXY");
         from = addresses.getAddress("TEMPORAL_GOVERNOR");

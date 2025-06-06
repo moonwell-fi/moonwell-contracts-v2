@@ -1,0 +1,5 @@
+export FORK_ID=1
+echo "FORK_ID=$FORK_ID"
+
+export DESCRIPTION_PATH=proposals/mips/mip-x24/MIP-X24.md
+echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
