@@ -307,6 +307,18 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             chainId = networks[i].chainId;
             if (chainId != MOONBEAM_CHAIN_ID) {
                 vm.selectFork(networks[i].forkId);
+                if (chainId == OPTIMISM_CHAIN_ID) {
+                    // mock foundation approval
+                    vm.startPrank(
+                        addresses.getAddress("FOUNDATION_OP_MULTISIG")
+                    );
+                    IERC20(addresses.getAddress("OP")).approve(
+                        addresses.getAddress("TEMPORAL_GOVERNOR"),
+                        6e22
+                    );
+                    vm.stopPrank();
+                }
+
                 vm.store(
                     address(wormholeBridgeAdapter),
                     bytes32(uint256(153)),
@@ -1821,10 +1833,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 uint256 rewardRate, // rewardPerTokenStored
                 ,
 
-            ) = // lastUpdateTime
-                multiRewards.rewardData(
+            ) = multiRewards.rewardData(
                     addresses.getAddress(rewarder.rewardToken)
-                );
+                ); // lastUpdateTime
 
             // Validate reward configuration
             assertEq(
