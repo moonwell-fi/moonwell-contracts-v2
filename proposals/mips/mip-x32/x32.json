@@ -19,7 +19,6 @@
                 "market": "MOONWELL_cbXRP",
                 "reserveFactor": 0.15e18
             }
-
         ],
         "irModels": [
             {
