@@ -1,5 +1,10 @@
 [
     {
+        "addr": "0x6515fAb53Ab28D179CFf4258CdDb8f4745EBb348",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X35"
+    },
+    {
         "addr": "0xB290615c4f5348aEFDC301a42896906212C80e46",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_USDC_EURC_MIP_X33"
@@ -771,7 +776,7 @@
     },
     {
         "addr": "0x79C613B4f07080963C3B0CA58Eb2745dD4C744A5",
-        "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
+        "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE_DEPRECATED",
         "isContract": true
     },
     {
@@ -1223,5 +1228,15 @@
         "addr": "0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa",
         "isContract": true,
         "name": "F-DEVGRANT"
+    },
+    {
+        "addr": "0xe8dD07CCf5BC4922424140E44Eb970F5950725ef",
+        "isContract": true,
+        "name": "CHAINLINK_wrsETH_ETH_EXCHANGE_RATE"
+    },
+    {
+        "addr": "0xccC994a46c0d81c934fd6c82d89f626aee336ade",
+        "isContract": true,
+        "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE"
     }
 ]

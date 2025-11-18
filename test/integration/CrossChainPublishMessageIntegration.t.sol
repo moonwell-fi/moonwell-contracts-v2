@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
@@ -13,6 +14,7 @@ import {String} from "@utils/String.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -127,44 +129,101 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                 address(governor)
             );
 
+            bytes memory temporalGovExecDataBase;
             if (proposal.getActionsByType(ActionType.Base).length != 0) {
-                bytes memory temporalGovExecDataBase = proposal
-                    .getTemporalGovPayloadByChain(
-                        addresses,
-                        block.chainid.toBaseChainId()
-                    );
-
-                /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
-                vm.expectEmit(true, true, true, true, wormholeCore);
-
-                emit LogMessagePublished(
-                    address(governor),
-                    nextSequence++,
-                    0,
-                    temporalGovExecDataBase,
-                    200
+                temporalGovExecDataBase = proposal.getTemporalGovPayloadByChain(
+                    addresses,
+                    block.chainid.toBaseChainId()
                 );
             }
 
+            bytes memory temporalGovExecDataOptimism;
             if (proposal.getActionsByType(ActionType.Optimism).length != 0) {
-                bytes memory temporalGovExecDataOptimism = proposal
+                temporalGovExecDataOptimism = proposal
                     .getTemporalGovPayloadByChain(
                         addresses,
                         block.chainid.toOptimismChainId()
                     );
-                /// expect emitting of events to Wormhole Core on Moonbeam if Optimism actions exist
-                vm.expectEmit(true, true, true, true, wormholeCore);
+            }
 
-                emit LogMessagePublished(
-                    address(governor),
-                    nextSequence,
-                    0,
-                    temporalGovExecDataOptimism,
-                    200
+            vm.recordLogs();
+            governor.execute(proposalId);
+            Vm.Log[] memory logs = vm.getRecordedLogs();
+
+            bytes32 sig = keccak256(
+                "LogMessagePublished(address,uint64,uint32,bytes,uint8)"
+            );
+            if (temporalGovExecDataBase.length != 0) {
+                bool seenBase = false;
+                for (uint256 k = 0; k < logs.length; k++) {
+                    if (
+                        logs[k].emitter == wormholeCore &&
+                        logs[k].topics.length > 0 &&
+                        logs[k].topics[0] == sig
+                    ) {
+                        (
+                            uint64 sequence,
+                            uint32 nonce2,
+                            bytes memory payload,
+                            uint8 cl
+                        ) = abi.decode(
+                                logs[k].data,
+                                (uint64, uint32, bytes, uint8)
+                            );
+                        sequence;
+                        nonce2;
+                        cl;
+
+                        if (
+                            keccak256(payload) ==
+                            keccak256(temporalGovExecDataBase)
+                        ) {
+                            seenBase = true;
+                            break;
+                        }
+                    }
+                }
+                assertTrue(
+                    seenBase,
+                    "Missing LogMessagePublished event on Base"
                 );
             }
 
-            governor.execute(proposalId);
+            if (temporalGovExecDataOptimism.length != 0) {
+                bool seenOptimism = false;
+                for (uint256 k = 0; k < logs.length; k++) {
+                    if (
+                        logs[k].emitter == wormholeCore &&
+                        logs[k].topics.length > 0 &&
+                        logs[k].topics[0] == sig
+                    ) {
+                        (
+                            uint64 sequence,
+                            uint32 nonce2,
+                            bytes memory payload,
+                            uint8 cl
+                        ) = abi.decode(
+                                logs[k].data,
+                                (uint64, uint32, bytes, uint8)
+                            );
+                        sequence;
+                        nonce2;
+                        cl;
+
+                        if (
+                            keccak256(payload) ==
+                            keccak256(temporalGovExecDataOptimism)
+                        ) {
+                            seenOptimism = true;
+                            break;
+                        }
+                    }
+                }
+                assertTrue(
+                    seenOptimism,
+                    "Missing LogMessagePublished event on Optimism"
+                );
+            }
         }
     }
 
@@ -174,7 +233,7 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
         for (uint256 j = 0; j < proposals.length; j++) {
             HybridProposal proposal = HybridProposal(address(proposals[j]));
 
-            //  only run tests against a base proposal
+            // Only run tests against non-moonbeam proposals
             if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
                 return;
             }

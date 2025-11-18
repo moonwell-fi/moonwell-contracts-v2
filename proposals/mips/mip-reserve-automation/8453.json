@@ -44,7 +44,7 @@
         "market": "MOONWELL_EURC"
     },
     {
-        "chainlinkFeed": "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
+        "chainlinkFeed": "CHAINLINK_wrsETH_COMPOSITE_ORACLE_DEPRECATED",
         "market": "MOONWELL_wrsETH"
     },
     {

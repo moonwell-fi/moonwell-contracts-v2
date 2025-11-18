@@ -85,6 +85,9 @@ contract PostProposalCheck is LiveProposalCheck {
             vm.selectFork(MOONBEAM_FORK_ID);
         }
 
+        // revert back to proposalStartTime
+        vm.warp(proposalStartTime);
+
         addresses.removeAllRestrictions();
 
         vm.setEnv("PRIMARY_FORK_ID", vm.toString(primaryForkBefore));
