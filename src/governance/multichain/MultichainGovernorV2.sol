@@ -78,6 +78,10 @@ contract MultichainGovernorV2 is
         public
         override whitelistedCalldatas;
 
+    /// @notice the timetamps at which proposal executions expire
+    mapping(uint256 proposalId => uint256 executionExpireTimestamp)
+        internal _proposalExecutionExpiries;
+
     /// --------------------------------------------------------- ///
     /// --------------------- VOTING TOKENS --------------------- ///
     /// --------------------------------------------------------- ///
@@ -130,6 +134,9 @@ contract MultichainGovernorV2 is
 
     /// @notice the append window for a proposal to be appended to
     uint256 public override proposeAppendWindow;
+
+    /// @notice the execution window for a proposal to be executed
+    uint256 public override executeExpirationWindow;
 
     /// --------------------------------------------------------- ///
     /// ------------------------- SAFETY ------------------------ ///
@@ -216,7 +223,8 @@ contract MultichainGovernorV2 is
         _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
 
         proposalCount = uint256(initData.startingProposalCount);
-        proposeAppendWindow = 60 minutes;
+        _setProposeAppendWindow(Constants.MIN_PROPOSE_APPEND_WINDOW);
+        _setExecuteExpirationWindow(Constants.MIN_EXECUTION_WINDOW);
 
         unchecked {
             for (uint256 i = 0; i < calldatas.length; i++) {
@@ -639,6 +647,7 @@ contract MultichainGovernorV2 is
         Proposal storage newProposal = proposals[proposalId];
 
         _initializeProposal(
+            proposalId,
             newProposal,
             targets,
             values,
@@ -710,34 +719,22 @@ contract MultichainGovernorV2 is
     function execute(
         uint256 proposalId
     ) external payable override whenNotPaused {
-        /// Checks
+        Proposal storage proposal = proposals[proposalId];
+
         require(
             state(proposalId) == ProposalState.Succeeded,
             "MultichainGovernor: proposal can only be executed if it is Succeeded"
         );
-
-        uint256 totalValue = 0;
-
-        Proposal storage proposal = proposals[proposalId];
-
-        for (uint256 i = 0; i < proposal.targets.length; ) {
-            totalValue += proposal.values[i];
-            unchecked {
-                i++;
-            }
-        }
-
-        require(totalValue == msg.value, "MultichainGovernor: invalid value");
-
-        /// Effects
+        require(
+            block.timestamp < _proposalExecutionExpiries[proposalId],
+            "MultichainGovernor: proposal expired"
+        );
 
         proposal.executed = true;
 
         /// remove the proposal that is about to be executed from all proposals,
         /// and remove from inactive proposals from user list
         _syncTotalLiveProposals();
-
-        /// Interactions
 
         unchecked {
             for (uint256 i = 0; i < proposal.targets.length; i++) {
@@ -966,6 +963,22 @@ contract MultichainGovernorV2 is
         _grantGuardian(newPauseGuardian);
     }
 
+    /// @notice updates the append window for a proposal to be appended to
+    /// @param newProposeAppendWindow the new append window
+    function updateProposeAppendWindow(
+        uint256 newProposeAppendWindow
+    ) external onlyGovernor whenNotPaused {
+        _setProposeAppendWindow(newProposeAppendWindow);
+    }
+
+    /// @notice updates the execution window for a proposal to be executed
+    /// @param newExecuteExpirationWindow the new execution window
+    function updateExecuteExpirationWindow(
+        uint256 newExecuteExpirationWindow
+    ) external onlyGovernor whenNotPaused {
+        _setExecuteExpirationWindow(newExecuteExpirationWindow);
+    }
+
     //// @notice array lengths must add up
     /// calldata must be whitelisted
     /// only break glass guardian can call, once, and when they do, their role is revoked
@@ -1192,6 +1205,35 @@ contract MultichainGovernorV2 is
         emit BreakGlassGuardianChanged(oldGuardian, newGuardian);
     }
 
+    function _setProposeAppendWindow(uint256 newProposeAppendWindow) private {
+        require(
+            newProposeAppendWindow >= Constants.MIN_PROPOSE_APPEND_WINDOW &&
+                newProposeAppendWindow <= Constants.MAX_PROPOSE_APPEND_WINDOW,
+            "MultichainGovernor: invalid append window"
+        );
+
+        uint256 oldValue = proposeAppendWindow;
+        proposeAppendWindow = newProposeAppendWindow;
+        emit ProposeAppendWindowChanged(oldValue, newProposeAppendWindow);
+    }
+
+    function _setExecuteExpirationWindow(
+        uint256 newExecuteExpirationWindow
+    ) private {
+        require(
+            newExecuteExpirationWindow >= Constants.MIN_EXECUTION_WINDOW &&
+                newExecuteExpirationWindow <= Constants.MAX_EXECUTION_WINDOW,
+            "MultichainGovernor: invalid execution window"
+        );
+
+        uint256 oldValue = executeExpirationWindow;
+        executeExpirationWindow = newExecuteExpirationWindow;
+        emit ExecuteExpirationWindowChanged(
+            oldValue,
+            newExecuteExpirationWindow
+        );
+    }
+
     /// Helper function to sync all values in both sets.
     /// if the proposal is Defeated, Canceled, or Executed state,
     /// remove it from the _liveProposals and _userLiveProposals
@@ -1346,12 +1388,14 @@ contract MultichainGovernorV2 is
     }
 
     /// @notice Initializes a new proposal with the given parameters
+    /// @param proposalId the id of the proposal
     /// @param proposal the proposal storage reference
     /// @param targets the list of target addresses
     /// @param values the list of values
     /// @param calldatas the list of calldatas
     /// @param descriptionUri the URI of the proposal description
     function _initializeProposal(
+        uint256 proposalId,
         Proposal storage proposal,
         address[] memory targets,
         uint256[] memory values,
@@ -1375,6 +1419,10 @@ contract MultichainGovernorV2 is
         proposal
             .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
         proposal.descriptionUri = descriptionUri;
+
+        _proposalExecutionExpiries[proposalId] =
+            crossChainVoteCollectionEndTimestamp +
+            executeExpirationWindow;
     }
 
     /// @notice Appends targets, values, and calldatas to an existing proposal

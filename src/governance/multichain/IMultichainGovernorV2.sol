@@ -65,6 +65,12 @@ interface IMultichainGovernorV2 {
     /// @notice An event emitted when the governance return address is changed.
     event GovernanceReturnAddressChanged(address oldValue, address newValue);
 
+    /// @notice An event emitted when the propose append window is changed.
+    event ProposeAppendWindowChanged(uint256 oldValue, uint256 newValue);
+
+    /// @notice An event emitted when the execute expiration window is changed.
+    event ExecuteExpirationWindowChanged(uint256 oldValue, uint256 newValue);
+
     /// @notice An event emitted when the cross chain vote collection period has changed.
     event CrossChainVoteCollectionPeriodChanged(
         uint256 oldValue,
@@ -247,6 +253,9 @@ interface IMultichainGovernorV2 {
 
     /// @dev Returns the cross chain voting period
     function crossChainVoteCollectionPeriod() external view returns (uint256);
+
+    /// @dev Returns the execution window for a proposal to be executed
+    function executeExpirationWindow() external view returns (uint256);
 
     /// @dev Returns the quorum for a proposal to pass
     function quorum() external view returns (uint256);
