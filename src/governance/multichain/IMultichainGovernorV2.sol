@@ -23,6 +23,13 @@ interface IMultichainGovernorV2 {
         uint256 votes
     );
 
+    /// @notice An event emitted when a proposal is initialized, not yet finalized/created
+    event ProposalInitialized(
+        address proposer,
+        uint256 proposalId,
+        string descriptionUri
+    );
+
     /// @notice An event emitted when a new proposal is created
     event ProposalCreated(
         uint256 id,
@@ -65,9 +72,6 @@ interface IMultichainGovernorV2 {
 
     /// @notice An event emitted when the governance return address is changed.
     event GovernanceReturnAddressChanged(address oldValue, address newValue);
-
-    /// @notice An event emitted when the propose append window is changed.
-    event ProposeAppendWindowChanged(uint256 oldValue, uint256 newValue);
 
     /// @notice An event emitted when the execute expiration window is changed.
     event ExecuteExpirationWindowChanged(uint256 oldValue, uint256 newValue);
@@ -248,9 +252,6 @@ interface IMultichainGovernorV2 {
 
     /// @dev Returns the voting period for a proposal to pass
     function votingPeriod() external view returns (uint256);
-
-    /// @dev Returns the append window for a proposal to be appended to
-    function proposeAppendWindow() external view returns (uint256);
 
     /// @dev Returns the cross chain voting period
     function crossChainVoteCollectionPeriod() external view returns (uint256);

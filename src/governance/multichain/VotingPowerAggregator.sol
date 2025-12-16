@@ -72,7 +72,7 @@ contract VotingPowerAggregator is
             }
         }
 
-        totalVotes += xWell.getPastVotes(account, timestamp);
+        totalVotes += _getCustomPastVotes(account, blockNumber, timestamp);
 
         return totalVotes;
     }
@@ -92,8 +92,20 @@ contract VotingPowerAggregator is
             }
         }
 
-        totalVotes += xWell.getVotes(account);
+        totalVotes += _getCustomVotes(account);
 
         return totalVotes;
+    }
+
+    function _getCustomVotes(address account) private view returns (uint256) {
+        return xWell.getVotes(account);
+    }
+
+    function _getCustomPastVotes(
+        address account,
+        uint256, // blockNumber
+        uint256 timestamp
+    ) private view returns (uint256) {
+        return xWell.getPastVotes(account, timestamp);
     }
 }

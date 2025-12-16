@@ -52,10 +52,6 @@ library Constants {
     /// and require the use of break glass transactions to fix
     uint96 public constant MIN_GAS_LIMIT = 400_000;
 
-    /// @notice the acceptable window for a proposal to be appended to
-    uint256 public constant MIN_PROPOSE_APPEND_WINDOW = 1 hours;
-    uint256 public constant MAX_PROPOSE_APPEND_WINDOW = 24 hours;
-
     /// @notice the acceptable window for a proposal to be executed after cross chain vote collection ends
     uint256 public constant MIN_EXECUTION_WINDOW = 3 days;
     uint256 public constant MAX_EXECUTION_WINDOW = 14 days;
