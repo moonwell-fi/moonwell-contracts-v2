@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
@@ -267,16 +268,6 @@ interface IMultichainGovernorV2 {
     /// @dev Returns the number of live proposals for a given user
     function currentUserLiveProposals(
         address user
-    ) external view returns (uint256);
-
-    /// returns the total voting power for an address at a given block number and timestamp
-    /// @param account The address of the account to check
-    /// @param timestamp The unix timestamp in seconds to check the balance at
-    /// @param blockNumber The block number to check the balance at
-    function getVotes(
-        address account,
-        uint256 timestamp,
-        uint256 blockNumber
     ) external view returns (uint256);
 
     /// ---------------------------------------------- ////

@@ -1,15 +1,14 @@
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
-
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
-import {SnapshotInterface} from "@protocol/governance/multichain/SnapshotInterface.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichainGovernorV2.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
+import {IVotingPowerAggregator} from "@protocol/governance/multichain/IVotingPowerAggregator.sol";
 
 /// @notice Contract is pauseable by the guardian
 /// Break glass guardian can roll back governance to the previous ArtemisTimelock and Governor
@@ -83,27 +82,11 @@ contract MultichainGovernorV2 is
         internal _proposalExecutionExpiries;
 
     /// --------------------------------------------------------- ///
-    /// --------------------- VOTING TOKENS --------------------- ///
-    /// --------------------------------------------------------- ///
-
-    /// @notice reference to the xWELL token, uses block.timestamp for voting checkpoints
-    xWELL public xWell;
-
-    /// @notice reference to the WELL token, uses block number for voting checkpoints
-    SnapshotInterface public well;
-
-    /// @notice reference to the stkWELL token, uses block number for voting checkpoints
-    SnapshotInterface public stkWell;
-
-    /// @notice reference to the WELL token distributor contract, uses block number for voting checkpoints
-    SnapshotInterface public distributor;
-
-    /// @notice whether or not the stkWell contract uses timestamps or block numbers
-    bool public useTimestamps;
-
-    /// --------------------------------------------------------- ///
     /// --------------------- VOTING PARAMS --------------------- ///
     /// --------------------------------------------------------- ///
+
+    /// @notice the voting power aggregator contract
+    IVotingPowerAggregator public votingPower;
 
     /// @notice the period of time in which a proposal can have
     /// cross chain votes collected.
@@ -155,14 +138,8 @@ contract MultichainGovernorV2 is
 
     /// @notice struct containing initializer data
     struct InitializeData {
-        /// well token address
-        address well;
-        /// xWell token address
-        address xWell;
-        /// stkWell token address
-        address stkWell;
-        /// crowdsale token distributor address
-        address distributor;
+        /// voting power aggregator address
+        address votingPower;
         /// proposal threshold
         uint256 proposalThreshold;
         /// voting period in seconds
@@ -194,10 +171,11 @@ contract MultichainGovernorV2 is
         WormholeTrustedSender.TrustedSender[] memory trustedSenders,
         bytes[] calldata calldatas
     ) external initializer {
-        xWell = xWELL(initData.xWell);
-        well = SnapshotInterface(initData.well);
-        stkWell = SnapshotInterface(initData.stkWell);
-        distributor = SnapshotInterface(initData.distributor);
+        require(
+            initData.votingPower != address(0),
+            "MultichainGovernorV2: voting power aggregator cannot be 0"
+        );
+        votingPower = IVotingPowerAggregator(initData.votingPower);
 
         _setProposalThreshold(initData.proposalThreshold);
         _setVotingPeriod(initData.votingPeriodSeconds);
@@ -448,41 +426,6 @@ contract MultichainGovernorV2 is
         return userProposals;
     }
 
-    /// @notice returns the total voting power for an address at a given block number and timestamp
-    /// @param account The address of the account to check
-    /// @param timestamp The unix timestamp in seconds to check the balance at
-    /// @param blockNumber The block number to check the balance at
-    function getVotes(
-        address account,
-        uint256 timestamp,
-        uint256 blockNumber
-    ) public view returns (uint256) {
-        uint256 wellVotes = well.getPriorVotes(account, blockNumber);
-        uint256 distributorVotes = distributor.getPriorVotes(
-            account,
-            blockNumber
-        );
-        uint256 xWellVotes = xWell.getPastVotes(account, timestamp);
-        uint256 stkWellVotes = stkWell.getPriorVotes(
-            account,
-            useTimestamps ? timestamp : blockNumber
-        );
-
-        return xWellVotes + stkWellVotes + distributorVotes + wellVotes;
-    }
-
-    /// @notice returns the current voting power for an address across well, xWell, stkWell and distributor
-    /// @param account The address of the account to check
-    function getCurrentVotes(address account) public view returns (uint256) {
-        uint256 wellVotes = well.getCurrentVotes(account);
-        uint256 stkWellVotes = stkWell.getCurrentVotes(account);
-        uint256 distributorVotes = distributor.getCurrentVotes(account);
-
-        uint256 xWellVotes = xWell.getVotes(account);
-
-        return xWellVotes + stkWellVotes + distributorVotes + wellVotes;
-    }
-
     /// @notice returns whether or not a given propsal is active
     /// @param proposalId the id of the proposal to check
     function proposalActive(uint256 proposalId) public view returns (bool) {
@@ -622,8 +565,11 @@ contract MultichainGovernorV2 is
     ) external payable override whenNotPaused returns (uint256) {
         /// get user voting power from all voting sources
         require(
-            getVotes(msg.sender, block.timestamp - 1, block.number - 1) >=
-                proposalThreshold,
+            votingPower.getVotes(
+                msg.sender,
+                block.timestamp - 1,
+                block.number - 1
+            ) >= proposalThreshold,
             "MultichainGovernor: proposer votes below proposal threshold"
         );
 
@@ -764,7 +710,7 @@ contract MultichainGovernorV2 is
     function cancel(uint256 proposalId) external override {
         require(
             msg.sender == proposals[proposalId].proposer ||
-                getCurrentVotes(proposals[proposalId].proposer) <
+                votingPower.getCurrentVotes(proposals[proposalId].proposer) <
                 proposalThreshold,
             "MultichainGovernor: unauthorized cancel"
         );
@@ -813,7 +759,7 @@ contract MultichainGovernorV2 is
         /// if a user tries to vote at the start timestamp or the start block, then it will fail,
         /// but that is not possible because both of those are in the past as set in the propose
         /// function.
-        uint256 votes = getVotes(
+        uint256 votes = votingPower.getVotes(
             msg.sender,
             proposal.voteSnapshotTimestamp,
             proposal.voteSnapshotBlock
@@ -844,24 +790,6 @@ contract MultichainGovernorV2 is
     /// ---------- governance only functions ---------- ////
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
-
-    /// @notice set the new stkWell token address
-    /// if the new staked well token does not conform to the new interface, then
-    /// this governor contract is bricked and will need to be rolled back via
-    /// the break glass guardian.
-    /// use this function with extreme caution and thoroughly integration test
-    /// making proposals and voting on them after calling this function.
-    /// @param newStakedWell the new stkWell token address
-    /// @param toUseTimestamps whether or not to use timestamps for voting
-    function setNewStakedWell(
-        address newStakedWell,
-        bool toUseTimestamps
-    ) external onlyGovernor {
-        stkWell = SnapshotInterface(newStakedWell);
-        useTimestamps = toUseTimestamps;
-
-        emit NewStakedWellSet(newStakedWell, toUseTimestamps);
-    }
 
     /// @notice updates the approval for calldata to be used by break glass guardian
     /// @param data the calldata to update approval for
