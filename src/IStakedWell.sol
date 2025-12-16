@@ -55,11 +55,6 @@ interface IStakedWell {
     function cooldown() external;
 
     // from IDistributionManager
-    function configureAsset(
-        uint128 emissionPerSecond,
-        address underlyingAsset
-    ) external;
-
     function configureAssets(
         uint128[] memory emissionPerSecond,
         uint256[] memory totalStaked,

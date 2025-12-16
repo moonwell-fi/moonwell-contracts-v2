@@ -42,8 +42,18 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
 
         stakedWell = IStakedWell(stkWellProxy);
 
-        // configure asset
-        IStakedWell(stkWellProxy).configureAsset(1e18, stkWellProxy);
+        // configure asset using configureAssets (batch version)
+        uint128[] memory emissionPerSecond = new uint128[](1);
+        emissionPerSecond[0] = 1e18;
+        uint256[] memory totalStaked = new uint256[](1);
+        totalStaked[0] = 0;
+        address[] memory underlyingAsset = new address[](1);
+        underlyingAsset[0] = stkWellProxy;
+        IStakedWell(stkWellProxy).configureAssets(
+            emissionPerSecond,
+            totalStaked,
+            underlyingAsset
+        );
 
         amount = 1_000_000_000 * 1e18;
 

@@ -2543,8 +2543,20 @@ contract MultichainProposalTest is PostProposalCheck {
         }
 
         vm.startPrank(stkwell.EMISSION_MANAGER());
-        /// distribute 1e18 xWELL per second
-        stkwell.configureAsset(1e18, address(stkwell));
+        /// distribute 1e18 xWELL per second using configureAssets (batch version)
+        {
+            uint128[] memory emissionPerSecond = new uint128[](1);
+            emissionPerSecond[0] = 1e18;
+            uint256[] memory totalStaked = new uint256[](1);
+            totalStaked[0] = stkwell.totalSupply();
+            address[] memory underlyingAsset = new address[](1);
+            underlyingAsset[0] = address(stkwell);
+            stkwell.configureAssets(
+                emissionPerSecond,
+                totalStaked,
+                underlyingAsset
+            );
+        }
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1);
@@ -2666,8 +2678,20 @@ contract MultichainProposalTest is PostProposalCheck {
         }
 
         vm.startPrank(stkwell.EMISSION_MANAGER());
-        /// distribute 1e18 xWELL per second
-        stkwell.configureAsset(1e18, address(stkwell));
+        /// distribute 1e18 xWELL per second using configureAssets (batch version)
+        {
+            uint128[] memory emissionPerSecond = new uint128[](1);
+            emissionPerSecond[0] = 1e18;
+            uint256[] memory totalStaked = new uint256[](1);
+            totalStaked[0] = stkwell.totalSupply();
+            address[] memory underlyingAsset = new address[](1);
+            underlyingAsset[0] = address(stkwell);
+            stkwell.configureAssets(
+                emissionPerSecond,
+                totalStaked,
+                underlyingAsset
+            );
+        }
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1);
