@@ -44,6 +44,9 @@ interface IMultichainGovernorV2 {
     error OnlyGovernor();
     error OnlyBreakGlassGuardian();
     error VotesBelowProposalThreshold();
+    error ExecuteCallFailed();
+    error BreakGlassCallFailed();
+    error CallToNonContract();
 
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
@@ -51,25 +54,18 @@ interface IMultichainGovernorV2 {
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
 
-    /// @notice An event emitted when the first vote is cast in a proposal
     event StartBlockSet(uint256 proposalId, uint256 startBlock);
-
-    /// @notice An event emitted when a vote has been cast on a proposal
     event VoteCast(
         address voter,
         uint256 proposalId,
         uint8 voteValue,
         uint256 votes
     );
-
-    /// @notice An event emitted when a proposal is initialized, not yet finalized/created
     event ProposalInitialized(
         address proposer,
         uint256 proposalId,
         string descriptionUri
     );
-
-    /// @notice An event emitted when a new proposal is created
     event ProposalCreated(
         uint256 id,
         address proposer,
@@ -80,56 +76,25 @@ interface IMultichainGovernorV2 {
         uint256 votingEndTime,
         string descriptionUri
     );
-
-    /// @notice An event emitted when a proposal has been canceled
     event ProposalCanceled(uint256 id);
-
-    /// @notice An event emitted when a proposal has been queued in the Timelock
     event ProposalQueued(uint256 id, uint256 eta);
-
-    /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint256 id);
-
-    /// @notice An event emitted when the guardian breaks glass
     event BreakGlassExecuted(
         address breakGlassGuardian,
         address[] targets,
         bytes[] calldatas
     );
-
-    /// @notice An event emitted when thee quorum votes is changed.
     event QuroumVotesChanged(uint256 oldValue, uint256 newValue);
-
-    /// @notice An event emitted when the proposal threshold is changed.
     event ProposalThresholdChanged(uint256 oldValue, uint256 newValue);
-
-    /// @notice An event emitted when the voting period is changed.
     event VotingPeriodChanged(uint256 oldValue, uint256 newValue);
-
-    /// @notice An event emitted when the break glass guardian is changed.
     event BreakGlassGuardianChanged(address oldValue, address newValue);
-
-    /// @notice An event emitted when the governance return address is changed.
     event GovernanceReturnAddressChanged(address oldValue, address newValue);
-
-    /// @notice An event emitted when the execute expiration window is changed.
     event ExecuteExpirationWindowChanged(uint256 oldValue, uint256 newValue);
-
-    /// @notice An event emitted when the cross chain vote collection period has changed.
     event CrossChainVoteCollectionPeriodChanged(
         uint256 oldValue,
         uint256 newValue
     );
-
-    /// @notice An event emitted when the max user live proposals has changed.
     event UserMaxProposalsChanged(uint256 oldValue, uint256 newValue);
-
-    /// @notice emitted when a cross chain vote is collected
-    /// @param proposalId the proposal id
-    /// @param sourceChain the wormhole chain id the vote was collected from
-    /// @param forVotes the number of votes for the proposal
-    /// @param againstVotes the number of votes against the proposal
-    /// @param abstainVotes the number of votes abstaining from the proposal
     event CrossChainVoteCollected(
         uint256 proposalId,
         uint16 sourceChain,
@@ -137,21 +102,9 @@ interface IMultichainGovernorV2 {
         uint256 againstVotes,
         uint256 abstainVotes
     );
-
-    /// @notice emitted when a calldata approval is changed for break glass guardian
-    /// @param data the calldata that was approved or unapproved
-    /// @param approved whether or not the calldata was approved or unapproved
     event CalldataApprovalUpdated(bytes data, bool approved);
-
-    /// @notice emitted when a proposal is rebroadcasted
-    /// @param proposalId the proposal id
-    /// @param data the calldata that was rebroadcasted
     event ProposalRebroadcasted(uint256 proposalId, bytes data);
-
-    /// @notice event emitted when the new staked well is set
     event NewStakedWellSet(address newStakedWell, bool toUseTimestamps);
-
-    /// @notice event emitted when the fallback function is called
     event FallbackReceived(address sender, uint256 value);
 
     //// ---------------------------------------------- ////
@@ -162,12 +115,12 @@ interface IMultichainGovernorV2 {
 
     /// @notice Possible states that a proposal may be in
     enum ProposalState {
-        Active,
-        CrossChainVoteCollection,
-        Canceled,
-        Defeated,
-        Succeeded,
-        Executed
+        Active, // Users can cast votes
+        CrossChainVoteCollection, // Votes from other chains can be registered
+        Canceled, // proposer canceled during active period, proposer votes fell below threshold and was canceled during active period, or contract was paused while proposal was in state Active, CrossChainVoteCollection or Succeeded
+        Defeated, // nay votes are greater than or equal to yay votes or total votes are less than quorum
+        Succeeded, // yay votes are greater than nay votes, total votes meet or exceed quorum
+        Executed // reached succeeded state, and proposal was successfully executed
     }
 
     struct ProposalInformation {

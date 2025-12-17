@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
-import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichainGovernorV2.sol";
@@ -24,7 +23,6 @@ contract MultichainGovernorV2 is
     WormholeBridgeBase
 {
     using EnumerableSet for EnumerableSet.UintSet;
-    using Address for address;
 
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
@@ -449,26 +447,6 @@ contract MultichainGovernorV2 is
     }
 
     /// @notice The current state of a given proposal
-    ///
-    /// valid proposal states:
-    ///
-    ///      canceled                              -> means proposer canceled during active period, proposer votes fell below threshold and was canceled during active period,
-    ///                                               or contract was paused while proposal was in state Active, CrossChainVoteCollection or Succeeded
-    ///
-    ///      active                                -> means block timestamp is greater than or equal to the start timestamp and less than or equal to the end timestamp. Users
-    ///                                               can cast votes during this period.
-    ///
-    ///      cross chain vote collection period    -> block timestamp is greater than the end timestamp and less than or equal to the cross chain vote collection end timestamp.
-    ///                                               Votes from other chains can be registered during this period.
-    ///
-    ///      succeeded                             -> block timestamp is greater the cross chain vote collection period and yay votes are greater than nay votes, total votes meet
-    ///                                               or exceed quorum.
-    ///
-    ///      defeated                              -> block timestamp is past the cross chain vote collection period and nay votes are greater than or equal to yay votes or
-    ///                                               total votes are less than quorum
-    ///
-    ///      executed                              -> reached succeeded state, and proposal was successfully executed
-    ///
     /// @param proposalId The id of the proposal to check
     function state(uint256 proposalId) public view returns (ProposalState) {
         if (proposalId == 0 || proposalId > proposalCount) {
@@ -659,10 +637,10 @@ contract MultichainGovernorV2 is
 
         unchecked {
             for (uint256 i = 0; i < proposal.targets.length; i++) {
-                proposal.targets[i].functionCallWithValue(
+                _functionCallWithValue(
+                    proposal.targets[i],
                     proposal.calldatas[i],
-                    proposal.values[i],
-                    "MultichainGovernor: execute call failed"
+                    proposal.values[i]
                 );
             }
         }
@@ -911,10 +889,7 @@ contract MultichainGovernorV2 is
                     revert CalldataNotWhitelisted();
                 }
 
-                targets[i].functionCall(
-                    calldatas[i],
-                    "MultichainGovernor: break glass guardian call failed"
-                );
+                _functionCall(targets[i], calldatas[i]);
             }
         }
 
@@ -1359,6 +1334,63 @@ contract MultichainGovernorV2 is
 
         /// for each temporal governor, relay a payload with proposal information
         _bridgeOutAll(payload);
+    }
+
+    /// @notice Internal function to make a call with value, bubbling up revert reasons
+    /// @param target The address to call
+    /// @param data The calldata to send
+    /// @param value The value to send with the call
+    function _functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value
+    ) private {
+        (bool success, bytes memory returndata) = target.call{value: value}(
+            data
+        );
+        if (success) {
+            if (returndata.length == 0 && target.code.length == 0) {
+                revert CallToNonContract();
+            }
+        } else {
+            _revertWithData(returndata, ExecuteCallFailed.selector);
+        }
+    }
+
+    /// @notice Internal function to make a call without value, bubbling up revert reasons
+    /// @param target The address to call
+    /// @param data The calldata to send
+    function _functionCall(address target, bytes memory data) private {
+        (bool success, bytes memory returndata) = target.call(data);
+        if (success) {
+            if (returndata.length == 0 && target.code.length == 0) {
+                revert CallToNonContract();
+            }
+        } else {
+            _revertWithData(returndata, BreakGlassCallFailed.selector);
+        }
+    }
+
+    /// @notice Bubbles up revert data if present, otherwise reverts with custom error
+    /// @param returndata The return data from the failed call
+    /// @param errorSelector The selector of the custom error to use if no revert data
+    function _revertWithData(
+        bytes memory returndata,
+        bytes4 errorSelector
+    ) private pure {
+        if (returndata.length > 0) {
+            /// @solidity memory-safe-assembly
+            assembly {
+                let returndata_size := mload(returndata)
+                revert(add(32, returndata), returndata_size)
+            }
+        } else {
+            /// @solidity memory-safe-assembly
+            assembly {
+                mstore(0, errorSelector)
+                revert(0, 4)
+            }
+        }
     }
 
     /// @notice payable fallback function to receive funds specifically
