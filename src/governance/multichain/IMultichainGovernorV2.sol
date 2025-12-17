@@ -8,6 +8,45 @@ import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.
 interface IMultichainGovernorV2 {
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
+    /// ------------------------- ERRORS ------------------------ ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
+    error ZeroAddress();
+    error InvalidProposalId();
+    error InvalidProposalState(ProposalState current, ProposalState required);
+    error EmptyDescriptionUri();
+    error TooManyLiveProposals();
+    error ProposalAlreadyExists();
+    error ProposalAlreadyFinalized();
+    error OnlyProposer();
+    error ProposalExpired();
+    error UnauthorizedCancel();
+    error InvalidVoteValue();
+    error AlreadyVoted();
+    error NoVotingPower();
+    error GasLimitTooLow();
+    error ArityMismatch();
+    error EmptyArray();
+    error CalldataNotWhitelisted();
+    error BreakGlassGuardianNotNull();
+    error CalldataAlreadyApproved();
+    error CalldataNotApproved();
+    error InvalidVoteCollectionPeriod();
+    error InvalidMaxUserLiveProposals();
+    error InvalidQuorum();
+    error VotingPeriodOutOfBounds();
+    error ProposalThresholdOutOfBounds();
+    error InvalidExecutionWindow();
+    error ProposalRemovalFailed(bool isGlobalProposal);
+    error InvalidPayloadLength();
+    error VoteAlreadyCollected();
+    error OnlyGovernor();
+    error OnlyBreakGlassGuardian();
+    error VotesBelowProposalThreshold();
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
     /// ------------------------- EVENTS ------------------------ ///
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
