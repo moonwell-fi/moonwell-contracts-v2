@@ -9,14 +9,10 @@ import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 import {IVotingPowerAggregator} from "@protocol/governance/multichain/IVotingPowerAggregator.sol";
 
-/// @notice Contract is pauseable by the guardian
-/// Break glass guardian can roll back governance to the previous ArtemisTimelock and Governor
-/// @notice upgradeable, constructor disables implementation contract from working
-/// to prevent governance hijacking.
-/// Write out liveliness assumptions of wormhole here, showing why wormhole can go down, and
-/// the system continue working.
-/// Explain why we allow proposals to pass even if wormhole is down or votes from a vote
-/// collection contract on another chain are not relayed.
+/// @title MultichainGovernorV2
+/// @notice This contract allows users with voting power to propose and vote on governance proposals across multiple
+/// chains. Uses wormhole to relay proposal information and collect votes from other chains. Pausable by guardian;
+/// supports break glass rollback to previous governance.
 contract MultichainGovernorV2 is
     IMultichainGovernorV2,
     ConfigurablePauseGuardian,
@@ -71,13 +67,7 @@ contract MultichainGovernorV2 is
     /// - setEmissionsManager
     /// new calldata:
     /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
-    mapping(bytes whitelistedCalldata => bool)
-        public
-        override whitelistedCalldatas;
-
-    /// @notice the timetamps at which proposal executions expire
-    mapping(uint256 proposalId => uint256 executionExpireTimestamp)
-        internal _proposalExecutionExpiries;
+    mapping(bytes whitelistedCalldata => bool) internal _whitelistedCalldatas;
 
     /// --------------------------------------------------------- ///
     /// --------------------- VOTING PARAMS --------------------- ///
@@ -112,9 +102,6 @@ contract MultichainGovernorV2 is
     /// @notice the voting period in seconds
     /// changing this variable only affects the proposals created after the change
     uint256 public override votingPeriod;
-
-    /// @notice the execution window for a proposal to be executed
-    uint256 public override executeExpirationWindow;
 
     /// --------------------------------------------------------- ///
     /// ------------------------- SAFETY ------------------------ ///
@@ -195,7 +182,6 @@ contract MultichainGovernorV2 is
         _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
 
         proposalCount = uint256(initData.startingProposalCount);
-        _setExecuteExpirationWindow(Constants.MIN_EXECUTION_WINDOW);
 
         unchecked {
             for (uint256 i = 0; i < calldatas.length; i++) {
@@ -391,30 +377,6 @@ contract MultichainGovernorV2 is
         }
 
         return totalLiveProposals;
-    }
-
-    /// @notice returns all proposals a user has that are live
-    /// a proposal is considered live if it is active or pending
-    /// @param user The address of the user to check
-    function getUserLiveProposals(
-        address user
-    ) external view returns (uint256[] memory) {
-        uint256[] memory userProposals = new uint256[](
-            currentUserLiveProposals(user)
-        );
-        uint256[] memory allUserProposals = _userLiveProposals[user].values();
-        uint256 userLiveProposalIndex = 0;
-
-        unchecked {
-            for (uint256 i = 0; i < allUserProposals.length; i++) {
-                if (proposalActive(allUserProposals[i])) {
-                    userProposals[userLiveProposalIndex] = allUserProposals[i];
-                    userLiveProposalIndex++;
-                }
-            }
-        }
-
-        return userProposals;
     }
 
     /// @notice returns whether or not a given propsal is active
@@ -625,7 +587,11 @@ contract MultichainGovernorV2 is
         if (proposalState != ProposalState.Succeeded) {
             revert InvalidProposalState(proposalState, ProposalState.Succeeded);
         }
-        if (block.timestamp >= _proposalExecutionExpiries[proposalId]) {
+        if (
+            block.timestamp >
+            proposal.crossChainVoteCollectionEndTimestamp +
+                Constants.EXECUTION_WINDOW
+        ) {
             revert ProposalExpired();
         }
 
@@ -843,14 +809,6 @@ contract MultichainGovernorV2 is
         _grantGuardian(newPauseGuardian);
     }
 
-    /// @notice updates the execution window for a proposal to be executed
-    /// @param newExecuteExpirationWindow the new execution window
-    function updateExecuteExpirationWindow(
-        uint256 newExecuteExpirationWindow
-    ) external onlyGovernor whenNotPaused {
-        _setExecuteExpirationWindow(newExecuteExpirationWindow);
-    }
-
     //// @notice array lengths must add up
     /// calldata must be whitelisted
     /// only break glass guardian can call, once, and when they do, their role is revoked
@@ -885,7 +843,7 @@ contract MultichainGovernorV2 is
 
         unchecked {
             for (uint256 i = 0; i < calldatas.length; i++) {
-                if (!whitelistedCalldatas[calldatas[i]]) {
+                if (!_whitelistedCalldatas[calldatas[i]]) {
                     revert CalldataNotWhitelisted();
                 }
 
@@ -975,17 +933,17 @@ contract MultichainGovernorV2 is
     ) private {
         /// can only approve if it is not already approved
         if (approved == true) {
-            if (whitelistedCalldatas[data]) {
+            if (_whitelistedCalldatas[data]) {
                 revert CalldataAlreadyApproved();
             }
         } else {
             /// can only remove approval if already approved
-            if (!whitelistedCalldatas[data]) {
+            if (!_whitelistedCalldatas[data]) {
                 revert CalldataNotApproved();
             }
         }
 
-        whitelistedCalldatas[data] = approved;
+        _whitelistedCalldatas[data] = approved;
 
         emit CalldataApprovalUpdated(data, approved);
     }
@@ -1086,24 +1044,6 @@ contract MultichainGovernorV2 is
         breakGlassGuardian = newGuardian;
 
         emit BreakGlassGuardianChanged(oldGuardian, newGuardian);
-    }
-
-    function _setExecuteExpirationWindow(
-        uint256 newExecuteExpirationWindow
-    ) private {
-        if (
-            newExecuteExpirationWindow < Constants.MIN_EXECUTION_WINDOW ||
-            newExecuteExpirationWindow > Constants.MAX_EXECUTION_WINDOW
-        ) {
-            revert InvalidExecutionWindow();
-        }
-
-        uint256 oldValue = executeExpirationWindow;
-        executeExpirationWindow = newExecuteExpirationWindow;
-        emit ExecuteExpirationWindowChanged(
-            oldValue,
-            newExecuteExpirationWindow
-        );
     }
 
     /// Helper function to sync all values in both sets.
@@ -1306,11 +1246,6 @@ contract MultichainGovernorV2 is
         proposal.votingEndTime = endTimestamp;
         proposal
             .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
-
-        _proposalExecutionExpiries[proposalId] =
-            crossChainVoteCollectionEndTimestamp +
-            executeExpirationWindow;
-
         proposal.finalized = true;
 
         bytes memory payload = abi.encode(
@@ -1336,7 +1271,7 @@ contract MultichainGovernorV2 is
         _bridgeOutAll(payload);
     }
 
-    /// @notice Internal function to make a call with value, bubbling up revert reasons
+    /// @notice Make an external call with value, bubbling up revert reasons
     /// @param target The address to call
     /// @param data The calldata to send
     /// @param value The value to send with the call
@@ -1357,7 +1292,7 @@ contract MultichainGovernorV2 is
         }
     }
 
-    /// @notice Internal function to make a call without value, bubbling up revert reasons
+    /// @notice Make an external call without value, bubbling up revert reasons
     /// @param target The address to call
     /// @param data The calldata to send
     function _functionCall(address target, bytes memory data) private {

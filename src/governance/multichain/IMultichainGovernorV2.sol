@@ -37,7 +37,6 @@ interface IMultichainGovernorV2 {
     error InvalidQuorum();
     error VotingPeriodOutOfBounds();
     error ProposalThresholdOutOfBounds();
-    error InvalidExecutionWindow();
     error ProposalRemovalFailed(bool isGlobalProposal);
     error InvalidPayloadLength();
     error VoteAlreadyCollected();
@@ -54,7 +53,6 @@ interface IMultichainGovernorV2 {
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
 
-    event StartBlockSet(uint256 proposalId, uint256 startBlock);
     event VoteCast(
         address voter,
         uint256 proposalId,
@@ -89,7 +87,6 @@ interface IMultichainGovernorV2 {
     event VotingPeriodChanged(uint256 oldValue, uint256 newValue);
     event BreakGlassGuardianChanged(address oldValue, address newValue);
     event GovernanceReturnAddressChanged(address oldValue, address newValue);
-    event ExecuteExpirationWindowChanged(uint256 oldValue, uint256 newValue);
     event CrossChainVoteCollectionPeriodChanged(
         uint256 oldValue,
         uint256 newValue
@@ -104,7 +101,6 @@ interface IMultichainGovernorV2 {
     );
     event CalldataApprovalUpdated(bytes data, bool approved);
     event ProposalRebroadcasted(uint256 proposalId, bytes data);
-    event NewStakedWellSet(address newStakedWell, bool toUseTimestamps);
     event FallbackReceived(address sender, uint256 value);
 
     //// ---------------------------------------------- ////
@@ -210,14 +206,6 @@ interface IMultichainGovernorV2 {
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
 
-    /// whether or not the calldata is whitelisted for break glass guardian
-    /// functions to whitelist are:
-    /// - transferOwnership to rollback address
-    /// - setPendingAdmin to rollback address
-    /// - setAdmin to rollback address
-    /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
-    function whitelistedCalldatas(bytes calldata) external view returns (bool);
-
     /// @notice return votes for a proposal id on a given chain
     function chainAddressVotes(
         uint256 proposalId,
@@ -248,20 +236,12 @@ interface IMultichainGovernorV2 {
     /// @dev Returns the cross chain voting period
     function crossChainVoteCollectionPeriod() external view returns (uint256);
 
-    /// @dev Returns the execution window for a proposal to be executed
-    function executeExpirationWindow() external view returns (uint256);
-
     /// @dev Returns the quorum for a proposal to pass
     function quorum() external view returns (uint256);
 
     /// @dev Returns the maximum number of live proposals per user
     /// changeable through governance proposals
     function maxUserLiveProposals() external view returns (uint256);
-
-    /// @dev Returns the number of live proposals for a given user
-    function currentUserLiveProposals(
-        address user
-    ) external view returns (uint256);
 
     /// ---------------------------------------------- ////
     /// ---------------------------------------------- ////

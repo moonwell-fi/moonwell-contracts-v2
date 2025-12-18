@@ -13,6 +13,23 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
+    /// ----------------------- ERRORS --------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    error InvalidAddress();
+    error InvalidValue();
+    error AlreadyInitialized();
+    error ChainAlreadyAdded();
+    error ChainNotAdded();
+    error InsufficientBridgeFee();
+    error RefundFailed();
+    error Unauthorized();
+    error MessageAlreadyProcessed();
+    error OnlyRelayer();
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
     /// ------------------ SINGLE STORAGE SLOT ------------------
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -129,17 +146,17 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @param chainId chain id to add
     /// @param addr address to add
     function _addTargetAddress(uint16 chainId, address addr) internal {
-        require(
-            targetAddress[chainId] == address(0),
-            "WormholeBridge: chain already added"
-        );
-        require(addr != address(0), "WormholeBridge: invalid target address");
+        if (targetAddress[chainId] != address(0)) {
+            revert ChainAlreadyAdded();
+        }
+        if (addr == address(0)) {
+            revert InvalidAddress();
+        }
 
         /// this code should be unreachable
-        require(
-            _targetChains.add(chainId),
-            "WormholeBridge: chain already added to set"
-        );
+        if (!_targetChains.add(chainId)) {
+            revert ChainAlreadyAdded();
+        }
 
         targetAddress[chainId] = addr;
 
@@ -156,10 +173,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         for (uint256 i = 0; i < _chainConfig.length; ) {
             uint16 chainId = _chainConfig[i].chainId;
             targetAddress[chainId] = address(0);
-            require(
-                _targetChains.remove(chainId),
-                "WormholeBridge: chain not added"
-            );
+            if (!_targetChains.remove(chainId)) {
+                revert ChainNotAdded();
+            }
 
             emit TargetAddressUpdated(chainId, address(0));
 
@@ -172,10 +188,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice sets the wormhole relayer contract
     /// @param _wormholeRelayer address of the wormhole relayer
     function _setWormholeRelayer(address _wormholeRelayer) internal {
-        require(
-            address(wormholeRelayer) == address(0),
-            "WormholeBridge: relayer already set"
-        );
+        if (address(wormholeRelayer) != address(0)) {
+            revert AlreadyInitialized();
+        }
 
         wormholeRelayer = IWormholeRelayer(_wormholeRelayer);
     }
@@ -276,10 +291,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice Bridge Out Funds to all external chains.
     /// @param payload Payload to send to the external chain
     function _bridgeOutAll(bytes memory payload) internal {
-        require(
-            msg.value >= bridgeCostAll(),
-            "WormholeBridge: total cost not equal to quote"
-        );
+        if (msg.value < bridgeCostAll()) {
+            revert InsufficientBridgeFee();
+        }
 
         uint256 chainsLength = _targetChains.length();
 
@@ -318,7 +332,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         if (totalRefundAmount != 0) {
             /// send bridge funds back to sender using call
             (bool success, ) = msg.sender.call{value: totalRefundAmount}("");
-            require(success, "WormholeBridge: refund failed");
+            if (!success) {
+                revert RefundFailed();
+            }
         }
     }
 
@@ -335,19 +351,18 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         uint16 sourceChain,
         bytes32 nonce
     ) external payable override {
-        require(msg.value == 0, "WormholeBridge: no value allowed");
-        require(
-            msg.sender == address(wormholeRelayer),
-            "WormholeBridge: only relayer allowed"
-        );
-        require(
-            isTrustedSender(sourceChain, senderAddress),
-            "WormholeBridge: sender not trusted"
-        );
-        require(
-            !processedNonces[nonce],
-            "WormholeBridge: message already processed"
-        );
+        if (msg.value != 0) {
+            revert InvalidValue();
+        }
+        if (msg.sender != address(wormholeRelayer)) {
+            revert OnlyRelayer();
+        }
+        if (!isTrustedSender(sourceChain, senderAddress)) {
+            revert Unauthorized();
+        }
+        if (processedNonces[nonce]) {
+            revert MessageAlreadyProcessed();
+        }
 
         processedNonces[nonce] = true;
 
@@ -363,10 +378,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     function fromWormholeFormat(
         bytes32 whFormatAddress
     ) public pure returns (address) {
-        require(
-            uint256(whFormatAddress) >> 160 == 0,
-            "WormholeBridge: invalid address"
-        );
+        if (uint256(whFormatAddress) >> 160 != 0) {
+            revert InvalidAddress();
+        }
 
         return address(uint160(uint256(whFormatAddress)));
     }

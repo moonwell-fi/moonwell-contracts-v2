@@ -12,6 +12,9 @@ This refactor contains a few major changes
 2. proposal `description` ~> `descriptionUri`
 3. proposals must be executed before they expire
 4. new contract `VotingPowerAggregator` to handle vote sources
+5. custom revert errors
+6. reducing contract size: removing unused `getUserLiveProposals()` view
+   function and changing `whitelistedCalldatas` from public to private
 
 ## Changes in detail
 
@@ -42,17 +45,13 @@ for the `ProposalCreated` event.
 
 ### proposals expire
 
-A new governance-controlled variable `executeExpirationWindow` defines the time
-(in seconds) that a succeeded proposal has to be executed. This prevents old
-proposals from being executed at any point in the future after it's succeeded.
+A new constant `EXECUTION_WINDOW` defines the time (in seconds) that a succeeded
+proposal has to be executed. This prevents old proposals from being executed at
+any point in the future after it's succeeded.
 
-We use an internal mapping `_proposalExecutionExpiries` to track this per
-proposal
-(`proposal.crossChainVoteCollectionEndTimestamp + executeExpirationWindow`).
-Including this value in the `Proposal` struct caused stack trace too deep
-errors. Alternatively, we could dynamically calculate this value in the
-`execute()` function - knowing that the `executeExpirationWindow` is the only
-variable that would change with a governance proposal.
+We dynamically calculate this value in the `execute()` function by checking the
+current block timestamp is within
+`proposal.crossChainVoteCollectionEndTimestamp + EXECUTION_WINDOW`
 
 ### VotingPowerAggregator
 
@@ -86,3 +85,13 @@ uint256 stkWellVotes = stkWell.getPriorVotes(
 The onchain value for this is `false` - and given the value is updated by
 governance, it was assumed this value could remain false - which would mean all
 snapshot sources use `block.number` when getting the vote snapshot.
+
+### custom revert errors
+
+Instead of `require()` with string literals, we use the more gas efficient
+custom revert errrors introduced in solidity `v0.8.4`
+
+### reducing contract size
+
+It does not seem we needed public functions for `getUserLiveProposals()` and
+`whitelistedCalldatas`
