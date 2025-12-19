@@ -83,12 +83,6 @@ contract MultichainGovernorV2 is
     /// after this parameter is updated.
     uint256 public override crossChainVoteCollectionPeriod;
 
-    /// @notice the maximum number of user live proposals
-    /// if governance votes to decrease this number, and user is already at the maximum
-    /// proposal count, they will not be able to propose again until they have less
-    /// than the new maximum.
-    uint256 public override maxUserLiveProposals;
-
     /// @notice quorum needed for a proposal to pass
     /// if multiple governance proposals are in flight, and the first one to execute
     /// changes quorum, then this new quorum will go into effect on the next proposal.
@@ -130,8 +124,6 @@ contract MultichainGovernorV2 is
         uint256 crossChainVoteCollectionPeriod;
         /// number of total votes required to meet quorum
         uint256 quorum;
-        /// maximum number of live proposals a user can have at a single point in time
-        uint256 maxUserLiveProposals;
         /// pause duration in seconds
         uint128 pauseDuration;
         /// running proposal count from previous governor
@@ -164,7 +156,6 @@ contract MultichainGovernorV2 is
             initData.crossChainVoteCollectionPeriod
         );
         _setQuorum(initData.quorum);
-        _setMaxUserLiveProposals(initData.maxUserLiveProposals);
         _setBreakGlassGuardian(initData.breakGlassGuardian);
 
         __Pausable_init();
@@ -239,39 +230,6 @@ contract MultichainGovernorV2 is
         hasVoted = receipt.hasVoted;
         voteValue = receipt.voteValue;
         votes = receipt.votes;
-    }
-
-    /// @notice returns information on a proposal
-    /// @param proposalId the id of the proposal to check
-    function proposalInformation(
-        uint256 proposalId
-    )
-        external
-        view
-        returns (
-            address proposer,
-            uint256 voteSnapshotTimestamp,
-            uint256 votingStartTime,
-            uint256 endTimestamp,
-            uint256 crossChainVoteCollectionEndTimestamp,
-            uint256 totalVotes,
-            uint256 forVotes,
-            uint256 againstVotes,
-            uint256 abstainVotes
-        )
-    {
-        Proposal storage proposal = proposals[proposalId];
-
-        proposer = proposal.proposer;
-        voteSnapshotTimestamp = proposal.voteSnapshotTimestamp;
-        votingStartTime = proposal.votingStartTime;
-        endTimestamp = proposal.votingEndTime;
-        crossChainVoteCollectionEndTimestamp = proposal
-            .crossChainVoteCollectionEndTimestamp;
-        totalVotes = proposal.totalVotes;
-        forVotes = proposal.forVotes;
-        againstVotes = proposal.againstVotes;
-        abstainVotes = proposal.abstainVotes;
     }
 
     /// @notice returns the vote counts for a proposal
@@ -505,7 +463,10 @@ contract MultichainGovernorV2 is
 
         _syncTotalLiveProposals(); /// remove inactive proposals and remove from inactive proposals from user list
 
-        if (currentUserLiveProposals(msg.sender) >= maxUserLiveProposals) {
+        if (
+            currentUserLiveProposals(msg.sender) >=
+            Constants.MAX_USER_PROPOSAL_COUNT
+        ) {
             revert TooManyLiveProposals();
         }
 
@@ -748,14 +709,6 @@ contract MultichainGovernorV2 is
         _setProposalThreshold(newProposalThreshold);
     }
 
-    /// @notice updates the maximum user live proposals
-    /// @param newMaxLiveProposals the new maximum live proposals
-    function updateMaxUserLiveProposals(
-        uint256 newMaxLiveProposals
-    ) external override onlyGovernor {
-        _setMaxUserLiveProposals(newMaxLiveProposals);
-    }
-
     /// @notice updates the quorum, callable only by this contract
     /// @param newQuorum the new quorum
     function updateQuorum(uint256 newQuorum) external override onlyGovernor {
@@ -847,7 +800,7 @@ contract MultichainGovernorV2 is
                     revert CalldataNotWhitelisted();
                 }
 
-                _functionCall(targets[i], calldatas[i]);
+                _functionCallWithValue(targets[i], calldatas[i], 0);
             }
         }
 
@@ -931,16 +884,13 @@ contract MultichainGovernorV2 is
         bytes calldata data,
         bool approved
     ) private {
-        /// can only approve if it is not already approved
-        if (approved == true) {
-            if (_whitelistedCalldatas[data]) {
+        /// revert if current state matches desired state
+        if (_whitelistedCalldatas[data] == approved) {
+            if (approved) {
                 revert CalldataAlreadyApproved();
             }
-        } else {
-            /// can only remove approval if already approved
-            if (!_whitelistedCalldatas[data]) {
-                revert CalldataNotApproved();
-            }
+
+            revert CalldataNotApproved();
         }
 
         _whitelistedCalldatas[data] = approved;
@@ -970,23 +920,6 @@ contract MultichainGovernorV2 is
             oldVal,
             _crossChainVoteCollectionPeriod
         );
-    }
-
-    /// @notice user max live proposals cannot be zero, as that would brick governance permanently
-    /// 0 < max live proposals <= max user proposal count
-    /// @param _maxUserLiveProposals the new max user live proposals
-    function _setMaxUserLiveProposals(uint256 _maxUserLiveProposals) private {
-        if (
-            _maxUserLiveProposals == 0 ||
-            _maxUserLiveProposals > Constants.MAX_USER_PROPOSAL_COUNT
-        ) {
-            revert InvalidMaxUserLiveProposals();
-        }
-
-        uint256 _oldValue = maxUserLiveProposals;
-        maxUserLiveProposals = _maxUserLiveProposals;
-
-        emit UserMaxProposalsChanged(_oldValue, _maxUserLiveProposals);
     }
 
     /// @dev minimum quorum is 0, maximum quorum value is enforced
@@ -1289,20 +1222,6 @@ contract MultichainGovernorV2 is
             }
         } else {
             _revertWithData(returndata, ExecuteCallFailed.selector);
-        }
-    }
-
-    /// @notice Make an external call without value, bubbling up revert reasons
-    /// @param target The address to call
-    /// @param data The calldata to send
-    function _functionCall(address target, bytes memory data) private {
-        (bool success, bytes memory returndata) = target.call(data);
-        if (success) {
-            if (returndata.length == 0 && target.code.length == 0) {
-                revert CallToNonContract();
-            }
-        } else {
-            _revertWithData(returndata, BreakGlassCallFailed.selector);
         }
     }
 

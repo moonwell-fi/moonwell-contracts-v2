@@ -33,7 +33,6 @@ interface IMultichainGovernorV2 {
     error CalldataAlreadyApproved();
     error CalldataNotApproved();
     error InvalidVoteCollectionPeriod();
-    error InvalidMaxUserLiveProposals();
     error InvalidQuorum();
     error VotingPeriodOutOfBounds();
     error ProposalThresholdOutOfBounds();
@@ -91,7 +90,6 @@ interface IMultichainGovernorV2 {
         uint256 oldValue,
         uint256 newValue
     );
-    event UserMaxProposalsChanged(uint256 oldValue, uint256 newValue);
     event CrossChainVoteCollected(
         uint256 proposalId,
         uint16 sourceChain,
@@ -239,10 +237,6 @@ interface IMultichainGovernorV2 {
     /// @dev Returns the quorum for a proposal to pass
     function quorum() external view returns (uint256);
 
-    /// @dev Returns the maximum number of live proposals per user
-    /// changeable through governance proposals
-    function maxUserLiveProposals() external view returns (uint256);
-
     /// ---------------------------------------------- ////
     /// ---------------------------------------------- ////
     /// ------------- Permisslionless ---------------- ////
@@ -287,9 +281,6 @@ interface IMultichainGovernorV2 {
 
     /// updates the proposal threshold
     function updateProposalThreshold(uint256 newProposalThreshold) external;
-
-    /// updates the maximum user live proposals
-    function updateMaxUserLiveProposals(uint256 newMaxLiveProposals) external;
 
     /// updates the quorum
     function updateQuorum(uint256 newQuorum) external;
