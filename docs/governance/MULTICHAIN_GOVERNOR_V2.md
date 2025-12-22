@@ -93,5 +93,11 @@ custom revert errrors introduced in solidity `v0.8.4`
 
 ### reducing contract size
 
-It does not seem we needed public functions for `getUserLiveProposals()` and
-`whitelistedCalldatas`
+To further reduce contract size, we did the following:
+
+- It does not seem we needed public functions for `getUserLiveProposals()` and
+  `whitelistedCalldatas` as they were not referenced anywhere in the repo
+- We removed the governance-only setter for `maxUserLiveProposals` in favor of a
+  constant (the same onchain value it is now - `2`)
+- Remove uncecessary `proposalInformation()` view function when storage variable
+  for `proposals` is public
