@@ -50,7 +50,4 @@ library Constants {
     /// on destination chains, this could brick this governance contract
     /// and require the use of break glass transactions to fix
     uint96 public constant MIN_GAS_LIMIT = 400_000;
-
-    /// @notice the window for a proposal to be executed after cross chain vote collection ends
-    uint256 public constant EXECUTION_WINDOW = 7 days;
 }

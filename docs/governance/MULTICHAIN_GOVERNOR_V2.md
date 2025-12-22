@@ -45,13 +45,13 @@ for the `ProposalCreated` event.
 
 ### proposals expire
 
-A new constant `EXECUTION_WINDOW` defines the time (in seconds) that a succeeded
+A new variable `_executionWindow` defines the time (in seconds) that a succeeded
 proposal has to be executed. This prevents old proposals from being executed at
 any point in the future after it's succeeded.
 
 We dynamically calculate this value in the `execute()` function by checking the
 current block timestamp is within
-`proposal.crossChainVoteCollectionEndTimestamp + EXECUTION_WINDOW`
+`proposal.crossChainVoteCollectionEndTimestamp + _executionWindow`
 
 ### VotingPowerAggregator
 

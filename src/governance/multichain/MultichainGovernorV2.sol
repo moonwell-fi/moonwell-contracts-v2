@@ -97,6 +97,12 @@ contract MultichainGovernorV2 is
     /// changing this variable only affects the proposals created after the change
     uint256 public override votingPeriod;
 
+    /// @notice maximum amount of live proposals per user
+    uint256 internal _maxUserProposalCount;
+
+    /// @notice the window for a proposal to be executed after cross chain vote collection ends
+    uint256 internal _executionWindow;
+
     /// --------------------------------------------------------- ///
     /// ------------------------- SAFETY ------------------------ ///
     /// --------------------------------------------------------- ///
@@ -173,6 +179,9 @@ contract MultichainGovernorV2 is
         _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
 
         proposalCount = uint256(initData.startingProposalCount);
+
+        _maxUserProposalCount = 2;
+        _executionWindow = 7 days;
 
         unchecked {
             for (uint256 i = 0; i < calldatas.length; i++) {
@@ -463,10 +472,7 @@ contract MultichainGovernorV2 is
 
         _syncTotalLiveProposals(); /// remove inactive proposals and remove from inactive proposals from user list
 
-        if (
-            currentUserLiveProposals(msg.sender) >=
-            Constants.MAX_USER_PROPOSAL_COUNT
-        ) {
+        if (currentUserLiveProposals(msg.sender) >= _maxUserProposalCount) {
             revert TooManyLiveProposals();
         }
 
@@ -550,8 +556,7 @@ contract MultichainGovernorV2 is
         }
         if (
             block.timestamp >
-            proposal.crossChainVoteCollectionEndTimestamp +
-                Constants.EXECUTION_WINDOW
+            proposal.crossChainVoteCollectionEndTimestamp + _executionWindow
         ) {
             revert ProposalExpired();
         }
