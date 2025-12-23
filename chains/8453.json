@@ -1273,5 +1273,15 @@
         "addr": "0xB5421a112f07C31820f413852E7e39E2d765e4B8",
         "isContract": true,
         "name": "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL"
+    },
+    {
+        "addr": "0x1E6A29666288a310326B37d823Fe4Ea3937424D2",
+        "isContract": true,
+        "name": "CHAINLINK_RETH_ETH_EXCHANGE_RATE"
+    },
+    {
+        "addr": "0x98819cC6C48eE912508454b0f1f4e68BD35ca313",
+        "isContract": true,
+        "name": "CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE"
     }
 ]

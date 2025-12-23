@@ -954,17 +954,18 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             data,
             string.concat(prefix, ".transferReserves")
         );
-        TransferReserves[] memory transferReserves = abi.decode(
-            transferReservesBytes,
-            (TransferReserves[])
-        );
-
-        for (uint256 i = 0; i < transferReserves.length; i++) {
-            TransferReserves memory transferReserve = transferReserves[i];
-
-            externalChainActions[_chainId].transferReserves.push(
-                transferReserve
+        if (transferReservesBytes.length > 0) {
+            TransferReserves[] memory transferReserves = abi.decode(
+                transferReservesBytes,
+                (TransferReserves[])
             );
+            for (uint256 i = 0; i < transferReserves.length; i++) {
+                TransferReserves memory transferReserve = transferReserves[i];
+
+                externalChainActions[_chainId].transferReserves.push(
+                    transferReserve
+                );
+            }
         }
 
         {
@@ -972,68 +973,75 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                 data,
                 string.concat(prefix, ".initSale")
             );
-            InitSale memory initSale = abi.decode(initSaleBytes, (InitSale));
 
-            // Process initSale if it exists in the JSON and has valid data
-            if (
-                initSale.auctionPeriod != 0 ||
-                initSale.reserveAutomationContracts.length > 0
-            ) {
-                for (
-                    uint256 i = 0;
-                    i < initSale.reserveAutomationContracts.length;
-                    i++
+            if (initSaleBytes.length > 0) {
+                InitSale memory initSale = abi.decode(
+                    initSaleBytes,
+                    (InitSale)
+                );
+
+                // Process initSale if it exists in the JSON and has valid data
+                if (
+                    initSale.auctionPeriod != 0 ||
+                    initSale.reserveAutomationContracts.length > 0
                 ) {
-                    // Get the ReserveAutomation contract and its reserveAsset
-                    address reserveAutomationContract = addresses.getAddress(
-                        initSale.reserveAutomationContracts[i]
-                    );
+                    for (
+                        uint256 i = 0;
+                        i < initSale.reserveAutomationContracts.length;
+                        i++
+                    ) {
+                        // Get the ReserveAutomation contract and its reserveAsset
+                        address reserveAutomationContract = addresses
+                            .getAddress(initSale.reserveAutomationContracts[i]);
 
-                    // Sanity check: delay must be less than or equal to MAXIMUM_AUCTION_DELAY
-                    assertLe(
-                        initSale.delay,
-                        ReserveAutomation(reserveAutomationContract)
-                            .MAXIMUM_AUCTION_DELAY(),
-                        "RewardsDistribution: delay exceeds MAXIMUM_AUCTION_DELAY"
-                    );
+                        // Sanity check: delay must be less than or equal to MAXIMUM_AUCTION_DELAY
+                        assertLe(
+                            initSale.delay,
+                            ReserveAutomation(reserveAutomationContract)
+                                .MAXIMUM_AUCTION_DELAY(),
+                            "RewardsDistribution: delay exceeds MAXIMUM_AUCTION_DELAY"
+                        );
 
-                    // Sanity check: maxDiscount must be less than SCALAR (1e18)
-                    assertLt(
-                        initSale.periodMaxDiscount,
-                        ReserveAutomation(reserveAutomationContract).SCALAR(),
-                        "RewardsDistribution: periodMaxDiscount must be less than SCALAR"
-                    );
+                        // Sanity check: maxDiscount must be less than SCALAR (1e18)
+                        assertLt(
+                            initSale.periodMaxDiscount,
+                            ReserveAutomation(reserveAutomationContract)
+                                .SCALAR(),
+                            "RewardsDistribution: periodMaxDiscount must be less than SCALAR"
+                        );
 
-                    // Sanity check: startingPremium must be greater than SCALAR (1e18)
-                    assertGt(
-                        uint256(initSale.periodStartingPremium),
-                        ReserveAutomation(reserveAutomationContract).SCALAR(),
-                        "RewardsDistribution: periodStartingPremium must be greater than SCALAR"
-                    );
+                        // Sanity check: startingPremium must be greater than SCALAR (1e18)
+                        assertGt(
+                            uint256(initSale.periodStartingPremium),
+                            ReserveAutomation(reserveAutomationContract)
+                                .SCALAR(),
+                            "RewardsDistribution: periodStartingPremium must be greater than SCALAR"
+                        );
 
-                    // Sanity check: auctionPeriod must be perfectly divisible by miniAuctionPeriod
-                    assertEq(
-                        initSale.auctionPeriod % initSale.miniAuctionPeriod,
-                        0,
-                        "RewardsDistribution: auctionPeriod must be perfectly divisible by miniAuctionPeriod"
-                    );
+                        // Sanity check: auctionPeriod must be perfectly divisible by miniAuctionPeriod
+                        assertEq(
+                            initSale.auctionPeriod % initSale.miniAuctionPeriod,
+                            0,
+                            "RewardsDistribution: auctionPeriod must be perfectly divisible by miniAuctionPeriod"
+                        );
 
-                    // Sanity check: must have more than one mini-auction
-                    assertGt(
-                        initSale.auctionPeriod / initSale.miniAuctionPeriod,
-                        1,
-                        "RewardsDistribution: must have more than one mini-auction"
-                    );
+                        // Sanity check: must have more than one mini-auction
+                        assertGt(
+                            initSale.auctionPeriod / initSale.miniAuctionPeriod,
+                            1,
+                            "RewardsDistribution: must have more than one mini-auction"
+                        );
 
-                    // Sanity check: miniAuctionPeriod must be greater than 1
-                    assertGt(
-                        initSale.miniAuctionPeriod,
-                        10000,
-                        "RewardsDistribution: miniAuctionPeriod must be greater than 10000"
-                    );
+                        // Sanity check: miniAuctionPeriod must be greater than 1
+                        assertGt(
+                            initSale.miniAuctionPeriod,
+                            10000,
+                            "RewardsDistribution: miniAuctionPeriod must be greater than 10000"
+                        );
+                    }
+
+                    externalChainActions[_chainId].initSale = initSale;
                 }
-
-                externalChainActions[_chainId].initSale = initSale;
             }
         }
 
@@ -1050,6 +1058,9 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             data,
             string.concat(prefix, ".multiRewarder")
         );
+        if (multiRewarderBytes.length == 0) {
+            return;
+        }
         MultiRewarder[] memory multiRewarders = abi.decode(
             multiRewarderBytes,
             (MultiRewarder[])

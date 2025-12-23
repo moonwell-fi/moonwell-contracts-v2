@@ -170,13 +170,17 @@ contract mipx36 is HybridProposal {
         );
 
         // Update oracle price feed on Base
+        // Use addresses file instead of storage variable for consistent calldata generation
         address baseChainlinkOracle = addresses.getAddress("CHAINLINK_ORACLE");
+        address baseWrsethOracleAddr = addresses.getAddress(
+            "CHAINLINK_wrsETH_COMPOSITE_ORACLE"
+        );
         _pushAction(
             baseChainlinkOracle,
             abi.encodeWithSignature(
                 "setFeed(string,address)",
                 "wrsETH",
-                address(baseWrsethOracle)
+                baseWrsethOracleAddr
             ),
             "Update wrsETH oracle to exchange rate feed on Base",
             ActionType.Base
@@ -213,15 +217,19 @@ contract mipx36 is HybridProposal {
         );
 
         // Update oracle price feed on Optimism
+        // Use addresses file instead of storage variable for consistent calldata generation
         address optimismChainlinkOracle = addresses.getAddress(
             "CHAINLINK_ORACLE"
+        );
+        address optimismWrsethOracleAddr = addresses.getAddress(
+            "CHAINLINK_wrsETH_COMPOSITE_ORACLE"
         );
         _pushAction(
             optimismChainlinkOracle,
             abi.encodeWithSignature(
                 "setFeed(string,address)",
                 "wrsETH",
-                address(optimismWrsethOracle)
+                optimismWrsethOracleAddr
             ),
             "Update wrsETH oracle to exchange rate feed on Optimism",
             ActionType.Optimism
@@ -271,7 +279,7 @@ contract mipx36 is HybridProposal {
         AggregatorV3Interface baseFeed = baseChainlinkOracle.getFeed("wrsETH");
         assertEq(
             address(baseFeed),
-            address(baseWrsethOracle),
+            addresses.getAddress("CHAINLINK_wrsETH_COMPOSITE_ORACLE"),
             "Base wrsETH oracle not updated"
         );
 
@@ -312,7 +320,7 @@ contract mipx36 is HybridProposal {
         );
         assertEq(
             address(optimismFeed),
-            address(optimismWrsethOracle),
+            addresses.getAddress("CHAINLINK_wrsETH_COMPOSITE_ORACLE"),
             "Optimism wrsETH oracle not updated"
         );
 

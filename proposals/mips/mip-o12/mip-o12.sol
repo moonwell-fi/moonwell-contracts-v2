@@ -29,7 +29,9 @@ contract mipo12 is HybridProposal {
     }
 
     function deploy(Addresses addresses, address) public override {
-        if (!addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER")) {
+        if (
+            !addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED")
+        ) {
             // new version of deploy script not compatiblw with old wrapper
             //deployChainlinkOEVWrapper(addresses, "CHAINLINK_ETH_USD");
         }
@@ -41,7 +43,7 @@ contract mipo12 is HybridProposal {
             abi.encodeWithSignature(
                 "setFeed(string,address)",
                 ERC20(addresses.getAddress("WETH")).symbol(),
-                addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER")
+                addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED")
             ),
             "Set price feed for WETH"
         );
@@ -51,7 +53,7 @@ contract mipo12 is HybridProposal {
         vm.selectFork(primaryForkId());
 
         ChainlinkFeedOEVWrapper wrapper = ChainlinkFeedOEVWrapper(
-            addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER")
+            addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED")
         );
 
         // Validate owner

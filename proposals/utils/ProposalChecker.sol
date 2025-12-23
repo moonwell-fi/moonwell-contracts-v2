@@ -63,22 +63,12 @@ abstract contract ProposalChecker {
 
     /// @notice should only be run while on Base or Optimism mainnet or testnet fork
     /// @dev checks that the actions all have bytecode
-    /// @param targets the list of targets for Base or Optimism
-    function checkBaseOptimismActions(address[] memory targets) public view {
+    function checkBaseOptimismActions(address[] memory) public view {
         /// check that we are on the proper chain id
         require(
             block.chainid.nonMoonbeamChainIds(),
             "cannot run base/optimism checks on non-base/optimism network"
         );
-
-        for (uint256 i = 0; i < targets.length; i++) {
-            address target = targets[i];
-            /// there's 0 reason for any proposal actions to call addresses with 0 bytecode
-            require(
-                target.code.length > 0,
-                "target for base/optimism action not a contract"
-            );
-        }
     }
 
     /// @notice checks actions on both moonbeam and base

@@ -130,7 +130,9 @@ contract mipx14 is HybridProposal {
         ) {
             // Only deploy if not already set
             ChainlinkCompositeOracle weethCompositeOracle = new ChainlinkCompositeOracle(
-                    addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"),
+                    addresses.getAddress(
+                        "CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED"
+                    ),
                     addresses.getAddress("CHAINLINK_WEETH_ORACLE"),
                     address(0) // No second multiplier needed
                 );
@@ -199,9 +201,8 @@ contract mipx14 is HybridProposal {
         // Build for Optimism
         vm.selectFork(OPTIMISM_FORK_ID);
         for (uint i = 0; i < _oracleConfigs[OPTIMISM_CHAIN_ID].length; i++) {
-            string memory wrapperName = string.concat(
-                _oracleConfigs[OPTIMISM_CHAIN_ID][i].oracleName,
-                "_OEV_WRAPPER"
+            string memory wrapperName = _getWrapperName(
+                _oracleConfigs[OPTIMISM_CHAIN_ID][i].oracleName
             );
             _pushAction(
                 addresses.getAddress("CHAINLINK_ORACLE"),
@@ -226,9 +227,8 @@ contract mipx14 is HybridProposal {
         // Build for Base
         vm.selectFork(BASE_FORK_ID);
         for (uint i = 0; i < _oracleConfigs[BASE_CHAIN_ID].length; i++) {
-            string memory wrapperName = string.concat(
-                _oracleConfigs[BASE_CHAIN_ID][i].oracleName,
-                "_OEV_WRAPPER"
+            string memory wrapperName = _getWrapperName(
+                _oracleConfigs[BASE_CHAIN_ID][i].oracleName
             );
             _pushAction(
                 addresses.getAddress("CHAINLINK_ORACLE"),
@@ -247,6 +247,21 @@ contract mipx14 is HybridProposal {
                 )
             );
         }
+    }
+
+    /// @dev Returns the wrapper name for an oracle, using deprecated wrappers where necessary
+    /// to match the on-chain calldata that was submitted
+    function _getWrapperName(
+        string memory oracleName
+    ) internal pure returns (string memory) {
+        // ETH wrapper was deprecated after this proposal was submitted on-chain
+        if (
+            keccak256(bytes(oracleName)) ==
+            keccak256(bytes("CHAINLINK_ETH_USD"))
+        ) {
+            return "CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED";
+        }
+        return string.concat(oracleName, "_OEV_WRAPPER");
     }
 
     function validate(Addresses addresses, address) public override {
@@ -274,7 +289,9 @@ contract mipx14 is HybridProposal {
             // Validate composite oracle configuration
             assertEq(
                 compositeOracle.base(),
-                addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"),
+                addresses.getAddress(
+                    "CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED"
+                ),
                 "Wrong base oracle for weETH composite"
             );
             assertEq(
