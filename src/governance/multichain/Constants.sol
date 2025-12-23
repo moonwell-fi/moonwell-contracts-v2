@@ -39,7 +39,8 @@ library Constants {
     uint256 public constant MAX_VOTING_PERIOD = 14 days;
 
     /// @notice maximum amount of live proposals per user
-    uint256 public constant MAX_USER_PROPOSAL_COUNT = 2;
+    /// start storage at 2
+    uint256 public constant MAX_USER_PROPOSAL_COUNT = 20;
 
     /// @notice maximum quorum value is 500m
     uint256 public constant MAX_QUORUM = 500_000_000 * 1e18;
