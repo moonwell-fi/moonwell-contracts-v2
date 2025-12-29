@@ -13,6 +13,8 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
+import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
@@ -237,7 +239,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].chainId = 1;
         _trustedSenders[0].addr = address(0);
 
-        vm.expectRevert("WormholeBridge: invalid target address");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.InvalidAddress.selector)
+        );
         vm.prank(address(governor));
         governor.addExternalChainConfigs(_trustedSenders);
     }
@@ -430,7 +434,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     /// PAUSE GUARDIAN
     function testPauseNonPauseGuardianFails() public {
-        vm.expectRevert("ConfigurablePauseGuardian: only pause guardian");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ConfigurablePauseGuardian.OnlyPauseGuardian.selector
+            )
+        );
         vm.prank(address(1));
         governor.pause();
     }
@@ -525,7 +533,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].addr = address(this);
 
         vm.prank(address(governor));
-        vm.expectRevert("WormholeBridge: chain not added");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.ChainNotAdded.selector)
+        );
         governor.removeExternalChainConfigs(_trustedSenders);
     }
 
@@ -559,7 +569,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             memory _trustedSenders = testaddExternalChainConfigsGovernorSucceeds();
 
         vm.prank(address(governor));
-        vm.expectRevert("WormholeBridge: chain already added");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeBridgeBase.ChainAlreadyAdded.selector
+            )
+        );
         governor.addExternalChainConfigs(_trustedSenders);
     }
 

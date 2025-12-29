@@ -16,6 +16,7 @@ import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 
 contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
     using Address for address;
@@ -125,7 +126,9 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
     function testReceiveWormholeMessageFailsWithValue() public {
         vm.deal(address(this), 100);
 
-        vm.expectRevert("WormholeBridge: no value allowed");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.InvalidValue.selector)
+        );
         voteCollection.receiveWormholeMessages{value: 100}(
             "",
             new bytes[](0),
@@ -134,7 +137,9 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             bytes32(type(uint256).max)
         );
 
-        vm.expectRevert("WormholeBridge: no value allowed");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.InvalidValue.selector)
+        );
         governor.receiveWormholeMessages{value: 100}(
             "",
             new bytes[](0),
@@ -146,7 +151,9 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
 
     /// not relayer address
     function testReceiveWormholeMessageFailsNotRelayer() public {
-        vm.expectRevert("WormholeBridge: only relayer allowed");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.OnlyRelayer.selector)
+        );
         voteCollection.receiveWormholeMessages{value: 0}(
             "",
             new bytes[](0),
@@ -155,7 +162,9 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             bytes32(type(uint256).max)
         );
 
-        vm.expectRevert("WormholeBridge: only relayer allowed");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.OnlyRelayer.selector)
+        );
         governor.receiveWormholeMessages{value: 0}(
             "",
             new bytes[](0),
@@ -182,7 +191,11 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
 
         bytes memory payloadGovernor = abi.encode(proposalId, 0, 0, 0);
-        vm.expectRevert("WormholeBridge: message already processed");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeBridgeBase.MessageAlreadyProcessed.selector
+            )
+        );
         governor.receiveWormholeMessages{value: 0}(
             payloadGovernor,
             new bytes[](0), /// field unchecked in contract

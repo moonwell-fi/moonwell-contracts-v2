@@ -109,10 +109,16 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
     }
 
     function testVoteCollectionSetup() public view {
-        assertEq(
-            address(voteCollection.xWell()),
-            address(xwell),
-            "xWell address"
+        // V2: votingPower aggregator instead of direct xWell reference
+        // Vote collection has its own separate VotingPowerAggregator instance
+        assertTrue(
+            address(voteCollection.votingPower()) != address(0),
+            "votingPower aggregator should not be zero"
+        );
+        assertTrue(
+            address(voteCollection.votingPower()) !=
+                address(votingPowerAggregator),
+            "vote collection should have separate voting power aggregator from governor"
         );
         assertTrue(
             voteCollection.isTrustedSender(

@@ -4,21 +4,19 @@ import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
+import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichainGovernorV2.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {MultichainVoteCollectionV2} from "@protocol/governance/multichain/MultichainVoteCollectionV2.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 
-import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
+import {MultichainBaseTestV2} from "@test/helper/MultichainBaseTestV2.t.sol";
 
-contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
+contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
     bool private _receivingFunds;
 
     event CrossChainVoteCollected(
@@ -36,7 +34,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     function testSetup() public view {
         assertEq(
-            governor.getVotes(
+            votingPowerAggregator.getVotes(
                 address(this),
                 block.timestamp - 1,
                 block.number - 1
@@ -60,15 +58,15 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect vote amount"
         );
 
-        assertEq(
-            address(voteCollection.xWell()),
-            address(xwell),
-            "xwell incorrect"
+        // Vote collection has its own VotingPowerAggregator, different from governor's
+        assertFalse(
+            address(voteCollection.votingPower()) ==
+                address(votingPowerAggregator),
+            "vote collection should have its own voting power aggregator"
         );
-        assertEq(
-            address(voteCollection.stkWell()),
-            address(stkWellBase),
-            "stkwell incorrect"
+        assertTrue(
+            address(voteCollection.votingPower()) != address(0),
+            "vote collection voting power aggregator should be set"
         );
 
         assertEq(
@@ -111,8 +109,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
-        string
-            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+        string memory descriptionUri = "ipfs://proposal123";
 
         targets[0] = address(governor);
         values[0] = 0;
@@ -129,7 +126,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             targets,
             values,
             calldatas,
-            description
+            descriptionUri,
+            true // finalize
         );
 
         uint256 endProposalCount = governor.proposalCount();
@@ -143,12 +141,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
 
         {
-            IMultichainGovernor.ProposalInformation
+            IMultichainGovernorV2.ProposalInformation
                 memory voteCollectionInfo = _getVoteCollectionProposalInformation(
                     proposalId
                 );
 
-            IMultichainGovernor.ProposalInformation
+            IMultichainGovernorV2.ProposalInformation
                 memory governorInfo = governor.proposalInformationStruct(
                     proposalId
                 );
@@ -193,7 +191,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         return proposalId;
     }
 
-    /// Voting on MultichainVoteCollection
+    /// Voting on MultichainVoteCollectionV2
 
     function testVotingValidProposalIdSucceeds()
         public
@@ -266,7 +264,9 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             .proposalInformation(proposalId);
 
         vm.warp(votingStartTime - 1);
-        vm.expectRevert("MultichainVoteCollection: Voting has not started yet");
+        vm.expectRevert(
+            "MultichainVoteCollectionV2: Voting has not started yet"
+        );
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
     }
 
@@ -282,7 +282,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
         vm.prank(address(1));
-        vm.expectRevert("MultichainVoteCollection: voter has no votes");
+        vm.expectRevert("MultichainVoteCollectionV2: voter has no votes");
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
 
         _assertGovernanceBalance();
@@ -292,7 +292,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testVotingTwiceSameProposalFails() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
-        vm.expectRevert("MultichainVoteCollection: voter already voted");
+        vm.expectRevert("MultichainVoteCollectionV2: voter already voted");
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
 
         _assertGovernanceBalance();
@@ -312,7 +312,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        vm.expectRevert("MultichainVoteCollection: invalid vote value");
+        vm.expectRevert("MultichainVoteCollectionV2: invalid vote value");
         voteCollection.castVote(proposalId, 3);
 
         _assertGovernanceBalance();
@@ -388,7 +388,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not in crosschain vote collection period"
         );
 
-        vm.expectRevert("MultichainVoteCollection: Voting has ended");
+        vm.expectRevert("MultichainVoteCollectionV2: Voting has ended");
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
 
         _assertGovernanceBalance();
@@ -408,7 +408,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        vm.expectRevert("MultichainVoteCollection: invalid vote value");
+        vm.expectRevert("MultichainVoteCollectionV2: invalid vote value");
         voteCollection.castVote(proposalId, 3);
 
         _assertGovernanceBalance();
@@ -425,7 +425,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        vm.expectRevert("MultichainVoteCollection: voter has no votes");
+        vm.expectRevert("MultichainVoteCollectionV2: voter has no votes");
         vm.prank(address(1));
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
 
@@ -605,7 +605,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         }
 
         {
-            IMultichainGovernor.ProposalInformation
+            IMultichainGovernorV2.ProposalInformation
                 memory voteCollectionInfo = _getVoteCollectionProposalInformation(
                     proposalId
                 );
@@ -755,7 +755,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             );
         }
 
-        IMultichainGovernor.ProposalInformation
+        IMultichainGovernorV2.ProposalInformation
             memory voteCollectionInfo = _getVoteCollectionProposalInformation(
                 proposalId
             );
@@ -921,7 +921,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         }
 
         {
-            IMultichainGovernor.ProposalInformation
+            IMultichainGovernorV2.ProposalInformation
                 memory voteCollectionInfo = _getVoteCollectionProposalInformation(
                     proposalId
                 );
@@ -972,7 +972,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             );
         }
 
-        IMultichainGovernor.ProposalInformation
+        IMultichainGovernorV2.ProposalInformation
             memory governorInfo = _getVoteCollectionProposalInformation(
                 proposalId
             );
@@ -1128,7 +1128,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         proposalId = governor.proposalCount();
 
-        IMultichainGovernor.ProposalInformation
+        IMultichainGovernorV2.ProposalInformation
             memory proposalVoteCollection = _getVoteCollectionProposalInformation(
                 proposalId
             );
@@ -1142,8 +1142,10 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not in crosschain vote collection period"
         );
 
-        IMultichainGovernor.ProposalInformation memory proposalBefore = governor
-            .proposalInformationStruct(proposalId);
+        IMultichainGovernorV2.ProposalInformation
+            memory proposalBefore = governor.proposalInformationStruct(
+                proposalId
+            );
 
         {
             uint256 bridgeCost = voteCollection.bridgeCost(
@@ -1155,8 +1157,10 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             voteCollection.emitVotes{value: bridgeCost}(proposalId);
         }
 
-        IMultichainGovernor.ProposalInformation memory proposalAfter = governor
-            .proposalInformationStruct(proposalId);
+        IMultichainGovernorV2.ProposalInformation
+            memory proposalAfter = governor.proposalInformationStruct(
+                proposalId
+            );
 
         assertEq(
             proposalAfter.totalVotes,
@@ -1226,7 +1230,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         uint256 proposalId = governor.proposalCount();
 
-        vm.expectRevert("MultichainVoteCollection: proposal has no votes");
+        vm.expectRevert("MultichainVoteCollectionV2: proposal has no votes");
         voteCollection.emitVotes(proposalId);
 
         _assertGovernanceBalance();
@@ -1241,7 +1245,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         // test at the last timestamp of vote period
         vm.warp(endTimestamp);
 
-        vm.expectRevert("MultichainVoteCollection: Voting has not ended");
+        vm.expectRevert("MultichainVoteCollectionV2: Voting has not ended");
         voteCollection.emitVotes(proposalId);
 
         _assertGovernanceBalance();
@@ -1275,7 +1279,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testEmitVotesProposalCollectionEndTimeHasPassed() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
-        IMultichainGovernor.ProposalInformation
+        IMultichainGovernorV2.ProposalInformation
             memory voteCollectionInfo = _getVoteCollectionProposalInformation(
                 proposalId
             );
@@ -1283,7 +1287,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.warp(voteCollectionInfo.crossChainVoteCollectionEndTimestamp + 1);
 
         vm.expectRevert(
-            "MultichainVoteCollection: Voting collection phase has ended"
+            "MultichainVoteCollectionV2: Voting collection phase has ended"
         );
         voteCollection.emitVotes(proposalId);
 
@@ -1298,25 +1302,9 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(voteCollection.gasLimit(), gasLimit, "incorrect gas limit");
     }
 
-    function testSetStkWellOwnerSucceeds() public {
-        address newstkWell = address(1);
-        voteCollection.setNewStakedWell(newstkWell);
-        assertEq(
-            address(voteCollection.stkWell()),
-            newstkWell,
-            "stkwell not updated"
-        );
-    }
-
-    function testSetStkWellNonOwnerFails() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        vm.prank(address(1));
-        voteCollection.setNewStakedWell(address(0));
-    }
-
     function testSetGasLimitTooLow() public {
         uint96 gasLimit = Constants.MIN_GAS_LIMIT - 1;
-        vm.expectRevert("MultichainVoteCollection: gas limit too low");
+        vm.expectRevert("MultichainVoteCollectionV2: gas limit too low");
         voteCollection.setGasLimit(gasLimit);
     }
 
@@ -1372,7 +1360,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.deal(address(governor), gasCost);
         vm.prank(address(governor));
-        vm.expectRevert("MultichainVoteCollection: invalid payload length");
+        vm.expectRevert("MultichainVoteCollectionV2: invalid payload length");
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
             BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
@@ -1390,7 +1378,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.deal(address(governor), gasCost);
         vm.prank(address(governor));
-        vm.expectRevert("MultichainVoteCollection: proposal already exists");
+        vm.expectRevert("MultichainVoteCollectionV2: proposal already exists");
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
             BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
@@ -1409,7 +1397,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.deal(address(governor), gasCost);
         vm.prank(address(governor));
         vm.expectRevert(
-            "MultichainVoteCollection: snapshot time must be before start time"
+            "MultichainVoteCollectionV2: snapshot time must be before start time"
         );
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
             30,
@@ -1429,7 +1417,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.deal(address(governor), gasCost);
         vm.prank(address(governor));
         vm.expectRevert(
-            "MultichainVoteCollection: snapshot time must be before start time"
+            "MultichainVoteCollectionV2: snapshot time must be before start time"
         );
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
             30,
@@ -1448,7 +1436,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.deal(address(governor), gasCost);
         vm.prank(address(governor));
         vm.expectRevert(
-            "MultichainVoteCollection: start time must be before end time"
+            "MultichainVoteCollectionV2: start time must be before end time"
         );
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
             30,
@@ -1467,7 +1455,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.deal(address(governor), gasCost);
         vm.prank(address(governor));
         vm.expectRevert(
-            "MultichainVoteCollection: end time must be before vote collection end"
+            "MultichainVoteCollectionV2: end time must be before vote collection end"
         );
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
             30,
@@ -1486,7 +1474,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.deal(address(governor), gasCost);
         vm.prank(address(governor));
         vm.expectRevert(
-            "MultichainVoteCollection: start time must be before end time"
+            "MultichainVoteCollectionV2: start time must be before end time"
         );
 
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
@@ -1505,7 +1493,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.deal(address(governor), gasCost);
         vm.prank(address(governor));
         vm.expectRevert(
-            "MultichainVoteCollection: end time must be in the future"
+            "MultichainVoteCollectionV2: end time must be in the future"
         );
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
             30,
@@ -1526,7 +1514,11 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.deal(address(voteCollection), gasCost);
         vm.prank(address(voteCollection));
-        vm.expectRevert("MultichainGovernor: vote already collected");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMultichainGovernorV2.VoteAlreadyCollected.selector
+            )
+        );
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
             MOONBEAM_WORMHOLE_CHAIN_ID,
             address(governor),

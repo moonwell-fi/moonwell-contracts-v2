@@ -15,7 +15,7 @@ import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MockMultichainGovernorV2} from "@test/mock/MockMultichainGovernorV2.sol";
 import {MockVotingPowerAggregator} from "@test/mock/MockVotingPowerAggregator.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {MultichainVoteCollectionV2} from "@protocol/governance/multichain/MultichainVoteCollectionV2.sol";
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernorV2, MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
@@ -38,7 +38,7 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
     WormholeRelayerAdapter public wormholeRelayerAdapter;
 
     /// @notice reference to the Multichain vote collection contract
-    MultichainVoteCollection public voteCollection;
+    MultichainVoteCollectionV2 public voteCollection;
 
     /// @notice reference to the Multichain governor logic contract
     MockMultichainGovernorV2 public governorLogic;
@@ -280,8 +280,10 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         governor = MockMultichainGovernorV2(payable(address(governorProxy)));
 
-        // Deploy vote collection
-        (address voteCollectionProxy, ) = deployVoteCollection(
+        // Deploy vote collection V2 with its own VotingPowerAggregator
+        // VoteCollection needs xWell + stkWellBase sources
+        (address voteCollectionProxy, ) = deployVoteCollectionV2(
+            address(0), // create a new VotingPowerAggregator for vote collection
             address(xwell),
             address(stkWellBase),
             address(governor),
@@ -291,7 +293,7 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
             address(this) // owner
         );
 
-        voteCollection = MultichainVoteCollection(voteCollectionProxy);
+        voteCollection = MultichainVoteCollectionV2(voteCollectionProxy);
 
         // Update trusted sender to point to vote collection
         vm.prank(address(governor));

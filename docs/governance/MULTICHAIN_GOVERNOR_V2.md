@@ -11,7 +11,8 @@ This refactor contains a few major changes
    append targets/calldatas
 2. proposal `description` ~> `descriptionUri`
 3. proposals must be executed before they expire
-4. new contract `VotingPowerAggregator` to handle vote sources
+4. new contract `VotingPowerAggregator` to handle vote sources. used by
+   `MultichainGovernorV2` and `MultichainVoteCollectionV2`
 5. custom revert errors
 6. reducing contract size: removing unused `getUserLiveProposals()` view
    function and changing `whitelistedCalldatas` from public to private
@@ -96,8 +97,18 @@ custom revert errrors introduced in solidity `v0.8.4`
 To further reduce contract size, we did the following:
 
 - It does not seem we needed public functions for `getUserLiveProposals()` and
-  `whitelistedCalldatas` as they were not referenced anywhere in the repo
+  `whitelistedCalldatas` as they were not referenced anywhere in the repo,
+  moonwell client, or indexer.
 - We removed the governance-only setter for `maxUserLiveProposals` in favor of a
   constant (the same onchain value it is now - `2`)
 - Remove uncecessary `proposalInformation()` view function when storage variable
   for `proposals` is public
+
+### MultichainVoteCollectionV2
+
+For consistency, the `MultichainVoteCollectionV2` has been updated to use the
+new `VotingPowerAggregator` contract. An instance of this contract should have
+`stkWell` sources added via `addSnapshotSource`.
+
+The already deployed instances (ie on Base, Optimism) of this contract need to
+be re initialized.

@@ -41,4 +41,23 @@ contract MockMultichainGovernorV2 is MultichainGovernorV2 {
     ) external view returns (uint256) {
         return _userLiveProposals[user].length();
     }
+
+    /// @notice returns information on a proposal in a struct format
+    /// @param proposalId the id of the proposal to check
+    function proposalInformationStruct(
+        uint256 proposalId
+    ) external view returns (ProposalInformation memory proposalInfo) {
+        Proposal storage proposal = proposals[proposalId];
+
+        proposalInfo.proposer = proposal.proposer;
+        proposalInfo.voteSnapshotTimestamp = proposal.voteSnapshotTimestamp;
+        proposalInfo.votingStartTime = proposal.votingStartTime;
+        proposalInfo.votingEndTime = proposal.votingEndTime;
+        proposalInfo.crossChainVoteCollectionEndTimestamp = proposal
+            .crossChainVoteCollectionEndTimestamp;
+        proposalInfo.totalVotes = proposal.totalVotes;
+        proposalInfo.forVotes = proposal.forVotes;
+        proposalInfo.againstVotes = proposal.againstVotes;
+        proposalInfo.abstainVotes = proposal.abstainVotes;
+    }
 }

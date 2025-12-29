@@ -18,6 +18,7 @@ import {MultichainVoteCollection} from "@protocol/governance/multichain/Multicha
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 
 contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     bool private _receivingFunds;
@@ -327,7 +328,11 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         uint256 bridgeCost = governor.bridgeCostAll() - 1; /// 1 Wei less than needed
         vm.deal(address(this), bridgeCost);
 
-        vm.expectRevert("WormholeBridge: total cost not equal to quote");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeBridgeBase.InsufficientBridgeFee.selector
+            )
+        );
         governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -479,7 +484,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.expectEmit(true, true, true, true, address(governor));
         emit BridgeOutFailed(BASE_WORMHOLE_CHAIN_ID, payload, bridgeCost);
 
-        vm.expectRevert("WormholeBridge: refund failed");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.RefundFailed.selector)
+        );
         vm.prank(proposer);
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
@@ -801,7 +808,11 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     function testRebroadcastProposalFailsNoValue() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.expectRevert("WormholeBridge: total cost not equal to quote");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeBridgeBase.InsufficientBridgeFee.selector
+            )
+        );
         governor.rebroadcastProposal(proposalId);
 
         _assertGovernanceBalance();
@@ -813,7 +824,11 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         uint256 cost = governor.bridgeCostAll() - 2012;
         vm.deal(address(this), cost);
 
-        vm.expectRevert("WormholeBridge: total cost not equal to quote");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeBridgeBase.InsufficientBridgeFee.selector
+            )
+        );
         governor.rebroadcastProposal{value: cost}(proposalId);
 
         _assertGovernanceBalance();
@@ -1940,10 +1955,14 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         bytes32 validAddress4 = 0x000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000;
         bytes32 validAddress5 = 0x0000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000;
 
-        vm.expectRevert("WormholeBridge: invalid address");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.InvalidAddress.selector)
+        );
         governor.fromWormholeFormat(invalidAddress1);
 
-        vm.expectRevert("WormholeBridge: invalid address");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.InvalidAddress.selector)
+        );
         governor.fromWormholeFormat(invalidAddress2);
 
         assertEq(
