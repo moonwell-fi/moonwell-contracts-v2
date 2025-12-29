@@ -73,7 +73,7 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         governor.castVote(proposalId, voteValue);
     }
 
-    function _warpPastProposalEnd(uint256 proposalId) private {
+    function _warpPastProposalEnd(uint256) private {
         // Calculate crossChainVoteCollectionEndTimestamp
         // It's votingPeriod + crossChainVoteCollectionPeriod after current timestamp
         uint256 endTimestamp = block.timestamp +
@@ -82,9 +82,7 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         vm.warp(endTimestamp + 1);
     }
 
-    function _getProposalTimestamp(
-        uint256 proposalId
-    ) private view returns (uint256) {
+    function _getProposalTimestamp(uint256) private view returns (uint256) {
         // Calculate crossChainVoteCollectionEndTimestamp
         return
             block.timestamp +
@@ -883,6 +881,60 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
             )
         );
         governor.cancel(proposalId);
+    }
+
+    function testCancelSucceedsWhenProposerVotesEqualThreshold() public {
+        // Setup: Create a user with exactly proposalThreshold voting power
+        address proposer = address(0x456);
+        uint256 threshold = governor.proposalThreshold();
+
+        // Give proposer exactly threshold voting power
+        deal(address(well), proposer, threshold);
+        vm.prank(proposer);
+        well.delegate(proposer);
+
+        vm.roll(block.number + 1);
+
+        // Verify proposer has exactly threshold voting power
+        assertEq(
+            votingPowerAggregator.getCurrentVotes(proposer),
+            threshold,
+            "proposer should have exactly threshold votes"
+        );
+
+        // Proposer creates proposal (should succeed since votes >= threshold)
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(proposer, bridgeCost);
+
+        vm.prank(proposer);
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            DESCRIPTION_URI,
+            true
+        );
+
+        assertTrue(
+            governor.proposalActive(proposalId),
+            "proposal should be active"
+        );
+
+        // Another user can cancel since proposer votes equal to threshold (rather than > threshold)
+        vm.prank(address(0x789));
+        governor.cancel(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Canceled),
+            "proposal should be canceled"
+        );
     }
 
     /// ========================================================================

@@ -580,8 +580,7 @@ contract MultichainGovernorV2 is
         emit ProposalExecuted(proposalId);
     }
 
-    /// @dev callable only by the proposer, cancels proposal if it has not been executed
-    ///  cancellation is allowed in either of these flows:
+    /// @dev cancels proposal if it has not been executed. cancellation is allowed in either of these flows:
     ///  - proposer cancels
     ///  - permissionless cancel, user voting power currently drops below threshold
     /// and
@@ -595,7 +594,7 @@ contract MultichainGovernorV2 is
     function cancel(uint256 proposalId) external override {
         if (
             msg.sender != proposals[proposalId].proposer &&
-            votingPower.getCurrentVotes(proposals[proposalId].proposer) >=
+            votingPower.getCurrentVotes(proposals[proposalId].proposer) >
             proposalThreshold
         ) {
             revert UnauthorizedCancel();
