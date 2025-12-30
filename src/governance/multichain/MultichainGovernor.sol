@@ -26,6 +26,7 @@ contract MultichainGovernor is
 {
     using EnumerableSet for EnumerableSet.UintSet;
     using Address for address;
+    using Address for address payable;
 
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
@@ -1072,6 +1073,15 @@ contract MultichainGovernor is
         /// remove all canceled and now inactive proposals from all proposals,
         /// and remove from inactive proposals from user list
         _syncTotalLiveProposals();
+    }
+
+    /**
+     * @notice Recovers ETH accidentally sent to this contract
+     * @dev Only callable by the governor
+     * @param recipient The address to send the ETH to
+     */
+    function recoverETH(address payable recipient) external onlyGovernor {
+        recipient.sendValue(address(this).balance);
     }
 
     /// --------------------------------------------------------- ///
