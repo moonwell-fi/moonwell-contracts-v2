@@ -134,10 +134,11 @@ contract MultichainGovernorDeploy is Test {
             );
         }
 
-        // Deploy MultichainVoteCollectionV2 with VotingPowerAggregator
+        // Deploy MultichainVoteCollectionV2 with V1 initialize (for backwards compat)
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(address,address,address,uint16,address)",
-            votingPowerProxy,
+            "initialize(address,address,address,address,uint16,address)",
+            xWell,
+            stkWell,
             moonbeamGovernor,
             relayer,
             moonbeamWormholeChainId,
@@ -156,6 +157,9 @@ contract MultichainGovernorDeploy is Test {
                 initData
             )
         );
+
+        // Call initializeV2 with VotingPowerAggregator
+        MultichainVoteCollectionV2(proxy).initializeV2(votingPowerProxy);
     }
 
     // Return values as struct to avoid stack too deep error

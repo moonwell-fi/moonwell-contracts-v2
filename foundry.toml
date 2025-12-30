@@ -14,6 +14,9 @@ gas_limit = "18446744073709551615" # u64::MAX
 block_gas_limit = "18446744073709551615"
 revert_strings = "debug"
 sparse_mode = true # compiles files that match filter criteria
+# Enable these when running the oz upgrades cli
+# build_info = true
+# extra_output = ["storageLayout"]
 
 
 # We can have quite some control over the optimiser when using the new IR one.

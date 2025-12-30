@@ -19,6 +19,7 @@ import {IVotingPowerAggregator} from "@protocol/governance/multichain/IVotingPow
 /// Moonbeam will only allow receiving of votes for each chaind id and proposal id
 /// once per proposal. This is to prevent votes from external chains being double
 /// counted.
+/// @custom:oz-upgrades-from MultichainVoteCollection
 contract MultichainVoteCollectionV2 is
     IMultichainVoteCollection,
     WormholeBridgeBase,
@@ -48,54 +49,51 @@ contract MultichainVoteCollectionV2 is
     /// @notice reference to the voting power aggregator
     IVotingPowerAggregator public votingPower;
 
-    /// @notice disable the initializer to stop governance hijacking
-    /// and avoid selfdestruct attacks.
+    /// @notice disable the initializer to stop governance hijacking and avoid selfdestruct attacks.
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
     /// @notice initialize the governor contract
-    /// @param _votingPowerAggregator address of the voting power aggregator
+    /// @param _xWell address of the xWELL token
+    /// @param _stkWell address of the stkWell token
     /// @param _moonbeamGovernor address of the moonbeam governor contract
     /// @param _wormholeRelayer address of the wormhole relayer
     /// @param _moonbeamWormholeChainId chain id of the moonbeam chain
     /// @param _owner address of the contract
     function initialize(
-        address _votingPowerAggregator,
+        address _xWell,
+        address _stkWell,
         address _moonbeamGovernor,
         address _wormholeRelayer,
         uint16 _moonbeamWormholeChainId,
         address _owner
+    ) external initializer {
+        xWell = xWELL(_xWell);
+        stkWell = SnapshotInterface(_stkWell);
+
+        _addTargetAddress(_moonbeamWormholeChainId, _moonbeamGovernor);
+
+        _setWormholeRelayer(_wormholeRelayer);
+
+        _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
+
+        __Ownable_init();
+        _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
+    }
+
+    /// @notice initialize v2
+    /// @param _votingPowerAggregator address of the voting power aggregator
+    /// @custom:oz-upgrades-validate-as-initializer
+    function initializeV2(
+        address _votingPowerAggregator
     ) external reinitializer(2) {
         require(
             _votingPowerAggregator != address(0),
             "MultichainVoteCollectionV2: voting power aggregator cannot be zero address"
         );
-        require(
-            _moonbeamGovernor != address(0),
-            "MultichainVoteCollectionV2: moonbeam governor cannot be zero address"
-        );
-        require(
-            _wormholeRelayer != address(0),
-            "MultichainVoteCollectionV2: wormhole relayer cannot be zero address"
-        );
-        require(
-            _moonbeamWormholeChainId != 0,
-            "MultichainVoteCollectionV2: moonbeam wormhole chain id cannot be zero"
-        );
-        require(
-            _owner != address(0),
-            "MultichainVoteCollectionV2: owner cannot be zero address"
-        );
-
-        _addTargetAddress(_moonbeamWormholeChainId, _moonbeamGovernor);
-        _setWormholeRelayer(_wormholeRelayer);
-        _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
-
         votingPower = IVotingPowerAggregator(_votingPowerAggregator);
-
-        __Ownable_init();
-        _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
     }
 
     /// --------------------------------------------------------- ///

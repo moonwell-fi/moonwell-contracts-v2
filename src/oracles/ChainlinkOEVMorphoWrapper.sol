@@ -99,6 +99,7 @@ contract ChainlinkOEVMorphoWrapper is
      * @param _liquidatorFeeBps The liquidator fee in basis points
      * @param _maxRoundDelay The max round delay
      * @param _maxDecrements The max decrements
+     * @custom:oz-upgrades-validate-as-initializer
      */
     function initializeV2(
         address _priceFeed,
