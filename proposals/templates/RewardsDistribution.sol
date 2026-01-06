@@ -954,11 +954,13 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             data,
             string.concat(prefix, ".transferReserves")
         );
+
         if (transferReservesBytes.length > 0) {
             TransferReserves[] memory transferReserves = abi.decode(
                 transferReservesBytes,
                 (TransferReserves[])
             );
+
             for (uint256 i = 0; i < transferReserves.length; i++) {
                 TransferReserves memory transferReserve = transferReserves[i];
 
