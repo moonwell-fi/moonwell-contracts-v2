@@ -7,11 +7,13 @@ import {Vm} from "@forge-std/Vm.sol";
 uint256 constant MOONBEAM_FORK_ID = 0;
 uint256 constant BASE_FORK_ID = 1;
 uint256 constant OPTIMISM_FORK_ID = 2;
+uint256 constant ETHEREUM_FORK_ID = 3;
 
 // Mainnet Chain Ids
 uint256 constant MOONBEAM_CHAIN_ID = 1284;
 uint256 constant BASE_CHAIN_ID = 8453;
 uint256 constant OPTIMISM_CHAIN_ID = 10;
+uint256 constant ETHEREUM_CHAIN_ID = 1;
 
 uint256 constant LOCAL_CHAIN_ID = 31337;
 
@@ -19,6 +21,7 @@ uint256 constant LOCAL_CHAIN_ID = 31337;
 uint256 constant MOONBASE_CHAIN_ID = 1287;
 uint256 constant BASE_SEPOLIA_CHAIN_ID = 84532;
 uint256 constant OPTIMISM_SEPOLIA_CHAIN_ID = 11155420;
+uint256 constant ETHEREUM_SEPOLIA_CHAIN_ID = 11155111;
 
 // Wormhole Mainnet Chain Ids
 uint16 constant MOONBEAM_WORMHOLE_CHAIN_ID = 16;
@@ -30,6 +33,7 @@ uint16 constant ETHEREUM_WORMHOLE_CHAIN_ID = 2;
 uint16 constant MOONBASE_WORMHOLE_CHAIN_ID = 16;
 uint16 constant BASE_WORMHOLE_SEPOLIA_CHAIN_ID = 10004;
 uint16 constant OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID = 10005;
+uint16 constant ETHEREUM_WORMHOLE_SEPOLIA_CHAIN_ID = 10002;
 
 library ChainIds {
     address internal constant CHEATCODE_ADDRESS =
@@ -100,6 +104,28 @@ library ChainIds {
         }
     }
 
+    function toEthereumChainId(
+        uint256 chainId
+    ) internal pure returns (uint256) {
+        /// map mainnet base, optimism and moonbeam chain id to ethereum chain id
+        if (
+            chainId == BASE_CHAIN_ID ||
+            chainId == OPTIMISM_CHAIN_ID ||
+            chainId == MOONBEAM_CHAIN_ID
+        ) {
+            return ETHEREUM_CHAIN_ID;
+        } else if (
+            chainId == MOONBASE_CHAIN_ID ||
+            chainId == BASE_SEPOLIA_CHAIN_ID ||
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+        ) {
+            /// map base sepolia, optimism sepolia and moonbase chain id to ethereum sepolia chain id
+            return ETHEREUM_SEPOLIA_CHAIN_ID;
+        } else {
+            revert("ChainIds: invalid chain id to ethereum chain id");
+        }
+    }
+
     function toForkId(uint256 chainId) internal pure returns (uint256) {
         if (chainId == MOONBEAM_CHAIN_ID || chainId == MOONBASE_CHAIN_ID) {
             return MOONBEAM_FORK_ID;
@@ -111,17 +137,22 @@ library ChainIds {
             chainId == OPTIMISM_CHAIN_ID || chainId == OPTIMISM_SEPOLIA_CHAIN_ID
         ) {
             return OPTIMISM_FORK_ID;
+        } else if (
+            chainId == ETHEREUM_CHAIN_ID || chainId == ETHEREUM_SEPOLIA_CHAIN_ID
+        ) {
+            return ETHEREUM_FORK_ID;
         } else {
             revert("ChainIds: invalid chain id");
         }
     }
 
     function checkForks(uint256 forkId) internal {
-        require(forkId <= OPTIMISM_FORK_ID, "ChainIds: invalid fork id");
+        require(forkId <= ETHEREUM_FORK_ID, "ChainIds: invalid fork id");
 
         bool isMainnet = block.chainid == MOONBEAM_CHAIN_ID ||
             block.chainid == BASE_CHAIN_ID ||
-            block.chainid == OPTIMISM_CHAIN_ID;
+            block.chainid == OPTIMISM_CHAIN_ID ||
+            block.chainid == ETHEREUM_CHAIN_ID;
 
         if (isMainnet) {
             vmInternal.selectFork(MOONBEAM_FORK_ID);
@@ -142,6 +173,13 @@ library ChainIds {
 
             require(
                 block.chainid == OPTIMISM_CHAIN_ID,
+                "ChainIds: invalid chain id"
+            );
+
+            vmInternal.selectFork(ETHEREUM_FORK_ID);
+
+            require(
+                block.chainid == ETHEREUM_CHAIN_ID,
                 "ChainIds: invalid chain id"
             );
         } else {
@@ -165,6 +203,13 @@ library ChainIds {
                 block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID,
                 "ChainIds: invalid chain id"
             );
+
+            vmInternal.selectFork(ETHEREUM_FORK_ID);
+
+            require(
+                block.chainid == ETHEREUM_SEPOLIA_CHAIN_ID,
+                "ChainIds: invalid chain id"
+            );
         }
         // switch back to the original fork
         vmInternal.selectFork(forkId);
@@ -182,6 +227,7 @@ library ChainIds {
             vmInternal.createFork("moonbeam");
             vmInternal.createFork("base");
             vmInternal.createFork("optimism");
+            vmInternal.createFork("ethereum");
         }
 
         vmInternal.selectFork(selectFork);
@@ -202,6 +248,10 @@ library ChainIds {
             return BASE_WORMHOLE_SEPOLIA_CHAIN_ID;
         } else if (chainId == OPTIMISM_SEPOLIA_CHAIN_ID) {
             return OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID;
+        } else if (chainId == ETHEREUM_CHAIN_ID) {
+            return ETHEREUM_WORMHOLE_CHAIN_ID;
+        } else if (chainId == ETHEREUM_SEPOLIA_CHAIN_ID) {
+            return ETHEREUM_WORMHOLE_SEPOLIA_CHAIN_ID;
         } else {
             revert("ChainIds: invalid chain id");
         }
@@ -213,13 +263,15 @@ library ChainIds {
         if (
             chainId == BASE_CHAIN_ID ||
             chainId == OPTIMISM_CHAIN_ID ||
-            chainId == MOONBEAM_CHAIN_ID
+            chainId == MOONBEAM_CHAIN_ID ||
+            chainId == ETHEREUM_CHAIN_ID
         ) {
             return MOONBEAM_WORMHOLE_CHAIN_ID;
         } else if (
             chainId == BASE_SEPOLIA_CHAIN_ID ||
             chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
-            chainId == MOONBASE_CHAIN_ID
+            chainId == MOONBASE_CHAIN_ID ||
+            chainId == ETHEREUM_SEPOLIA_CHAIN_ID
         ) {
             return MOONBASE_WORMHOLE_CHAIN_ID;
         } else {
@@ -233,15 +285,39 @@ library ChainIds {
         if (
             chainId == MOONBEAM_CHAIN_ID ||
             chainId == BASE_CHAIN_ID ||
-            chainId == OPTIMISM_CHAIN_ID
+            chainId == OPTIMISM_CHAIN_ID ||
+            chainId == ETHEREUM_CHAIN_ID
         ) {
             return BASE_WORMHOLE_CHAIN_ID;
         } else if (
             chainId == MOONBASE_CHAIN_ID ||
             chainId == BASE_SEPOLIA_CHAIN_ID ||
-            chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
+            chainId == ETHEREUM_SEPOLIA_CHAIN_ID
         ) {
             return BASE_WORMHOLE_SEPOLIA_CHAIN_ID;
+        } else {
+            revert("ChainIds: invalid chain id");
+        }
+    }
+
+    function toEthereumWormholeChainId(
+        uint256 chainId
+    ) internal pure returns (uint16) {
+        if (
+            chainId == MOONBEAM_CHAIN_ID ||
+            chainId == BASE_CHAIN_ID ||
+            chainId == OPTIMISM_CHAIN_ID ||
+            chainId == ETHEREUM_CHAIN_ID
+        ) {
+            return ETHEREUM_WORMHOLE_CHAIN_ID;
+        } else if (
+            chainId == MOONBASE_CHAIN_ID ||
+            chainId == BASE_SEPOLIA_CHAIN_ID ||
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
+            chainId == ETHEREUM_SEPOLIA_CHAIN_ID
+        ) {
+            return ETHEREUM_WORMHOLE_SEPOLIA_CHAIN_ID;
         } else {
             revert("ChainIds: invalid chain id");
         }
@@ -262,6 +338,10 @@ library ChainIds {
             return BASE_SEPOLIA_CHAIN_ID;
         } else if (wormholeChainId == OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID) {
             return OPTIMISM_SEPOLIA_CHAIN_ID;
+        } else if (wormholeChainId == ETHEREUM_WORMHOLE_CHAIN_ID) {
+            return ETHEREUM_CHAIN_ID;
+        } else if (wormholeChainId == ETHEREUM_WORMHOLE_SEPOLIA_CHAIN_ID) {
+            return ETHEREUM_SEPOLIA_CHAIN_ID;
         } else {
             revert("ChainIds: invalid wormhole chain id");
         }
@@ -276,6 +356,8 @@ library ChainIds {
             return "Base";
         } else if (forkId == OPTIMISM_FORK_ID) {
             return "Optimism";
+        } else if (forkId == ETHEREUM_FORK_ID) {
+            return "Ethereum";
         } else {
             revert("ChainIds: invalid fork id");
         }
@@ -296,6 +378,10 @@ library ChainIds {
             return "Base Sepolia";
         } else if (chainId == OPTIMISM_SEPOLIA_CHAIN_ID) {
             return "Optimism Sepolia";
+        } else if (chainId == ETHEREUM_CHAIN_ID) {
+            return "Ethereum";
+        } else if (chainId == ETHEREUM_SEPOLIA_CHAIN_ID) {
+            return "Ethereum Sepolia";
         } else {
             revert("ChainIds: invalid chain id");
         }
@@ -303,5 +389,11 @@ library ChainIds {
 
     function nonMoonbeamChainIds(uint256 chainId) internal pure returns (bool) {
         return chainId != MOONBEAM_CHAIN_ID && chainId != MOONBASE_CHAIN_ID;
+    }
+
+    function nonEthereumChainIds(uint256 chainId) internal pure returns (bool) {
+        return
+            chainId != ETHEREUM_CHAIN_ID &&
+            chainId != ETHEREUM_SEPOLIA_CHAIN_ID;
     }
 }
