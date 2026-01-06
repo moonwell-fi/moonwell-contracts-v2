@@ -7,6 +7,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {SnapshotInterface} from "@protocol/governance/multichain/SnapshotInterface.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {IVotingPowerAggregator} from "@protocol/governance/multichain/IVotingPowerAggregator.sol";
 
 /// @notice Upgradeable contract, constructor disables the implementation contract
@@ -85,15 +86,44 @@ contract MultichainVoteCollectionV2 is
 
     /// @notice initialize v2
     /// @param _votingPowerAggregator address of the voting power aggregator
+    /// @param _oldGovernorChainId wormhole chain id of the old governor to remove
+    /// @param _oldGovernor address of the old governor to remove
+    /// @param _newGovernorChainId wormhole chain id of the new governor to add
+    /// @param _newGovernor address of the new governor to add
     /// @custom:oz-upgrades-validate-as-initializer
     function initializeV2(
-        address _votingPowerAggregator
+        address _votingPowerAggregator,
+        uint16 _oldGovernorChainId,
+        address _oldGovernor,
+        uint16 _newGovernorChainId,
+        address _newGovernor
     ) external reinitializer(2) {
         require(
             _votingPowerAggregator != address(0),
             "MultichainVoteCollectionV2: voting power aggregator cannot be zero address"
         );
+        require(
+            _newGovernor != address(0),
+            "MultichainVoteCollectionV2: new governor cannot be zero address"
+        );
+
         votingPower = IVotingPowerAggregator(_votingPowerAggregator);
+
+        // Remove old governor as trusted sender, add the new one
+        if (_oldGovernor != address(0)) {
+            WormholeTrustedSender.TrustedSender[]
+                memory trustedSendersToRemove = new WormholeTrustedSender.TrustedSender[](
+                    1
+                );
+            trustedSendersToRemove[0] = WormholeTrustedSender.TrustedSender({
+                chainId: _oldGovernorChainId,
+                addr: _oldGovernor
+            });
+            _removeTargetAddresses(trustedSendersToRemove);
+
+            // Add new governor as trusted sender (only if we removed the old one)
+            _addTargetAddress(_newGovernorChainId, _newGovernor);
+        }
     }
 
     /// --------------------------------------------------------- ///

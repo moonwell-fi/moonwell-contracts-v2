@@ -159,7 +159,14 @@ contract MultichainGovernorDeploy is Test {
         );
 
         // Call initializeV2 with VotingPowerAggregator
-        MultichainVoteCollectionV2(proxy).initializeV2(votingPowerProxy);
+        // Note: For new deployments, we pass address(0) for old governor since there's nothing to remove
+        MultichainVoteCollectionV2(proxy).initializeV2(
+            votingPowerProxy,
+            0, // oldGovernorChainId - not applicable for new deployment
+            address(0), // oldGovernor - not applicable for new deployment
+            moonbeamWormholeChainId, // newGovernorChainId - redundant but kept for consistency
+            moonbeamGovernor // newGovernor - already added in V1 initialize, but will be readded
+        );
     }
 
     // Return values as struct to avoid stack too deep error
