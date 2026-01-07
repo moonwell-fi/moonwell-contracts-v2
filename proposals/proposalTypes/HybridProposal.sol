@@ -661,7 +661,7 @@ abstract contract HybridProposal is
                 );
             }
 
-            vm.deal(caller, actions.sumTotalValue());
+            vm.deal(caller, actions.sumMoonbeamValue());
 
             // Start recording logs to verify events after execution
             vm.recordLogs();
@@ -670,9 +670,10 @@ abstract contract HybridProposal is
 
             // Execute the proposal
             vm.prank(caller);
-            governor.execute{value: actions.sumTotalValue(), gas: 52_000_000}(
-                proposalId
-            );
+            governor.execute{
+                value: actions.sumMoonbeamValue(),
+                gas: 52_000_000
+            }(proposalId);
 
             require(
                 gasStart - gasleft() <= 60_000_000,

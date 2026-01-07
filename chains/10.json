@@ -733,5 +733,20 @@
         "addr": "0x531f69127bB04Ebb0Fd321b8092d34a4C2B4E0f1",
         "isContract": true,
         "name": "CHAINLINK_ETH_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0xadcC226082E878371a3fc33c1f914dad7FB6a28D",
+        "isContract": false,
+        "name": "BAD_DEBT_REPAYER_EOA"
+    },
+    {
+        "addr": "0x22F3727be377781d1579B7C9222382b21c9d1a8f",
+        "isContract": true,
+        "name": "CHAINLINK_RETH_ETH_EXCHANGE_RATE"
+    },
+    {
+        "addr": "0x48ce24c1D1Da86158DA2dD8aeE23F906161e3433",
+        "isContract": true,
+        "name": "CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE"
     }
 ]

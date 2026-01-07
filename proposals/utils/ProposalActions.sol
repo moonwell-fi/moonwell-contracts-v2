@@ -55,4 +55,16 @@ library ProposalActions {
             totalValue += actions[i].value;
         }
     }
+
+    /// @notice returns the sum of values for Moonbeam actions only
+    /// @dev Used for MultichainGovernor.execute() which only needs value for Moonbeam actions
+    function sumMoonbeamValue(
+        ProposalAction[] storage actions
+    ) internal view returns (uint256 totalValue) {
+        for (uint256 i = 0; i < actions.length; i++) {
+            if (actions[i].actionType == ActionType.Moonbeam) {
+                totalValue += actions[i].value;
+            }
+        }
+    }
 }
