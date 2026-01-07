@@ -1,0 +1,127 @@
+[
+    {
+        "addr": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "name": "WETH",
+        "isContract": true
+    },
+    {
+        "addr": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "name": "USDC",
+        "isContract": true
+    },
+    {
+        "addr": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        "name": "USDT",
+        "isContract": true
+    },
+    {
+        "addr": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+        "name": "cbBTC",
+        "isContract": true
+    },
+    {
+        "addr": "0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
+        "name": "weETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "name": "wstETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B",
+        "name": "WORMHOLE_CORE",
+        "isContract": true
+    },
+    {
+        "addr": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+        "name": "CHAINLINK_ETH_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+        "name": "ETH_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
+        "name": "CHAINLINK_BTC_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
+        "name": "BTC_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
+        "name": "CHAINLINK_USDC_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
+        "name": "USDC_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
+        "name": "CHAINLINK_USDT_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
+        "name": "USDT_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x86392dC19c0b719886221c78AB11eb8Cf5c52812",
+        "name": "CHAINLINK_STETH_ETH",
+        "isContract": true
+    },
+    {
+        "addr": "0xB4c4a493AB6356497713A78FFA6c60FB53517c63",
+        "name": "CHAINLINK_WSTETH_STETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x5c9C449BbC9a6075A2c061dF312a35fd1E05fF22",
+        "name": "CHAINLINK_WEETH_ETH",
+        "isContract": true
+    },
+    {
+        "addr": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+        "name": "MORPHO_BLUE",
+        "isContract": true
+    },
+    {
+        "addr": "0x1897a8997241c1cd4bd0698647e4eb7213535c24",
+        "name": "META_MORPHO_FACTORY",
+        "isContract": true
+    },
+    {
+        "addr": "0x3A7bB36Ee3f3eE32A60e9f2b33c1e5f2E83ad766",
+        "name": "MORPHO_CHAINLINK_ORACLE_FACTORY",
+        "isContract": true
+    },
+    {
+        "addr": "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
+        "name": "PAUSE_GUARDIAN",
+        "isContract": true
+    },
+    {
+        "addr": "0x446342AF4F3bCD374276891C6bb3411bf2F8779E",
+        "name": "SECURITY_COUNCIL",
+        "isContract": true
+    },
+    {
+        "addr": "0x35b3314EA652899154BbfE937E3cCC2775ba712e",
+        "name": "BORROW_SUPPLY_GUARDIAN",
+        "isContract": true
+    },
+    {
+        "addr": "0x6b175474e89094c44da98b954eedeac495271d0f",
+        "name": "DAI",
+        "isContract": true
+    }
+]

@@ -16,5 +16,11 @@
         "forkId": 1,
         "name": "BASE",
         "wormholeChainId": 30
+    },
+    {
+        "name": "ETHEREUM",
+        "chainId": 1,
+        "forkId": 3,
+        "wormholeChainId": 2
     }
 ]

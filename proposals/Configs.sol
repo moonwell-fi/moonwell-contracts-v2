@@ -56,6 +56,7 @@ abstract contract Configs is Test {
     constructor() {
         temporalGovDelay[BASE_CHAIN_ID] = 1 days;
         temporalGovDelay[OPTIMISM_CHAIN_ID] = 1 days;
+        temporalGovDelay[ETHEREUM_CHAIN_ID] = 1 days;
         temporalGovDelay[OPTIMISM_SEPOLIA_CHAIN_ID] = 0 days;
         temporalGovDelay[LOCAL_CHAIN_ID] = 0 days;
         temporalGovDelay[BASE_SEPOLIA_CHAIN_ID] = 0 days;
