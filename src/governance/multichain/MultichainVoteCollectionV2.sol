@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
 import {IMultichainVoteCollection} from "@protocol/governance/multichain/IMultichainVoteCollection.sol";
@@ -120,8 +121,10 @@ contract MultichainVoteCollectionV2 is
                 addr: _oldGovernor
             });
             _removeTargetAddresses(trustedSendersToRemove);
+        }
 
-            // Add new governor as trusted sender (only if we removed the old one)
+        // Add new governor as trusted sender if not already added in initialize()
+        if (targetAddress[_newGovernorChainId] == address(0)) {
             _addTargetAddress(_newGovernorChainId, _newGovernor);
         }
     }

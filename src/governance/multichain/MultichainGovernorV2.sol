@@ -384,11 +384,12 @@ contract MultichainGovernorV2 is
 
         Proposal storage proposal = proposals[proposalId];
 
-        // First check if the proposal cancelled as proposal can
-        /// be canceled at any time during the lifecycle.
+        // First check if the proposal is canceled as proposal can be canceled at any time during the lifecycle.
         if (proposal.canceled) {
             return ProposalState.Canceled;
-            // Then check if the proposal is pending or active, in which case nothing else can be determined at this time.
+            // Then check if the proposal is in init, pending or active, in which case nothing else can be determined at this time.
+        } else if (!proposal.finalized) {
+            return ProposalState.Init;
         } else if (block.timestamp <= proposal.votingEndTime) {
             return ProposalState.Active;
             // Then, check if the proposal is in cross chain vote collection period
@@ -524,6 +525,12 @@ contract MultichainGovernorV2 is
         if (proposal.finalized) {
             revert ProposalAlreadyFinalized();
         }
+        if (proposal.canceled) {
+            revert InvalidProposalState(
+                ProposalState.Canceled,
+                ProposalState.Init
+            );
+        }
         if (msg.sender != proposal.proposer) {
             revert OnlyProposer();
         }
@@ -588,6 +595,7 @@ contract MultichainGovernorV2 is
     /// - succeeded
     /// - active
     /// - cross chain vote collection period
+    /// - init
     /// Edge Case:
     ///   If proposal threshold is increased in an active governance proposal, and a user has proposed
     /// when they met the old proposal threshold, but not the new one, then anyone can cancel their proposal.
@@ -602,7 +610,10 @@ contract MultichainGovernorV2 is
 
         ProposalState proposalState = state(proposalId);
 
-        if (proposalState != ProposalState.Active) {
+        if (
+            proposalState != ProposalState.Active &&
+            proposalState != ProposalState.Init
+        ) {
             revert InvalidProposalState(proposalState, ProposalState.Active);
         }
 

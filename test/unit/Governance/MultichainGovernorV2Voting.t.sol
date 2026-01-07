@@ -938,6 +938,307 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
     }
 
     /// ========================================================================
+    /// V2-Specific: Init State Cancellation Tests
+    /// ========================================================================
+
+    function testCancelProposalInInitStateByProposer() public {
+        // Create a proposal without finalizing (Init state)
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            DESCRIPTION_URI,
+            false // Don't finalize
+        );
+
+        // Verify proposal is in Init state
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Init),
+            "proposal should be in Init state"
+        );
+
+        assertFalse(
+            governor.proposalActive(proposalId),
+            "proposal should not be active"
+        );
+
+        // Proposer cancels the Init proposal
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit ProposalCanceled(proposalId);
+
+        governor.cancel(proposalId);
+
+        // Verify proposal is now canceled
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Canceled),
+            "proposal should be canceled"
+        );
+
+        assertFalse(
+            governor.proposalActive(proposalId),
+            "proposal should not be active"
+        );
+    }
+
+    function testCancelProposalInInitStateIfProposerVotesBelowThreshold()
+        public
+    {
+        // Create a proposal without finalizing
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            DESCRIPTION_URI,
+            false
+        );
+
+        // Verify proposal is in Init state
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Init),
+            "proposal should be in Init state"
+        );
+
+        // Transfer away ALL voting power to drop below proposal threshold
+        well.transfer(address(0xdead), well.balanceOf(address(this)));
+        distributor.transfer(
+            address(0xdead),
+            distributor.balanceOf(address(this))
+        );
+
+        // Unstake from stkWellMoonbeam to remove staked voting power
+        uint256 stakedBalance = stkWellMoonbeam.balanceOf(address(this));
+        stkWellMoonbeam.cooldown();
+        vm.warp(block.timestamp + stkWellMoonbeam.COOLDOWN_SECONDS() + 1);
+        stkWellMoonbeam.redeem(address(this), stakedBalance);
+
+        // Transfer away all xWELL
+        xwell.transfer(address(0xdead), xwell.balanceOf(address(this)));
+
+        vm.roll(block.number + 1);
+
+        // Anyone can cancel if proposer votes dropped below threshold
+        vm.prank(address(0x123));
+        governor.cancel(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Canceled),
+            "proposal should be canceled"
+        );
+    }
+
+    function testCancelProposalInInitStateByNonProposerFails() public {
+        // Create a proposal without finalizing
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            DESCRIPTION_URI,
+            false
+        );
+
+        // Verify proposal is in Init state
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Init),
+            "proposal should be in Init state"
+        );
+
+        // Non-proposer tries to cancel (should fail since proposer still has enough votes)
+        vm.expectRevert(IMultichainGovernorV2.UnauthorizedCancel.selector);
+        vm.prank(address(0x123));
+        governor.cancel(proposalId);
+    }
+
+    function testCancelProposalInInitStateThenTryToFinalizeFails() public {
+        // Create a proposal without finalizing
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            DESCRIPTION_URI,
+            false
+        );
+
+        // Cancel the proposal
+        governor.cancel(proposalId);
+
+        // Try to finalize the canceled proposal (should fail)
+        (
+            address[] memory targets2,
+            uint256[] memory values2,
+            bytes[] memory calldatas2
+        ) = _getUpdateQuorumData();
+
+        vm.deal(address(this), bridgeCost);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMultichainGovernorV2.InvalidProposalState.selector,
+                IMultichainGovernorV2.ProposalState.Canceled,
+                IMultichainGovernorV2.ProposalState.Init
+            )
+        );
+        governor.propose{value: bridgeCost}(
+            proposalId,
+            targets2,
+            values2,
+            calldatas2,
+            true
+        );
+    }
+
+    function testInitProposalCannotBeVotedOn() public {
+        // Create a proposal without finalizing
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            DESCRIPTION_URI,
+            false
+        );
+
+        // Verify proposal is in Init state
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Init),
+            "proposal should be in Init state"
+        );
+
+        // Try to vote on Init proposal (should fail)
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMultichainGovernorV2.InvalidProposalState.selector,
+                IMultichainGovernorV2.ProposalState.Init,
+                IMultichainGovernorV2.ProposalState.Active
+            )
+        );
+        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+    }
+
+    function testInitProposalCannotBeRebroadcasted() public {
+        // Create a proposal without finalizing
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            DESCRIPTION_URI,
+            false
+        );
+
+        // Verify proposal is in Init state
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Init),
+            "proposal should be in Init state"
+        );
+
+        // Try to rebroadcast Init proposal (should fail)
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMultichainGovernorV2.InvalidProposalState.selector,
+                IMultichainGovernorV2.ProposalState.Init,
+                IMultichainGovernorV2.ProposalState.Active
+            )
+        );
+        governor.rebroadcastProposal(proposalId);
+    }
+
+    function testPauseWithInitProposalCancelsIt() public {
+        // Create a proposal without finalizing
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            DESCRIPTION_URI,
+            false
+        );
+
+        // Verify proposal is in Init state
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Init),
+            "proposal should be in Init state"
+        );
+
+        // Pause the governor
+        vm.prank(governor.pauseGuardian());
+        governor.pause();
+
+        // Verify the Init proposal was canceled
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Canceled),
+            "Init proposal should be canceled after pause"
+        );
+    }
+
+    /// ========================================================================
     /// View Function Tests
     /// ========================================================================
 

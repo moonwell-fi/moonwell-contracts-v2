@@ -114,7 +114,8 @@ interface IMultichainGovernorV2 {
         Canceled, // proposer canceled during active period, proposer votes fell below threshold and was canceled during active period, or contract was paused while proposal was in state Active, CrossChainVoteCollection or Succeeded
         Defeated, // nay votes are greater than or equal to yay votes or total votes are less than quorum
         Succeeded, // yay votes are greater than nay votes, total votes meet or exceed quorum
-        Executed // reached succeeded state, and proposal was successfully executed
+        Executed, // reached succeeded state, and proposal was successfully executed
+        Init // Proposal is in initialization phase, before the proposal is created and bridged out to other chains
     }
 
     struct ProposalInformation {
