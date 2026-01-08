@@ -4,51 +4,25 @@ pragma solidity 0.8.19;
 import {IMultichainVoteCollection} from "@protocol/governance/multichain/IMultichainVoteCollection.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
-import {SnapshotInterface} from "@protocol/governance/multichain/SnapshotInterface.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {IVotingPowerAggregator} from "@protocol/governance/multichain/IVotingPowerAggregator.sol";
 
 /// @notice Upgradeable contract, constructor disables the implementation contract
 /// This contract is intentionally as minimal as possible. It is only responsible for
-/// collecting votes on chains external to Moonbeam and broadcasting them back to
-/// Moonbeam. It does not have any logic for executing proposals or storing calldata.
+/// collecting votes on chains external to Ethereum and broadcasting them back to
+/// Ethereum. It does not have any logic for executing proposals or storing calldata.
 /// While a proposal is in the Cross Chain Vote Collection phase, the vote counts can
 /// be emitted as many times as any user wants. This is to allow users to have their
-/// votes counted on the Moonbeam contract. The Multichain Governor contract on
-/// Moonbeam will only allow receiving of votes for each chaind id and proposal id
+/// votes counted on the Ethereum contract. The Multichain Governor contract on
+/// Ethereum will only allow receiving of votes for each chaind id and proposal id
 /// once per proposal. This is to prevent votes from external chains being double
 /// counted.
-/// @custom:oz-upgrades-from MultichainVoteCollection
-contract MultichainVoteCollectionV2 is
+contract MultichainVoteCollectionMoonbeam is
     IMultichainVoteCollection,
     WormholeBridgeBase,
     Ownable2StepUpgradeable
 {
-    uint16 private constant MOOMBEAM_WORMHOLE_CHAIN_ID = 16;
-    address private constant MOONBEAM_GOVERNER_DEPRECATED =
-        0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4;
-
-    /// --------------------------------------------------------- ///
-    /// --------------------------------------------------------- ///
-    /// -------------------- STATE VARIABLES -------------------- ///
-    /// --------------------------------------------------------- ///
-    /// --------------------------------------------------------- ///
-
-    /// @dev DEPRECATED SLOT
-    xWELL public xWell;
-
-    /// @dev DEPRECATED SLOT
-    SnapshotInterface public stkWell;
-
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-    /// ----------------------- MAPPINGS ------------------------
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-
     /// @notice mapping from proposalId to MultichainProposal
     mapping(uint256 proposalId => MultichainProposal) public proposals;
 
@@ -61,25 +35,22 @@ contract MultichainVoteCollectionV2 is
         _disableInitializers();
     }
 
-    /// @notice initialize the governor contract
-    /// @param _xWell address of the xWELL token
-    /// @param _stkWell address of the stkWell token
-    /// @param _moonbeamGovernor address of the moonbeam governor contract
+    /// @notice initialize the contract
+    /// @param _votingPowerAggregator address of the voting power aggregator
+    /// @param _ethereumGovernor address of the new governor to add
     /// @param _wormholeRelayer address of the wormhole relayer
-    /// @param _moonbeamWormholeChainId chain id of the moonbeam chain
+    /// @param _ethereumWormholeChainId wormhole chain id of the new governor to add
     /// @param _owner address of the contract
     function initialize(
-        address _xWell,
-        address _stkWell,
-        address _moonbeamGovernor,
+        address _votingPowerAggregator,
+        address _ethereumGovernor,
         address _wormholeRelayer,
-        uint16 _moonbeamWormholeChainId,
+        uint16 _ethereumWormholeChainId,
         address _owner
     ) external initializer {
-        xWell = xWELL(_xWell);
-        stkWell = SnapshotInterface(_stkWell);
+        votingPower = IVotingPowerAggregator(_votingPowerAggregator);
 
-        _addTargetAddress(_moonbeamWormholeChainId, _moonbeamGovernor);
+        _addTargetAddress(_ethereumWormholeChainId, _ethereumGovernor);
 
         _setWormholeRelayer(_wormholeRelayer);
 
@@ -87,42 +58,6 @@ contract MultichainVoteCollectionV2 is
 
         __Ownable_init();
         _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
-    }
-
-    /// @notice initialize v2
-    /// @param _votingPowerAggregator address of the voting power aggregator
-    /// @param _ethereumWormholeChainId wormhole chain id of the new governor to add
-    /// @param _ethereumGovernor address of the new governor to add
-    /// @custom:oz-upgrades-validate-as-initializer
-    function initializeV2(
-        address _votingPowerAggregator,
-        uint16 _ethereumWormholeChainId,
-        address _ethereumGovernor
-    ) external reinitializer(2) {
-        require(
-            _votingPowerAggregator != address(0),
-            "MultichainVoteCollectionV2: voting power aggregator cannot be zero address"
-        );
-        require(
-            _ethereumGovernor != address(0),
-            "MultichainVoteCollectionV2: new governor cannot be zero address"
-        );
-
-        votingPower = IVotingPowerAggregator(_votingPowerAggregator);
-
-        // Remove old governor as trusted sender, add the new one
-        WormholeTrustedSender.TrustedSender[]
-            memory trustedSendersToRemove = new WormholeTrustedSender.TrustedSender[](
-                1
-            );
-        trustedSendersToRemove[0] = WormholeTrustedSender.TrustedSender({
-            chainId: MOOMBEAM_WORMHOLE_CHAIN_ID,
-            addr: MOONBEAM_GOVERNER_DEPRECATED
-        });
-        _removeTargetAddresses(trustedSendersToRemove);
-
-        // Add new governor as trusted sender
-        _addTargetAddress(_ethereumWormholeChainId, _ethereumGovernor);
     }
 
     /// --------------------------------------------------------- ///
@@ -204,6 +139,7 @@ contract MultichainVoteCollectionV2 is
     }
 
     /// @notice returns the total voting power for an address at a given timestamp
+    /// @dev only use timestamp to get the votes, even though the SnapshotInterface mentions block number
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
     function getVotes(

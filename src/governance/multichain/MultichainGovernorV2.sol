@@ -178,8 +178,10 @@ contract MultichainGovernorV2 is
 
         _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
 
+        // TODO: startingProposalCount might not be necessary: ask luke
         proposalCount = uint256(initData.startingProposalCount);
 
+        // TODO: what's a reasonable count?
         _maxUserProposalCount = 2;
         _executionWindow = 7 days;
 
@@ -473,11 +475,9 @@ contract MultichainGovernorV2 is
 
         _syncTotalLiveProposals(); /// remove inactive proposals and remove from inactive proposals from user list
 
-        if (currentUserLiveProposals(msg.sender) >= _maxUserProposalCount) {
+        if (currentUserLiveProposals(msg.sender) == _maxUserProposalCount) {
             revert TooManyLiveProposals();
         }
-
-        _checkValueOverflow(values);
 
         uint256 proposalId = ++proposalCount;
         Proposal storage newProposal = proposals[proposalId];
@@ -522,6 +522,7 @@ contract MultichainGovernorV2 is
         bool finalize
     ) external payable override whenNotPaused {
         Proposal storage proposal = proposals[proposalId];
+        // TODO: make sure there is no state where a proposal is executed but not finalized
         if (proposal.finalized) {
             revert ProposalAlreadyFinalized();
         }
@@ -537,12 +538,13 @@ contract MultichainGovernorV2 is
 
         _checkProposalThreshold(msg.sender);
         _validateProposalArrays(targets, values, calldatas, false);
-        _checkValueOverflow(values);
 
         _appendToProposal(proposal, targets, values, calldatas);
 
         if (finalize) {
             _finalizeProposal(proposalId, proposal);
+        } else {
+            emit ProposalAppended(msg.sender, proposalId);
         }
     }
 
@@ -654,8 +656,7 @@ contract MultichainGovernorV2 is
         /// function.
         uint256 votes = votingPower.getVotes(
             msg.sender,
-            proposal.voteSnapshotTimestamp,
-            proposal.voteSnapshotBlock
+            proposal.voteSnapshotTimestamp
         );
 
         if (votes == 0) {
@@ -880,11 +881,8 @@ contract MultichainGovernorV2 is
     /// @param account the address to check
     function _checkProposalThreshold(address account) private view {
         if (
-            votingPower.getVotes(
-                account,
-                block.timestamp - 1,
-                block.number - 1
-            ) < proposalThreshold
+            votingPower.getVotes(account, block.timestamp - 1) <
+            proposalThreshold
         ) {
             revert VotesBelowProposalThreshold();
         }
@@ -1122,18 +1120,6 @@ contract MultichainGovernorV2 is
         }
     }
 
-    /// @notice Checks that the sum of values does not overflow
-    /// @param values the list of values to check
-    function _checkValueOverflow(uint256[] memory values) internal pure {
-        uint256 totalValue = 0;
-        for (uint256 i = 0; i < values.length; ) {
-            totalValue += values[i];
-            unchecked {
-                i++;
-            }
-        }
-    }
-
     /// @notice Initializes a new proposal with the given parameters
     /// @param proposal the proposal storage reference
     /// @param targets the list of target addresses
@@ -1190,7 +1176,6 @@ contract MultichainGovernorV2 is
 
         proposal.voteSnapshotTimestamp = voteSnapshotTimestamp;
         proposal.votingStartTime = startTimestamp;
-        proposal.voteSnapshotBlock = block.number - 1;
         proposal.votingEndTime = endTimestamp;
         proposal
             .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;

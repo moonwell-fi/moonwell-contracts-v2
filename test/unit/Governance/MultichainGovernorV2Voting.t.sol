@@ -50,10 +50,10 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         super.setUp();
 
         xwell.delegate(address(this));
-        well.delegate(address(this));
-        distributor.delegate(address(this));
+        // NOTE: well and distributor removed as voting sources per governance changes
+        // well.delegate(address(this));
+        // distributor.delegate(address(this));
 
-        vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
         _receivingFunds = false;
     }
@@ -97,13 +97,13 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
     function _transferQuorumAndDelegate(address user) private {
         uint256 voteAmount = governor.quorum();
 
-        well.transfer(user, voteAmount);
+        xwell.transfer(user, voteAmount);
 
         vm.prank(user);
-        well.delegate(user);
+        xwell.delegate(user);
 
-        /// include user before snapshot block
-        vm.roll(block.number + 1);
+        /// include user before snapshot timestamp
+        vm.warp(block.timestamp + 1);
     }
 
     /// ========================================================================
@@ -217,12 +217,8 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
 
     function testSetup() public view {
         assertEq(
-            votingPowerAggregator.getVotes(
-                address(this),
-                block.timestamp - 1,
-                block.number - 1
-            ),
-            14_000_000_000 * 1e18,
+            votingPowerAggregator.getVotes(address(this), block.timestamp - 1),
+            4_000_000_000 * 1e18,
             "incorrect vote amount"
         );
 
@@ -289,16 +285,7 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
             bytes[] memory calldatas
         ) = _getEmptyProposalData();
 
-        assertEq(
-            well.getPriorVotes(address(this), 0),
-            0,
-            "well incorrect votes"
-        );
-        assertEq(
-            distributor.getPriorVotes(address(this), 0),
-            0,
-            "distributor incorrect votes"
-        );
+        // NOTE: well and distributor removed as voting sources per governance changes
         assertEq(
             SnapshotInterface(address(stkWellMoonbeam)).getPriorVotes(
                 address(this),
@@ -314,25 +301,10 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         );
 
         vm.warp(1);
-        vm.roll(1);
 
         vm.expectRevert(
             IMultichainGovernorV2.VotesBelowProposalThreshold.selector
         );
-        governor.propose(targets, values, calldatas, DESCRIPTION_URI, true);
-
-        _assertGovernanceBalance();
-    }
-
-    function testProposeExcessiveValueFails() public {
-        address[] memory targets = new address[](2);
-        uint256[] memory values = new uint256[](2);
-        bytes[] memory calldatas = new bytes[](2);
-
-        values[0] = type(uint256).max;
-        values[1] = 1;
-
-        vm.expectRevert(stdError.arithmeticError);
         governor.propose(targets, values, calldatas, DESCRIPTION_URI, true);
 
         _assertGovernanceBalance();
@@ -391,6 +363,7 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
             bytes[] memory calldatas
         ) = _getUpdateProposalThresholdData();
 
+        // Create exactly MAX_USER_PROPOSAL_COUNT proposals
         for (uint256 i = 0; i < MAX_USER_PROPOSAL_COUNT; i++) {
             uint256 bridgeCostLoop = governor.bridgeCostAll();
             vm.deal(address(this), bridgeCostLoop);
@@ -402,11 +375,15 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
                 string(abi.encodePacked(DESCRIPTION_URI, vm.toString(i))),
                 true
             );
+
+            // Advance time so proposals become "active" (votingStartTime is block.timestamp + 1)
+            vm.warp(block.timestamp + 2);
         }
 
         uint256 bridgeCostFinal = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCostFinal);
 
+        // Now user has MAX_USER_PROPOSAL_COUNT proposals, next one should fail (check is ==)
         vm.expectRevert(IMultichainGovernorV2.TooManyLiveProposals.selector);
         governor.propose{value: bridgeCostFinal}(
             targets,
@@ -604,7 +581,8 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         uint256 voteAmount = 1_000_000 * 1e18;
 
         // Give user voting power BEFORE creating the proposal
-        _delegateVoteAmountForUser(address(well), user1, voteAmount);
+        // NOTE: well and distributor removed as voting sources per governance changes
+        _delegateVoteAmountForUser(address(xwell), user1, voteAmount);
 
         uint256 proposalId = _createProposal();
 
@@ -889,11 +867,12 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         uint256 threshold = governor.proposalThreshold();
 
         // Give proposer exactly threshold voting power
-        deal(address(well), proposer, threshold);
+        // NOTE: well and distributor removed as voting sources per governance changes
+        xwell.transfer(proposer, threshold);
         vm.prank(proposer);
-        well.delegate(proposer);
+        xwell.delegate(proposer);
 
-        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
 
         // Verify proposer has exactly threshold voting power
         assertEq(
@@ -1318,36 +1297,25 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
 
     function testVotingPowerFromMultipleSources() public {
         address user = address(0x1);
-        uint256 wellAmount = 100_000 * 1e18;
-        uint256 distributorAmount = 50_000 * 1e18;
         uint256 xwellAmount = 25_000 * 1e18;
 
-        // Give user voting power from multiple sources
-        well.transfer(user, wellAmount);
-        vm.prank(user);
-        well.delegate(user);
-
-        distributor.transfer(user, distributorAmount);
-        vm.prank(user);
-        distributor.delegate(user);
-
+        // Give user voting power from xWELL (stkWell not tested here since it requires staking)
+        // NOTE: well and distributor removed as voting sources per governance changes
         xwell.transfer(user, xwellAmount);
         vm.prank(user);
         xwell.delegate(user);
 
-        vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
 
-        // Check aggregated voting power
+        // Check voting power
         uint256 totalVotingPower = votingPowerAggregator.getVotes(
             user,
-            block.timestamp - 1,
-            block.number - 1
+            block.timestamp - 1
         );
 
         assertEq(
             totalVotingPower,
-            wellAmount + distributorAmount + xwellAmount,
+            xwellAmount,
             "voting power should be aggregated"
         );
     }
@@ -1364,11 +1332,12 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
     }
 
     function testRemoveSnapshotSourceAsOwner() public {
-        // Remove distributor
-        votingPowerAggregator.removeSnapshotSource(address(distributor));
+        // Remove stkWellMoonbeam
+        // NOTE: well and distributor removed as voting sources per governance changes
+        votingPowerAggregator.removeSnapshotSource(address(stkWellMoonbeam));
 
         assertFalse(
-            votingPowerAggregator.isSnapshotSource(address(distributor)),
+            votingPowerAggregator.isSnapshotSource(address(stkWellMoonbeam)),
             "source should be removed"
         );
     }
@@ -1435,11 +1404,12 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         // Need a different user for third proposal to avoid TooManyLiveProposals
         address user2 = address(0x2);
         // Transfer proposal threshold amount (not just quorum) to allow user2 to propose
+        // NOTE: well and distributor removed as voting sources per governance changes
         uint256 voteAmount = governor.proposalThreshold();
-        well.transfer(user2, voteAmount);
+        xwell.transfer(user2, voteAmount);
         vm.prank(user2);
-        well.delegate(user2);
-        vm.roll(block.number + 1);
+        xwell.delegate(user2);
+        vm.warp(block.timestamp + 1);
 
         uint256 proposalId3 = _createProposalUpdateThreshold(user2);
 

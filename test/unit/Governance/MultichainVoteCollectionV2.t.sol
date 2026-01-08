@@ -34,12 +34,8 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
 
     function testSetup() public view {
         assertEq(
-            votingPowerAggregator.getVotes(
-                address(this),
-                block.timestamp - 1,
-                block.number - 1
-            ),
-            14_000_000_000 * 1e18,
+            votingPowerAggregator.getVotes(address(this), block.timestamp - 1),
+            4_000_000_000 * 1e18,
             "incorrect vote amount"
         );
         assertEq(
@@ -454,9 +450,8 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
         vm.prank(user3);
         xwell.delegate(user3);
 
-        /// include users before snapshot block
+        /// include users before snapshot timestamp
         vm.warp(block.timestamp + 1);
-        vm.roll(block.number + 1);
 
         uint256 snapshotTimestamp = block.timestamp - 1;
         uint256 proposalId = _createProposalUpdateThreshold(address(this));
@@ -470,7 +465,6 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
         ) = voteCollection.proposalVotes(proposalId);
 
         vm.warp(block.timestamp + 1);
-        vm.roll(block.number + 1);
 
         {
             vm.prank(user1);

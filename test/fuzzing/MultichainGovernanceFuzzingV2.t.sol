@@ -100,11 +100,7 @@ contract MultichainGovernanceFuzzingV2 is MultichainBaseTestV2 {
         // check vote amount for users - V2: use votingPowerAggregator
         for (uint256 i = 0; i < voters; i++) {
             assertEq(
-                votingPowerAggregator.getVotes(
-                    users[i],
-                    block.timestamp - 1,
-                    block.number - 1
-                ),
+                votingPowerAggregator.getVotes(users[i], block.timestamp - 1),
                 voteAmount,
                 "incorrect vote amount"
             );
@@ -246,11 +242,7 @@ contract MultichainGovernanceFuzzingV2 is MultichainBaseTestV2 {
             if (voteAmounts[i] == 0) continue;
 
             assertEq(
-                votingPowerAggregator.getVotes(
-                    users[i],
-                    block.timestamp - 1,
-                    block.number - 1
-                ),
+                votingPowerAggregator.getVotes(users[i], block.timestamp - 1),
                 voteAmounts[i],
                 "Incorrect vote amount for user"
             );

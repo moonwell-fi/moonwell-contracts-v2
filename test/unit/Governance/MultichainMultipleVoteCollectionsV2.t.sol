@@ -27,12 +27,8 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
 
     function testSetup() public view {
         assertEq(
-            votingPowerAggregator.getVotes(
-                address(this),
-                block.timestamp - 1,
-                block.number - 1
-            ),
-            14_000_000_000 * 1e18,
+            votingPowerAggregator.getVotes(address(this), block.timestamp - 1),
+            4_000_000_000 * 1e18,
             "incorrect vote amount"
         );
         assertEq(
@@ -249,13 +245,13 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
 
         address proposer = address(1);
 
+        // NOTE: well and distributor removed as voting sources per governance changes
         _delegateVoteAmountForUser(
-            address(well),
+            address(xwell),
             proposer,
             governor.proposalThreshold()
         );
 
-        vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
 
         uint256 bridgeCost = governor.bridgeCostAll();

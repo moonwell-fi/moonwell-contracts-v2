@@ -16,6 +16,9 @@ This refactor contains a few major changes
 5. custom revert errors
 6. reducing contract size: removing unused `getUserLiveProposals()` view
    function and changing `whitelistedCalldatas` from public to private
+7. changes in vote sources, only using timestamps now and assuming that stkwell
+   will be upgraded, and well + distributor contracts on moonbeam will not be
+   used
 
 ## Changes in detail
 
@@ -87,6 +90,9 @@ The onchain value for this is `false` - and given the value is updated by
 governance, it was assumed this value could remain false - which would mean all
 snapshot sources use `block.number` when getting the vote snapshot.
 
+Moonbeam version of stkWell is old and using blocknumber for the snapshots. We
+must preserve this functionality on Moonbeam.
+
 ### custom revert errors
 
 Instead of `require()` with string literals, we use the more gas efficient
@@ -112,3 +118,25 @@ new `VotingPowerAggregator` contract. An instance of this contract should have
 
 The already deployed instances (ie on Base, Optimism) of this contract need to
 be re initialized.
+
+### changes in vote sources
+
+Given that we are standardizing the `VotingPowerAggregator` contract for voting
+sources across all chains, we realized that the Moonbeam voting sources included
+contracts (well, distributor) that relied on the `block.number` for the
+snapshots, while the rest of the chains only used timestamps. Since the new
+governor will be on Ethereum, and cannot rely on the blocknumber on Moonbeam for
+these contracts.
+
+Furthermore, most holders have migrated to the xWell token. The plan is to
+upgrade the stkWell contract on all chains to a) remove a faulty function
+(unrelated) and b) switch the snapshot logic to use timestamps.
+
+For these reasons, we will be
+
+1. removing the well and distributor contracts as voting sources on Moonbeam
+   (most users have migrated to xWell and can use timelock contract for voting.
+   as for distributor, most tokens have vested)
+2. assuming that stkWell will be upgraded to use timestamps for snapshot voting
+3. removing any use of block numbers from `MultichainVoteCollectionV2` and
+   `VotingPowerAggregator`

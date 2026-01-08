@@ -63,6 +63,7 @@ interface IMultichainGovernorV2 {
         uint256 proposalId,
         string descriptionUri
     );
+    event ProposalAppended(address proposer, uint256 proposalId);
     event ProposalCreated(
         uint256 id,
         address proposer,
@@ -160,8 +161,6 @@ interface IMultichainGovernorV2 {
         /// @notice The timestamp at which cross chain voting collection ends:
         /// votes must be registered prior to or by this time
         uint256 crossChainVoteCollectionEndTimestamp;
-        /// @notice The block at which voting snapshot is taken: holders must have delegated their votes prior to this block
-        uint256 voteSnapshotBlock;
         /// @notice Current number of votes in favor of this proposal
         uint256 forVotes;
         /// @notice Current number of votes in opposition to this proposal

@@ -53,11 +53,9 @@ contract VotingPowerAggregator is
     /// @notice returns the total voting power for an address at a given block number and timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
-    /// @param blockNumber The block number to check the balance at
     function getVotes(
         address account,
-        uint256 timestamp,
-        uint256 blockNumber
+        uint256 timestamp
     ) external view returns (uint256) {
         uint256 totalVotes = 0;
         address[] memory sources = _snapshotSources.values();
@@ -65,14 +63,14 @@ contract VotingPowerAggregator is
         for (uint256 i = 0; i < sources.length; ) {
             totalVotes += SnapshotInterface(sources[i]).getPriorVotes(
                 account,
-                blockNumber
+                timestamp
             );
             unchecked {
                 i++;
             }
         }
 
-        totalVotes += _getCustomPastVotes(account, blockNumber, timestamp);
+        totalVotes += _getCustomPastVotes(account, timestamp);
 
         return totalVotes;
     }
@@ -103,7 +101,6 @@ contract VotingPowerAggregator is
 
     function _getCustomPastVotes(
         address account,
-        uint256, // blockNumber
         uint256 timestamp
     ) private view returns (uint256) {
         return xWell.getPastVotes(account, timestamp);

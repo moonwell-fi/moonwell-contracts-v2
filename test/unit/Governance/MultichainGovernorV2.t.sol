@@ -140,14 +140,8 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
             address(xwell),
             "xWell address"
         );
-        assertTrue(
-            votingPowerAggregator.isSnapshotSource(address(well)),
-            "well not in snapshot sources"
-        );
-        assertTrue(
-            votingPowerAggregator.isSnapshotSource(address(distributor)),
-            "distributor not in snapshot sources"
-        );
+        // NOTE: well and distributor removed as voting sources per governance changes
+        // Most users have migrated to xWell, and distributor tokens have mostly vested
         assertTrue(
             votingPowerAggregator.isSnapshotSource(address(stkWellMoonbeam)),
             "stkWellMoonbeam not in snapshot sources"

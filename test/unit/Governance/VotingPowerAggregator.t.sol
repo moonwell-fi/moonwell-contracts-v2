@@ -370,20 +370,15 @@ contract VotingPowerAggregatorUnitTest is Test {
     /// Voting Power Calculation Tests - getVotes (Historical)
     /// ========================================================================
 
-    function testGetVotesWithHistoricalBlockAndTimestamp() public {
+    function testGetVotesWithHistoricalTimestamp() public {
         votingPowerAggregator.addSnapshotSource(address(source1));
 
-        uint256 blockNumber = 100;
         uint256 timestamp = 1000;
         uint256 votingPower = 100_000 * 1e18;
 
-        source1.setPriorVotes(user1, blockNumber, votingPower);
+        source1.setPriorVotes(user1, timestamp, votingPower);
 
-        uint256 totalVotes = votingPowerAggregator.getVotes(
-            user1,
-            timestamp,
-            blockNumber
-        );
+        uint256 totalVotes = votingPowerAggregator.getVotes(user1, timestamp);
 
         assertEq(
             totalVotes,
@@ -396,19 +391,14 @@ contract VotingPowerAggregatorUnitTest is Test {
         votingPowerAggregator.addSnapshotSource(address(source1));
         votingPowerAggregator.addSnapshotSource(address(source2));
 
-        uint256 blockNumber = 100;
         uint256 timestamp = 1000;
         uint256 votes1 = 100_000 * 1e18;
         uint256 votes2 = 50_000 * 1e18;
 
-        source1.setPriorVotes(user1, blockNumber, votes1);
-        source2.setPriorVotes(user1, blockNumber, votes2);
+        source1.setPriorVotes(user1, timestamp, votes1);
+        source2.setPriorVotes(user1, timestamp, votes2);
 
-        uint256 totalVotes = votingPowerAggregator.getVotes(
-            user1,
-            timestamp,
-            blockNumber
-        );
+        uint256 totalVotes = votingPowerAggregator.getVotes(user1, timestamp);
 
         assertEq(
             totalVotes,
@@ -420,19 +410,14 @@ contract VotingPowerAggregatorUnitTest is Test {
     function testGetVotesIncludesXWellHistorical() public {
         votingPowerAggregator.addSnapshotSource(address(source1));
 
-        uint256 blockNumber = 100;
         uint256 timestamp = 1000;
         uint256 sourceVotes = 100_000 * 1e18;
         uint256 xwellVotes = 50_000 * 1e18;
 
-        source1.setPriorVotes(user1, blockNumber, sourceVotes);
+        source1.setPriorVotes(user1, timestamp, sourceVotes);
         xwell.setPastVotes(user1, timestamp, xwellVotes);
 
-        uint256 totalVotes = votingPowerAggregator.getVotes(
-            user1,
-            timestamp,
-            blockNumber
-        );
+        uint256 totalVotes = votingPowerAggregator.getVotes(user1, timestamp);
 
         assertEq(
             totalVotes,
@@ -442,17 +427,12 @@ contract VotingPowerAggregatorUnitTest is Test {
     }
 
     function testGetVotesWithZeroSourcesOnlyXWell() public {
-        uint256 blockNumber = 100;
         uint256 timestamp = 1000;
         uint256 xwellVotes = 75_000 * 1e18;
 
         xwell.setPastVotes(user1, timestamp, xwellVotes);
 
-        uint256 totalVotes = votingPowerAggregator.getVotes(
-            user1,
-            timestamp,
-            blockNumber
-        );
+        uint256 totalVotes = votingPowerAggregator.getVotes(user1, timestamp);
 
         assertEq(
             totalVotes,
@@ -464,14 +444,9 @@ contract VotingPowerAggregatorUnitTest is Test {
     function testGetVotesWithEmptyAccountHistorical() public {
         votingPowerAggregator.addSnapshotSource(address(source1));
 
-        uint256 blockNumber = 100;
         uint256 timestamp = 1000;
 
-        uint256 totalVotes = votingPowerAggregator.getVotes(
-            user1,
-            timestamp,
-            blockNumber
-        );
+        uint256 totalVotes = votingPowerAggregator.getVotes(user1, timestamp);
 
         assertEq(
             totalVotes,
@@ -683,16 +658,14 @@ contract VotingPowerAggregatorUnitTest is Test {
         xwell.setVotes(user1, xwellVotesCurrent);
 
         // Set same votes for historical
-        uint256 blockNumber = 100;
         uint256 timestamp = 1000;
-        source1.setPriorVotes(user1, blockNumber, votes);
+        source1.setPriorVotes(user1, timestamp, votes);
         xwell.setPastVotes(user1, timestamp, xwellVotesPast);
 
         uint256 currentVotes = votingPowerAggregator.getCurrentVotes(user1);
         uint256 historicalVotes = votingPowerAggregator.getVotes(
             user1,
-            timestamp,
-            blockNumber
+            timestamp
         );
 
         assertEq(

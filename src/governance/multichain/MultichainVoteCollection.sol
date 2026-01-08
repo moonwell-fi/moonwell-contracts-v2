@@ -18,6 +18,7 @@ import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 /// Moonbeam will only allow receiving of votes for each chaind id and proposal id
 /// once per proposal. This is to prevent votes from external chains being double
 /// counted.
+/// NOTE: this contract is upgraded to MultichainVoteCollectionV2
 contract MultichainVoteCollection is
     IMultichainVoteCollection,
     WormholeBridgeBase,

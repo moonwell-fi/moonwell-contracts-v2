@@ -11,6 +11,7 @@ import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainVoteCollectionV2} from "@protocol/governance/multichain/MultichainVoteCollectionV2.sol";
+import {MultichainVoteCollectionMoonbeam} from "@protocol/governance/multichain/MultichainVoteCollectionMoonbeam.sol";
 import {VotingPowerAggregator} from "@protocol/governance/multichain/VotingPowerAggregator.sol";
 
 /// Helper contract to deploy MultichainGovernor, MultichainVoteCollection,
@@ -159,13 +160,94 @@ contract MultichainGovernorDeploy is Test {
         );
 
         // Call initializeV2 with VotingPowerAggregator
-        // Note: For new deployments, we pass address(0) for old governor since there's nothing to remove
+        // The new initializeV2 signature only takes 3 parameters:
+        // - votingPowerAggregator
+        // - ethereumWormholeChainId (for the new governor)
+        // - ethereumGovernor (address of the new governor)
+        // The old Moonbeam governor is hardcoded as a constant and removed automatically
         MultichainVoteCollectionV2(proxy).initializeV2(
             votingPowerProxy,
-            0, // oldGovernorChainId - not applicable for new deployment
-            address(0), // oldGovernor - not applicable for new deployment
-            moonbeamWormholeChainId, // newGovernorChainId - redundant but kept for consistency
-            moonbeamGovernor // newGovernor - already added in V1 initialize, but will be readded
+            moonbeamWormholeChainId,
+            moonbeamGovernor
+        );
+    }
+
+    // Internal hook for deploying VotingPowerAggregator for Moonbeam
+    // Can be overridden in tests to use MockVotingPowerAggregator
+    function _deployVotingPowerAggregatorForMoonbeam(
+        address xWell,
+        address stkWell,
+        address proxyAdmin,
+        address owner
+    ) internal virtual returns (address votingPowerProxy) {
+        address votingPowerImpl = address(new VotingPowerAggregator());
+
+        bytes memory votingPowerInitData = abi.encodeWithSignature(
+            "initialize(address,address)",
+            owner,
+            xWell
+        );
+
+        votingPowerProxy = address(
+            new TransparentUpgradeableProxy(
+                votingPowerImpl,
+                proxyAdmin,
+                votingPowerInitData
+            )
+        );
+
+        // Add snapshot sources for Moonbeam
+        // NOTE: well and distributor removed as voting sources per governance changes
+        // Most users have migrated to xWell, and distributor tokens have mostly vested
+        // xWell is already added through the VotingPowerAggregator's _getCustomVotes
+        vm.startPrank(owner);
+        VotingPowerAggregator(votingPowerProxy).addSnapshotSource(stkWell);
+        vm.stopPrank();
+    }
+
+    // Moonbeam-specific version that uses MultichainVoteCollectionMoonbeam
+    function deployVoteCollectionMoonbeam(
+        address votingPowerAggregator,
+        address xWell,
+        address stkWell,
+        address ethereumGovernor,
+        address relayer,
+        uint16 ethereumWormholeChainId,
+        address proxyAdmin,
+        address owner
+    ) public virtual returns (address proxy, address voteCollectionImpl) {
+        // Deploy VotingPowerAggregator if not provided
+        address votingPowerProxy = votingPowerAggregator;
+        if (votingPowerProxy == address(0)) {
+            votingPowerProxy = _deployVotingPowerAggregatorForMoonbeam(
+                xWell,
+                stkWell,
+                proxyAdmin,
+                owner
+            );
+        }
+
+        // Deploy MultichainVoteCollectionMoonbeam with initialize
+        bytes memory initData = abi.encodeWithSignature(
+            "initialize(address,address,address,uint16,address)",
+            votingPowerProxy,
+            ethereumGovernor,
+            relayer,
+            ethereumWormholeChainId,
+            owner
+        );
+
+        voteCollectionImpl = address(new MultichainVoteCollectionMoonbeam());
+
+        console.log("proxy constructor calldata vote collection Moonbeam: ");
+        console.logBytes(abi.encode(voteCollectionImpl, proxyAdmin, initData));
+
+        proxy = address(
+            new TransparentUpgradeableProxy(
+                voteCollectionImpl,
+                proxyAdmin,
+                initData
+            )
         );
     }
 

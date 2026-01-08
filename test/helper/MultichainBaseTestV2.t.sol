@@ -16,6 +16,7 @@ import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MockMultichainGovernorV2} from "@test/mock/MockMultichainGovernorV2.sol";
 import {MockVotingPowerAggregator} from "@test/mock/MockVotingPowerAggregator.sol";
 import {MultichainVoteCollectionV2} from "@protocol/governance/multichain/MultichainVoteCollectionV2.sol";
+import {MultichainVoteCollectionMoonbeam} from "@protocol/governance/multichain/MultichainVoteCollectionMoonbeam.sol";
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernorV2, MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
@@ -37,8 +38,11 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice reference to the mock wormhole trusted sender contract
     WormholeRelayerAdapter public wormholeRelayerAdapter;
 
-    /// @notice reference to the Multichain vote collection contract
+    /// @notice reference to the Multichain vote collection contract (Base/OP version)
     MultichainVoteCollectionV2 public voteCollection;
+
+    /// @notice reference to the Multichain vote collection contract (Moonbeam version)
+    MultichainVoteCollectionMoonbeam public voteCollectionMoonbeam;
 
     /// @notice reference to the Multichain governor logic contract
     MockMultichainGovernorV2 public governorLogic;
@@ -180,9 +184,9 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         proxyAdmin = address(new ProxyAdmin());
         {
-            /// deploy staked well with Block numbers instead of timestamps
-            /// to mock the system on moonbeam
-            (address stkWellProxy, ) = deployStakedWellMock(
+            /// deploy staked well with timestamps (upgraded to use timestamps per governance changes)
+            /// all chains now use timestamps instead of block numbers
+            (address stkWellProxy, ) = deployStakedWell(
                 address(xwellProxy),
                 address(xwellProxy),
                 1 days,
@@ -197,8 +201,7 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
         }
 
         {
-            /// deploy staked well with Block timestamps
-            /// to mock the system on base
+            /// deploy staked well with timestamps
             (address stkWellProxy, ) = deployStakedWell(
                 address(xwellProxy),
                 address(xwellProxy),
@@ -232,8 +235,8 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
         );
 
         // Add snapshot sources to VotingPowerAggregator
-        votingPowerAggregator.addSnapshotSource(address(well));
-        votingPowerAggregator.addSnapshotSource(address(distributor));
+        // NOTE: well and distributor removed as voting sources per governance changes
+        // Most users have migrated to xWell, and distributor tokens have mostly vested
         votingPowerAggregator.addSnapshotSource(address(stkWellMoonbeam));
 
         // Deploy wormhole relayer adapter
@@ -295,7 +298,24 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         voteCollection = MultichainVoteCollectionV2(voteCollectionProxy);
 
-        // Update trusted sender to point to vote collection
+        // Deploy vote collection Moonbeam version with its own VotingPowerAggregator
+        // VoteCollection needs xWell + well + distributor + stkWell sources (Moonbeam pattern)
+        (address voteCollectionMoonbeamProxy, ) = deployVoteCollectionMoonbeam(
+            address(0), // create a new VotingPowerAggregator for vote collection
+            address(xwell),
+            address(stkWellMoonbeam), // Use Moonbeam stkWell not Base
+            address(governor),
+            address(wormholeRelayerAdapter),
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            proxyAdmin,
+            address(this) // owner
+        );
+
+        voteCollectionMoonbeam = MultichainVoteCollectionMoonbeam(
+            voteCollectionMoonbeamProxy
+        );
+
+        // Update trusted sender to point to vote collection (V2 by default)
         vm.prank(address(governor));
         governor.removeExternalChainConfigs(trustedSenders);
 
@@ -325,7 +345,6 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
         well.delegate(address(this));
         distributor.delegate(address(this));
 
-        vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
     }
 
@@ -377,6 +396,7 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
     )
         internal
         view
+        virtual
         returns (
             IMultichainGovernorV2.ProposalInformation memory proposalInformation
         )
@@ -422,8 +442,8 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
             IStakedWell(token).stake(user, voteAmount);
         }
 
-        /// include user before snapshot block
-        vm.roll(block.number + 1);
+        /// include user before snapshot timestamp
+        vm.warp(block.timestamp + 1);
     }
 
     function _assertGovernanceBalance() internal view {
@@ -434,5 +454,28 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
             0,
             "vote collection has ether"
         );
+    }
+
+    // Override to use MockVotingPowerAggregator in tests instead of real implementation
+    function _deployVotingPowerAggregatorForMoonbeam(
+        address xWell,
+        address stkWell,
+        address _proxyAdmin,
+        address owner
+    ) internal override returns (address votingPowerProxy) {
+        MockVotingPowerAggregator vpaImpl = new MockVotingPowerAggregator();
+
+        TransparentUpgradeableProxy vpaProxy = new TransparentUpgradeableProxy(
+            address(vpaImpl),
+            _proxyAdmin,
+            abi.encodeWithSignature("initialize(address,address)", owner, xWell)
+        );
+        votingPowerProxy = address(vpaProxy);
+
+        // Add snapshot sources for Moonbeam
+        // NOTE: well and distributor removed as voting sources per governance changes
+        // Most users have migrated to xWell, and distributor tokens have mostly vested
+        // xWell is already added through the VotingPowerAggregator's _getCustomVotes
+        MockVotingPowerAggregator(votingPowerProxy).addSnapshotSource(stkWell);
     }
 }

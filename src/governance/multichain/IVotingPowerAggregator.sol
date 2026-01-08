@@ -10,12 +10,9 @@ interface IVotingPowerAggregator {
     function addSnapshotSource(address source) external;
     function removeSnapshotSource(address source) external;
     function isSnapshotSource(address source) external view returns (bool);
-
     function getVotes(
         address account,
-        uint256 timestamp,
-        uint256 blockNumber
+        uint256 timestamp
     ) external view returns (uint256);
-
     function getCurrentVotes(address account) external view returns (uint256);
 }
