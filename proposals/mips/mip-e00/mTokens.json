@@ -101,7 +101,7 @@
         "seizeShare": 0.03e18,
         "supplyCap": 20000e18,
         "borrowCap": 5000e18,
-        "priceFeedName": "WSTETH_USD_COMPOSITE_ORACLE",
+        "priceFeedName": "WSTETH_USD_ORACLE",
         "tokenAddressName": "wstETH",
         "name": "Moonwell wstETH",
         "symbol": "mwstETH",

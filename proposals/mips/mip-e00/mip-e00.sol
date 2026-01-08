@@ -101,7 +101,7 @@ contract mipe00 is HybridProposal, Configs {
         deployAndMint(addresses);
         init(addresses);
 
-        /// ------- Composite Oracles for LSTs -------
+        /// ------- Composite Oracle for weETH -------
         {
             /// weETH/USD composite oracle = ETH/USD * weETH/ETH
             address weEthCompositeOracle = address(
@@ -115,19 +115,7 @@ contract mipe00 is HybridProposal, Configs {
                 "WEETH_USD_COMPOSITE_ORACLE",
                 weEthCompositeOracle
             );
-
-            /// wstETH/USD composite oracle = ETH/USD * stETH/ETH * wstETH/stETH
-            address wstEthCompositeOracle = address(
-                new ChainlinkCompositeOracle(
-                    addresses.getAddress("CHAINLINK_ETH_USD"),
-                    addresses.getAddress("CHAINLINK_STETH_ETH"),
-                    addresses.getAddress("CHAINLINK_WSTETH_STETH")
-                )
-            );
-            addresses.addAddress(
-                "WSTETH_USD_COMPOSITE_ORACLE",
-                wstEthCompositeOracle
-            );
+            /// Note: wstETH uses pre-built WSTETH_USD_ORACLE from chains/1.json
         }
 
         /// ------- Reward Distributor -------

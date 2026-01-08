@@ -80,8 +80,8 @@
         "isContract": true
     },
     {
-        "addr": "0xB4c4a493AB6356497713A78FFA6c60FB53517c63",
-        "name": "CHAINLINK_WSTETH_STETH",
+        "addr": "0x8b6851156023f4f5a66f68bea80851c3d905ac93",
+        "name": "WSTETH_USD_ORACLE",
         "isContract": true
     },
     {
@@ -107,17 +107,17 @@
     {
         "addr": "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
         "name": "PAUSE_GUARDIAN",
-        "isContract": true
+        "isContract": false
     },
     {
         "addr": "0x446342AF4F3bCD374276891C6bb3411bf2F8779E",
         "name": "SECURITY_COUNCIL",
-        "isContract": true
+        "isContract": false
     },
     {
         "addr": "0x35b3314EA652899154BbfE937E3cCC2775ba712e",
         "name": "BORROW_SUPPLY_GUARDIAN",
-        "isContract": true
+        "isContract": false
     },
     {
         "addr": "0x6b175474e89094c44da98b954eedeac495271d0f",
