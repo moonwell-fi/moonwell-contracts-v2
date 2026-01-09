@@ -89,7 +89,7 @@ contract mipe00 is HybridProposal, Configs {
                 block.chainid.toMoonbeamChainId()
             );
 
-            /// this will be the governor for all the contracts
+            /// TODO: change this later to MultichainGovernorV2
             TemporalGovernor governor = new TemporalGovernor(
                 addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for Ethereum
                 temporalGovDelay[block.chainid], // get timelock period
