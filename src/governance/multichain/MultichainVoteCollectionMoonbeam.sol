@@ -1,76 +1,56 @@
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
 import {IMultichainVoteCollection} from "@protocol/governance/multichain/IMultichainVoteCollection.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
-import {SnapshotInterface} from "@protocol/governance/multichain/SnapshotInterface.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
+import {IVotingPowerAggregator} from "@protocol/governance/multichain/IVotingPowerAggregator.sol";
 
 /// @notice Upgradeable contract, constructor disables the implementation contract
 /// This contract is intentionally as minimal as possible. It is only responsible for
-/// collecting votes on chains external to Moonbeam and broadcasting them back to
-/// Moonbeam. It does not have any logic for executing proposals or storing calldata.
+/// collecting votes on chains external to Ethereum and broadcasting them back to
+/// Ethereum. It does not have any logic for executing proposals or storing calldata.
 /// While a proposal is in the Cross Chain Vote Collection phase, the vote counts can
 /// be emitted as many times as any user wants. This is to allow users to have their
-/// votes counted on the Moonbeam contract. The Multichain Governor contract on
-/// Moonbeam will only allow receiving of votes for each chaind id and proposal id
+/// votes counted on the Ethereum contract. The Multichain Governor contract on
+/// Ethereum will only allow receiving of votes for each chaind id and proposal id
 /// once per proposal. This is to prevent votes from external chains being double
 /// counted.
-/// NOTE: this contract is upgraded to MultichainVoteCollectionV2
-contract MultichainVoteCollection is
+contract MultichainVoteCollectionMoonbeam is
     IMultichainVoteCollection,
     WormholeBridgeBase,
     Ownable2StepUpgradeable
 {
-    /// --------------------------------------------------------- ///
-    /// --------------------------------------------------------- ///
-    /// -------------------- STATE VARIABLES -------------------- ///
-    /// --------------------------------------------------------- ///
-    /// --------------------------------------------------------- ///
-
-    /// @notice reference to the xWELL token
-    xWELL public xWell;
-
-    /// @notice reference to the stkWELL token
-    /// this stkWELL version uses timestamps instead of block number
-    SnapshotInterface public stkWell;
-
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-    /// ----------------------- MAPPINGS ------------------------
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-
     /// @notice mapping from proposalId to MultichainProposal
     mapping(uint256 proposalId => MultichainProposal) public proposals;
 
-    /// @notice disable the initializer to stop governance hijacking
-    /// and avoid selfdestruct attacks.
+    /// @notice reference to the voting power aggregator
+    IVotingPowerAggregator public votingPower;
+
+    /// @notice disable the initializer to stop governance hijacking and avoid selfdestruct attacks.
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    /// @notice initialize the governor contract
-    /// @param _xWell address of the xWELL token
-    /// @param _stkWell address of the stkWell token
-    /// @param _moonbeamGovernor address of the moonbeam governor contract
+    /// @notice initialize the contract
+    /// @param _votingPowerAggregator address of the voting power aggregator
+    /// @param _ethereumGovernor address of the new governor to add
     /// @param _wormholeRelayer address of the wormhole relayer
-    /// @param _moonbeamWormholeChainId chain id of the moonbeam chain
+    /// @param _ethereumWormholeChainId wormhole chain id of the new governor to add
     /// @param _owner address of the contract
     function initialize(
-        address _xWell,
-        address _stkWell,
-        address _moonbeamGovernor,
+        address _votingPowerAggregator,
+        address _ethereumGovernor,
         address _wormholeRelayer,
-        uint16 _moonbeamWormholeChainId,
+        uint16 _ethereumWormholeChainId,
         address _owner
     ) external initializer {
-        xWell = xWELL(_xWell);
-        stkWell = SnapshotInterface(_stkWell);
+        votingPower = IVotingPowerAggregator(_votingPowerAggregator);
 
-        _addTargetAddress(_moonbeamWormholeChainId, _moonbeamGovernor);
+        _addTargetAddress(_ethereumWormholeChainId, _ethereumGovernor);
 
         _setWormholeRelayer(_wormholeRelayer);
 
@@ -158,17 +138,15 @@ contract MultichainVoteCollection is
         abstainVotes = proposal.votes.abstainVotes;
     }
 
-    /// @notice returns the total voting power for an address at a given block number and timestamp
-    /// returns the sum of votes across both xWELL and stkWELL at the given timestamp
+    /// @notice returns the total voting power for an address at a given timestamp
+    /// @dev only use timestamp to get the votes, even though the SnapshotInterface mentions block number
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
     function getVotes(
         address account,
         uint256 timestamp
     ) public view returns (uint256) {
-        return
-            xWell.getPastVotes(account, timestamp) +
-            stkWell.getPriorVotes(account, timestamp);
+        return votingPower.getVotes(account, timestamp);
     }
 
     /// --------------------------------------------------------- ///
@@ -189,26 +167,26 @@ contract MultichainVoteCollection is
         /// Check if proposal start time has passed
         require(
             proposal.votingStartTime <= block.timestamp,
-            "MultichainVoteCollection: Voting has not started yet"
+            "MultichainVoteCollectionV2: Voting has not started yet"
         );
 
         /// Check if proposal end time has not passed
         require(
             proposal.votingEndTime >= block.timestamp,
-            "MultichainVoteCollection: Voting has ended"
+            "MultichainVoteCollectionV2: Voting has ended"
         );
 
         /// Vote value must be 0, 1 or 2
         require(
             voteValue <= Constants.VOTE_VALUE_ABSTAIN,
-            "MultichainVoteCollection: invalid vote value"
+            "MultichainVoteCollectionV2: invalid vote value"
         );
 
         /// Check if user has already voted
         Receipt storage receipt = proposal.receipts[msg.sender];
         require(
             receipt.hasVoted == false,
-            "MultichainVoteCollection: voter already voted"
+            "MultichainVoteCollectionV2: voter already voted"
         );
 
         /// Get voting power
@@ -217,7 +195,10 @@ contract MultichainVoteCollection is
             proposal.voteSnapshotTimestamp
         );
 
-        require(userVotes != 0, "MultichainVoteCollection: voter has no votes");
+        require(
+            userVotes != 0,
+            "MultichainVoteCollectionV2: voter has no votes"
+        );
 
         /// Effects
 
@@ -254,19 +235,19 @@ contract MultichainVoteCollection is
         /// Check if proposal has votes
         require(
             votes.totalVotes > 0,
-            "MultichainVoteCollection: proposal has no votes"
+            "MultichainVoteCollectionV2: proposal has no votes"
         );
 
         /// Check if proposal end time has passed
         require(
             proposal.votingEndTime < block.timestamp,
-            "MultichainVoteCollection: Voting has not ended"
+            "MultichainVoteCollectionV2: Voting has not ended"
         );
 
         /// Check if proposal collection end time has not passed
         require(
             proposal.crossChainVoteCollectionEndTimestamp >= block.timestamp,
-            "MultichainVoteCollection: Voting collection phase has ended"
+            "MultichainVoteCollectionV2: Voting collection phase has ended"
         );
 
         _bridgeOutAll(
@@ -298,7 +279,7 @@ contract MultichainVoteCollection is
         /// payload should be 5 uint256s
         require(
             payload.length == 160,
-            "MultichainVoteCollection: invalid payload length"
+            "MultichainVoteCollectionV2: invalid payload length"
         );
 
         /// Parse the payload and do the corresponding actions!
@@ -313,31 +294,31 @@ contract MultichainVoteCollection is
         /// Ensure proposalId is unique
         require(
             proposals[proposalId].votingStartTime == 0,
-            "MultichainVoteCollection: proposal already exists"
+            "MultichainVoteCollectionV2: proposal already exists"
         );
 
         /// Ensure votingEndTime is in the future so there is time for users to vote
         require(
             votingEndTime > block.timestamp,
-            "MultichainVoteCollection: end time must be in the future"
+            "MultichainVoteCollectionV2: end time must be in the future"
         );
 
         /// Ensure voteSnapshotTimestamp is less than votingStartTime
         require(
             voteSnapshotTimestamp < votingStartTime,
-            "MultichainVoteCollection: snapshot time must be before start time"
+            "MultichainVoteCollectionV2: snapshot time must be before start time"
         );
 
         /// Ensure votingStartTime is less than votingEndTime
         require(
             votingStartTime < votingEndTime,
-            "MultichainVoteCollection: start time must be before end time"
+            "MultichainVoteCollectionV2: start time must be before end time"
         );
 
         /// Ensure votingStartTime is less than votingEndTime
         require(
             votingEndTime < crossChainVoteCollectionEndTimestamp,
-            "MultichainVoteCollection: end time must be before vote collection end"
+            "MultichainVoteCollectionV2: end time must be before vote collection end"
         );
 
         /// Create the proposal
@@ -369,17 +350,9 @@ contract MultichainVoteCollection is
     function setGasLimit(uint96 newGasLimit) external onlyOwner {
         require(
             newGasLimit >= Constants.MIN_GAS_LIMIT,
-            "MultichainVoteCollection: gas limit too low"
+            "MultichainVoteCollectionV2: gas limit too low"
         );
 
         _setGasLimit(newGasLimit);
-    }
-
-    /// @notice update the stkWell token address
-    /// @param newStakedWell the new stkWell token address
-    function setNewStakedWell(address newStakedWell) external onlyOwner {
-        stkWell = SnapshotInterface(newStakedWell);
-
-        emit NewStakedWellSet(newStakedWell);
     }
 }

@@ -8,6 +8,7 @@ import "@test/helper/BaseTest.t.sol";
 
 import {Address} from "@utils/Address.sol";
 import {MockWormholeReceiver} from "@test/mock/MockWormholeReceiver.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 
 contract WormholeBridgeAdapterUnitTest is BaseTest {
     using Address for address;
@@ -253,7 +254,11 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         sender[0].chainId = chainId;
 
         vm.prank(owner);
-        vm.expectRevert("WormholeTrustedSender: not in list");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeTrustedSender.EnumerableSetError.selector
+            )
+        );
         wormholeBridgeAdapterProxy.removeTrustedSenders(sender);
     }
 
@@ -288,7 +293,11 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         sender[0].chainId = chainId;
 
         vm.prank(owner);
-        vm.expectRevert("WormholeTrustedSender: already in list");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeTrustedSender.EnumerableSetError.selector
+            )
+        );
         wormholeBridgeAdapterProxy.addTrustedSenders(sender);
     }
 
