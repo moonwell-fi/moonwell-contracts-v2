@@ -285,21 +285,6 @@ library ChainIds {
         }
     }
 
-    function toEthereumWormholeChainId(
-        uint256 chainId
-    ) internal pure returns (uint16) {
-        if (
-            chainId == MOONBEAM_CHAIN_ID ||
-            chainId == BASE_CHAIN_ID ||
-            chainId == OPTIMISM_CHAIN_ID ||
-            chainId == ETHEREUM_CHAIN_ID
-        ) {
-            return ETHEREUM_WORMHOLE_CHAIN_ID;
-        } else {
-            revert("ChainIds: invalid chain id");
-        }
-    }
-
     function toBaseWormholeChainId(
         uint256 chainId
     ) internal pure returns (uint16) {

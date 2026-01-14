@@ -5,7 +5,7 @@ import {ChainIds} from "@utils/ChainIds.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {AddressToString} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID} from "@protocol/utils/ChainIds.sol";
+import {MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID, ETHEREUM_CHAIN_ID, ETHEREUM_SEPOLIA_CHAIN_ID} from "@protocol/utils/ChainIds.sol";
 import {console} from "forge-std/console.sol";
 
 abstract contract ProposalChecker {
@@ -104,6 +104,30 @@ abstract contract ProposalChecker {
             require(
                 moonbeamActions[i].target != wormholeCoreMoonbeam,
                 "Wormhole Core Moonbeam address should not be in the list of targets"
+            );
+        }
+    }
+
+    /// @notice should only be run while on the Ethereum fork
+    /// @dev checks that the Ethereum actions do not include any wormhole core addresses
+    /// @param targets the list of targets for the Ethereum actions
+    function checkEthereumActions(address[] memory targets) public view {
+        require(
+            ETHEREUM_CHAIN_ID == block.chainid ||
+                ETHEREUM_SEPOLIA_CHAIN_ID == block.chainid,
+            "cannot run Ethereum checks on non-Ethereum network"
+        );
+
+        for (uint256 i = 0; i < targets.length; i++) {
+            /// there's no reason for any proposal actions to call addresses with 0 bytecode
+            require(
+                targets[i].code.length > 0,
+                string(
+                    abi.encodePacked(
+                        "target for Ethereum action not a contract ",
+                        targets[i].toString()
+                    )
+                )
             );
         }
     }

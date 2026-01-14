@@ -21,7 +21,7 @@ import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+/// MultichainGovernorV2 is deployed by MIP-X41 on Ethereum as the governance hub
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -37,15 +37,6 @@ contract mipe00 is HybridProposal, Configs {
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
-
-    /// @notice time before anyone can unpause the contract after a guardian pause
-    uint256 public constant permissionlessUnpauseTime = 30 days;
-
-    /// --------------------------------------------------------------------------------------------------///
-    /// Chain Name	       Wormhole Chain ID   Network ID	Address                                      |///
-    ///  Ethereum Mainnet     2	                1	        0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B   |///
-    ///  Moonbeam	         16	             1284 	        0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3   |///
-    /// --------------------------------------------------------------------------------------------------///
 
     struct CTokenAddresses {
         address mTokenImpl;
@@ -76,32 +67,21 @@ contract mipe00 is HybridProposal, Configs {
     /// @notice the deployer should have WETH, USDC, USDT, cbBTC, weETH, wstETH to be able to deploy on Ethereum.
     /// This allows the deployer to be able to initialize the markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {
-        /// ------- TemporalGovernor -------
+        /// ------- MultichainGovernorV2 (deployed by MIP-X41) -------
+        /// The MultichainGovernorV2 is already deployed on Ethereum by MIP-X41 as the governance hub.
+        /// MIP-E00 uses the existing governor for all protocol contracts.
         localInit(addresses);
-        {
-            TemporalGovernor.TrustedSender[]
-                memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
-            trustedSenders[0].chainId = block
-                .chainid
-                .toMoonbeamWormholeChainId();
-            trustedSenders[0].addr = addresses.getAddress(
-                "MOONBEAM_TIMELOCK",
-                block.chainid.toMoonbeamChainId()
-            );
 
-            /// TODO: change this later to MultichainGovernorV2
-            TemporalGovernor governor = new TemporalGovernor(
-                addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for Ethereum
-                temporalGovDelay[block.chainid], // get timelock period
-                permissionlessUnpauseTime,
-                trustedSenders
-            );
-            addresses.addAddress("TEMPORAL_GOVERNOR", address(governor));
-        }
+        /// Verify MultichainGovernorV2 is already deployed
+        require(
+            addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY"),
+            "MIP-E00: MultichainGovernorV2 not deployed. Run MIP-X41 first."
+        );
+
         deployAndMint(addresses);
         init(addresses);
 
-        /// ------- Composite Oracle for weETH -------
+        /// ------- Composite Oracles for weETH and wstETH -------
         {
             /// weETH/USD composite oracle = ETH/USD * weETH/ETH
             address weEthCompositeOracle = address(
@@ -115,7 +95,20 @@ contract mipe00 is HybridProposal, Configs {
                 "WEETH_USD_COMPOSITE_ORACLE",
                 weEthCompositeOracle
             );
-            /// Note: wstETH uses pre-built WSTETH_USD_ORACLE from chains/1.json
+
+            /// wstETH/USD composite oracle = ETH/USD * wstETH/ETH
+            /// Uses Compound's wstETH/ETH price feed (implements latestRoundData)
+            address wstEthCompositeOracle = address(
+                new ChainlinkCompositeOracle(
+                    addresses.getAddress("CHAINLINK_ETH_USD"),
+                    addresses.getAddress("COMPOUND_WSTETH_ETH"),
+                    address(0) // no second multiplier
+                )
+            );
+            addresses.addAddress(
+                "WSTETH_USD_COMPOSITE_ORACLE",
+                wstEthCompositeOracle
+            );
         }
 
         /// ------- Reward Distributor -------
@@ -238,18 +231,16 @@ contract mipe00 is HybridProposal, Configs {
                 addresses.getAddress("UNITROLLER")
             );
 
-            address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
+            address governor = addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_V2_PROXY"
+            );
 
             ChainlinkOracle oracle = ChainlinkOracle(
                 addresses.getAddress("CHAINLINK_ORACLE")
             );
 
-            /// set temporal governor as owner of the proxy admin
+            /// set MultichainGovernorV2 as owner of the proxy admin
             proxyAdmin.transferOwnership(governor);
-
-            TemporalGovernor(payable(governor)).transferOwnership(
-                addresses.getAddress("SECURITY_COUNCIL")
-            );
 
             /// set chainlink oracle on the comptroller implementation contract
             Comptroller(address(unitroller))._setPriceOracle(
@@ -295,7 +286,7 @@ contract mipe00 is HybridProposal, Configs {
 
                     mTokens[i]._setReserveFactor(config.reserveFactor);
                     mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                    mTokens[i]._setPendingAdmin(payable(governor)); /// set MultichainGovernorV2 as pending admin of the mToken
 
                     Comptroller(address(unitroller))._setCollateralFactor(
                         mTokens[i],
@@ -332,10 +323,10 @@ contract mipe00 is HybridProposal, Configs {
                 addresses.getAddress("PAUSE_GUARDIAN")
             );
 
-            /// set temporal governor as the pending admin
+            /// set MultichainGovernorV2 as the pending admin
             unitroller._setPendingAdmin(governor);
 
-            /// set temporal governor as the admin of the chainlink feed
+            /// set MultichainGovernorV2 as the admin of the chainlink feed
             oracle.setAdmin(governor);
         }
         /// -------------- EMISSION CONFIGURATION --------------
@@ -376,7 +367,7 @@ contract mipe00 is HybridProposal, Configs {
                 );
                 deal(
                     tokenAddress,
-                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY"),
                     cTokenConfigs[i].initialMintAmount
                 );
             }
@@ -392,7 +383,7 @@ contract mipe00 is HybridProposal, Configs {
         _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Temporal governor accepts admin on Unitroller"
+            "MultichainGovernorV2 accepts admin on Unitroller"
         );
 
         Configs.CTokenConfiguration[]
@@ -411,11 +402,11 @@ contract mipe00 is HybridProposal, Configs {
 
                 /// ------------ MTOKEN MARKET ACTIVIATION ------------
 
-                /// temporal governor accepts admin of mToken
+                /// MultichainGovernorV2 accepts admin of mToken
                 _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature("_acceptAdmin()"),
-                    "Temporal governor accepts admin on mToken"
+                    "MultichainGovernorV2 accepts admin on mToken"
                 );
 
                 _pushAction(
@@ -465,12 +456,8 @@ contract mipe00 is HybridProposal, Configs {
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
-        TemporalGovernor governor = TemporalGovernor(
-            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
-        );
-
-        assertEq(governor.owner(), addresses.getAddress("SECURITY_COUNCIL"));
-        assertEq(temporalGovDelay[block.chainid], governor.proposalDelay());
+        /// MultichainGovernorV2 is deployed by MIP-X41 - just get the address
+        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY");
 
         {
             ChainlinkOracle oracle = ChainlinkOracle(
@@ -523,7 +510,7 @@ contract mipe00 is HybridProposal, Configs {
 
             assertEq(
                 Comptroller(address(unitroller)).admin(),
-                addresses.getAddress("TEMPORAL_GOVERNOR")
+                addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY")
             );
             assertEq(
                 Comptroller(address(unitroller)).pendingAdmin(),
@@ -594,12 +581,12 @@ contract mipe00 is HybridProposal, Configs {
             assertEq(address(distributor.pauseGuardian()), address(0));
         }
 
-        /// assert proxy admin is owned by temporal governor
+        /// assert proxy admin is owned by MultichainGovernorV2
         {
             ProxyAdmin proxyAdmin = ProxyAdmin(
                 addresses.getAddress("MRD_PROXY_ADMIN")
             );
-            assertEq(proxyAdmin.owner(), address(governor));
+            assertEq(proxyAdmin.owner(), governor);
         }
 
         /// admin is owned by proxy admin
@@ -629,22 +616,8 @@ contract mipe00 is HybridProposal, Configs {
             );
         }
 
-        assertEq(
-            address(governor.wormholeBridge()),
-            addresses.getAddress("WORMHOLE_CORE", block.chainid)
-        );
+        /// MultichainGovernorV2 specific validations are handled by MIP-X41
 
-        assertTrue(
-            governor.isTrustedSender(
-                block.chainid.toMoonbeamWormholeChainId(),
-                addresses
-                    .getAddress(
-                        "MOONBEAM_TIMELOCK",
-                        block.chainid.toMoonbeamChainId()
-                    )
-                    .toBytes()
-            )
-        );
         {
             Comptroller comptroller = Comptroller(
                 addresses.getAddress("UNITROLLER")
@@ -726,8 +699,8 @@ contract mipe00 is HybridProposal, Configs {
                     assertTrue(mToken.balanceOf(address(governor)) > 0); /// governor has some
                     assertEq(mToken.balanceOf(address(0)), 1); /// address 0 has 1 wei of assets
 
-                    /// assert cToken admin is the temporal governor
-                    assertEq(address(mToken.admin()), address(governor));
+                    /// assert mToken admin is the MultichainGovernorV2
+                    assertEq(address(mToken.admin()), governor);
 
                     /// assert mToken comptroller is correct
                     assertEq(

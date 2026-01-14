@@ -85,8 +85,8 @@
         "isContract": true
     },
     {
-        "addr": "0x8b6851156023f4f5a66f68bea80851c3d905ac93",
-        "name": "WSTETH_USD_ORACLE",
+        "addr": "0x4F67e4d9BD67eFa28236013288737D39AeF48e79",
+        "name": "COMPOUND_WSTETH_ETH",
         "isContract": true
     },
     {

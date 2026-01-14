@@ -111,7 +111,7 @@ abstract contract HybridProposal is
         string memory description
     ) internal {
         uint256 fork = vm.activeFork();
-        require(fork <= 2, "Invalid active fork");
+        require(fork <= 3, "Invalid active fork");
         _pushAction(target, 0, data, description, ActionType(fork));
     }
 
@@ -233,7 +233,7 @@ abstract contract HybridProposal is
     }
 
     /// @notice return arrays of all items in the proposal that the
-    /// temporal governor will receive
+    /// MultichainGovernorV2 on Ethereum will execute
     /// all items are in the same order as the proposal
     /// the length of each array is the same as the number of actions in the proposal
     function getTargetsPayloadsValues(
@@ -244,6 +244,17 @@ abstract contract HybridProposal is
         override
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {
+        /// Moonbeam TemporalGovernor (receives cross-chain from Ethereum)
+        address temporalGovernorMoonbeam = addresses.isAddressSet(
+            "TEMPORAL_GOVERNOR",
+            block.chainid.toMoonbeamChainId()
+        )
+            ? addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                block.chainid.toMoonbeamChainId()
+            )
+            : address(0);
+
         address temporalGovernorBase = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
             block.chainid.toBaseChainId()
@@ -264,16 +275,18 @@ abstract contract HybridProposal is
             getTargetsPayloadsValues(
                 addresses.getAddress(
                     "WORMHOLE_CORE",
-                    block.chainid.toMoonbeamChainId()
+                    block.chainid.toEthereumChainId()
                 ),
+                temporalGovernorMoonbeam,
                 temporalGovernorBase,
                 temporalGovernorOptimism
             );
     }
 
     /// @notice returns the total number of actions in the proposal
-    /// including base and optimism actions which are each bundled into a
-    /// single action to wormhole core on Moonbeam.
+    /// including moonbeam, base and optimism actions which are each bundled into a
+    /// single action to wormhole core on Ethereum.
+    /// Ethereum actions are local (not cross-chain).
     function allActionTypesCount() public view returns (uint256 count) {
         uint256 baseActions = actions.proposalActionTypeCount(ActionType.Base);
         baseActions = baseActions > 0 ? 1 : 0;
@@ -283,11 +296,19 @@ abstract contract HybridProposal is
         );
         optimismActions = optimismActions > 0 ? 1 : 0;
 
+        /// Moonbeam actions are now cross-chain (sent via Wormhole from Ethereum)
         uint256 moonbeamActions = actions.proposalActionTypeCount(
             ActionType.Moonbeam
         );
+        moonbeamActions = moonbeamActions > 0 ? 1 : 0;
 
-        return baseActions + optimismActions + moonbeamActions;
+        /// Ethereum actions are local to the governance hub
+        uint256 ethereumActions = actions.proposalActionTypeCount(
+            ActionType.Ethereum
+        );
+
+        return
+            baseActions + optimismActions + moonbeamActions + ethereumActions;
     }
 
     ///
@@ -295,9 +316,13 @@ abstract contract HybridProposal is
     ///   Governance Proposal Calldata Structure
     /// ------------------------------------------
     ///
+    /// - Ethereum Actions:
+    ///  - actions whose target chain are Ethereum smart contracts
+    ///  these are local actions executed by MultichainGovernorV2
+    ///
     /// - Moonbeam Actions:
-    ///  - actions whose target chain are non wormhole moonbeam smart contracts
-    ///  this could be a risk recommendation to the moonbeam chain
+    ///  - actions whose target chain are Moonbeam smart contracts
+    ///  sent through wormhole core contracts by calling publish message
     ///
     /// - Base Actions:
     ///  - actions whose target chain are Base smart contracts
@@ -309,11 +334,12 @@ abstract contract HybridProposal is
     ///
 
     /// @notice return arrays of all items in the proposal that the
-    /// temporal governor will receive
+    /// MultichainGovernorV2 on Ethereum will execute
     /// all items are in the same order as the proposal
     /// the length of each array is the same as the number of actions in the proposal
     function getTargetsPayloadsValues(
         address wormholeCore,
+        address temporalGovernorMoonbeam,
         address temporalGovernorBase,
         address temporalGovernorOptimism
     ) public view returns (address[] memory, uint256[] memory, bytes[] memory) {
@@ -340,13 +366,30 @@ abstract contract HybridProposal is
                 "Invalid arguments for governance"
             );
 
-            if (actions[i].actionType == ActionType.Moonbeam) {
+            /// Ethereum actions are local to the governance hub
+            if (actions[i].actionType == ActionType.Ethereum) {
                 targets[currIndex] = actions[i].target;
                 values[currIndex] = actions[i].value;
                 payloads[currIndex] = actions[i].data;
 
                 currIndex++;
             }
+        }
+
+        /// only get temporal governor calldata if there are actions to execute on moonbeam
+        if (
+            temporalGovernorMoonbeam != address(0) &&
+            actions.proposalActionTypeCount(ActionType.Moonbeam) != 0
+        ) {
+            /// fill out final piece of proposal which is the call
+            /// to publishMessage on the temporal governor
+            targets[currIndex] = wormholeCore;
+            values[currIndex] = 0;
+            payloads[currIndex] = getTemporalGovCalldata(
+                temporalGovernorMoonbeam,
+                actions.filter(ActionType.Moonbeam)
+            );
+            currIndex++;
         }
 
         /// only get temporal governor calldata if there are actions to execute on base
@@ -477,13 +520,19 @@ abstract contract HybridProposal is
     ) public virtual override mockHook(addresses) {
         require(actions.length != 0, "no governance proposal actions to run");
 
-        vm.selectFork(MOONBEAM_FORK_ID);
-        addresses.addRestriction(block.chainid.toMoonbeamChainId());
+        vm.selectFork(ETHEREUM_FORK_ID);
+        addresses.addRestriction(block.chainid.toEthereumChainId());
 
-        _runMoonbeamMultichainGovernor(addresses, address(3));
+        _runEthereumMultichainGovernor(addresses, address(3));
         addresses.removeRestriction();
 
         uint256 blockTimestamp = block.timestamp;
+
+        if (actions.proposalActionTypeCount(ActionType.Moonbeam) != 0) {
+            vm.selectFork(MOONBEAM_FORK_ID);
+            vm.warp(blockTimestamp);
+            _runExtChain(addresses, actions.filter(ActionType.Moonbeam));
+        }
 
         if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
             vm.selectFork(BASE_FORK_ID);
@@ -503,20 +552,21 @@ abstract contract HybridProposal is
         vm.warp(blockTimestamp);
     }
 
-    /// @notice Runs the proposal on moonbeam, verifying the actions through the hook
+    /// @notice Runs the proposal on Ethereum, verifying the actions through the hook
     /// @param addresses the addresses contract
     /// @param caller the proposer address
-    function _runMoonbeamMultichainGovernor(
+    function _runEthereumMultichainGovernor(
         Addresses addresses,
         address caller
     ) internal {
-        _verifyActionsPreRun(actions.filter(ActionType.Moonbeam));
+        _verifyActionsPreRun(actions.filter(ActionType.Ethereum));
 
         addresses.addRestriction(block.chainid);
 
-        address governanceToken = addresses.getAddress("GOVTOKEN");
+        /// xWELL is the governance token on Ethereum
+        address governanceToken = addresses.getAddress("xWELL_PROXY");
         address payable governorAddress = payable(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY")
         );
         MultichainGovernor governor = MultichainGovernor(governorAddress);
 
@@ -536,10 +586,11 @@ abstract contract HybridProposal is
 
         bytes memory data;
         {
-            uint256[] memory allowedChainIds = new uint256[](3);
-            allowedChainIds[0] = block.chainid.toBaseChainId();
-            allowedChainIds[1] = block.chainid.toOptimismChainId();
-            allowedChainIds[2] = block.chainid.toMoonbeamChainId();
+            uint256[] memory allowedChainIds = new uint256[](4);
+            allowedChainIds[0] = block.chainid.toMoonbeamChainId();
+            allowedChainIds[1] = block.chainid.toBaseChainId();
+            allowedChainIds[2] = block.chainid.toOptimismChainId();
+            allowedChainIds[3] = block.chainid.toEthereumChainId();
 
             addresses.addRestrictions(allowedChainIds);
 
@@ -549,10 +600,13 @@ abstract contract HybridProposal is
                 bytes[] memory payloads
             ) = getTargetsPayloadsValues(addresses);
 
-            checkMoonbeamActions(targets);
+            checkEthereumActions(targets);
 
-            /// remove the Moonbeam, Base and Optimism restriction
+            /// remove the Ethereum, Moonbeam, Base and Optimism restriction
             addresses.removeRestriction();
+
+            vm.selectFork(MOONBEAM_FORK_ID);
+            checkBaseOptimismActions(actions.filter(ActionType.Moonbeam));
 
             vm.selectFork(BASE_FORK_ID);
             checkBaseOptimismActions(actions.filter(ActionType.Base));
@@ -560,7 +614,7 @@ abstract contract HybridProposal is
             vm.selectFork(OPTIMISM_FORK_ID);
             checkBaseOptimismActions(actions.filter(ActionType.Optimism));
 
-            vm.selectFork(MOONBEAM_FORK_ID);
+            vm.selectFork(ETHEREUM_FORK_ID);
 
             vm.roll(block.number + 1);
 
@@ -639,13 +693,21 @@ abstract contract HybridProposal is
         );
 
         {
-            address wormholeCoreMoonbeam = addresses.getAddress(
+            address wormholeCoreEthereum = addresses.getAddress(
                 "WORMHOLE_CORE",
-                block.chainid.toMoonbeamChainId()
+                block.chainid.toEthereumChainId()
             );
 
+            bytes memory temporalGovExecDataMoonbeam;
             bytes memory temporalGovExecDataBase;
             bytes memory temporalGovExecDataOptimism;
+
+            if (actions.proposalActionTypeCount(ActionType.Moonbeam) != 0) {
+                temporalGovExecDataMoonbeam = getTemporalGovPayloadByChain(
+                    addresses,
+                    block.chainid.toMoonbeamChainId()
+                );
+            }
 
             if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
                 temporalGovExecDataBase = getTemporalGovPayloadByChain(
@@ -661,7 +723,7 @@ abstract contract HybridProposal is
                 );
             }
 
-            vm.deal(caller, actions.sumMoonbeamValue());
+            vm.deal(caller, actions.sumEthereumValue());
 
             // Start recording logs to verify events after execution
             vm.recordLogs();
@@ -671,7 +733,7 @@ abstract contract HybridProposal is
             // Execute the proposal
             vm.prank(caller);
             governor.execute{
-                value: actions.sumMoonbeamValue(),
+                value: actions.sumEthereumValue(),
                 gas: 52_000_000
             }(proposalId);
 
@@ -686,11 +748,47 @@ abstract contract HybridProposal is
                 "LogMessagePublished(address,uint64,uint32,bytes,uint8)"
             );
 
+            if (temporalGovExecDataMoonbeam.length != 0) {
+                bool seenMoonbeam = false;
+                for (uint256 k = 0; k < logs.length; k++) {
+                    if (
+                        logs[k].emitter == wormholeCoreEthereum &&
+                        logs[k].topics.length > 0 &&
+                        logs[k].topics[0] == sig
+                    ) {
+                        (
+                            uint64 sequence,
+                            uint32 nonce2,
+                            bytes memory payload,
+                            uint8 cl
+                        ) = abi.decode(
+                                logs[k].data,
+                                (uint64, uint32, bytes, uint8)
+                            );
+                        sequence;
+                        nonce2;
+                        cl;
+
+                        if (
+                            keccak256(payload) ==
+                            keccak256(temporalGovExecDataMoonbeam)
+                        ) {
+                            seenMoonbeam = true;
+                            break;
+                        }
+                    }
+                }
+                assertTrue(
+                    seenMoonbeam,
+                    "Missing LogMessagePublished event on Moonbeam"
+                );
+            }
+
             if (temporalGovExecDataBase.length != 0) {
                 bool seenBase = false;
                 for (uint256 k = 0; k < logs.length; k++) {
                     if (
-                        logs[k].emitter == wormholeCoreMoonbeam &&
+                        logs[k].emitter == wormholeCoreEthereum &&
                         logs[k].topics.length > 0 &&
                         logs[k].topics[0] == sig
                     ) {
@@ -726,7 +824,7 @@ abstract contract HybridProposal is
                 bool seenOptimism = false;
                 for (uint256 k = 0; k < logs.length; k++) {
                     if (
-                        logs[k].emitter == wormholeCoreMoonbeam &&
+                        logs[k].emitter == wormholeCoreEthereum &&
                         logs[k].topics.length > 0 &&
                         logs[k].topics[0] == sig
                     ) {
@@ -812,24 +910,24 @@ abstract contract HybridProposal is
             payloads
         );
 
-        /// allow querying of Moonbeam
-        addresses.addRestriction(block.chainid.toMoonbeamChainId());
+        /// allow querying of Ethereum
+        addresses.addRestriction(block.chainid.toEthereumChainId());
 
         bytes32 governor = addresses
             .getAddress(
-                "MULTICHAIN_GOVERNOR_PROXY",
-                block.chainid.toMoonbeamChainId()
+                "MULTICHAIN_GOVERNOR_V2_PROXY",
+                block.chainid.toEthereumChainId()
             )
             .toBytes();
 
-        /// disallow querying of Moonbeam
+        /// disallow querying of Ethereum
         addresses.removeRestriction();
 
         bytes memory vaa = generateVAA(
             uint32(block.timestamp),
             /// we can hardcode this wormhole chainID because all proposals
-            /// should come from Moonbeam
-            MOONBEAM_WORMHOLE_CHAIN_ID,
+            /// should come from Ethereum
+            ETHEREUM_WORMHOLE_CHAIN_ID,
             governor,
             payload
         );

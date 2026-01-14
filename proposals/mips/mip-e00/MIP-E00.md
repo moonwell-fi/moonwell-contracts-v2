@@ -17,6 +17,7 @@ contract platform.
 | USDT   | 80%               | 10%            | 50,000,000  | 40,000,000 |
 | cbBTC  | 75%               | 15%            | 1,000       | 500        |
 | weETH  | 75%               | 25%            | 20,000      | 5,000      |
+| wstETH | 75%               | 25%            | 20,000      | 5,000      |
 
 ### MetaMorpho Vaults
 
@@ -31,6 +32,7 @@ contract platform.
 - **USDT**: Chainlink USDT/USD
 - **cbBTC**: Chainlink BTC/USD
 - **weETH**: Composite Oracle (ETH/USD × weETH/ETH)
+- **wstETH**: Composite Oracle (ETH/USD × wstETH/ETH via Compound feed)
 
 ### Governance
 
