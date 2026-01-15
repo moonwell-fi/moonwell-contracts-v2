@@ -847,6 +847,14 @@ contract mipx41 is HybridProposal {
         );
 
         // Remove old Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor
+        vm.selectFork(MOONBEAM_FORK_ID);
+        address moonbeamMultichainGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
+        vm.selectFork(BASE_FORK_ID);
+        uint16 moonbeamWormholeChainId = ChainIds.toMoonbeamWormholeChainId(
+            block.chainid
+        );
         ITemporalGovernor.TrustedSender[]
             memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
                 1
@@ -956,6 +964,14 @@ contract mipx41 is HybridProposal {
         );
 
         // Remove old Moonbeam MultichainGovernor as trusted sender from Optimism TemporalGovernor
+        vm.selectFork(MOONBEAM_FORK_ID);
+        address moonbeamMultichainGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
+        vm.selectFork(OPTIMISM_FORK_ID);
+        uint16 moonbeamWormholeChainId = ChainIds.toMoonbeamWormholeChainId(
+            block.chainid
+        );
         ITemporalGovernor.TrustedSender[]
             memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
                 1
