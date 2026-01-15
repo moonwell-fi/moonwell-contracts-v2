@@ -21,13 +21,14 @@ import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
-/// MultichainGovernorV2 is deployed by MIP-X41 on Ethereum as the governance hub
+/// MultichainGovernorV2 is deployed by initProposal() via MIP-X41 on Ethereum as the governance hub
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ChainIds, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID} from "@utils/ChainIds.sol";
+import {mipx41} from "@proposals/mips/mip-x41/mip-x41.sol";
 
 contract mipe00 is HybridProposal, Configs {
     using Address for address;
@@ -64,18 +65,31 @@ contract mipe00 is HybridProposal, Configs {
         return ETHEREUM_FORK_ID;
     }
 
+    /// @notice Run MIP-X41 to deploy MultichainGovernorV2 before MIP-E00 deployment
+    function initProposal(Addresses addresses) public override {
+        /// Deploy MultichainGovernorV2 via MIP-X41
+        mipx41 x41 = new mipx41();
+
+        /// Get deployer address
+        (, address deployerAddress, ) = vm.readCallers();
+
+        /// Run x41 deploy and afterDeploy to set up MultichainGovernorV2
+        x41.deploy(addresses, deployerAddress);
+        x41.afterDeploy(addresses, deployerAddress);
+    }
+
     /// @notice the deployer should have WETH, USDC, USDT, cbBTC, weETH, wstETH to be able to deploy on Ethereum.
     /// This allows the deployer to be able to initialize the markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {
-        /// ------- MultichainGovernorV2 (deployed by MIP-X41) -------
-        /// The MultichainGovernorV2 is already deployed on Ethereum by MIP-X41 as the governance hub.
+        /// ------- MultichainGovernorV2 (deployed by initProposal via MIP-X41) -------
+        /// The MultichainGovernorV2 is deployed in initProposal() which runs MIP-X41.
         /// MIP-E00 uses the existing governor for all protocol contracts.
         localInit(addresses);
 
-        /// Verify MultichainGovernorV2 is already deployed
+        /// Verify MultichainGovernorV2 was deployed by initProposal
         require(
             addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY"),
-            "MIP-E00: MultichainGovernorV2 not deployed. Run MIP-X41 first."
+            "MIP-E00: MultichainGovernorV2 not deployed. initProposal should have deployed it."
         );
 
         deployAndMint(addresses);
@@ -456,7 +470,7 @@ contract mipe00 is HybridProposal, Configs {
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
-        /// MultichainGovernorV2 is deployed by MIP-X41 - just get the address
+        /// MultichainGovernorV2 is deployed by initProposal via MIP-X41 - just get the address
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY");
 
         {
