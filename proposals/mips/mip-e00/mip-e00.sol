@@ -17,7 +17,7 @@ import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
@@ -30,7 +30,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ChainIds, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {mipx41} from "@proposals/mips/mip-x41/mip-x41.sol";
 
-contract mipe00 is HybridProposal, Configs {
+contract mipe00 is HybridProposalV2, Configs {
     using Address for address;
     using ChainIds for uint256;
 
@@ -74,8 +74,12 @@ contract mipe00 is HybridProposal, Configs {
         (, address deployerAddress, ) = vm.readCallers();
 
         /// Run x41 deploy and afterDeploy to set up MultichainGovernorV2
+        /// Note: These functions switch between forks internally
         x41.deploy(addresses, deployerAddress);
         x41.afterDeploy(addresses, deployerAddress);
+
+        /// Switch back to Ethereum fork for MIP-E00 deployment
+        vm.selectFork(ETHEREUM_FORK_ID);
     }
 
     /// @notice the deployer should have WETH, USDC, USDT, cbBTC, weETH, wstETH to be able to deploy on Ethereum.
