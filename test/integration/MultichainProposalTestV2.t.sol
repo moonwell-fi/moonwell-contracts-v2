@@ -9,6 +9,7 @@ import "@forge-std/Test.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
+import {IStakedWellUplift} from "@protocol/interfaces/IStakedWellUplift.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
 import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichainGovernorV2.sol";
@@ -19,11 +20,15 @@ import {MultichainVoteCollectionMoonbeam} from "@protocol/governance/multichain/
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {EthereumPostDeploymentActions} from "@protocol/xWELL/EthereumPostDeploymentActions.sol";
 
 /// @notice Comprehensive tests for MultichainGovernorV2 including multi-step proposal edge cases
 /// @dev Primary fork is now Ethereum (not Moonbeam), voting uses timestamps only (no block numbers),
 ///      only xWell + stkWell for voting (no well/distributor), multi-step proposals with Init state
-contract MultichainProposalTestV2 is PostProposalCheck {
+contract MultichainProposalTestV2 is
+    PostProposalCheck,
+    EthereumPostDeploymentActions
+{
     /// @notice MultichainGovernorV2 instance (deployed on Ethereum mainnet)
     MultichainGovernorV2 public governorV2;
 
@@ -102,7 +107,7 @@ contract MultichainProposalTestV2 is PostProposalCheck {
     event ProposalExecuted(uint256 id);
 
     function setUp() public override {
-        // Run mip-x41 via PostProposalCheck base class (which also creates forks)
+        // Run mip-x42 via PostProposalCheck base class (which also creates forks)
         super.setUp();
 
         // Load Ethereum contracts
@@ -117,6 +122,10 @@ contract MultichainProposalTestV2 is PostProposalCheck {
         ethereumStkWell = IStakedWell(
             addresses.getAddress("STK_GOVTOKEN_PROXY")
         );
+
+        // Execute post-deployment configuration on Ethereum
+        // This configures the xWELL ecosystem after MultichainGovernorV2 deployment
+        _configureEthereumPostDeployment();
 
         // Load Moonbeam contracts
         vm.selectFork(MOONBEAM_FORK_ID);
@@ -172,13 +181,55 @@ contract MultichainProposalTestV2 is PostProposalCheck {
     /// -------------------- SETUP HELPERS ---------------------- ///
     /// --------------------------------------------------------- ///
 
-    function _grantVotingPower() internal {
-        // Mock voting power for test addresses on Ethereum
-        // In a real implementation, this would involve minting/delegating xWell/stkWell
-        // For testing purposes, we mock the VotingPowerAggregator responses
-
+    /// @notice Configure Ethereum xWELL ecosystem post-deployment
+    /// @dev This simulates running the PostDeployEthereumXWell.s.sol script
+    function _configureEthereumPostDeployment() internal {
         vm.selectFork(ETHEREUM_FORK_ID);
 
+        address xWellProxy = addresses.getAddress("xWELL_PROXY");
+        address stkWellProxy = addresses.getAddress("STK_GOVTOKEN_PROXY");
+        address bridgeAdapterProxy = addresses.getAddress(
+            "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+        );
+        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+        address emissionsAdmin = addresses.getAddress("EMISSIONS_ADMIN");
+
+        // Get the current owner of xWELL (from deployment script)
+        address xWellOwner = ethereumXWell.owner();
+
+        // Execute configuration as the current owner
+        vm.startPrank(xWellOwner);
+
+        // 1. Grant pause guardian on xWELL
+        grantPauseGuardianXWell(xWellProxy, pauseGuardian);
+
+        // 2. Transfer ownership of xWELL to MultichainGovernorV2
+        transferOwnershipXWell(xWellProxy, address(governorV2));
+
+        // 3. Transfer ownership of WormholeBridgeAdapter to MultichainGovernorV2
+        transferOwnershipBridgeAdapter(bridgeAdapterProxy, address(governorV2));
+
+        vm.stopPrank();
+
+        // Accept ownership as MultichainGovernorV2
+        vm.startPrank(address(governorV2));
+        acceptOwnershipXWell(xWellProxy);
+        acceptOwnershipBridgeAdapter(bridgeAdapterProxy);
+        vm.stopPrank();
+
+        // 4. Set emissions manager on stkWELL (requires governance call)
+        // For testing, we'll prank as the governance address
+        address stkWellGovernance = IStakedWellUplift(stkWellProxy)
+            ._governance();
+        vm.prank(stkWellGovernance);
+        setEmissionsManagerStkWell(stkWellProxy, emissionsAdmin);
+    }
+
+    // Grant voting power for test addresses on Ethereum using xWELL and stkWELL
+    function _grantVotingPower() internal {
+        vm.selectFork(ETHEREUM_FORK_ID);
+
+        // Mock getVotes at specific timestamps (for historical voting power snapshots)
         vm.mockCall(
             address(ethereumVotingPower),
             abi.encodeWithSelector(
@@ -219,7 +270,7 @@ contract MultichainProposalTestV2 is PostProposalCheck {
             abi.encode(ATTACKER_VOTES)
         );
 
-        // Also mock getCurrentVotes for threshold checks
+        // Mock getCurrentVotes for proposal threshold checks (current voting power)
         vm.mockCall(
             address(ethereumVotingPower),
             abi.encodeWithSelector(

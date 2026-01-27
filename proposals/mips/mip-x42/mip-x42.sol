@@ -21,7 +21,7 @@ import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID} from
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 
-/// @title MIP-X41: MultichainGovernorV2 Migration to Ethereum Mainnet
+/// @title MIP-X42: MultichainGovernorV2 Migration to Ethereum Mainnet
 /// @author Moonwell Contributors
 /// @notice Proposal to:
 ///         1. Deploy MultichainGovernorV2 on Ethereum Mainnet
@@ -35,11 +35,11 @@ import {ChainIds} from "@utils/ChainIds.sol";
 ///         6. Transfer ownership of all active & owned contracts on Moonbeam to new TemporalGovernor
 ///         7. Upgrade MultichainVoteCollection instance on Base and OP to MultichainVoteCollectionV2
 ///         8. Set MultichainGovernorV2 as trusted sender on MultichainVoteCollectionV2 on Base and OP
-contract mipx41 is HybridProposal {
+contract mipx42 is HybridProposal {
     using ProposalActions for *;
     using ChainIds for uint256;
 
-    string public constant override name = "MIP-X41";
+    string public constant override name = "MIP-X42";
 
     // Governance parameters (same values as TemporalGovernor on Base)
     uint256 public constant TEMPORAL_GOVERNOR_PROPOSAL_DELAY = 86400;
@@ -58,7 +58,7 @@ contract mipx41 is HybridProposal {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-x41/x41.md")
+            vm.readFile("./proposals/mips/mip-x42/x42.md")
         );
         _setProposalDescription(proposalDescription);
     }
@@ -269,13 +269,6 @@ contract mipx41 is HybridProposal {
                 )
             );
 
-            // Add snapshot sources for Moonbeam
-            // NOTE: well and distributor removed as voting sources per governance changes
-            // Most users have migrated to xWell, and distributor tokens have mostly vested
-            // xWell is already handled via _getCustomVotes, so only add stkWell
-            // All sources now use timestamp-based snapshots (stkWell upgraded to timestamps)
-            VotingPowerAggregator(votingPowerProxy).addSnapshotSource(stkWell);
-
             vm.stopBroadcast();
 
             addresses.addAddress(
@@ -352,7 +345,7 @@ contract mipx41 is HybridProposal {
         if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR", block.chainid)) {
             address xWell = addresses.getAddress("xWELL_PROXY");
             address stkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
-            address baseProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN"); // TODO: correct?
+            address baseProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
             address temporalGovernor = addresses.getAddress(
                 "TEMPORAL_GOVERNOR"
             );
@@ -374,11 +367,6 @@ contract mipx41 is HybridProposal {
                     votingPowerInitData
                 )
             );
-
-            // Add snapshot sources for Base
-            // xWell is already handled via _getCustomVotes, so only add stkWell
-            // All sources use timestamp-based snapshots
-            VotingPowerAggregator(votingPowerProxy).addSnapshotSource(stkWell);
 
             vm.stopBroadcast();
 
@@ -436,11 +424,6 @@ contract mipx41 is HybridProposal {
                     votingPowerInitData
                 )
             );
-
-            // Add snapshot sources for Optimism
-            // xWell is already handled via _getCustomVotes, so only add stkWell
-            // All sources use timestamp-based snapshots
-            VotingPowerAggregator(votingPowerProxy).addSnapshotSource(stkWell);
 
             vm.stopBroadcast();
 
@@ -501,12 +484,12 @@ contract mipx41 is HybridProposal {
         initData.pauseDuration = PAUSE_DURATION;
         initData.startingProposalCount = uint128(startingProposalCount);
         initData.pauseGuardian = addresses.getAddress(
-            "PAUSE_GUARDIAN_MULTISIG"
+            "PAUSE_GUARDIAN"
         );
         initData.breakGlassGuardian = addresses.getAddress(
             "BREAK_GLASS_GUARDIAN"
         );
-        initData.wormholeRelayer = addresses.getAddress("WORMHOLE_RELAYER");
+        initData.wormholeRelayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY");
 
         // Build trusted senders array (vote collection contracts)
         WormholeTrustedSender.TrustedSender[]
@@ -625,6 +608,25 @@ contract mipx41 is HybridProposal {
         );
         console2.log(
             "[ACTION] Recover ETH from MultichainGovernor to WELL_FOUNDATION_MULTISIG"
+        );
+
+        // 5.5. Add stkWell as snapshot source to VotingPowerAggregator on Moonbeam
+        address moonbeamVotingPower = addresses.getAddress(
+            "VOTING_POWER_AGGREGATOR"
+        );
+        address moonbeamStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
+
+        _pushAction(
+            moonbeamVotingPower,
+            abi.encodeWithSignature(
+                "addSnapshotSource(address)",
+                moonbeamStkWell
+            ),
+            "Add stkWell as snapshot source to VotingPowerAggregator on Moonbeam",
+            ActionType.Moonbeam
+        );
+        console2.log(
+            "[ACTION] Add stkWell as snapshot source to VotingPowerAggregator on Moonbeam"
         );
 
         // 6. Transfer ownership of all contracts on Moonbeam owned by MultichainGovernor to TemporalGovernor
@@ -783,7 +785,7 @@ contract mipx41 is HybridProposal {
         address baseVoteCollectionV2Impl = addresses.getAddress(
             "VOTE_COLLECTION_V2_IMPL"
         );
-        address baseProxyAdmin = addresses.getAddress("PROXY_ADMIN");
+        address baseProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
         address baseVotingPowerAggregator = addresses.getAddress(
             "VOTING_POWER_AGGREGATOR"
         );
@@ -817,6 +819,19 @@ contract mipx41 is HybridProposal {
         console2.log("  - Set VotingPowerAggregator");
         console2.log("  - Remove old Moonbeam governor as trusted sender");
         console2.log("  - Add Ethereum governor as trusted sender");
+
+        // 7.5. Add stkWell as snapshot source to VotingPowerAggregator on Base
+        address baseStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
+
+        _pushAction(
+            baseVotingPowerAggregator,
+            abi.encodeWithSignature("addSnapshotSource(address)", baseStkWell),
+            "Add stkWell as snapshot source to VotingPowerAggregator on Base",
+            ActionType.Base
+        );
+        console2.log(
+            "[ACTION] Add stkWell as snapshot source to VotingPowerAggregator on Base"
+        );
 
         // Get Base TemporalGovernor address
         address baseTemporalGovernor = addresses.getAddress(
@@ -898,7 +913,7 @@ contract mipx41 is HybridProposal {
         address optimismVoteCollectionV2Impl = addresses.getAddress(
             "VOTE_COLLECTION_V2_IMPL"
         );
-        address optimismProxyAdmin = addresses.getAddress("PROXY_ADMIN");
+        address optimismProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
         address optimismVotingPowerAggregator = addresses.getAddress(
             "VOTING_POWER_AGGREGATOR"
         );
@@ -934,6 +949,22 @@ contract mipx41 is HybridProposal {
         console2.log("  - Set VotingPowerAggregator");
         console2.log("  - Remove old Moonbeam governor as trusted sender");
         console2.log("  - Add Ethereum governor as trusted sender");
+
+        // 7.5. Add stkWell as snapshot source to VotingPowerAggregator on Optimism
+        address optimismStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
+
+        _pushAction(
+            optimismVotingPowerAggregator,
+            abi.encodeWithSignature(
+                "addSnapshotSource(address)",
+                optimismStkWell
+            ),
+            "Add stkWell as snapshot source to VotingPowerAggregator on Optimism",
+            ActionType.Optimism
+        );
+        console2.log(
+            "[ACTION] Add stkWell as snapshot source to VotingPowerAggregator on Optimism"
+        );
 
         // Get Optimism TemporalGovernor address
         address optimismTemporalGovernor = addresses.getAddress(
@@ -998,6 +1029,9 @@ contract mipx41 is HybridProposal {
     }
 
     function build(Addresses addresses) public override {
+        // Build Ethereum actions
+        _buildEthereum(addresses);
+
         // Build Moonbeam actions
         _buildMoonbeam(addresses);
 
@@ -1010,6 +1044,40 @@ contract mipx41 is HybridProposal {
         // Build Base and Optimism actions
         _buildBase(addresses, ethereumGovernorV2);
         _buildOptimism(addresses, ethereumGovernorV2);
+    }
+
+    function _buildEthereum(Addresses addresses) internal {
+        console2.log("\n=== BUILDING ETHEREUM ACTIONS ===");
+        vm.selectFork(ETHEREUM_FORK_ID);
+
+        address ethereumVotingPower = addresses.getAddress(
+            "VOTING_POWER_AGGREGATOR"
+        );
+        address ethereumXWell = addresses.getAddress("xWELL_PROXY");
+        address ethereumStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
+
+        _pushAction(
+            ethereumVotingPower,
+            abi.encodeWithSignature("setXWell(address)", ethereumXWell),
+            "Set xWell as voting source on Ethereum VotingPowerAggregator",
+            ActionType.Ethereum
+        );
+        console2.log("[ACTION] Set xWell on Ethereum VotingPowerAggregator");
+
+        _pushAction(
+            ethereumVotingPower,
+            abi.encodeWithSignature(
+                "addSnapshotSource(address)",
+                ethereumStkWell
+            ),
+            "Add stkWell as snapshot source on Ethereum VotingPowerAggregator",
+            ActionType.Ethereum
+        );
+        console2.log(
+            "[ACTION] Add stkWell as snapshot source on Ethereum VotingPowerAggregator"
+        );
+
+        console2.log("=== ETHEREUM ACTIONS BUILD COMPLETE ===\n");
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -1434,7 +1502,7 @@ contract mipx41 is HybridProposal {
         address baseVoteCollectionProxy = addresses.getAddress(
             "VOTE_COLLECTION_PROXY"
         );
-        address baseProxyAdmin = addresses.getAddress("PROXY_ADMIN");
+        address baseProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
         address baseCurrentImpl = ProxyAdmin(baseProxyAdmin)
             .getProxyImplementation(
@@ -1570,7 +1638,7 @@ contract mipx41 is HybridProposal {
         address optimismVoteCollectionProxy = addresses.getAddress(
             "VOTE_COLLECTION_PROXY"
         );
-        address optimismProxyAdmin = addresses.getAddress("PROXY_ADMIN");
+        address optimismProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
         address optimismCurrentImpl = ProxyAdmin(optimismProxyAdmin)
             .getProxyImplementation(
@@ -1673,7 +1741,7 @@ contract mipx41 is HybridProposal {
             "================================================================================"
         );
         console2.log(
-            "==================== MIP-X41 COMPREHENSIVE VALIDATION =========================="
+            "==================== MIP-X42 COMPREHENSIVE VALIDATION =========================="
         );
         console2.log(
             "================================================================================"
