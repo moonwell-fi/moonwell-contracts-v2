@@ -483,13 +483,13 @@ contract mipx42 is HybridProposal {
         initData.quorum = QUORUM;
         initData.pauseDuration = PAUSE_DURATION;
         initData.startingProposalCount = uint128(startingProposalCount);
-        initData.pauseGuardian = addresses.getAddress(
-            "PAUSE_GUARDIAN"
-        );
+        initData.pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
         initData.breakGlassGuardian = addresses.getAddress(
             "BREAK_GLASS_GUARDIAN"
         );
-        initData.wormholeRelayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY");
+        initData.wormholeRelayer = addresses.getAddress(
+            "WORMHOLE_BRIDGE_RELAYER_PROXY"
+        );
 
         // Build trusted senders array (vote collection contracts)
         WormholeTrustedSender.TrustedSender[]
