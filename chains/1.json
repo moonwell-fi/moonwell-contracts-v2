@@ -15,58 +15,48 @@
         "name": "PROXY_ADMIN"
     },
     {
-        "addr": "0xcB95579c706144f3150f7C3b1BD3F24A48d3463e",
+        "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
         "isContract": true,
         "name": "xWELL_LOGIC"
     },
     {
-        "addr": "0x8000e8862566b7c1Ea06F9FBe24b9A4d2E2102eB",
+        "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
         "isContract": true,
         "name": "xWELL_PROXY"
     },
     {
-        "addr": "0xb4fb8fed5b3AaA8434f0B19b1b623d977e07e86d",
+        "addr": "0xEF68C8f8BDeEF8e938F519ee818DeC80e320CE6b",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
     },
     {
-        "addr": "0x910cC8aBb5A0CaD95DA6fa80a72Ac0294479401F",
+        "addr": "0x734AbBCe07679C9A6B4Fe3bC16325e028fA6DbB7",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY"
     },
     {
-        "addr": "0x9035b911c9FDA8065869E33cBa04c5CF0cC8E510",
+        "addr": "0x437113e54E5E6dfbe9741d699b312eea110d04d5",
         "isContract": true,
         "name": "ECOSYSTEM_RESERVE_IMPL"
     },
     {
-        "addr": "0x86aD38946d4614b96DFDAbC818585C4F12025e26",
+        "addr": "0x98E708bbce1f158C1bde25f206afA7562fd0157f",
         "isContract": true,
         "name": "ECOSYSTEM_RESERVE_CONTROLLER"
     },
     {
-        "addr": "0x6022f564140F6Cb011e42CcE8EF87D971B5a0efD",
+        "addr": "0xAbd65097F869f36f56Be9eC60DfB4A441a00c47C",
         "isContract": true,
         "name": "ECOSYSTEM_RESERVE_PROXY"
     },
     {
-        "addr": "0xc9A7F3fAf15587A372108c92F71561E443aa51Ef",
+        "addr": "0xEB56C57cEc4d56072942CAF90a8F694Ed766012A",
         "isContract": true,
         "name": "STK_GOVTOKEN_IMPL"
     },
     {
-        "addr": "0x920Ae9cB01a01b19f3795af86280dedF44384A10",
+        "addr": "0xF03499F8AE0b883e630558F23760a6A89b1dae7e",
         "isContract": true,
         "name": "STK_GOVTOKEN_PROXY"
-    },
-    {
-        "addr": "0x10b83c88e88910Cd5293324800d1a6e751004bE5",
-        "name": "EMISSIONS_ADMIN",
-        "isContract": false
-    },
-    {
-        "addr": "0x10b83c88e88910Cd5293324800d1a6e751004bE5",
-        "isContract": false,
-        "name": "BREAK_GLASS_GUARDIAN"
     }
 ]
