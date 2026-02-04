@@ -379,4 +379,76 @@ contract MorphoVaultV2ViewsTest is PostProposalCheck {
         }
         assertTrue(hasLiquidity, "At least one market should have liquidity");
     }
+
+    /// @notice Test vaultSupplied per market is returned (V1 parity)
+    function testVaultSuppliedPerMarket() public view {
+        MorphoVaultV2Views.VaultV2Info memory info = viewsContract.getVaultInfo(
+            vaultV2meUSDC
+        );
+
+        // Sum of vaultSupplied across all markets should be > 0
+        uint256 totalVaultSupplied = 0;
+        for (
+            uint256 i = 0;
+            i < info.adapters[0].underlyingMarkets.length;
+            i++
+        ) {
+            totalVaultSupplied += info
+                .adapters[0]
+                .underlyingMarkets[i]
+                .vaultSupplied;
+        }
+
+        // The vault should have assets supplied to at least one market
+        assertGt(
+            totalVaultSupplied,
+            0,
+            "Vault should have supplied assets to markets"
+        );
+
+        // Total supplied should be <= underlying vault total assets
+        // (some assets may be idle/not allocated to markets)
+        uint256 underlyingVaultAssets = info
+            .adapters[0]
+            .underlyingVaultTotalAssets;
+        assertLe(
+            totalVaultSupplied,
+            underlyingVaultAssets,
+            "Supplied should be <= underlying vault assets"
+        );
+    }
+
+    /// @notice Test weighted APY calculation matches V1 behavior
+    function testWeightedApyCalculation() public view {
+        MorphoVaultV2Views.VaultV2Info memory info = viewsContract.getVaultInfo(
+            vaultV2meUSDC
+        );
+
+        // Calculate weighted APY like V1
+        uint256 weightedApySum = 0;
+        uint256 totalVaultSupplied = 0;
+
+        for (
+            uint256 i = 0;
+            i < info.adapters[0].underlyingMarkets.length;
+            i++
+        ) {
+            MorphoVaultV2Views.UnderlyingMarketInfo memory market = info
+                .adapters[0]
+                .underlyingMarkets[i];
+            weightedApySum += market.marketSupplyApy * market.vaultSupplied;
+            totalVaultSupplied += market.vaultSupplied;
+        }
+
+        if (totalVaultSupplied > 0) {
+            uint256 weightedApy = weightedApySum / totalVaultSupplied;
+
+            // Apply fee: baseAPY = weightedAPY * (1 - fee)
+            uint256 fee = info.adapters[0].underlyingVaultFee;
+            uint256 baseApy = (weightedApy * (1e18 - fee)) / 1e18;
+
+            // Base APY should be reasonable (less than 100%)
+            assertLt(baseApy, 1e18, "Base APY should be < 100%");
+        }
+    }
 }

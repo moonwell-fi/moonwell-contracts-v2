@@ -20,6 +20,13 @@ struct MorphoMarket {
     uint128 fee;
 }
 
+/// @notice Position state in Morpho Blue
+struct MorphoPosition {
+    uint256 supplyShares;
+    uint128 borrowShares;
+    uint128 collateral;
+}
+
 /// @notice Interface for Morpho Vault V2 (adapter-based architecture)
 interface IMorphoVaultV2 {
     function name() external view returns (string memory);
@@ -65,6 +72,11 @@ interface IMorphoBlueV2 {
     ) external view returns (MorphoMarketParams memory);
 
     function market(bytes32 id) external view returns (MorphoMarket memory);
+
+    function position(
+        bytes32 id,
+        address user
+    ) external view returns (MorphoPosition memory);
 }
 
 /// @notice Interface for IRM (Interest Rate Model)
