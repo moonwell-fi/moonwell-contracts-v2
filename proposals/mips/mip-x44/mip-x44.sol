@@ -21,7 +21,7 @@ import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, ETHE
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 
-/// @title MIP-X42: MultichainGovernorV2 Migration to Ethereum Mainnet
+/// @title MIP-X44: MultichainGovernorV2 Migration to Ethereum Mainnet
 /// @author Moonwell Contributors
 /// @notice Proposal to migrate Moonwell governance from Moonbeam to Ethereum by:
 ///
@@ -53,11 +53,11 @@ import {ChainIds} from "@utils/ChainIds.sol";
 ///
 ///         Note: All VotingPowerAggregators use timestamp-based voting (no block numbers)
 ///         and only aggregate voting power from xWell + stkWell (no well/distributor).
-contract mipx42 is HybridProposal {
+contract mipx44 is HybridProposal {
     using ProposalActions for *;
     using ChainIds for uint256;
 
-    string public constant override name = "MIP-X42";
+    string public constant override name = "MIP-X44";
 
     // Governance parameters (same values as TemporalGovernor on Base)
     uint256 public constant TEMPORAL_GOVERNOR_PROPOSAL_DELAY = 86400;
@@ -76,7 +76,7 @@ contract mipx42 is HybridProposal {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-x42/x42.md")
+            vm.readFile("./proposals/mips/mip-x44/x44.md")
         );
         _setProposalDescription(proposalDescription);
     }

@@ -19,17 +19,7 @@ import {MultichainVoteCollectionV2} from "@protocol/governance/multichain/Multic
 import {MultichainVoteCollectionMoonbeam} from "@protocol/governance/multichain/MultichainVoteCollectionMoonbeam.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {
-    ETHEREUM_FORK_ID,
-    BASE_FORK_ID,
-    OPTIMISM_FORK_ID,
-    MOONBEAM_FORK_ID,
-    ETHEREUM_WORMHOLE_CHAIN_ID,
-    BASE_WORMHOLE_CHAIN_ID,
-    OPTIMISM_WORMHOLE_CHAIN_ID,
-    MOONBEAM_WORMHOLE_CHAIN_ID,
-    MOONBEAM_CHAIN_ID
-} from "@utils/ChainIds.sol";
+import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_FORK_ID, ETHEREUM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBEAM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {EthereumPostDeploymentActions} from "@protocol/xWELL/EthereumPostDeploymentActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 
@@ -208,10 +198,14 @@ contract MultichainProposalIntegrationV2 is
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
         // WORMHOLE_BRIDGE_ADAPTER_PROXY uses Ownable2Step
-        address bridgeAdapter = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
+        address bridgeAdapter = addresses.getAddress(
+            "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+        );
 
         // Check if temporalGovernor is the pending owner
-        try this._getPendingOwner(bridgeAdapter) returns (address pendingOwner) {
+        try this._getPendingOwner(bridgeAdapter) returns (
+            address pendingOwner
+        ) {
             if (pendingOwner == temporalGovernor) {
                 vm.prank(temporalGovernor);
                 (bool success, ) = bridgeAdapter.call(
@@ -229,7 +223,9 @@ contract MultichainProposalIntegrationV2 is
     }
 
     /// @notice Helper to get pending owner of a contract (for 2-step ownership)
-    function _getPendingOwner(address contractAddress) external view returns (address) {
+    function _getPendingOwner(
+        address contractAddress
+    ) external view returns (address) {
         (bool success, bytes memory data) = contractAddress.staticcall(
             abi.encodeWithSignature("pendingOwner()")
         );
@@ -260,7 +256,8 @@ contract MultichainProposalIntegrationV2 is
         // The wormholeRelayer is stored in the same slot as gasLimit (packed)
         // gasLimit is first 96 bits, wormholeRelayer is the remaining 160 bits
         bytes32 encodedData = bytes32(
-            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) | uint256(gasLimit)
+            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
+                uint256(gasLimit)
         );
 
         // Store at the correct slot for WormholeBridgeBase state variables
@@ -268,37 +265,56 @@ contract MultichainProposalIntegrationV2 is
         // ConfigurablePauseGuardian has 51 slots, so WormholeBridgeBase starts at slot 51
         vm.store(address(governorV2), bytes32(uint256(51)), encodedData);
 
-        console2.log("[SETUP] Replaced wormholeRelayer in MultichainGovernorV2 on Ethereum");
+        console2.log(
+            "[SETUP] Replaced wormholeRelayer in MultichainGovernorV2 on Ethereum"
+        );
 
         // Replace wormhole relayer in Base VoteCollection
         vm.selectFork(BASE_FORK_ID);
         gasLimit = baseVoteCollection.gasLimit();
         encodedData = bytes32(
-            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) | uint256(gasLimit)
+            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
+                uint256(gasLimit)
         );
         vm.store(address(baseVoteCollection), bytes32(uint256(0)), encodedData);
 
-        console2.log("[SETUP] Replaced wormholeRelayer in Base MultichainVoteCollectionV2");
+        console2.log(
+            "[SETUP] Replaced wormholeRelayer in Base MultichainVoteCollectionV2"
+        );
 
         // Replace wormhole relayer in Optimism VoteCollection
         vm.selectFork(OPTIMISM_FORK_ID);
         gasLimit = optimismVoteCollection.gasLimit();
         encodedData = bytes32(
-            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) | uint256(gasLimit)
+            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
+                uint256(gasLimit)
         );
-        vm.store(address(optimismVoteCollection), bytes32(uint256(0)), encodedData);
+        vm.store(
+            address(optimismVoteCollection),
+            bytes32(uint256(0)),
+            encodedData
+        );
 
-        console2.log("[SETUP] Replaced wormholeRelayer in Optimism MultichainVoteCollectionV2");
+        console2.log(
+            "[SETUP] Replaced wormholeRelayer in Optimism MultichainVoteCollectionV2"
+        );
 
         // Replace wormhole relayer in Moonbeam VoteCollection
         vm.selectFork(MOONBEAM_FORK_ID);
         gasLimit = moonbeamVoteCollection.gasLimit();
         encodedData = bytes32(
-            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) | uint256(gasLimit)
+            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
+                uint256(gasLimit)
         );
-        vm.store(address(moonbeamVoteCollection), bytes32(uint256(0)), encodedData);
+        vm.store(
+            address(moonbeamVoteCollection),
+            bytes32(uint256(0)),
+            encodedData
+        );
 
-        console2.log("[SETUP] Replaced wormholeRelayer in Moonbeam MultichainVoteCollectionMoonbeam");
+        console2.log(
+            "[SETUP] Replaced wormholeRelayer in Moonbeam MultichainVoteCollectionMoonbeam"
+        );
     }
 
     /// @notice Configure Ethereum xWELL ecosystem post-deployment
@@ -634,15 +650,21 @@ contract MultichainProposalIntegrationV2 is
 
         // Verify wormhole relayer mock is properly configured (bridge cost > 0)
         vm.selectFork(BASE_FORK_ID);
-        uint256 baseBridgeCost = baseVoteCollection.bridgeCost(ETHEREUM_WORMHOLE_CHAIN_ID);
+        uint256 baseBridgeCost = baseVoteCollection.bridgeCost(
+            ETHEREUM_WORMHOLE_CHAIN_ID
+        );
         assertGt(baseBridgeCost, 0, "Base bridge cost should be > 0");
 
         vm.selectFork(OPTIMISM_FORK_ID);
-        uint256 optimismBridgeCost = optimismVoteCollection.bridgeCost(ETHEREUM_WORMHOLE_CHAIN_ID);
+        uint256 optimismBridgeCost = optimismVoteCollection.bridgeCost(
+            ETHEREUM_WORMHOLE_CHAIN_ID
+        );
         assertGt(optimismBridgeCost, 0, "Optimism bridge cost should be > 0");
 
         vm.selectFork(MOONBEAM_FORK_ID);
-        uint256 moonbeamBridgeCost = moonbeamVoteCollection.bridgeCost(ETHEREUM_WORMHOLE_CHAIN_ID);
+        uint256 moonbeamBridgeCost = moonbeamVoteCollection.bridgeCost(
+            ETHEREUM_WORMHOLE_CHAIN_ID
+        );
         assertGt(moonbeamBridgeCost, 0, "Moonbeam bridge cost should be > 0");
     }
 
@@ -769,7 +791,13 @@ contract MultichainProposalIntegrationV2 is
         // Get bridge cost when finalizing
         uint256 bridgeCost = governorV2.bridgeCostAll();
 
-        governorV2.propose{value: bridgeCost}(proposalId, targets3, values3, calldatas3, true);
+        governorV2.propose{value: bridgeCost}(
+            proposalId,
+            targets3,
+            values3,
+            calldatas3,
+            true
+        );
 
         // Now in Active state
         assertEq(
@@ -1402,7 +1430,13 @@ contract MultichainProposalIntegrationV2 is
         bytes[] memory calldatas2 = new bytes[](0);
 
         uint256 bridgeCost = governorV2.bridgeCostAll();
-        governorV2.propose{value: bridgeCost}(proposalId, targets2, values2, calldatas2, true);
+        governorV2.propose{value: bridgeCost}(
+            proposalId,
+            targets2,
+            values2,
+            calldatas2,
+            true
+        );
 
         assertEq(
             uint8(governorV2.state(proposalId)),
@@ -1919,7 +1953,13 @@ contract MultichainProposalIntegrationV2 is
 
         bridgeCost = governorV2.bridgeCostAll();
         vm.expectRevert(IMultichainGovernorV2.TooManyLiveProposals.selector);
-        governorV2.propose{value: bridgeCost}(targets3, values3, calldatas3, "Proposal 3", true);
+        governorV2.propose{value: bridgeCost}(
+            targets3,
+            values3,
+            calldatas3,
+            "Proposal 3",
+            true
+        );
 
         vm.stopPrank();
     }
