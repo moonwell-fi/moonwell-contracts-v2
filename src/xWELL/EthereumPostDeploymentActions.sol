@@ -2,9 +2,7 @@
 pragma solidity 0.8.19;
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
 /// @title EthereumPostDeploymentActions
 /// @notice Abstract contract containing actions to configure xWELL ecosystem on Ethereum
