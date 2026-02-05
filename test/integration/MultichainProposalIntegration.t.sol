@@ -2544,7 +2544,11 @@ contract MultichainProposalTest is PostProposalCheck {
 
         vm.startPrank(stkwell.EMISSION_MANAGER());
         /// distribute 1e18 xWELL per second
-        stkwell.configureAsset(1e18, address(stkwell));
+        _configureStakedWellAssets(
+            stkwell,
+            uint128(1e18),
+            stkwell.totalSupply()
+        );
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1);
@@ -2667,7 +2671,11 @@ contract MultichainProposalTest is PostProposalCheck {
 
         vm.startPrank(stkwell.EMISSION_MANAGER());
         /// distribute 1e18 xWELL per second
-        stkwell.configureAsset(1e18, address(stkwell));
+        _configureStakedWellAssets(
+            stkwell,
+            uint128(1e18),
+            stkwell.totalSupply()
+        );
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1);
@@ -2836,6 +2844,27 @@ contract MultichainProposalTest is PostProposalCheck {
             startingxWELLAmount,
             xwell.balanceOf(addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")),
             "did not deplete ecosystem reserve"
+        );
+    }
+
+    function _configureStakedWellAssets(
+        IStakedWellUplift stkwell,
+        uint128 emissionRate,
+        uint256 totalStakedAmount
+    ) private {
+        uint128[] memory emissionPerSecond = new uint128[](1);
+        emissionPerSecond[0] = emissionRate;
+
+        uint256[] memory totalStaked = new uint256[](1);
+        totalStaked[0] = totalStakedAmount;
+
+        address[] memory underlyingAsset = new address[](1);
+        underlyingAsset[0] = address(stkwell);
+
+        stkwell.configureAssets(
+            emissionPerSecond,
+            totalStaked,
+            underlyingAsset
         );
     }
 

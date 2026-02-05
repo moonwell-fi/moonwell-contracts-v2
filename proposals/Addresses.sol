@@ -531,16 +531,16 @@ contract Addresses is IAddresses, Test {
 
 contract AllChainAddresses is Addresses {
     uint256[] public supportedChainIds = [
-        1, // Ethereum Mainnet
-        8453, // Base
-        84532, // Base Sepolia
-        1285, // Moonriver
-        1284, // Moonbeam
-        1287, // Moonbase Alpha
-        11155111, // Sepolia
-        11155420, // Optimism Sepolia
-        31337, // Localhost
-        10 // Optimism
+        1,
+        8453,
+        84532,
+        1285,
+        1284,
+        1287,
+        11155111,
+        11155420,
+        31337,
+        10
     ];
     constructor() Addresses(supportedChainIds) {}
 }

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
+pragma experimental ABIEncoderV2;
 
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
@@ -32,11 +33,10 @@ contract DeployMoonwellViewsV3 is Script, Test {
 
         address unitroller = addresses.getAddress("UNITROLLER");
         address tokenSaleDistributor = address(0);
-        address safetyModule = address(0);
+        address safetyModule = addresses.getAddress("stkWELL_PROXY");
         address governanceToken = addresses.getAddress("xWELL_PROXY");
         address nativeMarket = address(0);
         address governanceTokenLP = address(0);
-
         MoonwellViewsV3 viewsContract = new MoonwellViewsV3();
 
         bytes memory initdata = abi.encodeWithSignature(
@@ -51,7 +51,7 @@ contract DeployMoonwellViewsV3 is Script, Test {
 
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
-        new TransparentUpgradeableProxy(
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(viewsContract),
             address(proxyAdmin),
             initdata

@@ -441,9 +441,10 @@ contract MultichainGovernorDeploy is Test {
         address governance,
         address proxyAdmin
     ) public returns (address proxy, address implementation) {
-        // deploy mock implementation
+        // deploy mock implementation (uses StakedWellMoonbeam for testing)
+        // Note: Using deployCode because StakedWellMoonbeam is in Solidity 0.6.12
         implementation = deployCode(
-            "deprecated/artifacts/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
+            "artifacts/foundry/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
         );
 
         // generate init calldata
@@ -484,8 +485,9 @@ contract MultichainGovernorDeploy is Test {
         address proxyAdmin
     ) public returns (address proxy, address implementation) {
         // deploy actual stkWELL implementation for Base
+        // Note: Using deployCode because StakedWell is in Solidity 0.6.12
         implementation = deployCode(
-            "deprecated/artifacts/StakedWell.sol/StakedWell.json"
+            "artifacts/foundry/StakedWell.sol/StakedWell.json"
         );
 
         // generate init calldata
@@ -501,7 +503,7 @@ contract MultichainGovernorDeploy is Test {
             governance
         );
 
-        console.log("proxy constructor calldata mock staked well: ");
+        console.log("proxy constructor calldata staked well: ");
         console.logBytes(abi.encode(implementation, proxyAdmin, initData));
 
         // deploy proxy
@@ -526,8 +528,9 @@ contract MultichainGovernorDeploy is Test {
         address proxyAdmin
     ) public returns (address proxy, address implementation) {
         // deploy actual stkWELL implementation for Moonbeam
+        // Note: Using deployCode because StakedWellMoonbeam is in Solidity 0.6.12
         implementation = deployCode(
-            "deprecated/artifacts/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
+            "artifacts/foundry/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
         );
 
         // generate init calldata
@@ -543,7 +546,7 @@ contract MultichainGovernorDeploy is Test {
             governance
         );
 
-        console.log("proxy constructor calldata mock staked well: ");
+        console.log("proxy constructor calldata staked well moonbeam: ");
         console.logBytes(abi.encode(implementation, proxyAdmin, initData));
 
         // deploy proxy
@@ -554,6 +557,10 @@ contract MultichainGovernorDeploy is Test {
                 initData
             )
         );
+
+        // NOTE: initializeV2() must be called separately after deployment
+        // to set up timestamp-based snapshot logic. This should be done by
+        // calling initializeV2() on the proxy from a non-admin address.
     }
 
     function deployEcosystemReserve(

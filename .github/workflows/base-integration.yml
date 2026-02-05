@@ -195,3 +195,51 @@ jobs:
            timeout_minutes: 20
            max_attempts: 3
            command: time forge test --mc "ChainlinkOEVMorphoWrapperIntegration" -vvv --ffi
+
+  morpho-views-v2-integration-tests:
+    name: MorphoViewsV2 Integration Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Setup MIPs Permissions
+        uses: ./.github/actions/setup-mips-permissions
+
+      - name: Run Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 20
+           max_attempts: 3
+           command: time forge test --mc "MorphoViewsV2Test" -vvv --ffi
+
+  morpho-vault-v2-views-integration-tests:
+    name: MorphoVaultV2Views Integration Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Setup MIPs Permissions
+        uses: ./.github/actions/setup-mips-permissions
+
+      - name: Run Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 20
+           max_attempts: 3
+           command: time forge test --mc "MorphoVaultV2ViewsTest" -vvv --ffi

@@ -175,7 +175,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         proxyAdmin = address(new ProxyAdmin());
         {
-            /// deploy staked well with Block numbers instead of timestamps
+            /// deploy staked well with timestamps (V2 upgrade)
             /// to mock the system on moonbeam
             (address stkWellProxy, ) = deployStakedWellMock(
                 address(xwellProxy),
@@ -189,11 +189,19 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
                 proxyAdmin // proxyAdmin
             );
             stkWellMoonbeam = IStakedWell(stkWellProxy);
+
+            // Call initializeV2 to set up timestamp-based snapshot logic
+            // Must be called from a non-admin address
+            vm.prank(address(1));
+            (bool success, ) = stkWellProxy.call(
+                abi.encodeWithSignature("initializeV2()")
+            );
+            require(success, "initializeV2 failed");
         }
 
         {
             /// deploy staked well with Block timestamps
-            /// to mock the system on moonbeam
+            /// to mock the system on base
             (address stkWellProxy, ) = deployStakedWell(
                 address(xwellProxy),
                 address(xwellProxy),
@@ -274,6 +282,10 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
+
+        // Enable timestamp mode since stkWellMoonbeam is a V2 contract using timestamps
+        vm.prank(address(governor));
+        governor.setNewStakedWell(address(stkWellMoonbeam), true);
     }
 
     function _createProposalUpdateThreshold(

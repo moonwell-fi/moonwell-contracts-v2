@@ -113,6 +113,15 @@ contract WormholeBridgeAdapter is
         gasLimit = 300_000; /// @dev default starting gas limit for relayer
     }
 
+    /// @notice needed on Ethereum as the owner was previously set as the proxy admin
+    function initializeV2(address newOwner) external reinitializer(2) {
+        require(
+            newOwner != address(0),
+            "WormholeBridgeAdapter: new owner cannot be zero address"
+        );
+        _transferOwnership(newOwner);
+    }
+
     /// --------------------------------------------------------
     /// --------------------------------------------------------
     /// ---------------- Admin Only Functions ------------------

@@ -18,7 +18,6 @@ sparse_mode = true # compiles files that match filter criteria
 # build_info = true
 # extra_output = ["storageLayout"]
 
-
 # We can have quite some control over the optimiser when using the new IR one.
 [profile.default.optimizer_details]
 #        # Enables the new ABI optimiser.

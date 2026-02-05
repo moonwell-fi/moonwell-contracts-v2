@@ -120,6 +120,31 @@
         "name": "EURC_METAMORPHO_FEE_SPLITTER"
     },
     {
+        "addr": "0x5E868C8C6Fd597f436fBE60f1eBd5A3A07B3C320",
+        "isContract": true,
+        "name": "USDC_METAMORPHO_FEE_SPLITTER_V2"
+    },
+    {
+        "addr": "0x1f0221cF50B97e1B503fb4D616eC1D883e04a7D4",
+        "isContract": true,
+        "name": "WETH_METAMORPHO_FEE_SPLITTER_V2"
+    },
+    {
+        "addr": "0xc75cd0991778143089B69d0AA89E8d50763259ef",
+        "isContract": true,
+        "name": "EURC_METAMORPHO_FEE_SPLITTER_V2"
+    },
+    {
+        "addr": "0x5994f9a49E9a5203A63daB2d4a7893F7fe9510ec",
+        "isContract": true,
+        "name": "cbBTC_METAMORPHO_FEE_SPLITTER"
+    },
+    {
+        "addr": "0x1a8ae46098FF418E2054243491544ed8564c3CDB",
+        "isContract": true,
+        "name": "meUSDC_METAMORPHO_FEE_SPLITTER"
+    },
+    {
         "addr": "0x543257eF2161176D7C8cD90BA65C2d4CaEF5a796",
         "isContract": true,
         "name": "cbBTC_METAMORPHO_VAULT"
@@ -1283,5 +1308,35 @@
         "addr": "0x98819cC6C48eE912508454b0f1f4e68BD35ca313",
         "isContract": true,
         "name": "CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE"
+    },
+    {
+        "addr": "0x24b53b15dca212d7ba6da287b5e2b801db37c24e",
+        "isContract": true,
+        "name": "MORPHO_VIEWS_V2_IMPLEMENTATION"
+    },
+    {
+        "addr": "0x7465c2cfa4a9ab6acaacbf8eaa28257f6a1d1486",
+        "isContract": true,
+        "name": "MORPHO_VIEWS_V2_PROXY_ADMIN"
+    },
+    {
+        "addr": "0x7fc0dbc713649b96e984b2a5935016d3a5d1ed31",
+        "isContract": true,
+        "name": "MORPHO_VIEWS_V2_PROXY"
+    },
+    {
+        "addr": "0xbB2F06CeAE42CBcF5559Ed0713538c8892D977c9",
+        "isContract": true,
+        "name": "MORPHO_meUSDC_VAULT_V2"
+    },
+    {
+        "addr": "0x4D12405e5B52b6607e7102e83382179EDD684C46",
+        "isContract": true,
+        "name": "MORPHO_VAULT_V2_VIEWS_IMPLEMENTATION"
+    },
+    {
+        "addr": "0x8D189997ccD6ab6909eF89836e5bcEf94599Cce0",
+        "isContract": true,
+        "name": "MORPHO_VAULT_V2_VIEWS_PROXY"
     }
 ]
