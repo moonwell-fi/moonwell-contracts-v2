@@ -11,25 +11,25 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {EthereumPostDeploymentActions} from "@protocol/xWELL/EthereumPostDeploymentActions.sol";
 
 /*
- Post-Deployment Configuration for xWELL Ecosystem on Ethereum
+    Post-Deployment Configuration for xWELL Ecosystem on Ethereum
 
- This script configures the xWELL ecosystem on Ethereum after MultichainGovernorV2 deployment.
- It performs the following actions:
- 1. Grant pause guardian role on xWELL to PAUSE_GUARDIAN
- 2. Set emissions manager on stkWELL to EMISSIONS_ADMIN
- 3. Transfer ownership of xWELL to MultichainGovernorV2
- 4. Transfer ownership of stkWELL to MultichainGovernorV2
- 5. Transfer ownership of WormholeBridgeAdapter to MultichainGovernorV2
+    This script configures the xWELL ecosystem on Ethereum after MultichainGovernorV2 deployment.
+    It performs the following actions:
+    1. Grant pause guardian role on xWELL to PAUSE_GUARDIAN
+    2. Set emissions manager on stkWELL to EMISSIONS_ADMIN
+    3. Transfer ownership of xWELL to MultichainGovernorV2
+    4. Transfer ownership of stkWELL to MultichainGovernorV2
+    5. Transfer ownership of WormholeBridgeAdapter to MultichainGovernorV2
 
- Note: This script should be run AFTER mip-x42.sol is executed and MultichainGovernorV2
-       is live on Ethereum mainnet.
+    Note: This script should be run AFTER mip-x44.sol is executed and MultichainGovernorV2
+          is live on Ethereum mainnet.
 
- To simulate:
-     forge script script/PostDeployEthereumXWell.s.sol:PostDeployEthereumXWell -vvvv --rpc-url ethereum
+    To simulate:
+        forge script script/PostDeployEthereumXWell.s.sol:PostDeployEthereumXWell -vvvv --rpc-url ethereum
 
- To run:
-    forge script script/PostDeployEthereumXWell.s.sol:PostDeployEthereumXWell -vvvv \
-    --rpc-url ethereum --broadcast --etherscan-api-key ethereum --verify
+    To run:
+        forge script script/PostDeployEthereumXWell.s.sol:PostDeployEthereumXWell -vvvv \
+        --rpc-url ethereum --broadcast --etherscan-api-key ethereum --verify
 
 */
 contract PostDeployEthereumXWell is Script, EthereumPostDeploymentActions {

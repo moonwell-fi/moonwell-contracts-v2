@@ -17,7 +17,7 @@
     {
         "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
         "isContract": true,
-        "name": "xWELL_LOGIC"
+        "name": "xWELL_LOGIC_DEPRECATED"
     },
     {
         "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
@@ -27,7 +27,7 @@
     {
         "addr": "0xEF68C8f8BDeEF8e938F519ee818DeC80e320CE6b",
         "isContract": true,
-        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC_DEPRECATED"
     },
     {
         "addr": "0x734AbBCe07679C9A6B4Fe3bC16325e028fA6DbB7",
@@ -50,13 +50,33 @@
         "name": "ECOSYSTEM_RESERVE_PROXY"
     },
     {
-        "addr": "0xEB56C57cEc4d56072942CAF90a8F694Ed766012A",
+        "addr": "0x701551a3cd30A29cCC012e8f160fB2Cac9b0f5Af",
         "isContract": true,
         "name": "STK_GOVTOKEN_IMPL"
     },
     {
-        "addr": "0xF03499F8AE0b883e630558F23760a6A89b1dae7e",
+        "addr": "0xb3a9E0DCf37658a48aa9f018C44f90378ddD4357",
         "isContract": true,
         "name": "STK_GOVTOKEN_PROXY"
+    },
+    {
+        "addr": "0xb84543e036054E2cD5394A9D99fa701Eef666df4",
+        "isContract": true,
+        "name": "xWELL_LOGIC"
+    },
+    {
+        "addr": "0xf81094eedd37DA759E837D727D940f14b18b6c76",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
+    },
+    {
+        "addr": "0xdDbf679d6332d9E5b409865b9671d1927255B52A",
+        "isContract": false,
+        "name": "MOONWELL_DEPLOYER"
+    },
+    {
+        "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
+        "isContract": true,
+        "name": "BREAK_GLASS_GUARDIAN"
     }
 ]
