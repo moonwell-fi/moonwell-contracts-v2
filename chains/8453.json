@@ -1330,7 +1330,7 @@
         "name": "MORPHO_meUSDC_VAULT_V2"
     },
     {
-        "addr": "0x4D12405e5B52b6607e7102e83382179EDD684C46",
+        "addr": "0xF03499F8AE0b883e630558F23760a6A89b1dae7e",
         "isContract": true,
         "name": "MORPHO_VAULT_V2_VIEWS_IMPLEMENTATION"
     },
