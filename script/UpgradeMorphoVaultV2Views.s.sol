@@ -5,6 +5,7 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 import {Test} from "@forge-std/Test.sol";
 
+import "@protocol/utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MorphoVaultV2Views} from "@protocol/views/MorphoVaultV2Views.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -12,13 +13,15 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 
 /*
 To run (dry run):
-forge script script/UpgradeMorphoVaultV2Views.s.sol:UpgradeMorphoVaultV2Views -vvvv --rpc-url base
+forge script script/UpgradeMorphoVaultV2Views.s.sol:UpgradeMorphoVaultV2Views -vvvv
 
 To run (broadcast):
-forge script script/UpgradeMorphoVaultV2Views.s.sol:UpgradeMorphoVaultV2Views -vvvv --rpc-url base --broadcast --verify --etherscan-api-key {BASESCAN_API_KEY}
+forge script script/UpgradeMorphoVaultV2Views.s.sol:UpgradeMorphoVaultV2Views -vvvv --broadcast --verify --etherscan-api-key {BASESCAN_API_KEY}
 */
 
 contract UpgradeMorphoVaultV2Views is Script, Test {
+    using ChainIds for uint256;
+
     Addresses public addresses;
 
     function setUp() public {
@@ -26,6 +29,8 @@ contract UpgradeMorphoVaultV2Views is Script, Test {
     }
 
     function run() public {
+        BASE_FORK_ID.createForksAndSelect();
+
         vm.startBroadcast();
 
         // Deploy new implementation
