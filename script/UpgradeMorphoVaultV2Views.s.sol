@@ -22,14 +22,10 @@ forge script script/UpgradeMorphoVaultV2Views.s.sol:UpgradeMorphoVaultV2Views -v
 contract UpgradeMorphoVaultV2Views is Script, Test {
     using ChainIds for uint256;
 
-    Addresses public addresses;
-
-    function setUp() public {
-        addresses = new Addresses();
-    }
-
     function run() public {
         BASE_FORK_ID.createForksAndSelect();
+
+        Addresses addresses = new Addresses();
 
         vm.startBroadcast();
 
