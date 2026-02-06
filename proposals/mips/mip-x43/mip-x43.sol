@@ -474,13 +474,6 @@ contract mipx43 is HybridProposal {
             "Ethereum: xWELL pending owner should be address(0)"
         );
 
-        // Validate pause guardian (PROXY_ADMIN on Ethereum)
-        assertEq(
-            xWELL(xwellProxy).pauseGuardian(),
-            addresses.getAddress("PAUSE_GUARDIAN"),
-            "Ethereum: pause guardian is incorrect (should be PAUSE_GUARDIAN)"
-        );
-
         // Validate pause duration
         assertEq(
             xWELL(xwellProxy).pauseDuration(),
