@@ -12,7 +12,7 @@ env:
 jobs:
   live-system-integration-tests:
     name: Live System Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -33,7 +33,7 @@ jobs:
 
   xwell-integration-tests:
     name: xWell Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
