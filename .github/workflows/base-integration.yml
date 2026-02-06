@@ -12,7 +12,7 @@ env:
 jobs:
   live-system-integration-tests:
     name: Live System Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -36,7 +36,7 @@ jobs:
 
   reserve-automation-integration-tests:
     name: Reserve Automation Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -60,7 +60,7 @@ jobs:
 
   fee-splitter-xwell-integration-tests:
     name: Fee Splitter/xWell Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -82,7 +82,7 @@ jobs:
 
   erc4626-vault-integration-tests:
     name: ERC4626 Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -104,7 +104,7 @@ jobs:
 
   cypher-integration-tests:
     name: Cypher Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -125,7 +125,7 @@ jobs:
 
   bounded-chainlink-composite-oracle:
     name: Bounded Chainlink Composite Oracle Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -149,7 +149,7 @@ jobs:
 
   chainlink-oev-wrapper:
     name: Chainlink OEV Wrapper Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -173,7 +173,7 @@ jobs:
 
   chainlink-oev-morpho-wrapper:
     name: Chainlink OEV Morpho Wrapper Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -197,7 +197,7 @@ jobs:
 
   morpho-views-v2-integration-tests:
     name: MorphoViewsV2 Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -221,7 +221,7 @@ jobs:
 
   morpho-vault-v2-views-integration-tests:
     name: MorphoVaultV2Views Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

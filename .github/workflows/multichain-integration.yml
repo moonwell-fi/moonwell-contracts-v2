@@ -11,7 +11,7 @@ env:
 jobs:
   run-proposal-tests:
     name: Proposal Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout code
@@ -38,7 +38,7 @@ jobs:
 
   run-cross-chain-tests:
     name: Cross Chain Publish Message Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout code
@@ -64,7 +64,7 @@ jobs:
 
   run-live-proposals-integration-tests:
     name: Live Proposal Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout code
@@ -90,7 +90,7 @@ jobs:
 
   run-on-chain-calldata-check:
     name: On Chain Calldata Check
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout code
@@ -124,7 +124,7 @@ jobs:
     name: In Development Proposal
     permissions:
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -242,7 +242,7 @@ jobs:
 
   run-post-proposal-tests:
     name: Post Proposal Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout code
