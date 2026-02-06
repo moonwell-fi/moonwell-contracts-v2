@@ -113,7 +113,10 @@ contract ChainlinkOEVWrapperIntegrationTest is
         address underlying = MErc20(mToken).underlying();
 
         if (underlying == addresses.getAddress("WETH")) {
-            vm.deal(addresses.getAddress("WETH"), amount);
+            vm.deal(
+                addresses.getAddress("WETH"),
+                addresses.getAddress("WETH").balance + amount
+            );
         }
         deal(underlying, user, amount);
         vm.startPrank(user);
