@@ -6,11 +6,7 @@
     },
     {
         "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
-<<<<<<< feat/multichain-gov-refactor
-        "isContract": false,
-=======
         "isContract": true,
->>>>>>> feat/stkwell-upgrade
         "name": "PAUSE_GUARDIAN"
     },
     {
