@@ -540,8 +540,9 @@ contract mipx44 is HybridProposal {
         // Initialize governor on Ethereum
         vm.selectFork(ETHEREUM_FORK_ID);
 
-        // TODO: determine whitelisted calldatas
-        bytes[] memory whitelistedCalldatas = new bytes[](0);
+        bytes[] memory whitelistedCalldatas = _buildBreakGlassCalldatas(
+            addresses
+        );
 
         vm.startBroadcast();
 
@@ -594,6 +595,147 @@ contract mipx44 is HybridProposal {
         );
 
         vm.stopBroadcast();
+    }
+
+    /// @notice Build whitelisted calldatas for the break glass guardian
+    /// @dev These calldatas are the exact bytes the break glass guardian is allowed to execute.
+    ///      Modeled after BreakGlass.s.sol but adapted for V2 (Ethereum-based governor, PAUSE_GUARDIAN
+    ///      as the rollback address instead of Artemis Timelock).
+    ///
+    ///      The break glass guardian can call executeBreakGlass(targets, calldatas) where each
+    ///      calldata must be in this whitelist. This allows emergency rollback of ownership/admin
+    ///      to the PAUSE_GUARDIAN multisig.
+    ///
+    ///      Whitelisted calldatas:
+    ///        [0] publishMessage — add PAUSE_GUARDIAN as trusted sender on Base TemporalGovernor
+    ///        [1] publishMessage — add PAUSE_GUARDIAN as trusted sender on Optimism TemporalGovernor
+    ///        [2] publishMessage — add PAUSE_GUARDIAN as trusted sender on Moonbeam TemporalGovernor
+    ///        [3] _setPendingAdmin(address) — for mToken admin transfer
+    ///        [4] setAdmin(address) — for chainlink oracle admin
+    ///        [5] setEmissionsManager(address) — for stkWELL emissions manager
+    ///        [6] changeAdmin(address) — for stkWELL admin
+    ///        [7] transferOwnership(address) — for Ownable contracts (xWELL, bridge adapter, etc.)
+    function _buildBreakGlassCalldatas(
+        Addresses addresses
+    ) internal returns (bytes[] memory) {
+        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+
+        // 8 whitelisted calldatas: 3 publishMessage (one per satellite chain) + 5 admin functions
+        bytes[] memory calldatas = new bytes[](8);
+
+        // --- publishMessage calldatas for each satellite chain's TemporalGovernor ---
+        // Each adds PAUSE_GUARDIAN as a trusted sender on the respective TemporalGovernor
+        // via Wormhole publishMessage → TemporalGovernor.setTrustedSenders()
+
+        calldatas[0] = _buildPublishMessageCalldata(
+            addresses,
+            BASE_FORK_ID,
+            ETHEREUM_WORMHOLE_CHAIN_ID,
+            pauseGuardian
+        );
+
+        calldatas[1] = _buildPublishMessageCalldata(
+            addresses,
+            OPTIMISM_FORK_ID,
+            ETHEREUM_WORMHOLE_CHAIN_ID,
+            pauseGuardian
+        );
+
+        calldatas[2] = _buildPublishMessageCalldata(
+            addresses,
+            MOONBEAM_FORK_ID,
+            ETHEREUM_WORMHOLE_CHAIN_ID,
+            pauseGuardian
+        );
+
+        // --- Standard admin transfer calldatas ---
+
+        /// for mTokens: _setPendingAdmin(address)
+        calldatas[3] = abi.encodeWithSignature(
+            "_setPendingAdmin(address)",
+            pauseGuardian
+        );
+
+        /// for chainlink oracle: setAdmin(address)
+        calldatas[4] = abi.encodeWithSignature(
+            "setAdmin(address)",
+            pauseGuardian
+        );
+
+        /// for stkWELL: setEmissionsManager(address)
+        calldatas[5] = abi.encodeWithSignature(
+            "setEmissionsManager(address)",
+            pauseGuardian
+        );
+
+        /// for stkWELL: changeAdmin(address)
+        calldatas[6] = abi.encodeWithSignature(
+            "changeAdmin(address)",
+            pauseGuardian
+        );
+
+        /// for Ownable contracts (xWELL, bridge adapter, etc.): transferOwnership(address)
+        calldatas[7] = abi.encodeWithSignature(
+            "transferOwnership(address)",
+            pauseGuardian
+        );
+
+        // Restore Ethereum fork since callers expect it
+        vm.selectFork(ETHEREUM_FORK_ID);
+
+        return calldatas;
+    }
+
+    /// @notice Build a publishMessage calldata that adds a trusted sender on a satellite chain's TemporalGovernor
+    /// @param addresses The address registry
+    /// @param satelliteForkId Fork ID of the satellite chain
+    /// @param trustedSenderChainId Wormhole chain ID of the chain the trusted sender is on (Ethereum)
+    /// @param trustedSenderAddr Address to add as trusted sender (PAUSE_GUARDIAN)
+    function _buildPublishMessageCalldata(
+        Addresses addresses,
+        uint256 satelliteForkId,
+        uint16 trustedSenderChainId,
+        address trustedSenderAddr
+    ) internal returns (bytes memory) {
+        vm.selectFork(satelliteForkId);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+
+        // Build the setTrustedSenders calldata for the TemporalGovernor
+        ITemporalGovernor.TrustedSender[]
+            memory trustedSenders = new ITemporalGovernor.TrustedSender[](1);
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({
+            chainId: trustedSenderChainId,
+            addr: trustedSenderAddr
+        });
+
+        bytes memory setTrustedSendersCalldata = abi.encodeWithSignature(
+            "setTrustedSenders((uint16,address)[])",
+            trustedSenders
+        );
+
+        // Build the Wormhole publishMessage payload
+        // The payload is consumed by TemporalGovernor._executeProposal which expects:
+        //   abi.encode(intendedRecipient, targets[], values[], calldatas[])
+        address[] memory targets = new address[](1);
+        targets[0] = temporalGovernor;
+
+        uint256[] memory values = new uint256[](1);
+
+        bytes[] memory innerCalldatas = new bytes[](1);
+        innerCalldatas[0] = setTrustedSendersCalldata;
+
+        return
+            abi.encodeWithSignature(
+                "publishMessage(uint32,bytes,uint8)",
+                1000,
+                abi.encode(
+                    temporalGovernor, // intendedRecipient
+                    targets,
+                    values,
+                    innerCalldatas
+                ),
+                200
+            );
     }
 
     function _buildMoonbeam(Addresses addresses) internal {
@@ -773,6 +915,13 @@ contract mipx44 is HybridProposal {
         moonbeamContracts[73] = "ANTHIAS_MULTISIG";
         moonbeamContracts[74] = "F-GLMR-DEVGRANT";
 
+        // Track addresses already processed to avoid duplicate actions for aliases
+        // (e.g., mGLIMMER/MNATIVE and mETHwh/MOONWELL_mETH point to same contract)
+        address[] memory processedAddresses = new address[](
+            moonbeamContracts.length
+        );
+        uint256 processedCount = 0;
+
         // Loop through all contracts and transfer ownership if owned by MultichainGovernor
         for (uint256 i = 0; i < moonbeamContracts.length; i++) {
             // Check if contract address exists in addresses mapping
@@ -784,9 +933,18 @@ contract mipx44 is HybridProposal {
                 moonbeamContracts[i]
             );
 
-            // Try to get the owner - if it fails, skip this contract
+            // Skip if we already processed this address (alias dedup)
+            bool alreadyProcessed = false;
+            for (uint256 j = 0; j < processedCount; j++) {
+                if (processedAddresses[j] == contractAddress) {
+                    alreadyProcessed = true;
+                    break;
+                }
+            }
+            if (alreadyProcessed) continue;
+
+            // Pattern 1: Ownable (owner() -> transferOwnership())
             try this._getOwner(contractAddress) returns (address owner) {
-                // If owned by MultichainGovernor, transfer to TemporalGovernor
                 if (owner == moonbeamMultichainGovernor) {
                     _pushAction(
                         contractAddress,
@@ -808,14 +966,96 @@ contract mipx44 is HybridProposal {
                         moonbeamContracts[i]
                     );
                     ownershipTransferCount++;
-
-                    // Track this contract for validation
                     contractsToValidateOwnership.push(moonbeamContracts[i]);
+                    processedAddresses[processedCount++] = contractAddress;
+                    continue;
                 }
-            } catch {
-                // Contract doesn't have owner() function or call failed, skip
-                continue;
-            }
+            } catch {}
+
+            // Pattern 2: admin() — mToken/Unitroller (_setPendingAdmin) or ChainlinkOracle (setAdmin)
+            try this._getAdmin(contractAddress) returns (address admin) {
+                if (admin == moonbeamMultichainGovernor) {
+                    bool hasPending = this._hasPendingAdmin(contractAddress);
+                    if (hasPending) {
+                        // mToken/Unitroller pattern: 2-step via _setPendingAdmin
+                        _pushAction(
+                            contractAddress,
+                            abi.encodeWithSignature(
+                                "_setPendingAdmin(address)",
+                                payable(temporalGovernor)
+                            ),
+                            string(
+                                abi.encodePacked(
+                                    "Set pending admin on ",
+                                    moonbeamContracts[i],
+                                    " to TemporalGovernor"
+                                )
+                            ),
+                            ActionType.Moonbeam
+                        );
+                        console2.log(
+                            "  [ADMIN] Set pending admin on %s to TemporalGovernor",
+                            moonbeamContracts[i]
+                        );
+                    } else {
+                        // ChainlinkOracle pattern: 1-step via setAdmin
+                        _pushAction(
+                            contractAddress,
+                            abi.encodeWithSignature(
+                                "setAdmin(address)",
+                                temporalGovernor
+                            ),
+                            string(
+                                abi.encodePacked(
+                                    "Set admin on ",
+                                    moonbeamContracts[i],
+                                    " to TemporalGovernor"
+                                )
+                            ),
+                            ActionType.Moonbeam
+                        );
+                        console2.log(
+                            "  [ADMIN] Set admin on %s to TemporalGovernor",
+                            moonbeamContracts[i]
+                        );
+                    }
+                    ownershipTransferCount++;
+                    contractsToValidateOwnership.push(moonbeamContracts[i]);
+                    processedAddresses[processedCount++] = contractAddress;
+                    continue;
+                }
+            } catch {}
+
+            // Pattern 3: EMISSION_MANAGER() -> setEmissionsManager() (stkWELL)
+            try this._getEmissionManager(contractAddress) returns (
+                address manager
+            ) {
+                if (manager == moonbeamMultichainGovernor) {
+                    _pushAction(
+                        contractAddress,
+                        abi.encodeWithSignature(
+                            "setEmissionsManager(address)",
+                            temporalGovernor
+                        ),
+                        string(
+                            abi.encodePacked(
+                                "Set emissions manager on ",
+                                moonbeamContracts[i],
+                                " to TemporalGovernor"
+                            )
+                        ),
+                        ActionType.Moonbeam
+                    );
+                    console2.log(
+                        "  [EMISSION_MANAGER] Set emissions manager on %s to TemporalGovernor",
+                        moonbeamContracts[i]
+                    );
+                    ownershipTransferCount++;
+                    contractsToValidateOwnership.push(moonbeamContracts[i]);
+                    processedAddresses[processedCount++] = contractAddress;
+                    continue;
+                }
+            } catch {}
         }
 
         console2.log(
@@ -1156,6 +1396,38 @@ contract mipx44 is HybridProposal {
         // Returns address(0) if contract doesn't have pendingOwner() function
     }
 
+    /// @notice Try to get admin() of a contract (mToken/Unitroller/ChainlinkOracle pattern)
+    function _getAdmin(
+        address contractAddress
+    ) external view returns (address admin) {
+        (bool success, bytes memory data) = contractAddress.staticcall(
+            abi.encodeWithSignature("admin()")
+        );
+        require(success && data.length >= 32, "Failed to get admin");
+        admin = abi.decode(data, (address));
+    }
+
+    /// @notice Try to get EMISSION_MANAGER() of a contract (stkWELL pattern)
+    function _getEmissionManager(
+        address contractAddress
+    ) external view returns (address manager) {
+        (bool success, bytes memory data) = contractAddress.staticcall(
+            abi.encodeWithSignature("EMISSION_MANAGER()")
+        );
+        require(success && data.length >= 32, "Failed to get emission manager");
+        manager = abi.decode(data, (address));
+    }
+
+    /// @notice Check if contract supports pendingAdmin (mToken/Unitroller vs ChainlinkOracle)
+    function _hasPendingAdmin(
+        address contractAddress
+    ) external view returns (bool) {
+        (bool success, ) = contractAddress.staticcall(
+            abi.encodeWithSignature("pendingAdmin()")
+        );
+        return success;
+    }
+
     /// @notice Helper function to validate all ownership transfers
     /// @param addresses The addresses contract
     /// @param temporalGovernor The temporal governor address
@@ -1175,17 +1447,18 @@ contract mipx44 is HybridProposal {
         for (uint256 i = 0; i < contractsToValidateOwnership.length; i++) {
             string memory contractName = contractsToValidateOwnership[i];
             address contractAddress = addresses.getAddress(contractName);
+            bool validated = false;
 
+            // Pattern 1: owner() / pendingOwner()
             try this._getOwner(contractAddress) returns (address currentOwner) {
-                // Check if ownership is fully transferred (owner == temporalGovernor)
                 if (currentOwner == temporalGovernor) {
                     console2.log(
                         "[PASS] %s ownership transferred to TemporalGovernor",
                         contractName
                     );
                     validatedCount++;
+                    validated = true;
                 } else {
-                    // For 2-step ownership contracts, check if temporalGovernor is the pending owner
                     address pendingOwner = this._getPendingOwner(
                         contractAddress
                     );
@@ -1195,19 +1468,60 @@ contract mipx44 is HybridProposal {
                             contractName
                         );
                         validatedCount++;
-                    } else {
-                        console2.log(
-                            "[FAIL] %s ownership NOT transferred (current owner: %s, pending owner: %s)",
-                            contractName,
-                            currentOwner,
-                            pendingOwner
-                        );
-                        failedCount++;
+                        validated = true;
                     }
                 }
-            } catch {
+            } catch {}
+
+            if (validated) continue;
+
+            // Pattern 2: admin() / pendingAdmin()
+            try this._getAdmin(contractAddress) returns (address currentAdmin) {
+                if (currentAdmin == temporalGovernor) {
+                    console2.log(
+                        "[PASS] %s admin set to TemporalGovernor",
+                        contractName
+                    );
+                    validatedCount++;
+                    validated = true;
+                } else if (this._hasPendingAdmin(contractAddress)) {
+                    // 2-step admin: check pendingAdmin
+                    (bool ok, bytes memory data) = contractAddress.staticcall(
+                        abi.encodeWithSignature("pendingAdmin()")
+                    );
+                    if (ok && data.length >= 32) {
+                        address pendingAdmin = abi.decode(data, (address));
+                        if (pendingAdmin == temporalGovernor) {
+                            console2.log(
+                                "[PASS] %s pending admin set to TemporalGovernor",
+                                contractName
+                            );
+                            validatedCount++;
+                            validated = true;
+                        }
+                    }
+                }
+            } catch {}
+
+            if (validated) continue;
+
+            // Pattern 3: EMISSION_MANAGER()
+            try this._getEmissionManager(contractAddress) returns (
+                address manager
+            ) {
+                if (manager == temporalGovernor) {
+                    console2.log(
+                        "[PASS] %s emissions manager set to TemporalGovernor",
+                        contractName
+                    );
+                    validatedCount++;
+                    validated = true;
+                }
+            } catch {}
+
+            if (!validated) {
                 console2.log(
-                    "[ERROR] Failed to get owner for %s",
+                    "[FAIL] %s NOT transferred to TemporalGovernor",
                     contractName
                 );
                 failedCount++;

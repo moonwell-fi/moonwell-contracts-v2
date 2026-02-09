@@ -2127,9 +2127,13 @@ contract MultichainProposalTest is PostProposalCheck {
         );
     }
 
+    /// @dev Skipped: mip-x44 migrates all contract ownership from MultichainGovernor
+    /// to TemporalGovernor, so the old BreakGlass flow (MultichainGovernor -> artemis timelock)
+    /// is no longer valid. A new BreakGlass mechanism through TemporalGovernor will be needed.
     function testBreakGlassGuardianSucceedsSettingPendingAdminAndOwners()
         public
     {
+        vm.skip(true);
         {
             vm.selectFork(BASE_FORK_ID);
             temporalGov = TemporalGovernor(
@@ -2174,8 +2178,9 @@ contract MultichainProposalTest is PostProposalCheck {
         /// skip wormhole for now, circle back to that later and make array size 18
 
         /// targets
-        address[] memory targets = new address[](20);
-        bytes[] memory calldatas = new bytes[](20);
+        /// NOTE: MOONBEAM_PROXY_ADMIN removed - ownership transferred to TemporalGovernor by mip-x44
+        address[] memory targets = new address[](19);
+        bytes[] memory calldatas = new bytes[](19);
 
         targets[0] = addresses.getAddress("WORMHOLE_CORE");
         calldatas[0] = proposalC.approvedCalldata(0);
@@ -2183,59 +2188,56 @@ contract MultichainProposalTest is PostProposalCheck {
         targets[1] = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
         calldatas[1] = transferOwnershipCalldata;
 
-        targets[2] = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
+        targets[2] = addresses.getAddress("xWELL_PROXY");
         calldatas[2] = transferOwnershipCalldata;
 
-        targets[3] = addresses.getAddress("xWELL_PROXY");
-        calldatas[3] = transferOwnershipCalldata;
+        targets[3] = addresses.getAddress("CHAINLINK_ORACLE");
+        calldatas[3] = changeAdminCalldata;
 
-        targets[4] = addresses.getAddress("CHAINLINK_ORACLE");
-        calldatas[4] = changeAdminCalldata;
+        targets[4] = addresses.getAddress("STK_GOVTOKEN_PROXY");
+        calldatas[4] = setEmissionsManagerCalldata;
 
-        targets[5] = addresses.getAddress("STK_GOVTOKEN_PROXY");
-        calldatas[5] = setEmissionsManagerCalldata;
+        targets[5] = addresses.getAddress("UNITROLLER");
+        calldatas[5] = _setPendingAdminCalldata;
 
-        targets[6] = addresses.getAddress("UNITROLLER");
-        calldatas[6] = _setPendingAdminCalldata;
+        targets[6] = addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER");
+        calldatas[6] = transferOwnershipCalldata;
 
-        targets[7] = addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER");
-        calldatas[7] = transferOwnershipCalldata;
+        targets[7] = addresses.getAddress("DEPRECATED_MOONWELL_mWBTC");
+        calldatas[7] = _setPendingAdminCalldata;
 
-        targets[8] = addresses.getAddress("DEPRECATED_MOONWELL_mWBTC");
+        targets[8] = addresses.getAddress("MOONWELL_mBUSD");
         calldatas[8] = _setPendingAdminCalldata;
 
-        targets[9] = addresses.getAddress("MOONWELL_mBUSD");
+        targets[9] = addresses.getAddress("DEPRECATED_MOONWELL_mETH");
         calldatas[9] = _setPendingAdminCalldata;
 
-        targets[10] = addresses.getAddress("DEPRECATED_MOONWELL_mETH");
+        targets[10] = addresses.getAddress("MOONWELL_mUSDC");
         calldatas[10] = _setPendingAdminCalldata;
 
-        targets[11] = addresses.getAddress("MOONWELL_mUSDC");
+        targets[11] = addresses.getAddress("MNATIVE");
         calldatas[11] = _setPendingAdminCalldata;
 
-        targets[12] = addresses.getAddress("MNATIVE");
+        targets[12] = addresses.getAddress("mxcDOT");
         calldatas[12] = _setPendingAdminCalldata;
 
-        targets[13] = addresses.getAddress("mxcDOT");
+        targets[13] = addresses.getAddress("mxcUSDT");
         calldatas[13] = _setPendingAdminCalldata;
 
-        targets[14] = addresses.getAddress("mxcUSDT");
+        targets[14] = addresses.getAddress("mFRAX");
         calldatas[14] = _setPendingAdminCalldata;
 
-        targets[15] = addresses.getAddress("mFRAX");
+        targets[15] = addresses.getAddress("mUSDCwh");
         calldatas[15] = _setPendingAdminCalldata;
 
-        targets[16] = addresses.getAddress("mUSDCwh");
+        targets[16] = addresses.getAddress("MOONWELL_mWBTC");
         calldatas[16] = _setPendingAdminCalldata;
 
-        targets[17] = addresses.getAddress("MOONWELL_mWBTC");
+        targets[17] = addresses.getAddress("mxcUSDC");
         calldatas[17] = _setPendingAdminCalldata;
 
-        targets[18] = addresses.getAddress("mxcUSDC");
+        targets[18] = addresses.getAddress("MOONWELL_mETH");
         calldatas[18] = _setPendingAdminCalldata;
-
-        targets[19] = addresses.getAddress("MOONWELL_mETH");
-        calldatas[19] = _setPendingAdminCalldata;
 
         bytes[] memory temporalGovCalldatas = new bytes[](1);
         bytes memory temporalGovExecData;
@@ -2298,11 +2300,6 @@ contract MultichainProposalTest is PostProposalCheck {
             ).owner(),
             address(governor),
             "WORMHOLE_BRIDGE_ADAPTER_PROXY owner incorrect"
-        );
-        assertEq(
-            Ownable(addresses.getAddress("MOONBEAM_PROXY_ADMIN")).owner(),
-            artemisTimelockAddress,
-            "MOONBEAM_PROXY_ADMIN owner incorrect"
         );
         assertEq(
             Ownable2StepUpgradeable(addresses.getAddress("xWELL_PROXY"))
