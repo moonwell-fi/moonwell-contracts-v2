@@ -178,11 +178,8 @@ contract MultichainGovernorV2 is
 
         _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
 
-        // TODO: startingProposalCount might not be necessary: ask luke
         proposalCount = uint256(initData.startingProposalCount);
-
-        // TODO: what's a reasonable count?
-        _maxUserProposalCount = 2;
+        _maxUserProposalCount = 3;
         _executionWindow = 7 days;
 
         unchecked {
@@ -490,13 +487,8 @@ contract MultichainGovernorV2 is
             descriptionUri
         );
 
-        /// post proposal checks
-        if (!_userLiveProposals[msg.sender].add(proposalId)) {
-            revert ProposalAlreadyExists();
-        }
-        if (!_liveProposals.add(proposalId)) {
-            revert ProposalAlreadyExists();
-        }
+        _userLiveProposals[msg.sender].add(proposalId);
+        _liveProposals.add(proposalId);
 
         if (finalize) {
             _finalizeProposal(proposalId, newProposal);

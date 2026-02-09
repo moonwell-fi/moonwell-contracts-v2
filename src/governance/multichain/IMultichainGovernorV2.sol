@@ -17,7 +17,6 @@ interface IMultichainGovernorV2 {
     error InvalidProposalState(ProposalState current, ProposalState required);
     error EmptyDescriptionUri();
     error TooManyLiveProposals();
-    error ProposalAlreadyExists();
     error ProposalAlreadyFinalized();
     error OnlyProposer();
     error ProposalExpired();
