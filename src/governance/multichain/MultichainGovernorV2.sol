@@ -551,7 +551,6 @@ contract MultichainGovernorV2 is
     /// @notice execute a proposal
     /// can only be called if the proposal is in the succeeded state
     /// can only be called when the contract is not paused
-    /// the sum of the values must be equal to the msg.value
     /// the native token balance of this contract will remain unchanged before and after a proposal is executed
     /// @param proposalId the id of the proposal to execute
     function execute(
