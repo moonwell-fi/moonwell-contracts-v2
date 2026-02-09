@@ -220,7 +220,9 @@ contract MultichainProposalTest is PostProposalCheck {
         }
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testSetup() public {
+        vm.skip(true);
         vm.selectFork(BASE_FORK_ID);
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY")
@@ -592,7 +594,9 @@ contract MultichainProposalTest is PostProposalCheck {
         assertTrue(gasCost != 0, "gas cost is 0 gas cost all");
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testProposeOnMoonbeamWellSucceeds() public {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
@@ -952,7 +956,9 @@ contract MultichainProposalTest is PostProposalCheck {
         }
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testProposeOnMoonbeamDefeat() public {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
@@ -1096,7 +1102,9 @@ contract MultichainProposalTest is PostProposalCheck {
         }
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testProposeMoonbeamExcessRefund() public {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
@@ -1140,7 +1148,9 @@ contract MultichainProposalTest is PostProposalCheck {
         );
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testProposeMoonbeamCancel() public {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
@@ -1196,7 +1206,9 @@ contract MultichainProposalTest is PostProposalCheck {
         );
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testVotingOnBasestkWellSucceeds() public {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
 
         // PostProposalCheck warps to the future to execute proposals so we want make sure the
@@ -1308,10 +1320,12 @@ contract MultichainProposalTest is PostProposalCheck {
         }
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testVotingOnBasexWellSucceeds()
         public
         returns (uint256 proposalId)
     {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
@@ -1423,7 +1437,9 @@ contract MultichainProposalTest is PostProposalCheck {
         }
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testVotingOnBasexWellPostVotingPeriodFails() public {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
@@ -1523,9 +1539,11 @@ contract MultichainProposalTest is PostProposalCheck {
         }
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testRebroadcatingProposalMultipleTimesVotePeriodMultichainGovernorSucceeds()
         public
     {
+        vm.skip(true);
         /// propose, then rebroadcast
         vm.selectFork(MOONBEAM_FORK_ID);
 
@@ -1635,7 +1653,9 @@ contract MultichainProposalTest is PostProposalCheck {
         );
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testEmittingVotesExcessValueRefunded() public {
+        vm.skip(true);
         uint256 proposalId = testVotingOnBasexWellSucceeds();
 
         vm.selectFork(BASE_FORK_ID);
@@ -1670,9 +1690,11 @@ contract MultichainProposalTest is PostProposalCheck {
         );
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testEmittingVotesMultipleTimesVoteCollectionPeriodSucceeds()
         public
     {
+        vm.skip(true);
         uint256 proposalId = testVotingOnBasexWellSucceeds();
 
         vm.selectFork(BASE_FORK_ID);
@@ -1714,7 +1736,9 @@ contract MultichainProposalTest is PostProposalCheck {
         voteCollection.emitVotes{value: bridgeCost}(proposalId);
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testReceiveProposalFromRelayersSucceeds() public {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
@@ -1803,7 +1827,9 @@ contract MultichainProposalTest is PostProposalCheck {
         }
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testReceiveSameProposalFromRelayersTwiceFails() public {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
@@ -1920,7 +1946,9 @@ contract MultichainProposalTest is PostProposalCheck {
         }
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testEmittingVotesPostVoteCollectionPeriodFails() public {
+        vm.skip(true);
         uint256 proposalId = testVotingOnBasexWellSucceeds();
 
         vm.selectFork(BASE_FORK_ID);
@@ -1947,7 +1975,9 @@ contract MultichainProposalTest is PostProposalCheck {
 
     /// upgrading contract logic
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testUpgradeMultichainGovernorThroughGovProposal() public {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
         wormholeRelayerAdapter.setIsMultichainTest(false);
 
@@ -2894,7 +2924,9 @@ contract MultichainProposalTest is PostProposalCheck {
         require(userProposalFound, "proposal not created");
     }
 
+    /// @dev Skipped: mip-x44 migrated governance from Moonbeam to Ethereum
     function testGrantGuardianRoleAfterPause() public {
+        vm.skip(true);
         vm.selectFork(MOONBEAM_FORK_ID);
 
         address pauseGuardian = addresses.getAddress(
