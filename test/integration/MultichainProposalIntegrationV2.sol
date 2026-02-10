@@ -1552,9 +1552,7 @@ contract MultichainProposalIntegrationV2 is
 
         // Mock voting power snapshots
         uint256 voteSnapshotTimestamp;
-        (, , , voteSnapshotTimestamp, , , , , , ) = _getProposalInfo(
-            proposalId
-        );
+        (, , voteSnapshotTimestamp, , , , , , ) = _getProposalInfo(proposalId);
 
         vm.mockCall(
             address(ethereumVotingPower),
@@ -1628,9 +1626,7 @@ contract MultichainProposalIntegrationV2 is
 
         // Get vote snapshot timestamp
         uint256 voteSnapshotTimestamp;
-        (, , , voteSnapshotTimestamp, , , , , , ) = _getProposalInfo(
-            proposalId
-        );
+        (, , voteSnapshotTimestamp, , , , , , ) = _getProposalInfo(proposalId);
 
         // Mock voting power at snapshot
         vm.mockCall(
@@ -1703,9 +1699,7 @@ contract MultichainProposalIntegrationV2 is
 
         // Mock voting power
         uint256 voteSnapshotTimestamp;
-        (, , , voteSnapshotTimestamp, , , , , , ) = _getProposalInfo(
-            proposalId
-        );
+        (, , voteSnapshotTimestamp, , , , , , ) = _getProposalInfo(proposalId);
 
         vm.mockCall(
             address(ethereumVotingPower),
@@ -1753,9 +1747,7 @@ contract MultichainProposalIntegrationV2 is
 
         // Mock zero voting power
         uint256 voteSnapshotTimestamp;
-        (, , , voteSnapshotTimestamp, , , , , , ) = _getProposalInfo(
-            proposalId
-        );
+        (, , voteSnapshotTimestamp, , , , , , ) = _getProposalInfo(proposalId);
 
         vm.mockCall(
             address(ethereumVotingPower),
@@ -1835,7 +1827,6 @@ contract MultichainProposalIntegrationV2 is
         (
             ,
             ,
-            ,
             uint256 voteSnapshotTimestamp,
             uint256 votingStartTime,
             uint256 votingEndTime,
@@ -1864,7 +1855,6 @@ contract MultichainProposalIntegrationV2 is
         internal
         view
         returns (
-            address proposer,
             address[] memory targets,
             uint256[] memory values,
             uint256 voteSnapshotTimestamp,
@@ -1904,7 +1894,7 @@ contract MultichainProposalIntegrationV2 is
     function testMaxUserProposalCount() public {
         vm.selectFork(ETHEREUM_FORK_ID);
         // This test verifies the max live proposals per user
-        // For now, max is 2 proposals per user in Init/Active state
+        // For now, max is 3 proposals per user in Init/Active state
 
         vm.startPrank(PROPOSER);
 
@@ -1917,7 +1907,7 @@ contract MultichainProposalIntegrationV2 is
         calldatas1[0] = abi.encodeWithSignature("function1()");
 
         uint256 bridgeCost = governorV2.bridgeCostAll();
-        uint256 proposalId1 = governorV2.propose{value: bridgeCost}(
+        governorV2.propose{value: bridgeCost}(
             targets1,
             values1,
             calldatas1,
@@ -1934,7 +1924,7 @@ contract MultichainProposalIntegrationV2 is
         calldatas2[0] = abi.encodeWithSignature("function2()");
 
         bridgeCost = governorV2.bridgeCostAll();
-        uint256 proposalId2 = governorV2.propose{value: bridgeCost}(
+        governorV2.propose{value: bridgeCost}(
             targets2,
             values2,
             calldatas2,
@@ -1942,7 +1932,7 @@ contract MultichainProposalIntegrationV2 is
             true
         );
 
-        // Try to create third proposal - should fail
+        // Create third proposal
         address[] memory targets3 = new address[](1);
         targets3[0] = address(0x3333);
         uint256[] memory values3 = new uint256[](1);
@@ -1951,12 +1941,29 @@ contract MultichainProposalIntegrationV2 is
         calldatas3[0] = abi.encodeWithSignature("function3()");
 
         bridgeCost = governorV2.bridgeCostAll();
-        vm.expectRevert(IMultichainGovernorV2.TooManyLiveProposals.selector);
         governorV2.propose{value: bridgeCost}(
             targets3,
             values3,
             calldatas3,
             "Proposal 3",
+            true
+        );
+
+        // Try to create fourth proposal - should fail
+        address[] memory targets4 = new address[](1);
+        targets4[0] = address(0x4444);
+        uint256[] memory values4 = new uint256[](1);
+        values4[0] = 0;
+        bytes[] memory calldatas4 = new bytes[](1);
+        calldatas4[0] = abi.encodeWithSignature("function4()");
+
+        bridgeCost = governorV2.bridgeCostAll();
+        vm.expectRevert(IMultichainGovernorV2.TooManyLiveProposals.selector);
+        governorV2.propose{value: bridgeCost}(
+            targets4,
+            values4,
+            calldatas4,
+            "Proposal 4",
             true
         );
 
@@ -2056,13 +2063,7 @@ contract MultichainProposalIntegrationV2 is
         bytes[] memory calldatas2 = new bytes[](1);
         calldatas2[0] = abi.encodeWithSignature("function2()");
 
-        uint256 proposalId2 = governorV2.propose(
-            targets2,
-            values2,
-            calldatas2,
-            "Proposal 2",
-            false
-        );
+        governorV2.propose(targets2, values2, calldatas2, "Proposal 2", false);
 
         vm.stopPrank();
 
@@ -2251,8 +2252,8 @@ contract MultichainProposalIntegrationV2 is
         (
             uint256 voteSnapshotTimestamp,
             uint256 votingStartTime,
-            uint256 votingEndTime,
-            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
             uint256 totalVotes,
             uint256 forVotes,
             uint256 againstVotes,
@@ -2916,7 +2917,7 @@ contract MultichainProposalIntegrationV2 is
     }
 
     /// @notice Helper to mock voting power at a proposal's snapshot timestamp
-    function _mockVotingPowerAtSnapshot(uint256 proposalId) internal {
+    function _mockVotingPowerAtSnapshot(uint256) internal {
         // The snapshot timestamp is block.timestamp - 1 at proposal creation time.
         // Since we read it via getVotes at snapshot, we need to mock the specific timestamp.
         // Use a wildcard mock: mock getVotes for VOTER_1 and VOTER_2 at any timestamp.
