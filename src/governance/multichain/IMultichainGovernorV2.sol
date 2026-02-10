@@ -81,7 +81,7 @@ interface IMultichainGovernorV2 {
         address[] targets,
         bytes[] calldatas
     );
-    event QuroumVotesChanged(uint256 oldValue, uint256 newValue);
+    event QuorumVotesChanged(uint256 oldValue, uint256 newValue);
     event ProposalThresholdChanged(uint256 oldValue, uint256 newValue);
     event VotingPeriodChanged(uint256 oldValue, uint256 newValue);
     event BreakGlassGuardianChanged(address oldValue, address newValue);

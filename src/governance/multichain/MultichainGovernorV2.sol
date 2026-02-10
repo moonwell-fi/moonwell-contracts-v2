@@ -514,7 +514,7 @@ contract MultichainGovernorV2 is
         bool finalize
     ) external payable override whenNotPaused {
         Proposal storage proposal = proposals[proposalId];
-        // TODO: make sure there is no state where a proposal is executed but not finalized
+
         if (proposal.finalized) {
             revert ProposalAlreadyFinalized();
         }
@@ -585,9 +585,7 @@ contract MultichainGovernorV2 is
     ///  - permissionless cancel, user voting power currently drops below threshold
     /// and
     /// proposal is in one of the following states:
-    /// - succeeded
     /// - active
-    /// - cross chain vote collection period
     /// - init
     /// Edge Case:
     ///   If proposal threshold is increased in an active governance proposal, and a user has proposed
@@ -936,7 +934,7 @@ contract MultichainGovernorV2 is
         uint256 _oldValue = quorum;
         quorum = _quorum;
 
-        emit QuroumVotesChanged(_oldValue, _quorum);
+        emit QuorumVotesChanged(_oldValue, _quorum);
     }
 
     /// @dev lower and upper bounds are enforced to prevent a proposal from
