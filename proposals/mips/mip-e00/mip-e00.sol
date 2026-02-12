@@ -21,6 +21,7 @@ import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {WstETHExchangeRateAdapter} from "@protocol/oracles/WstETHExchangeRateAdapter.sol";
 /// MultichainGovernorV2 is deployed by initProposal() via MIP-X41 on Ethereum as the governance hub
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
@@ -114,13 +115,20 @@ contract mipe00 is HybridProposalV2, Configs {
                 weEthCompositeOracle
             );
 
-            /// wstETH/USD composite oracle = ETH/USD * wstETH/ETH
-            /// Uses Compound's wstETH/ETH price feed (implements latestRoundData)
+            /// wstETH/USD composite oracle = ETH/USD × stETH/ETH × wstETH/stETH
+            /// Uses our adapter wrapping wstETH.stEthPerToken() for the canonical exchange rate
+            WstETHExchangeRateAdapter wstEthAdapter = new WstETHExchangeRateAdapter(
+                    addresses.getAddress("wstETH")
+                );
+            addresses.addAddress(
+                "WSTETH_EXCHANGE_RATE_ADAPTER",
+                address(wstEthAdapter)
+            );
             address wstEthCompositeOracle = address(
                 new ChainlinkCompositeOracle(
                     addresses.getAddress("CHAINLINK_ETH_USD"),
-                    addresses.getAddress("COMPOUND_WSTETH_ETH"),
-                    address(0) // no second multiplier
+                    addresses.getAddress("CHAINLINK_STETH_ETH"),
+                    address(wstEthAdapter)
                 )
             );
             addresses.addAddress(

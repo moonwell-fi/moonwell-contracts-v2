@@ -85,11 +85,6 @@
         "isContract": true
     },
     {
-        "addr": "0x4F67e4d9BD67eFa28236013288737D39AeF48e79",
-        "name": "COMPOUND_WSTETH_ETH",
-        "isContract": true
-    },
-    {
         "addr": "0x5c9C449BbC9a6075A2c061dF312a35fd1E05fF22",
         "name": "CHAINLINK_WEETH_ETH",
         "isContract": true
