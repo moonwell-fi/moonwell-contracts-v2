@@ -479,7 +479,7 @@ contract mipx44 is HybridProposal {
         );
 
         // Build InitializeData struct with proposal count from Moonbeam
-        // NOTE: We add 1 because this proposal (mip-x42) will become proposal N+1 on Moonbeam,
+        // NOTE: We add 1 because this proposal (mip-x44) will become proposal N+1 on Moonbeam,
         // and we want Ethereum to start counting from that same number (so both chains stay in sync)
         MultichainGovernorV2.InitializeData memory initData;
         initData.votingPower = addresses.getAddress("VOTING_POWER_AGGREGATOR");
@@ -1315,7 +1315,7 @@ contract mipx44 is HybridProposal {
     function build(Addresses addresses) public override {
         // NOTE: Ethereum VotingPowerAggregator configuration (setXWell, addSnapshotSource) is handled
         // in afterDeploy() by the deployer before transferring ownership to MultichainGovernorV2.
-        // This proposal (mip-x42) is executed by the old Moonbeam MultichainGovernor, so it cannot
+        // This proposal (mip-x44) is executed by the old Moonbeam MultichainGovernor, so it cannot
         // execute actions on the Ethereum MultichainGovernorV2 which doesn't have any proposals yet.
 
         // Build Moonbeam actions
@@ -1330,40 +1330,6 @@ contract mipx44 is HybridProposal {
         // Build Base and Optimism actions
         _buildBase(addresses, ethereumGovernorV2);
         _buildOptimism(addresses, ethereumGovernorV2);
-    }
-
-    function _buildEthereum(Addresses addresses) internal {
-        console2.log("\n=== BUILDING ETHEREUM ACTIONS ===");
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        address ethereumVotingPower = addresses.getAddress(
-            "VOTING_POWER_AGGREGATOR"
-        );
-        address ethereumXWell = addresses.getAddress("xWELL_PROXY");
-        address ethereumStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
-
-        _pushAction(
-            ethereumVotingPower,
-            abi.encodeWithSignature("setXWell(address)", ethereumXWell),
-            "Set xWell as voting source on Ethereum VotingPowerAggregator",
-            ActionType.Ethereum
-        );
-        console2.log("[ACTION] Set xWell on Ethereum VotingPowerAggregator");
-
-        _pushAction(
-            ethereumVotingPower,
-            abi.encodeWithSignature(
-                "addSnapshotSource(address)",
-                ethereumStkWell
-            ),
-            "Add stkWell as snapshot source on Ethereum VotingPowerAggregator",
-            ActionType.Ethereum
-        );
-        console2.log(
-            "[ACTION] Add stkWell as snapshot source on Ethereum VotingPowerAggregator"
-        );
-
-        console2.log("=== ETHEREUM ACTIONS BUILD COMPLETE ===\n");
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -2125,7 +2091,7 @@ contract mipx44 is HybridProposal {
             "================================================================================"
         );
         console2.log(
-            "==================== MIP-X42 COMPREHENSIVE VALIDATION =========================="
+            "==================== MIP-X44 COMPREHENSIVE VALIDATION =========================="
         );
         console2.log(
             "================================================================================"

@@ -4,6 +4,8 @@ pragma solidity 0.8.19;
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
@@ -18,8 +20,8 @@ import {EthereumPostDeploymentActions} from "@protocol/xWELL/EthereumPostDeploym
     1. Grant pause guardian role on xWELL to PAUSE_GUARDIAN
     2. Set emissions manager on stkWELL to EMISSIONS_ADMIN
     3. Transfer ownership of xWELL to MultichainGovernorV2
-    4. Transfer ownership of stkWELL to MultichainGovernorV2
-    5. Transfer ownership of WormholeBridgeAdapter to MultichainGovernorV2
+    4. Transfer ownership of WormholeBridgeAdapter to MultichainGovernorV2
+    5. Transfer ownership of ProxyAdmin to MultichainGovernorV2
 
     Note: This script should be run AFTER mip-x44.sol is executed and MultichainGovernorV2
           is live on Ethereum mainnet.
@@ -43,6 +45,7 @@ contract PostDeployEthereumXWell is Script, EthereumPostDeploymentActions {
         address bridgeAdapterProxy = addresses.getAddress(
             "WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
+        address proxyAdmin = addresses.getAddress("PROXY_ADMIN");
         address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
         address emissionsAdmin = addresses.getAddress("EMISSIONS_ADMIN");
         address multichainGovernorV2 = addresses.getAddress(
@@ -55,6 +58,7 @@ contract PostDeployEthereumXWell is Script, EthereumPostDeploymentActions {
         console.log("xWELL Proxy:", xWellProxy);
         console.log("stkWELL Proxy:", stkWellProxy);
         console.log("WormholeBridgeAdapter Proxy:", bridgeAdapterProxy);
+        console.log("ProxyAdmin:", proxyAdmin);
         console.log("Pause Guardian:", pauseGuardian);
         console.log("Emissions Admin:", emissionsAdmin);
         console.log("MultichainGovernorV2:", multichainGovernorV2);
@@ -68,6 +72,9 @@ contract PostDeployEthereumXWell is Script, EthereumPostDeploymentActions {
         address bridgeAdapterOwner = WormholeBridgeAdapter(bridgeAdapterProxy)
             .owner();
         console.log("WormholeBridgeAdapter current owner:", bridgeAdapterOwner);
+
+        address proxyAdminOwner = ProxyAdmin(proxyAdmin).owner();
+        console.log("ProxyAdmin current owner:", proxyAdminOwner);
 
         // Note: stkWELL does not have an owner() function - it's controlled by governance
         console.log("stkWELL: controlled by governance (no owner)");
@@ -101,6 +108,12 @@ contract PostDeployEthereumXWell is Script, EthereumPostDeploymentActions {
             multichainGovernorV2
         );
 
+        // 5. Transfer ownership of ProxyAdmin (1-step, immediate)
+        console.log(
+            "5. Transferring ProxyAdmin ownership to MultichainGovernorV2..."
+        );
+        transferOwnershipProxyAdmin(proxyAdmin, multichainGovernorV2);
+
         vm.stopBroadcast();
 
         console.log("");
@@ -124,6 +137,14 @@ contract PostDeployEthereumXWell is Script, EthereumPostDeploymentActions {
         require(
             bridgeAdapterPendingOwner == multichainGovernorV2,
             "WormholeBridgeAdapter pending owner not set correctly"
+        );
+
+        // Verify ProxyAdmin ownership (1-step, already transferred)
+        address newProxyAdminOwner = ProxyAdmin(proxyAdmin).owner();
+        console.log("ProxyAdmin new owner:", newProxyAdminOwner);
+        require(
+            newProxyAdminOwner == multichainGovernorV2,
+            "ProxyAdmin ownership not transferred correctly"
         );
 
         console.log("");
