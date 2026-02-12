@@ -41,7 +41,7 @@ contract VotingPowerAggregator is
     /// @notice adds a snapshot source to the aggregator
     /// @param source the address of the snapshot source to add
     function addSnapshotSource(address source) external onlyOwner {
-        if (source == address(xWell)) {
+        if (source == address(xWell) || source == address(0)) {
             revert InvalidSource();
         }
         if (!_snapshotSources.add(source)) {
