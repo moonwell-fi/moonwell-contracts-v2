@@ -67,11 +67,16 @@ establishing Ethereum xWELL trust relationships.
 
 ### Key Parameters
 
-These have been confirmed to have no issues / conflicts with Ethereum Mainnet
-finality. | Parameter | Value | |-----------|-------| | Ethereum xWELL buffer
-cap | 100M xWELL | | Ethereum xWELL rate limit | 1,158 xWELL/sec (~19M/day) | |
-Ethereum xWELL pause duration | 10 days | | Ethereum stkWELL cooldown | 7 days |
-| Ethereum stkWELL unstake window | 2 days |
+These have been confirmed to have no issues or conflicts with Ethereum Mainnet
+finality.
+
+| Parameter                       | Value                      |
+| ------------------------------- | -------------------------- |
+| Ethereum xWELL buffer cap       | 100M xWELL                 |
+| Ethereum xWELL rate limit       | 1,158 xWELL/sec (~19M/day) |
+| Ethereum xWELL pause duration   | 10 days                    |
+| Ethereum stkWELL cooldown       | 7 days                     |
+| Ethereum stkWELL unstake window | 2 days                     |
 
 ---
 
