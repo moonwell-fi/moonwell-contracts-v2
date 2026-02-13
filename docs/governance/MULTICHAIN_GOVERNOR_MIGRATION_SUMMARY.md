@@ -1,4 +1,4 @@
-# Moonwell Governance Migration: MIP-X43 + MIP-X44 Audit Brief
+# Moonwell Governance Migration: MIP-X44 + MIP-X45 Audit Brief
 
 ## Overview
 
@@ -17,10 +17,10 @@ For details on the smart contract changes for MultichainGovernorV2, read
 | Step | Script                               | Executor   | Chain(s)                           |
 | ---- | ------------------------------------ | ---------- | ---------------------------------- |
 | 0    | `DeployXWellEthereum.s.sol`          | Deployer   | Ethereum                           |
-| 1    | `mip-x43.sol` — deploy + submit      | Deployer   | Moonbeam, Base, OP, Ethereum       |
-| 2    | `mip-x43.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
-| 3    | `mip-x44.sol` — deploy + afterDeploy | Deployer   | All 4 chains                       |
-| 4    | `mip-x44.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
+| 1    | `mip-x44.sol` — deploy + submit      | Deployer   | Moonbeam, Base, OP, Ethereum       |
+| 2    | `mip-x44.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
+| 3    | `mip-x45.sol` — deploy + afterDeploy | Deployer   | All 4 chains                       |
+| 4    | `mip-x45.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
 | 5    | `PostDeployEthereumXWell.s.sol`      | Deployer   | Ethereum                           |
 
 Step 0 is already complete (xWELL, stkWELL, WormholeBridgeAdapter, ProxyAdmin,
@@ -28,12 +28,12 @@ EcosystemReserve are live on Ethereum).
 
 ---
 
-## MIP-X43: Prerequisite Upgrades
+## MIP-X44: Prerequisite Upgrades
 
 ### Purpose
 
 Prepare the existing system for migration by upgrading stkWELL across chains and
-establishing Ethereum xWELL trust relationships.
+validating the Ethereum xWELL deployment.
 
 ### Actions
 
@@ -44,20 +44,14 @@ establishing Ethereum xWELL trust relationships.
   timestamps
 - Call `setNewStakedWell(stkWELL, toUseTimestamps=true)` on MultichainGovernor
   to enable timestamp-based voting
-- Add Ethereum WormholeBridgeAdapter as a trusted sender on Moonbeam's
-  WormholeBridgeAdapter
 
 **Base (via Wormhole from MultichainGovernor):**
 
 - Upgrade stkWELL to V2 — removes faulty `configureAssets` function
-- Add Ethereum WormholeBridgeAdapter as a trusted sender on Base's
-  WormholeBridgeAdapter
 
 **Optimism (via Wormhole from MultichainGovernor):**
 
 - Upgrade stkWELL to V2 — same as Base
-- Add Ethereum WormholeBridgeAdapter as a trusted sender on Optimism's
-  WormholeBridgeAdapter
 
 ### Deployment Phase
 
@@ -80,7 +74,7 @@ finality.
 
 ---
 
-## MIP-X44: Governance Migration
+## MIP-X45: Governance Migration
 
 ### Purpose
 
@@ -234,12 +228,18 @@ instructions.
 
 ## Follow-Up Items (Require Separate Proposal)
 
-These actions cannot be completed during MIP-X43/X44 and must be handled via a
+These actions cannot be completed during MIP-X44/X45 and must be handled via a
 subsequent governance proposal from the new Ethereum MultichainGovernorV2:
 
-### 1. acceptOwnership() on Ethereum contracts
+### 1. First Ethereum Proposal: Accept Ownership + addTrustedSenders
 
-MultichainGovernorV2 must call `acceptOwnership()` on:
+The first proposal submitted to MultichainGovernorV2 must complete ownership
+transfers and establish cross-chain xWELL bridging trust relationships. The
+actions must be executed in this order within the proposal:
+
+**Step 1 — Accept ownership on Ethereum:**
+
+MultichainGovernorV2 calls `acceptOwnership()` on:
 
 - **xWELL** (Ownable2Step — pendingOwner is set by PostDeployEthereumXWell)
 - **WormholeBridgeAdapter** (Ownable2Step — pendingOwner is set by
@@ -248,19 +248,39 @@ MultichainGovernorV2 must call `acceptOwnership()` on:
 Until these calls are made, ownership transfer is incomplete (deployer is still
 current owner).
 
-### 2. \_acceptAdmin() on Moonbeam contracts
+**Step 2 — addTrustedSenders on all chains:**
 
-MIP-X44 calls `_setPendingAdmin(temporalGovernor)` on Moonbeam mTokens and
+Once the governor owns the Ethereum WormholeBridgeAdapter (from Step 1), it can
+configure cross-chain trust relationships. The proposal calls
+`addTrustedSenders()` on:
+
+- **Ethereum** WormholeBridgeAdapter — add Moonbeam, Base, and Optimism adapters
+  as trusted senders (executed directly on Ethereum)
+- **Moonbeam** WormholeBridgeAdapter — add Ethereum adapter as trusted sender
+  (via Wormhole → TemporalGovernor)
+- **Base** WormholeBridgeAdapter — add Ethereum adapter as trusted sender (via
+  Wormhole → TemporalGovernor)
+- **Optimism** WormholeBridgeAdapter — add Ethereum adapter as trusted sender
+  (via Wormhole → TemporalGovernor)
+
+This enables cross-chain xWELL bridging to and from Ethereum. On Moonbeam, Base,
+and Optimism, the WormholeBridgeAdapters are owned by their respective
+TemporalGovernors, which execute via Wormhole messages from the Ethereum
+governor.
+
+**Step 3 — \_acceptAdmin() on Moonbeam contracts:**
+
+MIP-X45 calls `_setPendingAdmin(temporalGovernor)` on Moonbeam mTokens and
 Unitroller. To complete the admin transfer, TemporalGovernor must call
-`_acceptAdmin()` on each contract. This requires a Wormhole message from the
+`_acceptAdmin()` on each contract. This is sent as a Wormhole message from the
 Ethereum governor → Moonbeam TemporalGovernor → `_acceptAdmin()`.
 
-**Why this can't be in MIP-X44:** `_acceptAdmin()` requires
+**Why this can't be in MIP-X45:** `_acceptAdmin()` requires
 `msg.sender == pendingAdmin` (TemporalGovernor). TemporalGovernor can only
 execute via Wormhole from the Ethereum governor, which has no proposals yet
-during MIP-X44 execution.
+during MIP-X45 execution.
 
-### 3. VotingPowerAggregator ownership on Ethereum
+### 2. VotingPowerAggregator ownership on Ethereum
 
 The VotingPowerAggregator uses Ownable (1-step transfer), and ownership is
 transferred to MultichainGovernorV2 in `afterDeploy`. This is already complete —
@@ -281,7 +301,7 @@ no follow-up needed.
    ownership to PAUSE_GUARDIAN multisig across all chains.
 
 4. **Single Ethereum ProxyAdmin:** There is one shared ProxyAdmin on Ethereum,
-   deployed in Step 0 (`DeployXWellEthereum.s.sol`). MIP-X44 reuses it for the
+   deployed in Step 0 (`DeployXWellEthereum.s.sol`). MIP-X45 reuses it for the
    MultichainGovernorV2 and VotingPowerAggregator proxies (skips deployment if
    `PROXY_ADMIN` is already set in the addresses registry). ProxyAdmin ownership
    is transferred to MultichainGovernorV2 via PostDeployEthereumXWell.
@@ -301,7 +321,7 @@ no follow-up needed.
 
 - **Wormhole dependency:** All cross-chain communication relies on Wormhole. If
   Wormhole is unavailable, satellite chain governance execution is delayed.
-- **Deployer trust window:** Between MIP-X44 execution and
+- **Deployer trust window:** Between MIP-X45 execution and
   PostDeployEthereumXWell completion, the deployer still controls Ethereum xWELL
   ecosystem contracts. This window should be minimized.
 - **Two-step ownership gap:** Until the follow-up proposal calls
