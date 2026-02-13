@@ -645,32 +645,32 @@
         "name": "RESERVE_AUTOMATION_WBTC"
     },
     {
-        "addr": "0x6F0cC02e5a7640B28F538fcc06bCA3BdFA57d1BB",
+        "addr": "0xBe61051C9DFc613a30534cEF33ca656A73274Fe7",
         "isContract": true,
         "name": "CHAINLINK_USDC_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0x48F86A23aDE243F7a1028108aA65274FC84f382F",
+        "addr": "0x87716613750d02FDc101301B36cB5a0991962A70",
         "isContract": true,
         "name": "CHAINLINK_DAI_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0x1E0E8bcFb5FFa86749B8b89fb6e055337Ba74A39",
+        "addr": "0x83cC04372dc2c14c078F8117DA96412AA2Bda3dD",
         "isContract": true,
         "name": "CHAINLINK_USDT_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0xAeC8E8E3696fc5fcd954eb3ebC26B72FC2FE8E8e",
+        "addr": "0x696dAF18Ba0Cf503FAc9ef137ed3EF5aA719e14D",
         "isContract": true,
         "name": "CHAINLINK_WBTC_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0x94423903EaAf8638bDE262c417fEEf5E2Ec507E5",
+        "addr": "0xBC13e85B40048DE07c2ED66498E5DC62aC7A4eB0",
         "isContract": true,
         "name": "CHAINLINK_OP_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0x6aa41dF8FB0deC976B59bf0824FC5fFB88ccA958",
+        "addr": "0xc7867F143A6550e32df4D880a2c1Cee3ab8AdB2c",
         "isContract": true,
         "name": "CHAINLINK_VELO_USD_OEV_WRAPPER"
     },
@@ -748,5 +748,35 @@
         "addr": "0x48ce24c1D1Da86158DA2dD8aeE23F906161e3433",
         "isContract": true,
         "name": "CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE"
+    },
+    {
+        "addr": "0x6F0cC02e5a7640B28F538fcc06bCA3BdFA57d1BB",
+        "isContract": true,
+        "name": "CHAINLINK_USDC_USD_OEV_WRAPPER_DEPRECATED"
+    },
+    {
+        "addr": "0x1E0E8bcFb5FFa86749B8b89fb6e055337Ba74A39",
+        "isContract": true,
+        "name": "CHAINLINK_USDT_USD_OEV_WRAPPER_DEPRECATED"
+    },
+    {
+        "addr": "0x48F86A23aDE243F7a1028108aA65274FC84f382F",
+        "isContract": true,
+        "name": "CHAINLINK_DAI_USD_OEV_WRAPPER_DEPRECATED"
+    },
+    {
+        "addr": "0xAeC8E8E3696fc5fcd954eb3ebC26B72FC2FE8E8e",
+        "isContract": true,
+        "name": "CHAINLINK_WBTC_USD_OEV_WRAPPER_DEPRECATED"
+    },
+    {
+        "addr": "0x94423903EaAf8638bDE262c417fEEf5E2Ec507E5",
+        "isContract": true,
+        "name": "CHAINLINK_OP_USD_OEV_WRAPPER_DEPRECATED"
+    },
+    {
+        "addr": "0x6aa41dF8FB0deC976B59bf0824FC5fFB88ccA958",
+        "isContract": true,
+        "name": "CHAINLINK_VELO_USD_OEV_WRAPPER_DEPRECATED"
     }
 ]

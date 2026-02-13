@@ -1,19 +1,28 @@
 {
     "hooks": {
-        "postToolUse": [
+        "PostToolUse": [
             {
-                "matcher": "Edit|Write",
+                "matcher": "EditTool",
                 "hooks": [
                     {
                         "type": "command",
                         "command": "if echo \"$CC_EDIT_FILE_PATH\" | grep -q '\\.sol$'; then forge build 2>&1 | tail -5; elif echo \"$CC_EDIT_FILE_PATH\" | grep -q '\\.ts$'; then npx tsc --noEmit 2>&1 | tail -10; fi"
                     }
                 ]
+            },
+            {
+                "matcher": "WriteTool",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "if echo \"$CC_WRITE_FILE_PATH\" | grep -q '\\.sol$'; then forge build 2>&1 | tail -5; elif echo \"$CC_WRITE_FILE_PATH\" | grep -q '\\.ts$'; then npx tsc --noEmit 2>&1 | tail -10; fi"
+                    }
+                ]
             }
         ],
-        "preToolUse": [
+        "PreToolUse": [
             {
-                "matcher": "Bash",
+                "matcher": "BashTool",
                 "hooks": [
                     {
                         "type": "command",
