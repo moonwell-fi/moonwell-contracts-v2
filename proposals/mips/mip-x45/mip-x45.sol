@@ -21,7 +21,7 @@ import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, ETHE
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 
-/// @title MIP-X44: MultichainGovernorV2 Migration to Ethereum Mainnet
+/// @title MIP-X45: MultichainGovernorV2 Migration to Ethereum Mainnet
 /// @author Moonwell Contributors
 /// @notice Proposal to migrate Moonwell governance from Moonbeam to Ethereum by:
 ///
@@ -53,11 +53,11 @@ import {ChainIds} from "@utils/ChainIds.sol";
 ///
 ///         Note: All VotingPowerAggregators use timestamp-based voting (no block numbers)
 ///         and only aggregate voting power from xWell + stkWell (no well/distributor).
-contract mipx44 is HybridProposal {
+contract mipx45 is HybridProposal {
     using ProposalActions for *;
     using ChainIds for uint256;
 
-    string public constant override name = "MIP-X44";
+    string public constant override name = "MIP-X45";
 
     // Governance parameters (same values as TemporalGovernor on Base)
     uint256 public constant TEMPORAL_GOVERNOR_PROPOSAL_DELAY = 86400;
@@ -76,7 +76,7 @@ contract mipx44 is HybridProposal {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-x44/x44.md")
+            vm.readFile("./proposals/mips/mip-x45/x45.md")
         );
         _setProposalDescription(proposalDescription);
     }
@@ -479,7 +479,7 @@ contract mipx44 is HybridProposal {
         );
 
         // Build InitializeData struct with proposal count from Moonbeam
-        // NOTE: We add 1 because this proposal (mip-x44) will become proposal N+1 on Moonbeam,
+        // NOTE: We add 1 because this proposal (mip-x45) will become proposal N+1 on Moonbeam,
         // and we want Ethereum to start counting from that same number (so both chains stay in sync)
         MultichainGovernorV2.InitializeData memory initData;
         initData.votingPower = addresses.getAddress("VOTING_POWER_AGGREGATOR");
@@ -1315,7 +1315,7 @@ contract mipx44 is HybridProposal {
     function build(Addresses addresses) public override {
         // NOTE: Ethereum VotingPowerAggregator configuration (setXWell, addSnapshotSource) is handled
         // in afterDeploy() by the deployer before transferring ownership to MultichainGovernorV2.
-        // This proposal (mip-x44) is executed by the old Moonbeam MultichainGovernor, so it cannot
+        // This proposal (mip-x45) is executed by the old Moonbeam MultichainGovernor, so it cannot
         // execute actions on the Ethereum MultichainGovernorV2 which doesn't have any proposals yet.
 
         // Build Moonbeam actions
@@ -2091,7 +2091,7 @@ contract mipx44 is HybridProposal {
             "================================================================================"
         );
         console2.log(
-            "==================== MIP-X44 COMPREHENSIVE VALIDATION =========================="
+            "==================== MIP-X45 COMPREHENSIVE VALIDATION =========================="
         );
         console2.log(
             "================================================================================"
