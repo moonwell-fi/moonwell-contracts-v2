@@ -17,7 +17,6 @@ interface IMultichainGovernorV2 {
     error InvalidProposalState(ProposalState current, ProposalState required);
     error EmptyDescriptionUri();
     error TooManyLiveProposals();
-    error ProposalAlreadyExists();
     error ProposalAlreadyFinalized();
     error OnlyProposer();
     error ProposalExpired();
@@ -82,7 +81,7 @@ interface IMultichainGovernorV2 {
         address[] targets,
         bytes[] calldatas
     );
-    event QuroumVotesChanged(uint256 oldValue, uint256 newValue);
+    event QuorumVotesChanged(uint256 oldValue, uint256 newValue);
     event ProposalThresholdChanged(uint256 oldValue, uint256 newValue);
     event VotingPeriodChanged(uint256 oldValue, uint256 newValue);
     event BreakGlassGuardianChanged(address oldValue, address newValue);

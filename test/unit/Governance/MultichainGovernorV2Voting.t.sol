@@ -24,7 +24,7 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
 
     string constant DESCRIPTION_URI = "ipfs://proposal123";
     uint256 constant EXECUTION_WINDOW = 7 days;
-    uint256 constant MAX_USER_PROPOSAL_COUNT = 2;
+    uint256 constant MAX_USER_PROPOSAL_COUNT = 3;
 
     event ProposalCanceled(uint256 proposalId);
     event ProposalRebroadcasted(uint256 proposalId, bytes data);
@@ -1398,20 +1398,11 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         // Create first proposal from address(this)
         uint256 proposalId1 = _createProposal();
 
-        // Create second proposal from address(this) (MAX_USER_PROPOSAL_COUNT is 2)
+        // Create second proposal from address(this)
         uint256 proposalId2 = _createProposal();
 
-        // Need a different user for third proposal to avoid TooManyLiveProposals
-        address user2 = address(0x2);
-        // Transfer proposal threshold amount (not just quorum) to allow user2 to propose
-        // NOTE: well and distributor removed as voting sources per governance changes
-        uint256 voteAmount = governor.proposalThreshold();
-        xwell.transfer(user2, voteAmount);
-        vm.prank(user2);
-        xwell.delegate(user2);
-        vm.warp(block.timestamp + 1);
-
-        uint256 proposalId3 = _createProposalUpdateThreshold(user2);
+        // Create third proposal from address(this) (MAX_USER_PROPOSAL_COUNT is 3)
+        uint256 proposalId3 = _createProposal();
 
         assertTrue(
             governor.proposalActive(proposalId1),

@@ -178,11 +178,8 @@ contract MultichainGovernorV2 is
 
         _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
 
-        // TODO: startingProposalCount might not be necessary: ask luke
         proposalCount = uint256(initData.startingProposalCount);
-
-        // TODO: what's a reasonable count?
-        _maxUserProposalCount = 2;
+        _maxUserProposalCount = 3;
         _executionWindow = 7 days;
 
         unchecked {
@@ -490,13 +487,8 @@ contract MultichainGovernorV2 is
             descriptionUri
         );
 
-        /// post proposal checks
-        if (!_userLiveProposals[msg.sender].add(proposalId)) {
-            revert ProposalAlreadyExists();
-        }
-        if (!_liveProposals.add(proposalId)) {
-            revert ProposalAlreadyExists();
-        }
+        _userLiveProposals[msg.sender].add(proposalId);
+        _liveProposals.add(proposalId);
 
         if (finalize) {
             _finalizeProposal(proposalId, newProposal);
@@ -522,7 +514,7 @@ contract MultichainGovernorV2 is
         bool finalize
     ) external payable override whenNotPaused {
         Proposal storage proposal = proposals[proposalId];
-        // TODO: make sure there is no state where a proposal is executed but not finalized
+
         if (proposal.finalized) {
             revert ProposalAlreadyFinalized();
         }
@@ -551,7 +543,6 @@ contract MultichainGovernorV2 is
     /// @notice execute a proposal
     /// can only be called if the proposal is in the succeeded state
     /// can only be called when the contract is not paused
-    /// the sum of the values must be equal to the msg.value
     /// the native token balance of this contract will remain unchanged before and after a proposal is executed
     /// @param proposalId the id of the proposal to execute
     function execute(
@@ -594,9 +585,7 @@ contract MultichainGovernorV2 is
     ///  - permissionless cancel, user voting power currently drops below threshold
     /// and
     /// proposal is in one of the following states:
-    /// - succeeded
     /// - active
-    /// - cross chain vote collection period
     /// - init
     /// Edge Case:
     ///   If proposal threshold is increased in an active governance proposal, and a user has proposed
@@ -945,7 +934,7 @@ contract MultichainGovernorV2 is
         uint256 _oldValue = quorum;
         quorum = _quorum;
 
-        emit QuroumVotesChanged(_oldValue, _quorum);
+        emit QuorumVotesChanged(_oldValue, _quorum);
     }
 
     /// @dev lower and upper bounds are enforced to prevent a proposal from

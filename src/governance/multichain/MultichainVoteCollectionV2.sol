@@ -27,8 +27,8 @@ contract MultichainVoteCollectionV2 is
     WormholeBridgeBase,
     Ownable2StepUpgradeable
 {
-    uint16 private constant MOOMBEAM_WORMHOLE_CHAIN_ID = 16;
-    address private constant MOONBEAM_GOVERNER_DEPRECATED =
+    uint16 private constant MOONBEAM_WORMHOLE_CHAIN_ID = 16;
+    address private constant MOONBEAM_GOVERNOR_DEPRECATED =
         0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4;
 
     /// --------------------------------------------------------- ///
@@ -116,8 +116,8 @@ contract MultichainVoteCollectionV2 is
                 1
             );
         trustedSendersToRemove[0] = WormholeTrustedSender.TrustedSender({
-            chainId: MOOMBEAM_WORMHOLE_CHAIN_ID,
-            addr: MOONBEAM_GOVERNER_DEPRECATED
+            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
+            addr: MOONBEAM_GOVERNOR_DEPRECATED
         });
         _removeTargetAddresses(trustedSendersToRemove);
 
