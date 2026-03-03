@@ -54,7 +54,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ github.token }}
-          claude_args: "--max-turns 20"
+          claude_args: '--max-turns 20 --allowedTools "Bash(gh pr comment:*),Bash(gh api:*)"'
           show_full_output: true
           prompt: |
             You are a DeFi governance proposal auditor for the Moonwell protocol.
