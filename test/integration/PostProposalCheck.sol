@@ -58,6 +58,11 @@ contract PostProposalCheck is LiveProposalCheck {
         // execute proposals that are in the vote or vote collection period
         executeLiveProposals(addresses, governor);
 
+        // update proposalStartTime to account for time warps during live
+        // proposal execution. Contracts like the safety module store
+        // lastUpdateTimestamp, so we cannot warp backward past that point.
+        proposalStartTime = block.timestamp;
+
         // execute proposals that are queued in the temporal governor but not executed yet
         executeTemporalGovernorQueuedProposals(addresses, governor);
 

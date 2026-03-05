@@ -373,5 +373,10 @@
         "addr": "0xF130e4946F862F2c6CA3d007D51C21688908e006",
         "name": "F-GLMR-DEVGRANT",
         "isContract": true
+    },
+    {
+        "addr": "0xbaC3Dd6d0333ea14F957B7B0796bCD59e8771501",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL_V2"
     }
 ]

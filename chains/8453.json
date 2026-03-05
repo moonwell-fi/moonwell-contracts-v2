@@ -1,5 +1,10 @@
 [
     {
+        "addr": "0x2D0c1616CaeD53e3d161e53Fe0Ca1402017f2766",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_LBTC_TBTC_MIP_X42"
+    },
+    {
         "addr": "0x1b2a5f458b627Fb995F834A7B40112c27c2f77e8",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_VIRTUAL_MIP_B53"
@@ -266,7 +271,7 @@
     },
     {
         "addr": "0xB0Ba0C5D7DA4ec400C1C3E5ef2485134F89918C5",
-        "name": "cbETH_ORACLE",
+        "name": "cbETH_COMPOSITE_ORACLE",
         "isContract": true
     },
     {
@@ -462,6 +467,11 @@
     {
         "addr": "0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa",
         "name": "FOUNDATION_MULTISIG",
+        "isContract": true
+    },
+    {
+        "addr": "0x4942E15F4B3B684EEbB7eE28C922fc634Cc751B1",
+        "name": "C-BASE",
         "isContract": true
     },
     {
@@ -1403,5 +1413,10 @@
         "addr": "0xfbA86a013f7FD93B5454e147242CF2Bf419e120D",
         "isContract": true,
         "name": "CHAINLINK_MAMO_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0xe2747A3f7dD8585eB04c7632a9561D9616454B29",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL_V2"
     }
 ]

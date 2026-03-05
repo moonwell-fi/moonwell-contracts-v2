@@ -1,4 +1,4 @@
-name: Moonbeam 
+name: Moonbeam
 
 on: [pull_request]
 

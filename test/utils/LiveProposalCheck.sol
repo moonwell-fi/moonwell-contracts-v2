@@ -220,7 +220,13 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         for (uint256 i = 0; i < liveProposals.length; i++) {
             _execProposal(addresses, governor, liveProposals[i]);
 
-            vm.warp(timestampBefore);
+            /// only warp back between proposals so subsequent proposals can
+            /// still be voted on. After the last proposal, keep the timestamp
+            /// at the execution time to avoid rewinding past contract state
+            /// updates (e.g. safety module lastUpdateTimestamp).
+            if (i < liveProposals.length - 1) {
+                vm.warp(timestampBefore);
+            }
         }
     }
 

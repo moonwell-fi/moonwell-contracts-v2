@@ -1,0 +1,235 @@
+name: Proposal Summary
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths:
+      - 'proposals/mips/**'
+
+jobs:
+  generate-summary:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find existing summary comment
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COMMENT_ID=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+            --paginate --jq '[.[] | select(.body | contains("<!-- proposal-summary -->"))] | first | .id // empty')
+          if [ -n "$COMMENT_ID" ]; then
+            echo "comment_id=$COMMENT_ID" >> "$GITHUB_OUTPUT"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect proposal directories
+        id: detect
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          DIRS=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'proposals/mips/' \
+            | grep -oP 'proposals/mips/mip-[^/]+' \
+            | sort -u)
+          DIRS=$(echo "$DIRS" | xargs)
+          if [ -z "$DIRS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "dirs=$DIRS" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate proposal summary
+        if: steps.check.outputs.exists != 'true' && steps.detect.outputs.skip != 'true'
+        id: generate
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          claude_args: '--allowedTools "Write"'
+          show_full_output: true
+          prompt: |
+            You are a DeFi governance proposal auditor for the Moonwell protocol.
+
+            Audit these proposal directories and write the results to a file:
+            ${{ steps.detect.outputs.dirs }}
+
+            For EACH directory:
+            1. Read ALL files in the directory (.sol, .md, .json, .sh)
+            2. Analyze onchain actions from the Solidity contract (build(), deploy(), afterDeploy(), validate())
+            3. Search the test/ directory for integration or unit tests that cover this proposal
+            4. For EVERY configuration change, trace the onchain state that should be verified before and after execution
+
+            ## Onchain State Verification (CRITICAL — THE CORE PRINCIPLE)
+
+            The fundamental audit rule is:
+
+            **For every contract touched by the proposal, enumerate ALL observable state before execution,
+            then verify that state is correct after execution. Any state that changes without being validated
+            is a gap. Any state that should NOT change but isn't checked is also a gap.**
+
+            A proposal that only checks "did the address change?" but not "does the system still behave
+            correctly?" is incomplete. Structural checks (address wiring, config params) are necessary but
+            not sufficient — you must also verify functional correctness (the system produces the same
+            outputs it did before, or the expected new outputs).
+
+            Apply this principle to every action:
+
+            **Step 1: Identify every contract touched and its observable state.**
+            For each `_pushAction(target, abi.encodeWithSignature("functionName(args)", params), ...)`:
+            - Read the target contract's source code to understand what state it modifies
+            - Identify ALL public getter functions that expose state on that contract
+            - Identify ALL associated contracts whose behavior depends on this contract (e.g., an mToken
+              depends on its oracle, its comptroller, its interest rate model — changing any of those
+              changes the mToken's behavior)
+
+            **Step 2: Categorize the state into "should change" and "should NOT change".**
+            - "Should change": the state being explicitly modified (e.g., new feed address, new fee param)
+            - "Should NOT change": all other observable state on that contract and its dependents
+              (e.g., prices returned to the protocol, market listings, balances, exchange rates)
+            - Both categories need validation. The "should NOT change" category is often more important
+              because regressions there are unintentional and harder to spot.
+
+            **Step 3: Check if the proposal captures before-state.**
+            The proposal can use `beforeSimulationHook()` to snapshot state before execution. If the proposal
+            modifies state that has downstream effects (e.g., swapping an oracle feed affects prices returned
+            to all markets using that feed), it MUST capture the downstream output before the change and
+            assert it's preserved after. If it doesn't, flag this as a **Critical** gap.
+
+            Example — the correct pattern for any state-preserving change (from MIP-B57):
+            ```solidity
+            // beforeSimulationHook: capture observable output before the change
+            priceBefore = ChainlinkOracle(oracle).getUnderlyingPrice(MToken(mToken));
+
+            // validate(): assert the output is preserved after the change
+            uint256 priceAfter = ChainlinkOracle(oracle).getUnderlyingPrice(MToken(mToken));
+            assertApproxEqRel(priceAfter, priceBefore, 0.01e18, "output changed unexpectedly");
+            ```
+
+            This pattern applies universally — not just oracles. ANY time a proposal swaps an implementation,
+            changes a dependency, or upgrades a contract, the observable outputs of the system must be verified.
+
+            **Step 4: Apply to specific contract types.**
+
+            When the **Comptroller** is touched, check associated mToken state:
+            - `Comptroller.markets(mToken)` → (isListed, collateralFactorMantissa)
+            - `Comptroller.supplyCaps(mToken)` and `Comptroller.borrowCaps(mToken)`
+            - `Comptroller.mintGuardianPaused(mToken)` and `Comptroller.borrowGuardianPaused(mToken)`
+            - `MToken.interestRateModel()`, `MToken.reserveFactorMantissa()`, `MToken.protocolSeizeShareMantissa()`
+            - `MToken.admin()`, `MToken.comptroller()`, `MToken.underlying()`
+
+            When **oracle feeds** are modified:
+            - `ChainlinkOracle.getUnderlyingPrice(mToken)` → before/after must be ≈ same (±1%)
+            - `AggregatorV3Interface(feed).latestRoundData()` → answer must be > 0
+            - `AggregatorV3Interface(feed).decimals()` → must match expected
+            - Wrapper state: `priceFeed()`, `liquidatorFeeBps()`, `feeRecipient()`, `owner()`, etc.
+
+            When **proxy implementations** are upgraded:
+            - All storage-backed getters must return the same values before/after
+            - Proxy admin and implementation address must be correct
+            - Any new state from `initializeV2()` or similar must be validated
+
+            When **interest rate models** are changed:
+            - `MToken.interestRateModel()` must point to the new model
+            - Borrow/supply rates at current utilization should be verified
+
+            When **token transfers or approvals** occur:
+            - Balances before/after must be verified
+            - Allowances must be checked
+
+            **Step 5: Cross-reference with validate().**
+            For each before/after state change identified above, check if validate() actually asserts on it.
+            Flag any state change that is NOT validated — both the "should change" and "should NOT change" categories.
+
+            ## Output Format
+
+            IMPORTANT: Use all the analysis steps above internally to identify gaps, but the final output
+            must be CONCISE. Do NOT include the detailed state change tables, risk assessments, or per-getter
+            breakdowns in the report. Only include the four sections below.
+
+            Write the audit to a file called `pr_comment.md` using the Write tool.
+            The file MUST start with the exact HTML comment marker on its own line:
+            <!-- proposal-summary -->
+
+            Then for each proposal directory, include ONLY these four sections:
+
+            # [Proposal Name]
+
+            ## Summary
+            One-sentence overview of the proposal's purpose, then a bullet list of specifics:
+            - Each onchain action or deployment (one bullet per chain/action)
+            - Key parameters (caps, rates, thresholds, etc.)
+            Keep each bullet to one line. No paragraphs.
+
+            ## Recommendation
+            A 1-3 line actionable verdict. Examples:
+            - "Ready to execute — no issues found."
+            - "Fix before execution: [brief list of critical/high items from Gaps & Issues]."
+            - "Recommended: add before/after price check for oracle swap. Not blocking but high risk if feed is misconfigured."
+            Match the urgency to the severity of gaps found. If no gaps, keep it to one line.
+
+            ## Gaps & Issues
+            ONLY list gaps that could realistically cause exploits, loss of funds, bricked contracts,
+            or broken protocol functionality if the proposal executes. Think like an attacker:
+            - Could this cause oracle prices to return 0 or wrong values, enabling liquidations or bad debt?
+            - Could this brick a proxy upgrade path or leave admin keys wrong?
+            - Could this allow unauthorized fund drains, token minting, or collateral misconfiguration?
+            - Could storage be corrupted by the upgrade, breaking existing user positions?
+            - Could downstream contracts (mTokens, Comptroller, reward distributors) malfunction?
+
+            Do NOT flag cosmetic issues, missing defense-in-depth checks, or theoretical gaps that
+            have no realistic exploit path. If a state getter isn't validated but the value is
+            immutable or set in the constructor and cannot change during an upgrade, that is NOT a gap.
+
+            For each real gap:
+            - **[Critical/High]**: One-sentence description of the exploit scenario or failure mode.
+              Suggest the fix (e.g., "Add `assertApproxEqRel(priceAfter, priceBefore, ...)` in validate()").
+
+            If there are no exploitable gaps: "No issues found — all onchain actions are validated."
+
+            ## Onchain Actions
+            Table of every action from build():
+            | # | Target | Function | Validated | Test Coverage |
+            |---|--------|----------|-----------|---------------|
+            | 1 | `ContractName` | `functionName(args)` | ✅ | test/File.t.sol::testName |
+            | 2 | ... | ... | ❌ | ❌ |
+
+            Use ✅ or ❌ for Validated and Test Coverage columns. Just the emoji, nothing else in those cells.
+
+            IMPORTANT:
+            - Write the output ONLY to pr_comment.md using the Write tool — do NOT post any comments
+            - The output must contain ONLY the four sections above (Summary, Recommendation, Gaps & Issues, Onchain Actions) — no other sections
+            - Do all detailed analysis internally but keep the final report concise
+            - Be precise about onchain actions — extract exact function signatures and parameters
+            - Cross-reference every single build() action against validate() checks and test assertions
+            - For oracle changes: read ChainlinkOracleConfigs.sol and the chain JSON files (chains/*.json) to understand the full oracle config
+            - For comptroller changes: read the Comptroller source to understand what state getters exist
+            - Use proposals/utils/ParameterValidation.sol as reference for standard validation patterns
+
+      - name: Post comment
+        if: steps.check.outputs.exists != 'true' && steps.detect.outputs.skip != 'true' && hashFiles('pr_comment.md') != ''
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('pr_comment.md')) {
+              const body = fs.readFileSync('pr_comment.md', 'utf8');
+              if (body.trim().length > 0) {
+                const prNumber = context.payload.pull_request.number;
+                await github.rest.issues.createComment({
+                  ...context.repo,
+                  issue_number: prNumber,
+                  body: body
+                });
+              }
+            }

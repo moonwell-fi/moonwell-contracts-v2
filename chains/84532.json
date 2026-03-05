@@ -41,7 +41,7 @@
     },
     {
         "addr": "0x3E4589Ca47F41f6DEFC78929D210976678960754",
-        "name": "cbETH_ORACLE",
+        "name": "cbETH_COMPOSITE_ORACLE",
         "isContract": true
     },
     {

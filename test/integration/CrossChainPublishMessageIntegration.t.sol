@@ -68,6 +68,9 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             }
 
             addresses.removeAllRestrictions();
+            // Run beforeSimulationHook to set up pre-conditions
+            // (e.g. multisig approvals, mock relayers for cross-chain bridging)
+            proposal.beforeSimulationHook(addresses);
             // At this point the primaryForkId should not be moonbeam
             vm.selectFork(uint256(proposal.primaryForkId()));
             proposal.build(addresses);
@@ -145,8 +148,19 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                     );
             }
 
+            // Calculate total ETH value needed for Moonbeam actions
+            uint256 executeValue = 0;
+            {
+                ProposalAction[] memory moonbeamActions = proposal
+                    .getActionsByType(ActionType.Moonbeam);
+                for (uint256 k = 0; k < moonbeamActions.length; k++) {
+                    executeValue += moonbeamActions[k].value;
+                }
+            }
+            vm.deal(address(this), executeValue);
+
             vm.recordLogs();
-            governor.execute(proposalId);
+            governor.execute{value: executeValue}(proposalId);
             Vm.Log[] memory logs = vm.getRecordedLogs();
 
             bytes32 sig = keccak256(

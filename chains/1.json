@@ -5,7 +5,7 @@
         "name": "WORMHOLE_BRIDGE_RELAYER_PROXY"
     },
     {
-        "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
+        "addr": "0x10b83c88e88910Cd5293324800d1a6e751004bE5",
         "isContract": true,
         "name": "PAUSE_GUARDIAN"
     },

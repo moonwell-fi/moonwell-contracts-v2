@@ -16,7 +16,7 @@
         "market": "MOONWELL_WETH"
     },
     {
-        "chainlinkFeed": "cbETH_ORACLE",
+        "chainlinkFeed": "cbETH_COMPOSITE_ORACLE",
         "market": "MOONWELL_cbETH"
     },
     {

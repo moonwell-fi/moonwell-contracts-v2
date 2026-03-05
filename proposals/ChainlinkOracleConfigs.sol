@@ -10,6 +10,13 @@ abstract contract ChainlinkOracleConfigs is Test {
         string mTokenKey; /// e.g., MOONWELL_WETH (defaults to MOONWELL_[symbol] if not specified)
     }
 
+    struct CompositeOracleConfig {
+        string compositeOracleName; /// e.g., "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE"
+        string baseFeedName; /// e.g., "CHAINLINK_ETH_USD" (the base feed for round tracking)
+        string symbol; /// e.g., "wstETH"
+        string mTokenKey; /// e.g., "MOONWELL_wstETH"
+    }
+
     struct MorphoOracleConfig {
         string proxyName; /// e.g., CHAINLINK_stkWELL_USD (used for proxy identifier)
         string priceFeedName; /// e.g., CHAINLINK_WELL_USD (the actual price feed oracle)
@@ -17,6 +24,10 @@ abstract contract ChainlinkOracleConfigs is Test {
 
     /// oracle configurations per chain id
     mapping(uint256 => OracleConfig[]) internal _oracleConfigs;
+
+    /// composite oracle configurations per chain id
+    mapping(uint256 => CompositeOracleConfig[])
+        internal _compositeOracleConfigs;
 
     /// morpho market configurations per chain id
     mapping(uint256 => MorphoOracleConfig[]) internal _MorphoOracleConfigs;
@@ -38,19 +49,8 @@ abstract contract ChainlinkOracleConfigs is Test {
         // _oracleConfigs[BASE_CHAIN_ID].push(
         //     OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
         // );
-        _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("cbETHETH_ORACLE", "cbETH", "MOONWELL_cbETH")
-        );
-        // Composite oracles don't support latestRound(), deferred to follow-up
-        // _oracleConfigs[BASE_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE", "wstETH", "MOONWELL_wstETH")
-        // );
-        // _oracleConfigs[BASE_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE", "rETH", "MOONWELL_rETH")
-        // );
-        // _oracleConfigs[BASE_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_WEETH_USD_COMPOSITE_ORACLE", "weETH", "MOONWELL_weETH")
-        // );
+        // cbETH uses cbETH_COMPOSITE_ORACLE (reverted from cbETHETH_ORACLE in MIP-B57)
+        // Now handled via _compositeOracleConfigs below
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_AERO_ORACLE", "AERO", "MOONWELL_AERO")
         );
@@ -60,9 +60,6 @@ abstract contract ChainlinkOracleConfigs is Test {
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_EURC_USD", "EURC", "MOONWELL_EURC")
         );
-        // _oracleConfigs[BASE_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_wrsETH_COMPOSITE_ORACLE", "wrsETH", "MOONWELL_wrsETH")
-        // );
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_WELL_USD", "xWELL_PROXY", "MOONWELL_WELL")
         );
@@ -72,9 +69,6 @@ abstract contract ChainlinkOracleConfigs is Test {
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_TBTC_USD", "TBTC", "MOONWELL_TBTC")
         );
-        // _oracleConfigs[BASE_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_LBTC_BTC_COMPOSITE_ORACLE", "LBTC", "MOONWELL_LBTC")
-        // );
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_VIRTUAL_USD", "VIRTUAL", "MOONWELL_VIRTUAL")
         );
@@ -86,6 +80,56 @@ abstract contract ChainlinkOracleConfigs is Test {
         );
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_MAMO_USD", "MAMO", "MOONWELL_MAMO")
+        );
+
+        /// Initialize composite oracle configurations for Base
+        _compositeOracleConfigs[BASE_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "cbETH_COMPOSITE_ORACLE",
+                "CHAINLINK_ETH_USD",
+                "cbETH",
+                "MOONWELL_cbETH"
+            )
+        );
+        _compositeOracleConfigs[BASE_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE",
+                "CHAINLINK_ETH_USD",
+                "wstETH",
+                "MOONWELL_wstETH"
+            )
+        );
+        _compositeOracleConfigs[BASE_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE",
+                "CHAINLINK_ETH_USD",
+                "rETH",
+                "MOONWELL_rETH"
+            )
+        );
+        _compositeOracleConfigs[BASE_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE",
+                "CHAINLINK_ETH_USD",
+                "weETH",
+                "MOONWELL_weETH"
+            )
+        );
+        _compositeOracleConfigs[BASE_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
+                "CHAINLINK_ETH_USD",
+                "wrsETH",
+                "MOONWELL_wrsETH"
+            )
+        );
+        _compositeOracleConfigs[BASE_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "CHAINLINK_LBTC_BTC_COMPOSITE_ORACLE",
+                "CHAINLINK_BTC_USD",
+                "LBTC",
+                "MOONWELL_LBTC"
+            )
         );
 
         /// Initialize oracle configurations for Optimism
@@ -105,30 +149,56 @@ abstract contract ChainlinkOracleConfigs is Test {
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_WBTC_USD", "WBTC", "MOONWELL_WBTC")
         );
-        // Composite oracles don't support latestRound(), deferred to follow-up
-        // _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_WSTETH_USD_COMPOSITE_ORACLE", "wstETH", "MOONWELL_wstETH")
-        // );
-        // _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_cbETH_USD_COMPOSITE_ORACLE", "cbETH", "MOONWELL_cbETH")
-        // );
-        // _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE", "rETH", "MOONWELL_rETH")
-        // );
-        // _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_WEETH_USD_COMPOSITE_ORACLE", "weETH", "MOONWELL_weETH")
-        // );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_OP_USD", "OP", "MOONWELL_OP")
         );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_VELO_USD", "VELO", "MOONWELL_VELO")
         );
-        // _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_wrsETH_COMPOSITE_ORACLE", "wrsETH", "MOONWELL_wrsETH")
-        // );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_USDT_USD", "USDT0", "MOONWELL_USDT0")
+        );
+
+        /// Initialize composite oracle configurations for Optimism
+        _compositeOracleConfigs[OPTIMISM_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "CHAINLINK_WSTETH_USD_COMPOSITE_ORACLE",
+                "CHAINLINK_ETH_USD",
+                "wstETH",
+                "MOONWELL_wstETH"
+            )
+        );
+        _compositeOracleConfigs[OPTIMISM_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "CHAINLINK_cbETH_USD_COMPOSITE_ORACLE",
+                "CHAINLINK_ETH_USD",
+                "cbETH",
+                "MOONWELL_cbETH"
+            )
+        );
+        _compositeOracleConfigs[OPTIMISM_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE",
+                "CHAINLINK_ETH_USD",
+                "rETH",
+                "MOONWELL_rETH"
+            )
+        );
+        _compositeOracleConfigs[OPTIMISM_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE",
+                "CHAINLINK_ETH_USD",
+                "weETH",
+                "MOONWELL_weETH"
+            )
+        );
+        _compositeOracleConfigs[OPTIMISM_CHAIN_ID].push(
+            CompositeOracleConfig(
+                "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
+                "CHAINLINK_ETH_USD",
+                "wrsETH",
+                "MOONWELL_wrsETH"
+            )
         );
 
         /// Initialize Morpho market configurations for Base
@@ -158,6 +228,30 @@ abstract contract ChainlinkOracleConfigs is Test {
                     oracleName: _oracleConfigs[chainId][i].oracleName,
                     symbol: _oracleConfigs[chainId][i].symbol,
                     mTokenKey: _oracleConfigs[chainId][i].mTokenKey
+                });
+            }
+        }
+
+        return configs;
+    }
+
+    function getCompositeOracleConfigurations(
+        uint256 chainId
+    ) public view returns (CompositeOracleConfig[] memory) {
+        CompositeOracleConfig[] memory configs = new CompositeOracleConfig[](
+            _compositeOracleConfigs[chainId].length
+        );
+
+        unchecked {
+            uint256 configLength = configs.length;
+            for (uint256 i = 0; i < configLength; i++) {
+                configs[i] = CompositeOracleConfig({
+                    compositeOracleName: _compositeOracleConfigs[chainId][i]
+                        .compositeOracleName,
+                    baseFeedName: _compositeOracleConfigs[chainId][i]
+                        .baseFeedName,
+                    symbol: _compositeOracleConfigs[chainId][i].symbol,
+                    mTokenKey: _compositeOracleConfigs[chainId][i].mTokenKey
                 });
             }
         }

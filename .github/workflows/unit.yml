@@ -4,7 +4,7 @@ on: [pull_request]
 
 env:
   FOUNDRY_PROFILE: ci
- 
+
 jobs:
   unit-tests:
     name: Unit Tests
@@ -36,4 +36,3 @@ jobs:
            timeout_minutes: 20
            max_attempts: 3
            command: time forge test --match-path test/unit/MultiRewards.t.sol -vvv
-

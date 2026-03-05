@@ -275,14 +275,17 @@ abstract contract Configs is Test {
         }
 
         if (block.chainid == BASE_CHAIN_ID) {
-            if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
+            if (addresses.getAddress("cbETH_COMPOSITE_ORACLE") == address(0)) {
                 ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
                         addresses.getAddress("ETH_ORACLE"),
                         addresses.getAddress("cbETHETH_ORACLE"),
                         address(0)
                     );
 
-                addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+                addresses.addAddress(
+                    "cbETH_COMPOSITE_ORACLE",
+                    address(cbEthOracle)
+                );
             }
 
             return;

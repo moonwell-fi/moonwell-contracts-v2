@@ -48,6 +48,9 @@ contract DistributionManager is IDistributionManager {
 
     /**
      * @dev Configures the distribution of rewards for a list of assets
+     * @param emissionPerSecond The list of emissions per second
+     * @param totalStaked The list of total staked assets
+     * @param underlyingAsset The list of underlying assets
      **/
     function configureAssets(
         uint128[] memory emissionPerSecond,

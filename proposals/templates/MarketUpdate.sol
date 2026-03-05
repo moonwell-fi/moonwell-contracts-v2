@@ -56,7 +56,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         _setProposalDescription(proposalDescription);
     }
 
-    function name() external pure override returns (string memory) {
+    function name() external pure virtual override returns (string memory) {
         return "MIP Market Update";
     }
 
@@ -112,14 +112,14 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         }
     }
 
-    function build(Addresses addresses) public override {
+    function build(Addresses addresses) public virtual override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _buildChainActions(addresses, chainId);
         }
     }
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public virtual override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _validateChain(addresses, chainId);

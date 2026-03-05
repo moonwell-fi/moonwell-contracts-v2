@@ -44,7 +44,7 @@
         "seizeShare": 0.03e18,
         "supplyCap": 5000e18,
         "borrowCap": 1500e18,
-        "priceFeedName": "cbETH_ORACLE",
+        "priceFeedName": "cbETH_COMPOSITE_ORACLE",
         "tokenAddressName": "cbETH",
         "name": "Moonwell cbETH",
         "symbol": "mcbETH",

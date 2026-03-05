@@ -246,14 +246,14 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
         // Setup Morpho Blue
         IMorphoBlue morpho = IMorphoBlue(addresses.getAddress("MORPHO_BLUE"));
 
-        // Setup borrower position
-        deal(collToken, BORROWER, collateralAmount);
-        vm.startPrank(BORROWER);
-        IERC20(collToken).approve(address(morpho), collateralAmount);
-        morpho.supplyCollateral(params, collateralAmount, BORROWER, "");
-
-        morpho.borrow(params, borrowAmount, 0, BORROWER, BORROWER);
-        vm.stopPrank();
+        _supplyLiquidityAndBorrow(
+            morpho,
+            params,
+            loanToken,
+            collToken,
+            borrowAmount,
+            collateralAmount
+        );
 
         // Mock price crash
         vm.mockCall(
@@ -277,6 +277,31 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
             seized,
             collToken
         );
+    }
+
+    function _supplyLiquidityAndBorrow(
+        IMorphoBlue morpho,
+        MarketParams memory params,
+        address loanToken,
+        address collToken,
+        uint256 borrowAmount,
+        uint256 collateralAmount
+    ) private {
+        // Supply USDC liquidity so there's enough to borrow
+        address supplier = address(uint160(uint256(keccak256("SUPPLIER"))));
+        deal(loanToken, supplier, borrowAmount * 10);
+        vm.startPrank(supplier);
+        IERC20(loanToken).approve(address(morpho), borrowAmount * 10);
+        morpho.supply(params, borrowAmount * 10, 0, supplier, "");
+        vm.stopPrank();
+
+        // Setup borrower position
+        deal(collToken, BORROWER, collateralAmount);
+        vm.startPrank(BORROWER);
+        IERC20(collToken).approve(address(morpho), collateralAmount);
+        morpho.supplyCollateral(params, collateralAmount, BORROWER, "");
+        morpho.borrow(params, borrowAmount, 0, BORROWER, BORROWER);
+        vm.stopPrank();
     }
 
     function _executeLiquidation(

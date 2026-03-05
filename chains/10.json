@@ -1,5 +1,10 @@
 [
     {
+        "addr": "0xc3831D840243C4Df57F52C063eEE2a6b44d1840e",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_USDT0_MIP_X42"
+    },
+    {
         "addr": "0xF203236B9CEf1FaaEa4aCE8e8e2EB65431ef7697",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_USDT0_DAI_MIP_X35"
@@ -778,5 +783,10 @@
         "addr": "0x6aa41dF8FB0deC976B59bf0824FC5fFB88ccA958",
         "isContract": true,
         "name": "CHAINLINK_VELO_USD_OEV_WRAPPER_DEPRECATED"
+    },
+    {
+        "addr": "0x78Feb72aeA00B912ac45438e0764A02213266568",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL_V2"
     }
 ]

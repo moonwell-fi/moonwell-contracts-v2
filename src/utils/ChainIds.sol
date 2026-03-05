@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Vm} from "@forge-std/Vm.sol";
+import {console} from "@forge-std/console.sol";
 
 // Fork Ids
 uint256 constant MOONBEAM_FORK_ID = 0;
@@ -156,24 +157,36 @@ library ChainIds {
 
         if (isMainnet) {
             vmInternal.selectFork(MOONBEAM_FORK_ID);
-
             require(
                 block.chainid == MOONBEAM_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: moonbeam fork has wrong chain id, expected 1284, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(BASE_FORK_ID);
-
             require(
                 block.chainid == BASE_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: base fork has wrong chain id, expected 8453, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(OPTIMISM_FORK_ID);
-
             require(
                 block.chainid == OPTIMISM_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: optimism fork has wrong chain id, expected 10, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(ETHEREUM_FORK_ID);
@@ -184,24 +197,36 @@ library ChainIds {
             );
         } else {
             vmInternal.selectFork(MOONBEAM_FORK_ID);
-
             require(
                 block.chainid == MOONBASE_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: moonbase fork has wrong chain id, expected 1287, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(BASE_FORK_ID);
-
             require(
                 block.chainid == BASE_SEPOLIA_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: base sepolia fork has wrong chain id, expected 84532, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(OPTIMISM_FORK_ID);
-
             require(
                 block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: optimism sepolia fork has wrong chain id, expected 11155420, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(ETHEREUM_FORK_ID);
@@ -224,10 +249,15 @@ library ChainIds {
         );
 
         if (!success || !successSwitchFork) {
+            console.log("Creating fork: moonbeam (fork id 0)...");
             vmInternal.createFork("moonbeam");
+            console.log("Creating fork: base (fork id 1)...");
             vmInternal.createFork("base");
+            console.log("Creating fork: optimism (fork id 2)...");
             vmInternal.createFork("optimism");
+            console.log("Creating fork: ethereum (fork id 3)...");
             vmInternal.createFork("ethereum");
+            console.log("All forks created successfully");
         }
 
         vmInternal.selectFork(selectFork);

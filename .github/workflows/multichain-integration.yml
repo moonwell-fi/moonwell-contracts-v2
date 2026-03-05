@@ -143,7 +143,22 @@ jobs:
 
       - name: Set PR_CHANGED_FILES
         run: |
-          echo "PR_CHANGED_FILES=${{ steps.files.outputs.added_modified }}" >> $GITHUB_ENV
+          CHANGED="${{ steps.files.outputs.added_modified }}"
+          # Append compiled artifact paths for changed proposal directories
+          # so CalldataPrinting can match non-template proposals
+          for f in $CHANGED; do
+            if [[ "$f" == proposals/mips/* ]]; then
+              dir=$(echo "$f" | awk -F'/' '{print $3}')
+              if [ -n "$dir" ] && [ -d "artifacts/foundry/${dir}.sol" ]; then
+                for artifact in artifacts/foundry/${dir}.sol/*.json; do
+                  if [ -f "$artifact" ]; then
+                    CHANGED="$CHANGED $artifact"
+                  fi
+                done
+              fi
+            fi
+          done
+          echo "PR_CHANGED_FILES=$CHANGED" >> $GITHUB_ENV
 
       - name: Set DEBUG flag
         run: echo "DEBUG=true" >> $GITHUB_ENV
@@ -180,6 +195,10 @@ jobs:
               : null;
 
             for (const comment of botComments) {
+              // Preserve proposal summary comments (posted by proposal-summary workflow)
+              if (typeof comment.body === 'string' && comment.body.includes('<!-- proposal-summary -->')) {
+                continue;
+              }
               if (keepId && comment.id === keepId) {
                 continue;
               }
@@ -268,7 +287,7 @@ jobs:
 
   run-stakedwell-integration-tests:
     name: StakedWell Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout code
