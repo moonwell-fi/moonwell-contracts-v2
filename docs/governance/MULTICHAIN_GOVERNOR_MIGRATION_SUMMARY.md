@@ -147,7 +147,10 @@ ownership from the Moonbeam MultichainGovernor to the new system.
 
 > **Note:** The Moonbeam MultichainGovernor is intentionally left as a trusted
 > sender on Base and Optimism TemporalGovernors for backwards compatibility, in
-> case a rollback to the old governance system is needed.
+> case a rollback to the old governance system is needed. Immediately after
+> proposal execution, the pause guardian multisig must call `pause()` on the old
+> Moonbeam MultichainGovernor to prevent it from being used to send unauthorized
+> cross-chain messages.
 
 **Optimism (via Wormhole from Moonbeam):**
 
