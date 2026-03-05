@@ -1618,6 +1618,53 @@ contract mipx47 is HybridProposal {
         assertEq(governor.quorum(), QUORUM, "Quorum not set correctly");
         console2.log("[PASS] Quorum set correctly:", QUORUM);
 
+        // 8. Validate breakGlassGuardian and pauseGuardian
+        assertEq(
+            governor.breakGlassGuardian(),
+            addresses.getAddress("BREAK_GLASS_GUARDIAN"),
+            "breakGlassGuardian not set correctly on MultichainGovernorV2"
+        );
+        console2.log("[PASS] breakGlassGuardian set correctly");
+
+        assertEq(
+            governor.pauseGuardian(),
+            addresses.getAddress("PAUSE_GUARDIAN"),
+            "pauseGuardian not set correctly on MultichainGovernorV2"
+        );
+        console2.log("[PASS] pauseGuardian set correctly");
+
+        // 9. Validate Ethereum VotingPowerAggregator state (configured in afterDeploy)
+        VotingPowerAggregator ethAggregator = VotingPowerAggregator(
+            ethereumVotingPower
+        );
+        assertEq(
+            ethAggregator.owner(),
+            governorV2Proxy,
+            "Ethereum VotingPowerAggregator owner not set to MultichainGovernorV2"
+        );
+        console2.log(
+            "[PASS] Ethereum VotingPowerAggregator owned by MultichainGovernorV2"
+        );
+
+        assertEq(
+            address(ethAggregator.xWell()),
+            addresses.getAddress("xWELL_PROXY"),
+            "Ethereum VotingPowerAggregator xWell not set correctly"
+        );
+        console2.log(
+            "[PASS] Ethereum VotingPowerAggregator xWell set correctly"
+        );
+
+        assertTrue(
+            ethAggregator.isSnapshotSource(
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
+            ),
+            "stkWell not added as snapshot source on Ethereum VotingPowerAggregator"
+        );
+        console2.log(
+            "[PASS] stkWell is snapshot source on Ethereum VotingPowerAggregator"
+        );
+
         console2.log("=== ETHEREUM VALIDATION COMPLETE ===\n");
     }
 
@@ -1763,6 +1810,27 @@ contract mipx47 is HybridProposal {
             "Ownership transfer validation failed"
         );
 
+        // 10. Validate VotingPowerAggregator ownership transferred to TemporalGovernor
+        assertEq(
+            VotingPowerAggregator(moonbeamVotingPower).owner(),
+            temporalGovernor,
+            "Moonbeam VotingPowerAggregator ownership not transferred to TemporalGovernor"
+        );
+        console2.log(
+            "[PASS] Moonbeam VotingPowerAggregator owned by TemporalGovernor"
+        );
+
+        // 11. Validate stkWell added as snapshot source on Moonbeam VotingPowerAggregator
+        assertTrue(
+            VotingPowerAggregator(moonbeamVotingPower).isSnapshotSource(
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
+            ),
+            "stkWell not added as snapshot source on Moonbeam VotingPowerAggregator"
+        );
+        console2.log(
+            "[PASS] stkWell is snapshot source on Moonbeam VotingPowerAggregator"
+        );
+
         console2.log("=== MOONBEAM VALIDATION COMPLETE ===\n");
     }
 
@@ -1878,6 +1946,17 @@ contract mipx47 is HybridProposal {
         );
         console2.log(
             "[PASS] Ethereum MultichainGovernorV2 is trusted sender on Base TemporalGovernor"
+        );
+
+        // 8. Validate stkWell added as snapshot source on Base VotingPowerAggregator
+        assertTrue(
+            VotingPowerAggregator(baseVotingPower).isSnapshotSource(
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
+            ),
+            "stkWell not added as snapshot source on Base VotingPowerAggregator"
+        );
+        console2.log(
+            "[PASS] stkWell is snapshot source on Base VotingPowerAggregator"
         );
 
         console2.log("=== BASE VALIDATION COMPLETE ===\n");
@@ -1999,6 +2078,17 @@ contract mipx47 is HybridProposal {
         );
         console2.log(
             "[PASS] Ethereum MultichainGovernorV2 is trusted sender on Optimism TemporalGovernor"
+        );
+
+        // 8. Validate stkWell added as snapshot source on Optimism VotingPowerAggregator
+        assertTrue(
+            VotingPowerAggregator(optimismVotingPower).isSnapshotSource(
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
+            ),
+            "stkWell not added as snapshot source on Optimism VotingPowerAggregator"
+        );
+        console2.log(
+            "[PASS] stkWell is snapshot source on Optimism VotingPowerAggregator"
         );
 
         console2.log("=== OPTIMISM VALIDATION COMPLETE ===\n");
