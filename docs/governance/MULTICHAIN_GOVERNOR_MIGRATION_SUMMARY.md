@@ -1,4 +1,4 @@
-# Moonwell Governance Migration: MIP-X44 + MIP-X45 Audit Brief
+# Moonwell Governance Migration: MIP-X45 + MIP-X47 Audit Brief
 
 ## Overview
 
@@ -17,10 +17,10 @@ For details on the smart contract changes for MultichainGovernorV2, read
 | Step | Script                               | Executor   | Chain(s)                           |
 | ---- | ------------------------------------ | ---------- | ---------------------------------- |
 | 0    | `DeployXWellEthereum.s.sol`          | Deployer   | Ethereum                           |
-| 1    | `mip-x44.sol` — deploy + submit      | Deployer   | Moonbeam, Base, OP, Ethereum       |
-| 2    | `mip-x44.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
-| 3    | `mip-x45.sol` — deploy + afterDeploy | Deployer   | All 4 chains                       |
-| 4    | `mip-x45.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
+| 1    | `mip-x45.sol` — deploy + submit      | Deployer   | Moonbeam, Base, OP, Ethereum       |
+| 2    | `mip-x45.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
+| 3    | `mip-x47.sol` — deploy + afterDeploy | Deployer   | All 4 chains                       |
+| 4    | `mip-x47.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
 | 5    | `PostDeployEthereumXWell.s.sol`      | Deployer   | Ethereum                           |
 
 Step 0 is already complete (xWELL, stkWELL, WormholeBridgeAdapter, ProxyAdmin,
@@ -28,7 +28,7 @@ EcosystemReserve are live on Ethereum).
 
 ---
 
-## MIP-X44: Prerequisite Upgrades
+## MIP-X45: Prerequisite Upgrades
 
 ### Purpose
 
@@ -74,7 +74,7 @@ finality.
 
 ---
 
-## MIP-X45: Governance Migration
+## MIP-X47: Governance Migration
 
 ### Purpose
 
@@ -228,7 +228,7 @@ instructions.
 
 ## Follow-Up Items (Require Separate Proposal)
 
-These actions cannot be completed during MIP-X44/X45 and must be handled via a
+These actions cannot be completed during MIP-X45/X47 and must be handled via a
 subsequent governance proposal from the new Ethereum MultichainGovernorV2:
 
 ### 1. First Ethereum Proposal: Accept Ownership + addTrustedSenders
@@ -270,15 +270,15 @@ governor.
 
 **Step 3 — \_acceptAdmin() on Moonbeam contracts:**
 
-MIP-X45 calls `_setPendingAdmin(temporalGovernor)` on Moonbeam mTokens and
+MIP-X47 calls `_setPendingAdmin(temporalGovernor)` on Moonbeam mTokens and
 Unitroller. To complete the admin transfer, TemporalGovernor must call
 `_acceptAdmin()` on each contract. This is sent as a Wormhole message from the
 Ethereum governor → Moonbeam TemporalGovernor → `_acceptAdmin()`.
 
-**Why this can't be in MIP-X45:** `_acceptAdmin()` requires
+**Why this can't be in MIP-X47:** `_acceptAdmin()` requires
 `msg.sender == pendingAdmin` (TemporalGovernor). TemporalGovernor can only
 execute via Wormhole from the Ethereum governor, which has no proposals yet
-during MIP-X45 execution.
+during MIP-X47 execution.
 
 ### 2. VotingPowerAggregator ownership on Ethereum
 
@@ -301,7 +301,7 @@ no follow-up needed.
    ownership to PAUSE_GUARDIAN multisig across all chains.
 
 4. **Single Ethereum ProxyAdmin:** There is one shared ProxyAdmin on Ethereum,
-   deployed in Step 0 (`DeployXWellEthereum.s.sol`). MIP-X45 reuses it for the
+   deployed in Step 0 (`DeployXWellEthereum.s.sol`). MIP-X47 reuses it for the
    MultichainGovernorV2 and VotingPowerAggregator proxies (skips deployment if
    `PROXY_ADMIN` is already set in the addresses registry). ProxyAdmin ownership
    is transferred to MultichainGovernorV2 via PostDeployEthereumXWell.
@@ -321,7 +321,7 @@ no follow-up needed.
 
 - **Wormhole dependency:** All cross-chain communication relies on Wormhole. If
   Wormhole is unavailable, satellite chain governance execution is delayed.
-- **Deployer trust window:** Between MIP-X45 execution and
+- **Deployer trust window:** Between MIP-X47 execution and
   PostDeployEthereumXWell completion, the deployer still controls Ethereum xWELL
   ecosystem contracts. This window should be minimized.
 - **Two-step ownership gap:** Until the follow-up proposal calls
