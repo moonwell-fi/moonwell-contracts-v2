@@ -214,7 +214,11 @@ contract MultichainProposalIntegrationV2 is
                     abi.encodeWithSignature("acceptOwnership()")
                 );
 
-                assertEq(success, true, "Failed to accepted ownership of WORMHOLE_BRIDGE_ADAPTER_PROXY");
+                assertEq(
+                    success,
+                    true,
+                    "Failed to accepted ownership of WORMHOLE_BRIDGE_ADAPTER_PROXY"
+                );
             }
         } catch {
             // Contract doesn't have pendingOwner() or acceptOwnership(), skip

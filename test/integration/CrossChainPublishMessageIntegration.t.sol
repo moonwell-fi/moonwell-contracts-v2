@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, ETHEREUM_FORK_ID} from "@utils/ChainIds.sol";
 import {String} from "@utils/String.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
@@ -63,7 +63,10 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             HybridProposal proposal = HybridProposal(address(proposals[i]));
 
             //  only run tests against a base proposal
-            if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
+            if (
+                uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID ||
+                uint256(proposal.primaryForkId()) == ETHEREUM_FORK_ID
+            ) {
                 return;
             }
 
@@ -246,8 +249,11 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
         for (uint256 j = 0; j < proposals.length; j++) {
             HybridProposal proposal = HybridProposal(address(proposals[j]));
 
-            // Only run tests against non-moonbeam proposals
-            if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
+            // Only run tests against non-moonbeam, non-ethereum proposals
+            if (
+                uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID ||
+                uint256(proposal.primaryForkId()) == ETHEREUM_FORK_ID
+            ) {
                 return;
             }
 
