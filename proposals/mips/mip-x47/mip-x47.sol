@@ -481,11 +481,6 @@ contract mipx47 is HybridProposal {
             payable(moonbeamMultichainGovernor)
         ).proposalCount();
 
-        console2.log(
-            "Reading proposalCount from Moonbeam MultichainGovernor:",
-            startingProposalCount
-        );
-
         // Initialize MultichainGovernorV2 on Ethereum
         vm.selectFork(ETHEREUM_FORK_ID);
 
@@ -593,21 +588,12 @@ contract mipx47 is HybridProposal {
 
         // Set xWell as voting source
         votingPower.setXWell(ethereumXWell);
-        console2.log(
-            "[AFTER_DEPLOY] Set xWell on Ethereum VotingPowerAggregator"
-        );
 
         // Add stkWell as snapshot source
         votingPower.addSnapshotSource(ethereumStkWell);
-        console2.log(
-            "[AFTER_DEPLOY] Add stkWell as snapshot source on Ethereum VotingPowerAggregator"
-        );
 
         // Transfer ownership of VotingPowerAggregator to MultichainGovernorV2
         votingPower.transferOwnership(governorV2Proxy);
-        console2.log(
-            "[AFTER_DEPLOY] Transferred VotingPowerAggregator ownership to MultichainGovernorV2"
-        );
 
         vm.stopBroadcast();
     }
@@ -754,7 +740,6 @@ contract mipx47 is HybridProposal {
     }
 
     function _buildMoonbeam(Addresses addresses) internal {
-        console2.log("\n=== BUILDING MOONBEAM ACTIONS ===");
         vm.selectFork(MOONBEAM_FORK_ID);
 
         // 4. Upgrade MultichainGovernor on Moonbeam to latest version (with recoverETH())
@@ -779,9 +764,6 @@ contract mipx47 is HybridProposal {
             "Upgrade MultichainGovernor on Moonbeam to version with recoverETH()",
             ActionType.Moonbeam
         );
-        console2.log(
-            "[ACTION] Upgrade MultichainGovernor on Moonbeam to v1.1 (with recoverETH)"
-        );
 
         // 5. Recover ETH from MultichainGovernor on Moonbeam
         address wellFoundationMultisig = addresses.getAddress(
@@ -796,9 +778,6 @@ contract mipx47 is HybridProposal {
             ),
             "Recover ETH from MultichainGovernor on Moonbeam to WELL_FOUNDATION_MULTISIG",
             ActionType.Moonbeam
-        );
-        console2.log(
-            "[ACTION] Recover ETH from MultichainGovernor to WELL_FOUNDATION_MULTISIG"
         );
 
         // 5.5. Add stkWell as snapshot source to VotingPowerAggregator on Moonbeam
@@ -816,9 +795,6 @@ contract mipx47 is HybridProposal {
             "Add stkWell as snapshot source to VotingPowerAggregator on Moonbeam",
             ActionType.Moonbeam
         );
-        console2.log(
-            "[ACTION] Add stkWell as snapshot source to VotingPowerAggregator on Moonbeam"
-        );
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
@@ -832,18 +808,11 @@ contract mipx47 is HybridProposal {
             "Transfer VotingPowerAggregator ownership to TemporalGovernor on Moonbeam",
             ActionType.Moonbeam
         );
-        console2.log(
-            "[ACTION] Transfer VotingPowerAggregator ownership to TemporalGovernor"
-        );
 
         // Note: Ethereum MultichainGovernorV2 is already set as a trusted sender on Moonbeam TemporalGovernor
         // during deployment (see deploy() function above), so no additional action needed here.
 
         // 6. Transfer ownership of all contracts on Moonbeam owned by MultichainGovernor to TemporalGovernor
-        console2.log(
-            "[ACTION] Transferring ownership of Moonbeam contracts to TemporalGovernor..."
-        );
-
         uint256 ownershipTransferCount = 0;
 
         // All 75 address names from 1284.json (Moonbeam)
@@ -970,10 +939,6 @@ contract mipx47 is HybridProposal {
                         ),
                         ActionType.Moonbeam
                     );
-                    console2.log(
-                        "  [OWNERSHIP] Transfer %s ownership to TemporalGovernor",
-                        moonbeamContracts[i]
-                    );
                     ownershipTransferCount++;
                     contractsToValidateOwnership.push(moonbeamContracts[i]);
                     processedAddresses[processedCount++] = contractAddress;
@@ -1002,10 +967,6 @@ contract mipx47 is HybridProposal {
                             ),
                             ActionType.Moonbeam
                         );
-                        console2.log(
-                            "  [ADMIN] Set pending admin on %s to TemporalGovernor",
-                            moonbeamContracts[i]
-                        );
                     } else {
                         // ChainlinkOracle pattern: 1-step via setAdmin
                         _pushAction(
@@ -1022,10 +983,6 @@ contract mipx47 is HybridProposal {
                                 )
                             ),
                             ActionType.Moonbeam
-                        );
-                        console2.log(
-                            "  [ADMIN] Set admin on %s to TemporalGovernor",
-                            moonbeamContracts[i]
                         );
                     }
                     ownershipTransferCount++;
@@ -1055,10 +1012,6 @@ contract mipx47 is HybridProposal {
                         ),
                         ActionType.Moonbeam
                     );
-                    console2.log(
-                        "  [EMISSION_MANAGER] Set emissions manager on %s to TemporalGovernor",
-                        moonbeamContracts[i]
-                    );
                     ownershipTransferCount++;
                     contractsToValidateOwnership.push(moonbeamContracts[i]);
                     processedAddresses[processedCount++] = contractAddress;
@@ -1066,19 +1019,12 @@ contract mipx47 is HybridProposal {
                 }
             } catch {}
         }
-
-        console2.log(
-            "[INFO] Queued %d ownership transfers on Moonbeam",
-            ownershipTransferCount
-        );
-        console2.log("=== MOONBEAM ACTIONS BUILD COMPLETE ===\n");
     }
 
     function _buildBase(
         Addresses addresses,
         address ethereumGovernorV2
     ) internal {
-        console2.log("\n=== BUILDING BASE ACTIONS ===");
         vm.selectFork(BASE_FORK_ID);
 
         // 7. Upgrade MultichainVoteCollection to V2 on Base
@@ -1103,8 +1049,6 @@ contract mipx47 is HybridProposal {
             "Upgrade MultichainVoteCollection to V2 on Base",
             ActionType.Base
         );
-        console2.log("[ACTION] Upgrade MultichainVoteCollection to V2 on Base");
-
         // Call initializeV2 on Base VoteCollection - set VotingPowerAggregator and add new Ethereum governor
         // Old Moonbeam governor is hardcoded and will be removed automatically
         _pushAction(
@@ -1118,11 +1062,6 @@ contract mipx47 is HybridProposal {
             "Initialize V2: set VotingPowerAggregator, remove old Moonbeam governor, add Ethereum governor on Base VoteCollection",
             ActionType.Base
         );
-        console2.log("[ACTION] Call initializeV2 on Base VoteCollection:");
-        console2.log("  - Set VotingPowerAggregator");
-        console2.log("  - Remove old Moonbeam governor as trusted sender");
-        console2.log("  - Add Ethereum governor as trusted sender");
-
         // 7.5. Add stkWell as snapshot source to VotingPowerAggregator on Base
         address baseStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
 
@@ -1132,10 +1071,6 @@ contract mipx47 is HybridProposal {
             "Add stkWell as snapshot source to VotingPowerAggregator on Base",
             ActionType.Base
         );
-        console2.log(
-            "[ACTION] Add stkWell as snapshot source to VotingPowerAggregator on Base"
-        );
-
         // Get Base TemporalGovernor address
         address baseTemporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR"
@@ -1160,10 +1095,6 @@ contract mipx47 is HybridProposal {
             "Add Ethereum MultichainGovernorV2 as trusted sender on Base TemporalGovernor",
             ActionType.Base
         );
-        console2.log(
-            "[ACTION] Add Ethereum MultichainGovernorV2 as trusted sender on Base TemporalGovernor"
-        );
-
         // Remove old Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor
         vm.selectFork(MOONBEAM_FORK_ID);
         address moonbeamMultichainGovernor = addresses.getAddress(
@@ -1188,18 +1119,12 @@ contract mipx47 is HybridProposal {
             "Remove Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor",
             ActionType.Base
         );
-        console2.log(
-            "[ACTION] Remove Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor"
-        );
-
-        console2.log("=== BASE ACTIONS BUILD COMPLETE ===\n");
     }
 
     function _buildOptimism(
         Addresses addresses,
         address ethereumGovernorV2
     ) internal {
-        console2.log("\n=== BUILDING OPTIMISM ACTIONS ===");
         vm.selectFork(OPTIMISM_FORK_ID);
 
         // 7. Upgrade MultichainVoteCollection to V2 on Optimism
@@ -1224,10 +1149,6 @@ contract mipx47 is HybridProposal {
             "Upgrade MultichainVoteCollection to V2 on Optimism",
             ActionType.Optimism
         );
-        console2.log(
-            "[ACTION] Upgrade MultichainVoteCollection to V2 on Optimism"
-        );
-
         // Call initializeV2 on Optimism VoteCollection - set VotingPowerAggregator and add new Ethereum governor
         // Old Moonbeam governor is hardcoded and will be removed automatically
         _pushAction(
@@ -1241,11 +1162,6 @@ contract mipx47 is HybridProposal {
             "Initialize V2: set VotingPowerAggregator, remove old Moonbeam governor, add Ethereum governor on Optimism VoteCollection",
             ActionType.Optimism
         );
-        console2.log("[ACTION] Call initializeV2 on Optimism VoteCollection:");
-        console2.log("  - Set VotingPowerAggregator");
-        console2.log("  - Remove old Moonbeam governor as trusted sender");
-        console2.log("  - Add Ethereum governor as trusted sender");
-
         // 7.5. Add stkWell as snapshot source to VotingPowerAggregator on Optimism
         address optimismStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
 
@@ -1258,10 +1174,6 @@ contract mipx47 is HybridProposal {
             "Add stkWell as snapshot source to VotingPowerAggregator on Optimism",
             ActionType.Optimism
         );
-        console2.log(
-            "[ACTION] Add stkWell as snapshot source to VotingPowerAggregator on Optimism"
-        );
-
         // Get Optimism TemporalGovernor address
         address optimismTemporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR"
@@ -1286,10 +1198,6 @@ contract mipx47 is HybridProposal {
             "Add Ethereum MultichainGovernorV2 as trusted sender on Optimism TemporalGovernor",
             ActionType.Optimism
         );
-        console2.log(
-            "[ACTION] Add Ethereum MultichainGovernorV2 as trusted sender on Optimism TemporalGovernor"
-        );
-
         // Remove old Moonbeam MultichainGovernor as trusted sender from Optimism TemporalGovernor
         vm.selectFork(MOONBEAM_FORK_ID);
         address moonbeamMultichainGovernor = addresses.getAddress(
@@ -1314,11 +1222,6 @@ contract mipx47 is HybridProposal {
             "Remove Moonbeam MultichainGovernor as trusted sender from Optimism TemporalGovernor",
             ActionType.Optimism
         );
-        console2.log(
-            "[ACTION] Remove Moonbeam MultichainGovernor as trusted sender from Optimism TemporalGovernor"
-        );
-
-        console2.log("=== OPTIMISM ACTIONS BUILD COMPLETE ===\n");
     }
 
     function build(Addresses addresses) public override {
@@ -1411,11 +1314,6 @@ contract mipx47 is HybridProposal {
         Addresses addresses,
         address temporalGovernor
     ) internal view returns (bool success) {
-        console2.log(
-            "[INFO] Validating ownership transfer for %d contracts...",
-            contractsToValidateOwnership.length
-        );
-
         uint256 validatedCount = 0;
         uint256 failedCount = 0;
 
@@ -1427,10 +1325,6 @@ contract mipx47 is HybridProposal {
             // Pattern 1: owner() / pendingOwner()
             try this._getOwner(contractAddress) returns (address currentOwner) {
                 if (currentOwner == temporalGovernor) {
-                    console2.log(
-                        "[PASS] %s ownership transferred to TemporalGovernor",
-                        contractName
-                    );
                     validatedCount++;
                     validated = true;
                 } else {
@@ -1438,10 +1332,6 @@ contract mipx47 is HybridProposal {
                         contractAddress
                     );
                     if (pendingOwner == temporalGovernor) {
-                        console2.log(
-                            "[PASS] %s ownership transfer initiated (pending owner: TemporalGovernor)",
-                            contractName
-                        );
                         validatedCount++;
                         validated = true;
                     }
@@ -1453,10 +1343,6 @@ contract mipx47 is HybridProposal {
             // Pattern 2: admin() / pendingAdmin()
             try this._getAdmin(contractAddress) returns (address currentAdmin) {
                 if (currentAdmin == temporalGovernor) {
-                    console2.log(
-                        "[PASS] %s admin set to TemporalGovernor",
-                        contractName
-                    );
                     validatedCount++;
                     validated = true;
                 } else if (this._hasPendingAdmin(contractAddress)) {
@@ -1467,10 +1353,6 @@ contract mipx47 is HybridProposal {
                     if (ok && data.length >= 32) {
                         address pendingAdmin = abi.decode(data, (address));
                         if (pendingAdmin == temporalGovernor) {
-                            console2.log(
-                                "[PASS] %s pending admin set to TemporalGovernor",
-                                contractName
-                            );
                             validatedCount++;
                             validated = true;
                         }
@@ -1485,29 +1367,15 @@ contract mipx47 is HybridProposal {
                 address manager
             ) {
                 if (manager == temporalGovernor) {
-                    console2.log(
-                        "[PASS] %s emissions manager set to TemporalGovernor",
-                        contractName
-                    );
                     validatedCount++;
                     validated = true;
                 }
             } catch {}
 
             if (!validated) {
-                console2.log(
-                    "[FAIL] %s NOT transferred to TemporalGovernor",
-                    contractName
-                );
                 failedCount++;
             }
         }
-
-        console2.log(
-            "[INFO] Ownership validation complete: %d passed, %d failed",
-            validatedCount,
-            failedCount
-        );
 
         // All contracts that were queued for ownership transfer MUST have been transferred
         assertEq(
@@ -1530,7 +1398,6 @@ contract mipx47 is HybridProposal {
     }
 
     function _validateEthereum(Addresses addresses) internal {
-        console2.log("\n=== VALIDATING ETHEREUM DEPLOYMENT ===");
         vm.selectFork(ETHEREUM_FORK_ID);
 
         // 1. Validate MultichainGovernorV2 proxy is deployed
@@ -1542,10 +1409,6 @@ contract mipx47 is HybridProposal {
             0,
             "MultichainGovernorV2 proxy not deployed on Ethereum"
         );
-        console2.log(
-            "[PASS] MultichainGovernorV2 proxy deployed at:",
-            governorV2Proxy
-        );
 
         // 2. Validate MultichainGovernorV2 implementation is deployed
         address governorV2Impl = addresses.getAddress(
@@ -1555,10 +1418,6 @@ contract mipx47 is HybridProposal {
             governorV2Impl.code.length,
             0,
             "MultichainGovernorV2 implementation not deployed on Ethereum"
-        );
-        console2.log(
-            "[PASS] MultichainGovernorV2 implementation deployed at:",
-            governorV2Impl
         );
 
         // 3. Validate VotingPowerAggregator is deployed on Ethereum
@@ -1570,10 +1429,6 @@ contract mipx47 is HybridProposal {
             0,
             "VotingPowerAggregator not deployed on Ethereum"
         );
-        console2.log(
-            "[PASS] VotingPowerAggregator deployed at:",
-            ethereumVotingPower
-        );
 
         // 4. Validate governor is initialized correctly
         MultichainGovernorV2 governor = MultichainGovernorV2(
@@ -1584,7 +1439,6 @@ contract mipx47 is HybridProposal {
             ethereumVotingPower,
             "MultichainGovernorV2 votingPower not set correctly"
         );
-        console2.log("[PASS] MultichainGovernorV2 votingPower set correctly");
 
         // 5. Validate proposal count matches Moonbeam
         vm.selectFork(MOONBEAM_FORK_ID);
@@ -1600,10 +1454,6 @@ contract mipx47 is HybridProposal {
             governor.proposalCount(),
             expectedProposalCount,
             "MultichainGovernorV2 proposalCount not initialized correctly from Moonbeam"
-        );
-        console2.log(
-            "[PASS] MultichainGovernorV2 proposalCount initialized correctly:",
-            expectedProposalCount
         );
 
         // 6. Validate trusted senders are set correctly (Moonbeam, Base, Optimism VoteCollections)
@@ -1630,7 +1480,6 @@ contract mipx47 is HybridProposal {
             ),
             "Moonbeam VoteCollection not trusted sender on MultichainGovernorV2"
         );
-        console2.log("[PASS] Moonbeam VoteCollection is trusted sender");
 
         assertTrue(
             governor.isTrustedSender(
@@ -1639,7 +1488,6 @@ contract mipx47 is HybridProposal {
             ),
             "Base VoteCollection not trusted sender on MultichainGovernorV2"
         );
-        console2.log("[PASS] Base VoteCollection is trusted sender");
 
         assertTrue(
             governor.isTrustedSender(
@@ -1648,7 +1496,6 @@ contract mipx47 is HybridProposal {
             ),
             "Optimism VoteCollection not trusted sender on MultichainGovernorV2"
         );
-        console2.log("[PASS] Optimism VoteCollection is trusted sender");
 
         // 7. Validate governance parameters
         assertEq(
@@ -1656,19 +1503,11 @@ contract mipx47 is HybridProposal {
             PROPOSAL_THRESHOLD,
             "Proposal threshold not set correctly"
         );
-        console2.log(
-            "[PASS] Proposal threshold set correctly:",
-            PROPOSAL_THRESHOLD
-        );
 
         assertEq(
             governor.votingPeriod(),
             VOTING_PERIOD_SECONDS,
             "Voting period not set correctly"
-        );
-        console2.log(
-            "[PASS] Voting period set correctly:",
-            VOTING_PERIOD_SECONDS
         );
 
         assertEq(
@@ -1676,13 +1515,8 @@ contract mipx47 is HybridProposal {
             CROSS_CHAIN_VOTE_COLLECTION_PERIOD,
             "Cross chain vote collection period not set correctly"
         );
-        console2.log(
-            "[PASS] Cross chain vote collection period set correctly:",
-            CROSS_CHAIN_VOTE_COLLECTION_PERIOD
-        );
 
         assertEq(governor.quorum(), QUORUM, "Quorum not set correctly");
-        console2.log("[PASS] Quorum set correctly:", QUORUM);
 
         // 8. Validate breakGlassGuardian and pauseGuardian
         assertEq(
@@ -1690,21 +1524,24 @@ contract mipx47 is HybridProposal {
             addresses.getAddress("BREAK_GLASS_GUARDIAN"),
             "breakGlassGuardian not set correctly on MultichainGovernorV2"
         );
-        console2.log("[PASS] breakGlassGuardian set correctly");
 
         assertEq(
             governor.pauseGuardian(),
             addresses.getAddress("PAUSE_GUARDIAN"),
             "pauseGuardian not set correctly on MultichainGovernorV2"
         );
-        console2.log("[PASS] pauseGuardian set correctly");
 
         assertEq(
             governor.pauseDuration(),
             PAUSE_DURATION,
             "pauseDuration not set correctly on MultichainGovernorV2"
         );
-        console2.log("[PASS] pauseDuration set correctly:", PAUSE_DURATION);
+
+        assertEq(
+            address(governor.wormholeRelayer()),
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
+            "wormholeRelayer not set correctly on MultichainGovernorV2"
+        );
 
         // 9. Validate Ethereum VotingPowerAggregator state (configured in afterDeploy)
         VotingPowerAggregator ethAggregator = VotingPowerAggregator(
@@ -1715,17 +1552,11 @@ contract mipx47 is HybridProposal {
             governorV2Proxy,
             "Ethereum VotingPowerAggregator owner not set to MultichainGovernorV2"
         );
-        console2.log(
-            "[PASS] Ethereum VotingPowerAggregator owned by MultichainGovernorV2"
-        );
 
         assertEq(
             address(ethAggregator.xWell()),
             addresses.getAddress("xWELL_PROXY"),
             "Ethereum VotingPowerAggregator xWell not set correctly"
-        );
-        console2.log(
-            "[PASS] Ethereum VotingPowerAggregator xWell set correctly"
         );
 
         assertTrue(
@@ -1734,15 +1565,9 @@ contract mipx47 is HybridProposal {
             ),
             "stkWell not added as snapshot source on Ethereum VotingPowerAggregator"
         );
-        console2.log(
-            "[PASS] stkWell is snapshot source on Ethereum VotingPowerAggregator"
-        );
-
-        console2.log("=== ETHEREUM VALIDATION COMPLETE ===\n");
     }
 
     function _validateMoonbeam(Addresses addresses) internal {
-        console2.log("\n=== VALIDATING MOONBEAM DEPLOYMENT & ACTIONS ===");
         vm.selectFork(MOONBEAM_FORK_ID);
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
@@ -1756,7 +1581,6 @@ contract mipx47 is HybridProposal {
             0,
             "TemporalGovernor not deployed on Moonbeam"
         );
-        console2.log("[PASS] TemporalGovernor deployed at:", temporalGovernor);
 
         // 2. Validate VotingPowerAggregator is deployed on Moonbeam
         address moonbeamVotingPower = addresses.getAddress(
@@ -1766,10 +1590,6 @@ contract mipx47 is HybridProposal {
             moonbeamVotingPower.code.length,
             0,
             "VotingPowerAggregator not deployed on Moonbeam"
-        );
-        console2.log(
-            "[PASS] VotingPowerAggregator deployed at:",
-            moonbeamVotingPower
         );
 
         // 3. Validate MultichainVoteCollectionMoonbeam is deployed on Moonbeam
@@ -1781,10 +1601,6 @@ contract mipx47 is HybridProposal {
             0,
             "MultichainVoteCollectionMoonbeam not deployed on Moonbeam"
         );
-        console2.log(
-            "[PASS] MultichainVoteCollectionMoonbeam deployed at:",
-            moonbeamVoteCollectionV2
-        );
 
         // 4. Validate MultichainVoteCollectionMoonbeam has correct votingPower
         MultichainVoteCollectionMoonbeam voteCollection = MultichainVoteCollectionMoonbeam(
@@ -1795,9 +1611,6 @@ contract mipx47 is HybridProposal {
             moonbeamVotingPower,
             "VotingPowerAggregator not set on Moonbeam VoteCollection"
         );
-        console2.log(
-            "[PASS] VotingPowerAggregator set correctly on VoteCollection"
-        );
 
         // 5. Validate MultichainVoteCollectionMoonbeam has Ethereum governor as trusted sender
         vm.selectFork(ETHEREUM_FORK_ID);
@@ -1806,17 +1619,12 @@ contract mipx47 is HybridProposal {
         );
 
         vm.selectFork(MOONBEAM_FORK_ID);
-        console.log("ETHEREUM_WORMHOLE_CHAIN_ID", ETHEREUM_WORMHOLE_CHAIN_ID);
-        console.log("ethereumGovernorV2", ethereumGovernorV2);
         assertTrue(
             voteCollection.isTrustedSender(
                 ETHEREUM_WORMHOLE_CHAIN_ID,
                 ethereumGovernorV2
             ),
             "Ethereum MultichainGovernorV2 not trusted sender on Moonbeam VoteCollection"
-        );
-        console2.log(
-            "[PASS] Ethereum MultichainGovernorV2 is trusted sender on Moonbeam VoteCollection"
         );
 
         // 5.5. Validate Ethereum MultichainGovernorV2 is trusted sender on Moonbeam TemporalGovernor
@@ -1830,9 +1638,6 @@ contract mipx47 is HybridProposal {
                 ethereumGovernorV2
             ),
             "Ethereum MultichainGovernorV2 not trusted sender on Moonbeam TemporalGovernor"
-        );
-        console2.log(
-            "[PASS] Ethereum MultichainGovernorV2 is trusted sender on Moonbeam TemporalGovernor"
         );
 
         // 6. Validate MultichainGovernor was upgraded to v1.1 (with recoverETH)
@@ -1854,7 +1659,6 @@ contract mipx47 is HybridProposal {
             newMultichainGovernorImpl,
             "MultichainGovernor not upgraded on Moonbeam"
         );
-        console2.log("[PASS] MultichainGovernor upgraded to v1.1 on Moonbeam");
 
         // 7. Validate ETH was recovered from MultichainGovernor
         uint256 governorBalance = moonbeamMultichainGovernor.balance;
@@ -1863,18 +1667,12 @@ contract mipx47 is HybridProposal {
             0,
             "ETH not recovered from MultichainGovernor"
         );
-        console2.log(
-            "[PASS] ETH recovered from MultichainGovernor (balance = 0)"
-        );
 
         // 8. Validate ProxyAdmin ownership transferred to TemporalGovernor
         assertEq(
             ProxyAdmin(moonbeamProxyAdmin).owner(),
             temporalGovernor,
             "MOONBEAM_PROXY_ADMIN ownership not transferred"
-        );
-        console2.log(
-            "[PASS] MOONBEAM_PROXY_ADMIN ownership transferred to TemporalGovernor"
         );
 
         // 9. Validate ALL contract ownerships that were transferred to TemporalGovernor
@@ -1889,9 +1687,6 @@ contract mipx47 is HybridProposal {
             temporalGovernor,
             "Moonbeam VotingPowerAggregator ownership not transferred to TemporalGovernor"
         );
-        console2.log(
-            "[PASS] Moonbeam VotingPowerAggregator owned by TemporalGovernor"
-        );
 
         // 11. Validate stkWell added as snapshot source on Moonbeam VotingPowerAggregator
         assertTrue(
@@ -1900,18 +1695,12 @@ contract mipx47 is HybridProposal {
             ),
             "stkWell not added as snapshot source on Moonbeam VotingPowerAggregator"
         );
-        console2.log(
-            "[PASS] stkWell is snapshot source on Moonbeam VotingPowerAggregator"
-        );
-
-        console2.log("=== MOONBEAM VALIDATION COMPLETE ===\n");
     }
 
     function _validateBase(
         Addresses addresses,
         address governorV2Proxy
     ) internal {
-        console2.log("\n=== VALIDATING BASE DEPLOYMENT & ACTIONS ===");
         vm.selectFork(BASE_FORK_ID);
 
         // 1. Validate VotingPowerAggregator is deployed on Base
@@ -1923,10 +1712,6 @@ contract mipx47 is HybridProposal {
             0,
             "VotingPowerAggregator not deployed on Base"
         );
-        console2.log(
-            "[PASS] VotingPowerAggregator deployed at:",
-            baseVotingPower
-        );
 
         // 2. Validate MultichainVoteCollectionV2 implementation is deployed on Base
         address baseVoteCollectionV2Impl = addresses.getAddress(
@@ -1936,10 +1721,6 @@ contract mipx47 is HybridProposal {
             baseVoteCollectionV2Impl.code.length,
             0,
             "MultichainVoteCollectionV2 implementation not deployed on Base"
-        );
-        console2.log(
-            "[PASS] MultichainVoteCollectionV2 implementation deployed at:",
-            baseVoteCollectionV2Impl
         );
 
         // 3. Validate MultichainVoteCollection was upgraded to V2 on Base
@@ -1957,7 +1738,6 @@ contract mipx47 is HybridProposal {
             baseVoteCollectionV2Impl,
             "MultichainVoteCollection not upgraded to V2 on Base"
         );
-        console2.log("[PASS] MultichainVoteCollection upgraded to V2 on Base");
 
         // 4. Validate VotingPowerAggregator is set on Base VoteCollection
         MultichainVoteCollectionV2 baseVoteCollection = MultichainVoteCollectionV2(
@@ -1968,9 +1748,6 @@ contract mipx47 is HybridProposal {
             baseVotingPower,
             "VotingPowerAggregator not set on Base VoteCollection"
         );
-        console2.log(
-            "[PASS] VotingPowerAggregator set correctly on Base VoteCollection"
-        );
 
         // 5. Validate Ethereum MultichainGovernorV2 is trusted sender on Base VoteCollection
         assertTrue(
@@ -1979,9 +1756,6 @@ contract mipx47 is HybridProposal {
                 governorV2Proxy
             ),
             "MultichainGovernorV2 not trusted sender on Base VoteCollection"
-        );
-        console2.log(
-            "[PASS] Ethereum MultichainGovernorV2 is trusted sender on Base VoteCollection"
         );
 
         // 6. Validate old Moonbeam MultichainGovernor is NOT trusted sender anymore on Base VoteCollection
@@ -1997,9 +1771,6 @@ contract mipx47 is HybridProposal {
                 moonbeamMultichainGovernor
             ),
             "Moonbeam MultichainGovernor still trusted sender on Base VoteCollection"
-        );
-        console2.log(
-            "[PASS] Old Moonbeam MultichainGovernor removed as trusted sender on Base VoteCollection"
         );
 
         // 7. Validate Ethereum MultichainGovernorV2 is trusted sender on Base TemporalGovernor
@@ -2017,9 +1788,6 @@ contract mipx47 is HybridProposal {
             ),
             "Ethereum MultichainGovernorV2 not trusted sender on Base TemporalGovernor"
         );
-        console2.log(
-            "[PASS] Ethereum MultichainGovernorV2 is trusted sender on Base TemporalGovernor"
-        );
 
         // 8. Validate stkWell added as snapshot source on Base VotingPowerAggregator
         VotingPowerAggregator baseAggregator = VotingPowerAggregator(
@@ -2031,18 +1799,12 @@ contract mipx47 is HybridProposal {
             ),
             "stkWell not added as snapshot source on Base VotingPowerAggregator"
         );
-        console2.log(
-            "[PASS] stkWell is snapshot source on Base VotingPowerAggregator"
-        );
 
         // 8a. Validate VotingPowerAggregator owner is TemporalGovernor on Base
         assertEq(
             baseAggregator.owner(),
             baseTemporalGovernor,
             "Base VotingPowerAggregator owner not set to TemporalGovernor"
-        );
-        console2.log(
-            "[PASS] Base VotingPowerAggregator owned by TemporalGovernor"
         );
 
         // 8b. Validate VotingPowerAggregator xWell is set correctly on Base
@@ -2051,7 +1813,6 @@ contract mipx47 is HybridProposal {
             addresses.getAddress("xWELL_PROXY"),
             "Base VotingPowerAggregator xWell not set correctly"
         );
-        console2.log("[PASS] Base VotingPowerAggregator xWell set correctly");
 
         // 9. Validate old Moonbeam MultichainGovernor is NOT trusted sender on Base TemporalGovernor
         assertFalse(
@@ -2061,18 +1822,12 @@ contract mipx47 is HybridProposal {
             ),
             "Moonbeam MultichainGovernor still trusted sender on Base TemporalGovernor"
         );
-        console2.log(
-            "[PASS] Old Moonbeam MultichainGovernor removed as trusted sender on Base TemporalGovernor"
-        );
-
-        console2.log("=== BASE VALIDATION COMPLETE ===\n");
     }
 
     function _validateOptimism(
         Addresses addresses,
         address governorV2Proxy
     ) internal {
-        console2.log("\n=== VALIDATING OPTIMISM DEPLOYMENT & ACTIONS ===");
         vm.selectFork(OPTIMISM_FORK_ID);
 
         // 1. Validate VotingPowerAggregator is deployed on Optimism
@@ -2084,10 +1839,6 @@ contract mipx47 is HybridProposal {
             0,
             "VotingPowerAggregator not deployed on Optimism"
         );
-        console2.log(
-            "[PASS] VotingPowerAggregator deployed at:",
-            optimismVotingPower
-        );
 
         // 2. Validate MultichainVoteCollectionV2 implementation is deployed on Optimism
         address optimismVoteCollectionV2Impl = addresses.getAddress(
@@ -2097,10 +1848,6 @@ contract mipx47 is HybridProposal {
             optimismVoteCollectionV2Impl.code.length,
             0,
             "MultichainVoteCollectionV2 implementation not deployed on Optimism"
-        );
-        console2.log(
-            "[PASS] MultichainVoteCollectionV2 implementation deployed at:",
-            optimismVoteCollectionV2Impl
         );
 
         // 3. Validate MultichainVoteCollection was upgraded to V2 on Optimism
@@ -2120,9 +1867,6 @@ contract mipx47 is HybridProposal {
             optimismVoteCollectionV2Impl,
             "MultichainVoteCollection not upgraded to V2 on Optimism"
         );
-        console2.log(
-            "[PASS] MultichainVoteCollection upgraded to V2 on Optimism"
-        );
 
         // 4. Validate VotingPowerAggregator is set on Optimism VoteCollection
         MultichainVoteCollectionV2 optimismVoteCollection = MultichainVoteCollectionV2(
@@ -2133,9 +1877,6 @@ contract mipx47 is HybridProposal {
             optimismVotingPower,
             "VotingPowerAggregator not set on Optimism VoteCollection"
         );
-        console2.log(
-            "[PASS] VotingPowerAggregator set correctly on Optimism VoteCollection"
-        );
 
         // 5. Validate Ethereum MultichainGovernorV2 is trusted sender on Optimism VoteCollection
         assertTrue(
@@ -2144,9 +1885,6 @@ contract mipx47 is HybridProposal {
                 governorV2Proxy
             ),
             "MultichainGovernorV2 not trusted sender on Optimism VoteCollection"
-        );
-        console2.log(
-            "[PASS] Ethereum MultichainGovernorV2 is trusted sender on Optimism VoteCollection"
         );
 
         // 6. Validate old Moonbeam MultichainGovernor is NOT trusted sender anymore on Optimism VoteCollection
@@ -2162,9 +1900,6 @@ contract mipx47 is HybridProposal {
                 moonbeamMultichainGovernor
             ),
             "Moonbeam MultichainGovernor still trusted sender on Optimism VoteCollection"
-        );
-        console2.log(
-            "[PASS] Old Moonbeam MultichainGovernor removed as trusted sender on Optimism VoteCollection"
         );
 
         // 7. Validate Ethereum MultichainGovernorV2 is trusted sender on Optimism TemporalGovernor
@@ -2182,9 +1917,6 @@ contract mipx47 is HybridProposal {
             ),
             "Ethereum MultichainGovernorV2 not trusted sender on Optimism TemporalGovernor"
         );
-        console2.log(
-            "[PASS] Ethereum MultichainGovernorV2 is trusted sender on Optimism TemporalGovernor"
-        );
 
         // 8. Validate stkWell added as snapshot source on Optimism VotingPowerAggregator
         VotingPowerAggregator optimismAggregator = VotingPowerAggregator(
@@ -2196,9 +1928,6 @@ contract mipx47 is HybridProposal {
             ),
             "stkWell not added as snapshot source on Optimism VotingPowerAggregator"
         );
-        console2.log(
-            "[PASS] stkWell is snapshot source on Optimism VotingPowerAggregator"
-        );
 
         // 8a. Validate VotingPowerAggregator owner is TemporalGovernor on Optimism
         assertEq(
@@ -2206,18 +1935,12 @@ contract mipx47 is HybridProposal {
             optimismTemporalGovernor,
             "Optimism VotingPowerAggregator owner not set to TemporalGovernor"
         );
-        console2.log(
-            "[PASS] Optimism VotingPowerAggregator owned by TemporalGovernor"
-        );
 
         // 8b. Validate VotingPowerAggregator xWell is set correctly on Optimism
         assertEq(
             address(optimismAggregator.xWell()),
             addresses.getAddress("xWELL_PROXY"),
             "Optimism VotingPowerAggregator xWell not set correctly"
-        );
-        console2.log(
-            "[PASS] Optimism VotingPowerAggregator xWell set correctly"
         );
 
         // 9. Validate old Moonbeam MultichainGovernor is NOT trusted sender on Optimism TemporalGovernor
@@ -2228,26 +1951,9 @@ contract mipx47 is HybridProposal {
             ),
             "Moonbeam MultichainGovernor still trusted sender on Optimism TemporalGovernor"
         );
-        console2.log(
-            "[PASS] Old Moonbeam MultichainGovernor removed as trusted sender on Optimism TemporalGovernor"
-        );
-
-        console2.log("=== OPTIMISM VALIDATION COMPLETE ===\n");
     }
 
     function validate(Addresses addresses, address) public override {
-        console2.log("\n");
-        console2.log(
-            "================================================================================"
-        );
-        console2.log(
-            "==================== MIP-X47 COMPREHENSIVE VALIDATION =========================="
-        );
-        console2.log(
-            "================================================================================"
-        );
-        console2.log("\n");
-
         // Validate Ethereum deployment
         _validateEthereum(addresses);
 
@@ -2265,17 +1971,5 @@ contract mipx47 is HybridProposal {
 
         // Validate Optimism deployment and actions
         _validateOptimism(addresses, governorV2Proxy);
-
-        console2.log("\n");
-        console2.log(
-            "================================================================================"
-        );
-        console2.log(
-            "==================== ALL VALIDATIONS PASSED ===================================="
-        );
-        console2.log(
-            "================================================================================"
-        );
-        console2.log("\n");
     }
 }

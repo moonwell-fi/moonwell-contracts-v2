@@ -213,11 +213,8 @@ contract MultichainProposalIntegrationV2 is
                 (bool success, ) = bridgeAdapter.call(
                     abi.encodeWithSignature("acceptOwnership()")
                 );
-                if (success) {
-                    console2.log(
-                        "[SETUP] TemporalGovernor accepted ownership of WORMHOLE_BRIDGE_ADAPTER_PROXY"
-                    );
-                }
+
+                assertEq(success, true, "Failed to accepted ownership of WORMHOLE_BRIDGE_ADAPTER_PROXY");
             }
         } catch {
             // Contract doesn't have pendingOwner() or acceptOwnership(), skip
@@ -263,10 +260,6 @@ contract MultichainProposalIntegrationV2 is
             bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
         );
 
-        console2.log(
-            "[SETUP] Replaced wormholeRelayer in MultichainGovernorV2 on Ethereum"
-        );
-
         // Replace wormhole relayer in Base VoteCollection
         // For VoteCollections, gasLimit (uint96) + wormholeRelayer (address) are packed in slot 0
         vm.selectFork(BASE_FORK_ID);
@@ -276,10 +269,6 @@ contract MultichainProposalIntegrationV2 is
                 uint256(gasLimit)
         );
         vm.store(address(baseVoteCollection), bytes32(uint256(0)), encodedData);
-
-        console2.log(
-            "[SETUP] Replaced wormholeRelayer in Base MultichainVoteCollectionV2"
-        );
 
         // Replace wormhole relayer in Optimism VoteCollection
         vm.selectFork(OPTIMISM_FORK_ID);
@@ -294,10 +283,6 @@ contract MultichainProposalIntegrationV2 is
             encodedData
         );
 
-        console2.log(
-            "[SETUP] Replaced wormholeRelayer in Optimism MultichainVoteCollectionV2"
-        );
-
         // Replace wormhole relayer in Moonbeam VoteCollection
         vm.selectFork(MOONBEAM_FORK_ID);
         gasLimit = moonbeamVoteCollection.gasLimit();
@@ -309,10 +294,6 @@ contract MultichainProposalIntegrationV2 is
             address(moonbeamVoteCollection),
             bytes32(uint256(0)),
             encodedData
-        );
-
-        console2.log(
-            "[SETUP] Replaced wormholeRelayer in Moonbeam MultichainVoteCollectionMoonbeam"
         );
     }
 
