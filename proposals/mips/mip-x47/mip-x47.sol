@@ -1690,6 +1690,13 @@ contract mipx47 is HybridProposal {
         );
         console2.log("[PASS] pauseGuardian set correctly");
 
+        assertEq(
+            governor.pauseDuration(),
+            PAUSE_DURATION,
+            "pauseDuration not set correctly on MultichainGovernorV2"
+        );
+        console2.log("[PASS] pauseDuration set correctly:", PAUSE_DURATION);
+
         // 9. Validate Ethereum VotingPowerAggregator state (configured in afterDeploy)
         VotingPowerAggregator ethAggregator = VotingPowerAggregator(
             ethereumVotingPower
@@ -2006,8 +2013,11 @@ contract mipx47 is HybridProposal {
         );
 
         // 8. Validate stkWell added as snapshot source on Base VotingPowerAggregator
+        VotingPowerAggregator baseAggregator = VotingPowerAggregator(
+            baseVotingPower
+        );
         assertTrue(
-            VotingPowerAggregator(baseVotingPower).isSnapshotSource(
+            baseAggregator.isSnapshotSource(
                 addresses.getAddress("STK_GOVTOKEN_PROXY")
             ),
             "stkWell not added as snapshot source on Base VotingPowerAggregator"
@@ -2015,6 +2025,24 @@ contract mipx47 is HybridProposal {
         console2.log(
             "[PASS] stkWell is snapshot source on Base VotingPowerAggregator"
         );
+
+        // 8a. Validate VotingPowerAggregator owner is TemporalGovernor on Base
+        assertEq(
+            baseAggregator.owner(),
+            baseTemporalGovernor,
+            "Base VotingPowerAggregator owner not set to TemporalGovernor"
+        );
+        console2.log(
+            "[PASS] Base VotingPowerAggregator owned by TemporalGovernor"
+        );
+
+        // 8b. Validate VotingPowerAggregator xWell is set correctly on Base
+        assertEq(
+            address(baseAggregator.xWell()),
+            addresses.getAddress("xWELL_PROXY"),
+            "Base VotingPowerAggregator xWell not set correctly"
+        );
+        console2.log("[PASS] Base VotingPowerAggregator xWell set correctly");
 
         // 9. Validate old Moonbeam MultichainGovernor is NOT trusted sender on Base TemporalGovernor
         assertFalse(
@@ -2150,14 +2178,37 @@ contract mipx47 is HybridProposal {
         );
 
         // 8. Validate stkWell added as snapshot source on Optimism VotingPowerAggregator
+        VotingPowerAggregator optimismAggregator = VotingPowerAggregator(
+            optimismVotingPower
+        );
         assertTrue(
-            VotingPowerAggregator(optimismVotingPower).isSnapshotSource(
+            optimismAggregator.isSnapshotSource(
                 addresses.getAddress("STK_GOVTOKEN_PROXY")
             ),
             "stkWell not added as snapshot source on Optimism VotingPowerAggregator"
         );
         console2.log(
             "[PASS] stkWell is snapshot source on Optimism VotingPowerAggregator"
+        );
+
+        // 8a. Validate VotingPowerAggregator owner is TemporalGovernor on Optimism
+        assertEq(
+            optimismAggregator.owner(),
+            optimismTemporalGovernor,
+            "Optimism VotingPowerAggregator owner not set to TemporalGovernor"
+        );
+        console2.log(
+            "[PASS] Optimism VotingPowerAggregator owned by TemporalGovernor"
+        );
+
+        // 8b. Validate VotingPowerAggregator xWell is set correctly on Optimism
+        assertEq(
+            address(optimismAggregator.xWell()),
+            addresses.getAddress("xWELL_PROXY"),
+            "Optimism VotingPowerAggregator xWell not set correctly"
+        );
+        console2.log(
+            "[PASS] Optimism VotingPowerAggregator xWell set correctly"
         );
 
         // 9. Validate old Moonbeam MultichainGovernor is NOT trusted sender on Optimism TemporalGovernor
