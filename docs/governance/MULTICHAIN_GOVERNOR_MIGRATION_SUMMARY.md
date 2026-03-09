@@ -144,17 +144,12 @@ ownership from the Moonbeam MultichainGovernor to the new system.
    Ethereum governor
 3. Add stkWELL as snapshot source on Base VotingPowerAggregator
 4. Add Ethereum MultichainGovernorV2 as trusted sender on Base TemporalGovernor
-
-> **Note:** The Moonbeam MultichainGovernor is intentionally left as a trusted
-> sender on Base and Optimism TemporalGovernors for backwards compatibility, in
-> case a rollback to the old governance system is needed. Immediately after
-> proposal execution, the pause guardian multisig must call `pause()` on the old
-> Moonbeam MultichainGovernor to prevent it from being used to send unauthorized
-> cross-chain messages.
+5. Remove Moonbeam MultichainGovernor as trusted sender from Base
+   TemporalGovernor
 
 **Optimism (via Wormhole from Moonbeam):**
 
-- Same 4 actions as Base
+- Same 5 actions as Base
 
 ### Governance Parameters (MultichainGovernorV2)
 

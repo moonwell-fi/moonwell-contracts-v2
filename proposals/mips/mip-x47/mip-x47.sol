@@ -46,9 +46,10 @@ import {ChainIds} from "@utils/ChainIds.sol";
 ///         12. Initialize V2 (set VotingPowerAggregator, remove old Moonbeam governor, add Ethereum governor)
 ///         13. Add stkWell as snapshot source to Base VotingPowerAggregator
 ///         14. Add Ethereum MultichainGovernorV2 as trusted sender on Base TemporalGovernor
+///         15. Remove Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor
 ///
 ///         OPTIMISM ACTIONS (executed by Optimism TemporalGovernor via cross-chain message):
-///         15. Same as Base actions (11-14) but on Optimism
+///         16. Same as Base actions (11-15) but on Optimism
 ///
 ///         Note: All VotingPowerAggregators use timestamp-based voting (no block numbers)
 ///         and only aggregate voting power from xWell + stkWell (no well/distributor).
@@ -1154,6 +1155,34 @@ contract mipx47 is HybridProposal {
             "[ACTION] Add Ethereum MultichainGovernorV2 as trusted sender on Base TemporalGovernor"
         );
 
+        // Remove old Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor
+        vm.selectFork(MOONBEAM_FORK_ID);
+        address moonbeamMultichainGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
+        vm.selectFork(BASE_FORK_ID);
+        ITemporalGovernor.TrustedSender[]
+            memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
+                1
+            );
+        trustedSendersToRemove[0] = ITemporalGovernor.TrustedSender({
+            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
+            addr: moonbeamMultichainGovernor
+        });
+
+        _pushAction(
+            baseTemporalGovernor,
+            abi.encodeWithSignature(
+                "unSetTrustedSenders((uint16,address)[])",
+                trustedSendersToRemove
+            ),
+            "Remove Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor",
+            ActionType.Base
+        );
+        console2.log(
+            "[ACTION] Remove Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor"
+        );
+
         console2.log("=== BASE ACTIONS BUILD COMPLETE ===\n");
     }
 
@@ -1250,6 +1279,34 @@ contract mipx47 is HybridProposal {
         );
         console2.log(
             "[ACTION] Add Ethereum MultichainGovernorV2 as trusted sender on Optimism TemporalGovernor"
+        );
+
+        // Remove old Moonbeam MultichainGovernor as trusted sender from Optimism TemporalGovernor
+        vm.selectFork(MOONBEAM_FORK_ID);
+        address moonbeamMultichainGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
+        vm.selectFork(OPTIMISM_FORK_ID);
+        ITemporalGovernor.TrustedSender[]
+            memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
+                1
+            );
+        trustedSendersToRemove[0] = ITemporalGovernor.TrustedSender({
+            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
+            addr: moonbeamMultichainGovernor
+        });
+
+        _pushAction(
+            optimismTemporalGovernor,
+            abi.encodeWithSignature(
+                "unSetTrustedSenders((uint16,address)[])",
+                trustedSendersToRemove
+            ),
+            "Remove Moonbeam MultichainGovernor as trusted sender from Optimism TemporalGovernor",
+            ActionType.Optimism
+        );
+        console2.log(
+            "[ACTION] Remove Moonbeam MultichainGovernor as trusted sender from Optimism TemporalGovernor"
         );
 
         console2.log("=== OPTIMISM ACTIONS BUILD COMPLETE ===\n");
@@ -1959,6 +2016,18 @@ contract mipx47 is HybridProposal {
             "[PASS] stkWell is snapshot source on Base VotingPowerAggregator"
         );
 
+        // 9. Validate old Moonbeam MultichainGovernor is NOT trusted sender on Base TemporalGovernor
+        assertFalse(
+            temporalGov.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                moonbeamMultichainGovernor
+            ),
+            "Moonbeam MultichainGovernor still trusted sender on Base TemporalGovernor"
+        );
+        console2.log(
+            "[PASS] Old Moonbeam MultichainGovernor removed as trusted sender on Base TemporalGovernor"
+        );
+
         console2.log("=== BASE VALIDATION COMPLETE ===\n");
     }
 
@@ -2089,6 +2158,18 @@ contract mipx47 is HybridProposal {
         );
         console2.log(
             "[PASS] stkWell is snapshot source on Optimism VotingPowerAggregator"
+        );
+
+        // 9. Validate old Moonbeam MultichainGovernor is NOT trusted sender on Optimism TemporalGovernor
+        assertFalse(
+            temporalGov.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                moonbeamMultichainGovernor
+            ),
+            "Moonbeam MultichainGovernor still trusted sender on Optimism TemporalGovernor"
+        );
+        console2.log(
+            "[PASS] Old Moonbeam MultichainGovernor removed as trusted sender on Optimism TemporalGovernor"
         );
 
         console2.log("=== OPTIMISM VALIDATION COMPLETE ===\n");
