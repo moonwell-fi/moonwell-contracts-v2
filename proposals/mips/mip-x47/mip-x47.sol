@@ -204,6 +204,21 @@ contract mipx47 is HybridProposal {
         // ============ MOONBEAM DEPLOYMENTS ============
         vm.selectFork(MOONBEAM_FORK_ID);
 
+        // Deploy MultichainGovernor v1.1 (with recoverETH) on Moonbeam
+        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V1_1_IMPL")) {
+            vm.startBroadcast();
+            // NOTE: it's not v2 - it's the version with recoverETH()
+            address newMultichainGovernorImpl = address(
+                new MultichainGovernor()
+            );
+            vm.stopBroadcast();
+
+            addresses.addAddress(
+                "MULTICHAIN_GOVERNOR_V1_1_IMPL",
+                newMultichainGovernorImpl
+            );
+        }
+
         // 2. Deploy TemporalGovernor on Moonbeam
         if (!addresses.isAddressSet("TEMPORAL_GOVERNOR", block.chainid)) {
             address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
@@ -750,14 +765,8 @@ contract mipx47 is HybridProposal {
             "MOONBEAM_PROXY_ADMIN"
         );
 
-        vm.startBroadcast();
-        address newMultichainGovernorImpl = address(new MultichainGovernor());
-        vm.stopBroadcast();
-
-        // NOTE: it's not v2 - it's the version with recoverETH()
-        addresses.addAddress(
-            "MULTICHAIN_GOVERNOR_V1_1_IMPL",
-            newMultichainGovernorImpl
+        address newMultichainGovernorImpl = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_V1_1_IMPL"
         );
 
         _pushAction(
