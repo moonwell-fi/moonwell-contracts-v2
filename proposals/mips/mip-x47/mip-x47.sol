@@ -119,6 +119,8 @@ contract mipx47 is HybridProposal {
         // ============ ETHEREUM MAINNET DEPLOYMENTS ============
         vm.selectFork(ETHEREUM_FORK_ID);
 
+        address ethereumProxyAdmin;
+
         // 1. Deploy MultichainGovernorV2 on Ethereum
         if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_IMPL")) {
             vm.startBroadcast();
@@ -133,18 +135,19 @@ contract mipx47 is HybridProposal {
         if (!addresses.isAddressSet("PROXY_ADMIN")) {
             vm.startBroadcast();
 
-            address ethereumProxyAdmin = address(new ProxyAdmin());
+            ethereumProxyAdmin = address(new ProxyAdmin());
 
             vm.stopBroadcast();
 
             addresses.addAddress("PROXY_ADMIN", ethereumProxyAdmin);
+        } else {
+            ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
         }
 
         if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
             address governorV2Impl = addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_V2_IMPL"
             );
-            address ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
 
             vm.startBroadcast();
 
@@ -168,7 +171,6 @@ contract mipx47 is HybridProposal {
 
         // Deploy VotingPowerAggregator on Ethereum
         if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR")) {
-            address ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
             address xWellAddress = addresses.getAddress("xWELL_PROXY");
 
             vm.startBroadcast();
@@ -357,6 +359,8 @@ contract mipx47 is HybridProposal {
                 voteCollectionProxy
             );
         }
+
+        // 4. Transfer ownership of the ProxyAdmin contract to the newly deployed MultichainGovernorV2
 
         // ============ BASE DEPLOYMENTS ============
         vm.selectFork(BASE_FORK_ID);
@@ -562,10 +566,19 @@ contract mipx47 is HybridProposal {
             whitelistedCalldatas
         );
 
-        vm.stopBroadcast();
-
         // Configure Ethereum VotingPowerAggregator (separate function to avoid stack too deep)
         _configureEthereumVotingPower(addresses, governorV2Proxy);
+
+        vm.stopBroadcast();
+
+        // Transfer Ethereum ProxyAdmin ownership to MultichainGovernorV2 (current owner is deployer)
+        vm.startBroadcast(addresses.getAddress("MOONWELL_DEPLOYER"));
+
+        ProxyAdmin(addresses.getAddress("PROXY_ADMIN")).transferOwnership(
+            governorV2Proxy
+        );
+
+        vm.stopBroadcast();
     }
 
     /// @notice Helper function to configure Ethereum VotingPowerAggregator
@@ -584,8 +597,6 @@ contract mipx47 is HybridProposal {
             ethereumVotingPower
         );
 
-        vm.startBroadcast();
-
         // Set xWell as voting source
         votingPower.setXWell(ethereumXWell);
 
@@ -594,8 +605,6 @@ contract mipx47 is HybridProposal {
 
         // Transfer ownership of VotingPowerAggregator to MultichainGovernorV2
         votingPower.transferOwnership(governorV2Proxy);
-
-        vm.stopBroadcast();
     }
 
     /// @notice Build whitelisted calldatas for the break glass guardian
@@ -1564,6 +1573,14 @@ contract mipx47 is HybridProposal {
                 addresses.getAddress("STK_GOVTOKEN_PROXY")
             ),
             "stkWell not added as snapshot source on Ethereum VotingPowerAggregator"
+        );
+
+        // 11. Validate Ethereum ProxyAdmin ownership transferred to MultichainGovernorV2
+        address ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
+        assertEq(
+            ProxyAdmin(ethereumProxyAdmin).owner(),
+            governorV2Proxy,
+            "Ethereum ProxyAdmin ownership not transferred to MultichainGovernorV2"
         );
     }
 
