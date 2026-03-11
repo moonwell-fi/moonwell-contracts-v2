@@ -32,7 +32,7 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Detect proposal directories
+      - name: Detect proposal directories and changed test files
         id: detect
         run: |
           BASE_SHA=${{ github.event.pull_request.base.sha }}
@@ -47,6 +47,9 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
             echo "dirs=$DIRS" >> "$GITHUB_OUTPUT"
           fi
+          TEST_FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'test/' 'src/' \
+            | sort -u | xargs)
+          echo "test_files=$TEST_FILES" >> "$GITHUB_OUTPUT"
 
       - name: Generate proposal summary
         if: steps.check.outputs.exists != 'true' && steps.detect.outputs.skip != 'true'
@@ -63,10 +66,15 @@ jobs:
             Audit these proposal directories and write the results to a file:
             ${{ steps.detect.outputs.dirs }}
 
+            The following test and source files were also changed in this PR:
+            ${{ steps.detect.outputs.test_files }}
+
             For EACH directory:
             1. Read ALL files in the directory (.sol, .md, .json, .sh)
             2. Analyze onchain actions from the Solidity contract (build(), deploy(), afterDeploy(), validate())
-            3. Search the test/ directory for integration or unit tests that cover this proposal
+            3. Check the PR's changed test/source files listed above FIRST — these are the integration and unit tests
+               written alongside the proposal. Then search the test/ directory for any additional coverage.
+               When evaluating test coverage, treat tests included in this PR as dedicated tests for the proposal.
             4. For EVERY configuration change, trace the onchain state that should be verified before and after execution
 
             ## Onchain State Verification (CRITICAL — THE CORE PRINCIPLE)
