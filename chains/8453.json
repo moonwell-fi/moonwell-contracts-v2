@@ -1418,5 +1418,15 @@
         "addr": "0xe2747A3f7dD8585eB04c7632a9561D9616454B29",
         "isContract": true,
         "name": "STK_GOVTOKEN_IMPL_V2"
+    },
+    {
+        "addr": "0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf",
+        "isContract": true,
+        "name": "VVV"
+    },
+    {
+        "addr": "0xaABc55Ca55D70B034e4daA2551A224239890282F",
+        "isContract": true,
+        "name": "CHAINLINK_VVV_USD"
     }
 ]
