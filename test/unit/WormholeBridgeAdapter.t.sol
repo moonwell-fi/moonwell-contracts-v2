@@ -6,13 +6,12 @@ import "@forge-std/Test.sol";
 
 import "@test/helper/BaseTest.t.sol";
 
-import {Address} from "@utils/Address.sol";
-import {MockWormholeReceiver} from "@test/mock/MockWormholeReceiver.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {MockCoreBridgeForAdapter} from "@test/mock/MockCoreBridgeForAdapter.sol";
+import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
 
 contract WormholeBridgeAdapterUnitTest is BaseTest {
-    using Address for address;
-
     /// xerc20 bridge adapter events
 
     /// @notice emitted when tokens are bridged out
@@ -70,44 +69,89 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     /// @notice amount of tokens to mint
     uint256 amount;
 
-    /// relayer gas cost
-    uint256 public constant gasCost = 0.00001 * 1 ether;
-
-    /// mock wormhole receiver
-    MockWormholeReceiver receiver;
-
     function setUp() public override {
         super.setUp();
         to = address(999999999999999);
         amount = 100 * 1e18;
-        receiver = new MockWormholeReceiver();
-        uint256 codeSize;
-        assembly {
-            codeSize := extcodesize(sload(receiver.slot))
-        }
-
-        bytes memory runtimeBytecode = new bytes(codeSize);
-
-        assembly {
-            extcodecopy(
-                sload(receiver.slot),
-                add(runtimeBytecode, 0x20),
-                0,
-                codeSize
-            )
-        }
-
-        /// set the wormhole relayer address to have the
-        /// runtime bytecode of the mock wormhole relayer
-        vm.etch(wormholeRelayer, runtimeBytecode);
     }
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ------------------- Helper Functions -------------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+
+    /// @notice Set up mock core bridge to return a valid VAA with given params
+    /// @param emitterChainId the chain the message was emitted from
+    /// @param emitterAddress the address that emitted the message (bytes32)
+    /// @param sequence the VAA sequence number
+    /// @param payload the VAA payload
+    /// @return encodedVaa fake encoded VAA bytes (just used as passthrough to mock)
+    function _setupVaa(
+        uint16 emitterChainId,
+        bytes32 emitterAddress,
+        uint64 sequence,
+        bytes memory payload
+    ) internal returns (bytes memory encodedVaa) {
+        mockCoreBridge.setVmData(
+            emitterChainId,
+            emitterAddress,
+            sequence,
+            payload
+        );
+        /// The actual bytes don't matter — the mock ignores them and returns preset data
+        encodedVaa = abi.encode(
+            "mock-vaa",
+            emitterChainId,
+            emitterAddress,
+            sequence
+        );
+    }
+
+    /// @notice Bridge in tokens via executeVAAv1 using a valid VAA from the trusted adapter
+    /// @param sequence the VAA sequence number (each call must use a unique sequence)
+    function _bridgeInViaVaa(uint64 sequence) internal {
+        bytes32 emitterAddr = bytes32(
+            uint256(uint160(address(wormholeBridgeAdapterProxy)))
+        );
+        bytes memory payload = abi.encode(to, amount);
+        bytes memory encodedVaa = _setupVaa(
+            chainId,
+            emitterAddr,
+            sequence,
+            payload
+        );
+
+        wormholeBridgeAdapterProxy.executeVAAv1(encodedVaa);
+    }
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// -------------------- Setup Tests -----------------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
 
     function testSetup() public view {
         assertEq(wormholeBridgeAdapterProxy.owner(), owner, "invalid owner");
         assertEq(
             address(wormholeBridgeAdapterProxy.wormholeRelayer()),
-            wormholeRelayer,
-            "invalid wormhole relayer"
+            address(mockCoreBridge),
+            "invalid wormhole relayer / core bridge"
+        );
+        assertEq(
+            address(wormholeBridgeAdapterProxy.coreBridge()),
+            address(mockCoreBridge),
+            "invalid core bridge"
+        );
+        assertEq(
+            address(wormholeBridgeAdapterProxy.executorQuoterRouter()),
+            address(mockExecutorQuoterRouter),
+            "invalid executor quoter router"
+        );
+        assertEq(
+            wormholeBridgeAdapterProxy.wormholeChainId(),
+            chainId,
+            "invalid wormhole chain id"
         );
         assertTrue(
             wormholeBridgeAdapterProxy.isTrustedSender(
@@ -135,16 +179,6 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             xwellProxy.bufferCap(address(wormholeBridgeAdapterProxy)),
             externalChainBufferCap,
             "incorrect buffer cap for wormhole bridge adapter"
-        );
-        assertEq(
-            MockWormholeReceiver(wormholeRelayer).price(),
-            0,
-            "price not zero"
-        );
-        assertEq(
-            MockWormholeReceiver(wormholeRelayer).nonce(),
-            0,
-            "nonce not zero"
         );
     }
 
@@ -174,7 +208,22 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
-    /// ACL failure tests
+    function testInitializeV3FailsAlreadyInitialized() public {
+        vm.expectRevert("Initializable: contract is already initialized");
+        wormholeBridgeAdapterProxy.initializeV3(
+            address(mockCoreBridge),
+            address(mockExecutorQuoterRouter),
+            address(mockExecutorQuoterRouter),
+            address(0),
+            chainId
+        );
+    }
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ------------------- ACL Failure Tests ------------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
 
     function testSetGasLimitNonOwnerFails() public {
         vm.expectRevert("Ownable: caller is not the owner");
@@ -202,7 +251,11 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
-    /// ACL success tests
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ------------------- ACL Success Tests ------------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
 
     function testSetGasLimitOwnerSucceeds(uint96 newGasLimit) public {
         uint96 oldGasLimit = wormholeBridgeAdapterProxy.gasLimit();
@@ -329,7 +382,12 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
-    /// initialization
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// --------------- Initialization Tests -------------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+
     function testInitializeFailsArrayLengthMismatch() public {
         ProxyAdmin admin = new ProxyAdmin();
         (, , , , address wormholeAdapterProxy, ) = deployMoonbeamSystem(
@@ -350,66 +408,75 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
-    /// receiveWormholeMessages failure tests
-    /// value
-    function testReceiveWormholeMessageFailsWithValue() public {
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ----------- executeVAAv1 Failure Tests -----------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+
+    /// msg.value must be 0
+    function testExecuteVAAv1FailsWithValue() public {
         vm.deal(address(this), 100);
         vm.expectRevert("WormholeBridge: no value allowed");
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 100}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            chainId,
-            bytes32(type(uint256).max)
-        );
+        wormholeBridgeAdapterProxy.executeVAAv1{value: 100}(bytes("fake-vaa"));
     }
 
-    /// not relayer address
-    function testReceiveWormholeMessageFailsNotRelayer() public {
-        vm.expectRevert("WormholeBridge: only relayer allowed");
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            chainId,
-            bytes32(type(uint256).max)
-        );
+    /// invalid VAA (core bridge returns valid=false)
+    function testExecuteVAAv1FailsInvalidVaa() public {
+        mockCoreBridge.setValid(false, "bad signature");
+        bytes memory encodedVaa = bytes("invalid-vaa");
+
+        vm.expectRevert("bad signature");
+        wormholeBridgeAdapterProxy.executeVAAv1(encodedVaa);
     }
 
-    /// already processed
-
-    function testAlreadyProcessedMessageReplayFails(bytes32 nonce) public {
-        testReceiveWormholeMessageSucceeds(nonce);
-
-        vm.prank(wormholeRelayer);
-        vm.expectRevert("WormholeBridge: message already processed");
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            abi.encode(to, amount),
-            new bytes[](0),
-            address(wormholeBridgeAdapterProxy).toBytes(),
+    /// untrusted sender
+    function testExecuteVAAv1FailsUntrustedSender() public {
+        bytes32 untrustedEmitter = bytes32(uint256(uint160(address(0xdead))));
+        bytes memory payload = abi.encode(to, amount);
+        bytes memory encodedVaa = _setupVaa(
             chainId,
-            nonce
+            untrustedEmitter,
+            0,
+            payload
         );
-    }
 
-    /// not trusted sender from external chain
-    function testReceiveWormholeMessageFailsNotTrustedExternalChain() public {
         vm.expectRevert("WormholeBridge: sender not trusted");
-        vm.prank(wormholeRelayer);
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            chainId,
-            bytes32(type(uint256).max)
-        );
+        wormholeBridgeAdapterProxy.executeVAAv1(encodedVaa);
     }
 
-    function testReceiveWormholeMessageSucceeds(bytes32 nonce) public {
+    /// replay — same sequence number
+    function testExecuteVAAv1FailsReplay() public {
+        /// first call succeeds
+        _bridgeInViaVaa(0);
+
+        /// second call with same sequence should fail
+        bytes32 emitterAddr = bytes32(
+            uint256(uint160(address(wormholeBridgeAdapterProxy)))
+        );
+        bytes memory payload = abi.encode(to, amount);
+        bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 0, payload);
+
+        vm.expectRevert();
+        wormholeBridgeAdapterProxy.executeVAAv1(encodedVaa);
+    }
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ----------- executeVAAv1 Success Tests -----------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+
+    function testExecuteVAAv1Succeeds() public {
         uint256 startingBalance = xwellProxy.balanceOf(to);
         uint256 startingTotalSupply = xwellProxy.totalSupply();
 
-        vm.prank(wormholeRelayer);
+        bytes32 emitterAddr = bytes32(
+            uint256(uint160(address(wormholeBridgeAdapterProxy)))
+        );
+        bytes memory payload = abi.encode(to, amount);
+        bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 0, payload);
+
         vm.expectEmit(
             true,
             true,
@@ -418,13 +485,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             address(wormholeBridgeAdapterProxy)
         );
         emit BridgedIn(chainId, to, amount);
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            abi.encode(to, amount),
-            new bytes[](0),
-            address(wormholeBridgeAdapterProxy).toBytes(),
-            chainId,
-            nonce
-        );
+        wormholeBridgeAdapterProxy.executeVAAv1(encodedVaa);
 
         assertEq(
             xwellProxy.balanceOf(to) - startingBalance,
@@ -436,38 +497,72 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             amount,
             "incorrect total supply increase"
         );
-        assertTrue(
-            wormholeBridgeAdapterProxy.processedNonces(nonce),
-            "nonce not used"
+    }
+
+    function testExecuteVAAv1SucceedsMultipleSequences() public {
+        uint256 startingBalance = xwellProxy.balanceOf(to);
+
+        _bridgeInViaVaa(0);
+        _bridgeInViaVaa(1);
+        _bridgeInViaVaa(2);
+
+        assertEq(
+            xwellProxy.balanceOf(to) - startingBalance,
+            amount * 3,
+            "incorrect total amount received after 3 bridge-ins"
         );
     }
 
     /// bridge in, test not enough rate limit
-    function testBridgeInFailsRateLimitExhausted(bytes32 nonce) public {
+    function testBridgeInFailsRateLimitExhausted() public {
         amount = xwellProxy.buffer(address(wormholeBridgeAdapterProxy));
-        unchecked {
-            testReceiveWormholeMessageSucceeds(bytes32(uint256(nonce) + 1));
-        }
-        amount = 1;
+        _bridgeInViaVaa(0);
 
-        vm.prank(wormholeRelayer);
+        amount = 1;
+        bytes32 emitterAddr = bytes32(
+            uint256(uint160(address(wormholeBridgeAdapterProxy)))
+        );
+        bytes memory payload = abi.encode(to, amount);
+        bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 1, payload);
+
         vm.expectRevert("RateLimited: rate limit hit");
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            abi.encode(to, amount),
+        wormholeBridgeAdapterProxy.executeVAAv1(encodedVaa);
+    }
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ---------- Deprecated receiveWormholeMessages ----------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+
+    function testReceiveWormholeMessagesAlwaysReverts() public {
+        vm.expectRevert("WormholeBridge: deprecated, use executeVAAv1");
+        wormholeBridgeAdapterProxy.receiveWormholeMessages(
+            "",
             new bytes[](0),
-            address(wormholeBridgeAdapterProxy).toBytes(),
-            chainId,
-            nonce
+            bytes32(0),
+            0,
+            bytes32(0)
         );
     }
 
-    /// bridge out tests:
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ------------------- Bridge Out Tests -------------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
 
     /// incorrect cost
     function testBridgeOutFailsIncorrectCost() public {
-        vm.deal(address(this), 1);
+        /// set a non-zero quote so msg.value mismatch triggers
+        mockExecutorQuoterRouter.setQuote(0.001 ether);
+        mockCoreBridge.setMessageFee(0.0001 ether);
+
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        vm.deal(address(this), cost + 1);
+
         vm.expectRevert("WormholeBridge: cost not equal to quote");
-        wormholeBridgeAdapterProxy.bridge{value: 1}(chainId, amount, to);
+        wormholeBridgeAdapterProxy.bridge{value: cost + 1}(chainId, amount, to);
     }
 
     /// incorrect target chain
@@ -500,7 +595,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         amount = externalChainBufferCap / 2;
         to = address(this);
 
-        testReceiveWormholeMessageSucceeds(bytes32(uint256(1)));
+        _bridgeInViaVaa(0);
 
         amount = externalChainBufferCap;
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
@@ -513,7 +608,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         amount = externalChainBufferCap / 2;
         to = address(this);
 
-        testReceiveWormholeMessageSucceeds(bytes32(uint256(1)));
+        _bridgeInViaVaa(0);
 
         amount = externalChainBufferCap;
 
@@ -529,5 +624,29 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
         emit TokensSent(chainId, to, amount);
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
+    }
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ------------------- Bridge Cost Tests ------------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+
+    function testBridgeCostReturnsQuotePlusMessageFee() public {
+        mockExecutorQuoterRouter.setQuote(0.01 ether);
+        mockCoreBridge.setMessageFee(0.001 ether);
+
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        assertEq(
+            cost,
+            0.011 ether,
+            "bridge cost should be quote + message fee"
+        );
+    }
+
+    function testBridgeCostReturnsZeroWhenQuoteFails() public {
+        /// quote will revert since targetAddress for chainId+1 is zero
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId + 1);
+        assertEq(cost, 0, "bridge cost should be 0 for unknown chain");
     }
 }

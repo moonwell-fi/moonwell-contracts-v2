@@ -15,6 +15,8 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {BASE_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MockCoreBridgeForAdapter} from "@test/mock/MockCoreBridgeForAdapter.sol";
+import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
 
 contract BaseTest is xWELLDeploy, Test {
     /// @notice addresses contract, stores all addresses
@@ -57,7 +59,14 @@ contract BaseTest is xWELLDeploy, Test {
     address public pauseGuardian = address(1111111111);
 
     /// @notice wormhole relayer of the WormholeBridgeAdapter
+    /// @dev kept for backwards compatibility; now used as the initial core bridge address in initialize()
     address public wormholeRelayer = address(2222222222);
+
+    /// @notice mock core bridge for executor tests
+    MockCoreBridgeForAdapter public mockCoreBridge;
+
+    /// @notice mock executor quoter router for executor tests
+    MockExecutorQuoterRouter public mockExecutorQuoterRouter;
 
     /// @notice duration of the pause
     uint128 public pauseDuration = 10 days;
@@ -151,6 +160,20 @@ contract BaseTest is xWELLDeploy, Test {
             wormholeRelayer,
             chainIds,
             targets
+        );
+
+        /// deploy mocks for executor framework
+        mockCoreBridge = new MockCoreBridgeForAdapter();
+        mockCoreBridge.setChainId(chainId);
+        mockExecutorQuoterRouter = new MockExecutorQuoterRouter();
+
+        /// migrate to executor framework via initializeV3
+        wormholeBridgeAdapterProxy.initializeV3(
+            address(mockCoreBridge),
+            address(mockExecutorQuoterRouter), /// executor (off-chain quote)
+            address(mockExecutorQuoterRouter), /// executorQuoterRouter (on-chain quote)
+            address(0), /// quoter address (not needed for mock)
+            chainId
         );
 
         sigUtils = new SigUtils(xwellProxy.DOMAIN_SEPARATOR());

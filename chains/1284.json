@@ -378,5 +378,10 @@
         "addr": "0xbaC3Dd6d0333ea14F957B7B0796bCD59e8771501",
         "isContract": true,
         "name": "STK_GOVTOKEN_IMPL_V2"
+    },
+    {
+        "addr": "0x85D06449C78064c2E02d787e9DC71716786F8D19",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
     }
 ]

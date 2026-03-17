@@ -78,5 +78,25 @@
         "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
         "isContract": true,
         "name": "BREAK_GLASS_GUARDIAN"
+    },
+    {
+        "addr": "0xF22F1c0A3a8Cb42F695601731974784C499C4EF3",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER_ROUTER"
+    },
+    {
+        "addr": "0x84EEe8dBa37C36947397E1E11251cA9A06Fc6F8a",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
+        "addr": "0xA25862D222Eb8343505c12d96e097e4332468D60",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER"
+    },
+    {
+        "addr": "0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B",
+        "name": "WORMHOLE_CORE",
+        "isContract": true
     }
 ]

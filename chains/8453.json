@@ -1418,5 +1418,20 @@
         "addr": "0xe2747A3f7dD8585eB04c7632a9561D9616454B29",
         "isContract": true,
         "name": "STK_GOVTOKEN_IMPL_V2"
+    },
+    {
+        "addr": "0x265fd0500a430d65d6D79Cd8707F24C048604658",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER_ROUTER"
+    },
+    {
+        "addr": "0x9E1936E91A4a5AE5A5F75fFc472D6cb8e93597ea",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
+        "addr": "0xA25862D222Eb8343505c12d96e097e4332468D60",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER"
     }
 ]

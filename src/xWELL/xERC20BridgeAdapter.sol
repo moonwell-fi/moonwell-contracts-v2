@@ -61,6 +61,22 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
         emit BridgedOut(dstChainId, msg.sender, to, amount);
     }
 
+    /// @notice Bridge out funds using an off-chain signed quote
+    /// @param dstChainId Destination chain id
+    /// @param amount Amount of xERC20 to bridge out
+    /// @param to Address to receive funds on destination chain
+    /// @param signedQuote Signed quote obtained off-chain from the executor API
+    function bridge(
+        uint16 dstChainId,
+        uint256 amount,
+        address to,
+        bytes calldata signedQuote
+    ) external payable virtual {
+        _bridgeOut(msg.sender, dstChainId, amount, to, signedQuote);
+
+        emit BridgedOut(dstChainId, msg.sender, to, amount);
+    }
+
     /// @notice set the xERC20 token
     /// @param newxerc20 address of the xERC20 token
     function _setxERC20(address newxerc20) internal {
@@ -101,5 +117,19 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
         uint256 dstChainId,
         uint256 amount,
         address to
+    ) internal virtual;
+
+    /// @notice bridge tokens from this chain to the dstChain using an off-chain signed quote
+    /// @param user address burning tokens and funding the cross chain call
+    /// @param dstChainId destination chain id
+    /// @param amount amount of tokens to bridge
+    /// @param to address to receive tokens on the destination chain
+    /// @param signedQuote signed quote obtained off-chain from the executor API
+    function _bridgeOut(
+        address user,
+        uint256 dstChainId,
+        uint256 amount,
+        address to,
+        bytes calldata signedQuote
     ) internal virtual;
 }
