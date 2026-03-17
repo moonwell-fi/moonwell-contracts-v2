@@ -122,6 +122,16 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
         return MOONBEAM_FORK_ID;
     }
 
+    /// TODO remove this before merging
+    function beforeSimulationHook(Addresses addresses) public override {
+        // mock VVV token balance on temporal governor
+        deal(
+            addresses.getAddress("VVV"),
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
+            1e18
+        );
+    }
+
     function initProposal(Addresses) public override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
