@@ -11,10 +11,11 @@ import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {MockCoreBridge, MockExecutor, MockExecutorQuoterRouter} from "@test/mock/MockCoreBridgeExecutor.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
+import {VaaHelper} from "@test/helper/VaaHelper.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {ChainIds, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
@@ -31,8 +32,10 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
     event BridgeOutFailed(uint16 chainId, bytes payload, uint256 refundAmount);
 
-    /// @notice reference to the mock wormhole trusted sender contract
-    WormholeRelayerAdapter public wormholeRelayerAdapter;
+    /// @notice mock wormhole infrastructure
+    MockCoreBridge public mockCoreBridge;
+    MockExecutor public mockExecutor;
+    MockExecutorQuoterRouter public mockQuoterRouter;
 
     /// @notice reference to the Multichain vote collection contract
     MultichainVoteCollection public voteCollection;
@@ -103,7 +106,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
                 chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
-                addr: address(this) /// TODO this is incorrect and should be the artemis timelock contract
+                addr: address(this)
             })
         );
 
@@ -249,14 +252,14 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             payable(addresses.governorImplementation)
         );
         xwell = xWELL(xwellProxy);
-        wormholeRelayerAdapter = WormholeRelayerAdapter(
-            addresses.wormholeRelayerAdapter
-        );
+        mockCoreBridge = MockCoreBridge(addresses.coreBridge);
+        mockExecutor = MockExecutor(payable(addresses.executor));
+        mockQuoterRouter = MockExecutorQuoterRouter(payable(addresses.executorQuoterRouter));
         voteCollection = MultichainVoteCollection(
-            addresses.voteCollectionProxy
+            payable(addresses.voteCollectionProxy)
         );
 
-        wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+        mockExecutor.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
 
         xwell.addBridge(
             MintLimits.RateLimitMidPointInfo({
@@ -312,7 +315,8 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             targets,
             values,
             calldatas,
-            description
+            description,
+            new bytes[](0)
         );
 
         uint256 endProposalCount = governor.proposalCount();

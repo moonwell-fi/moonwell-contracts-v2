@@ -142,7 +142,7 @@ contract DeployXWellEthereum is Script, xWELLDeploy {
             xwellProxy,
             wormholeAdapterLogic,
             wormholeAdapter
-        ) = deployWellSystem(proxyAdmin);
+        ) = deployWellSystem(proxyAdmin, address(0), address(0), address(0));
 
         // Final sanity check
         require(
@@ -231,14 +231,10 @@ contract DeployXWellEthereum is Script, xWELLDeploy {
             );
             trustedChainIds[2] = OPTIMISM_WORMHOLE_CHAIN_ID;
 
-            address wormholeRelayer = addresses.getAddress(
-                "WORMHOLE_BRIDGE_RELAYER_PROXY"
-            );
             initializeWormholeAdapter(
                 wormholeAdapter,
                 xwellProxy,
                 deployer, // contract owner
-                wormholeRelayer,
                 trustedChainIds,
                 trustedSenders
             );
@@ -379,12 +375,6 @@ contract DeployXWellEthereum is Script, xWELLDeploy {
         require(
             WormholeBridgeAdapter(wormholeAdapter).owner() == deployer,
             "Ethereum: wormhole bridge adapter owner is incorrect"
-        );
-
-        require(
-            address(WormholeBridgeAdapter(wormholeAdapter).wormholeRelayer()) ==
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
-            "Ethereum: wormhole bridge adapter relayer is incorrect"
         );
 
         require(

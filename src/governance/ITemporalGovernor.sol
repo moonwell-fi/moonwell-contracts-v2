@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {ICoreBridge} from "wormhole-sdk/interfaces/ICoreBridge.sol";
 
 /// @notice interface for the Temporal Governor Contract
 interface ITemporalGovernor {
     /// ------------- STATE VARIABLES -------------
 
-    /// @notice reference to the wormhole bridge
-    function wormholeBridge() external view returns (IWormhole);
+    /// @notice reference to the wormhole core bridge
+    function wormholeBridge() external view returns (ICoreBridge);
 
     /// @notice Map of chain id => trusted sender
     function allTrustedSenders(uint16) external view returns (bytes32[] memory);

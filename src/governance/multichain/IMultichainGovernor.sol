@@ -275,7 +275,8 @@ interface IMultichainGovernor {
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
-        string memory description
+        string memory description,
+        bytes[] calldata signedQuotes
     ) external payable returns (uint256);
 
     function execute(uint256 proposalId) external payable;

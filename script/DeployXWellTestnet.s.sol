@@ -86,7 +86,7 @@ contract DeployXWellTestnet is Script, xWELLDeploy, Networks {
                 address xwellProxy,
                 address wormholeAdapterLogic,
                 address wormholeAdapter
-            ) = deployWellSystem(proxyAdmin);
+            ) = deployWellSystem(proxyAdmin, address(0), address(0), address(0));
 
             /// Multichain Address Verification
 
@@ -195,7 +195,6 @@ contract DeployXWellTestnet is Script, xWELLDeploy, Networks {
                 wormholeAdapter,
                 xwellProxy,
                 temporalGov,
-                relayer,
                 trustedChainIds,
                 trustedSenders
             );
@@ -228,13 +227,6 @@ contract DeployXWellTestnet is Script, xWELLDeploy, Networks {
                 xWELL(wormholeAdapter).owner(),
                 temporalGov,
                 "wormhole bridge adapter owner is incorrect"
-            );
-            assertEq(
-                address(
-                    WormholeBridgeAdapter(wormholeAdapter).wormholeRelayer()
-                ),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
-                "wormhole bridge adapter relayer is incorrect"
             );
             assertEq(
                 WormholeBridgeAdapter(wormholeAdapter).gasLimit(),

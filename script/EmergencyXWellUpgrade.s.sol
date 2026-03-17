@@ -69,7 +69,7 @@ contract EmergencyXWellUpgrade is Script {
         address newXwellLogic = address(new xWELL());
 
         // 2. Deploy new WormholeBridgeAdapter logic contract
-        address newWormholeAdapterLogic = address(new WormholeBridgeAdapter());
+        address newWormholeAdapterLogic = address(new WormholeBridgeAdapter(address(0), address(0), address(0)));
 
         // Save new logic addresses
         addresses.changeAddress("xWELL_LOGIC", newXwellLogic, true);

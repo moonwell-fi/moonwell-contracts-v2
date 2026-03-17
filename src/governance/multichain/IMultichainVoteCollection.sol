@@ -109,7 +109,7 @@ interface IMultichainVoteCollection {
 
     /// @notice Emits votes to be contabilized on Moonbeam Governor contract
     /// @param proposalId the proposal id
-    function emitVotes(uint256 proposalId) external payable;
+    function emitVotes(uint256 proposalId, bytes[] calldata signedQuotes) external payable;
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////

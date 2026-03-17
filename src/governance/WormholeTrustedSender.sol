@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {toUniversalAddress} from "wormhole-sdk/Utils.sol";
 
 import {IWormholeTrustedSender} from "@protocol/governance/IWormholeTrustedSender.sol";
 
@@ -138,13 +139,12 @@ contract WormholeTrustedSender is IWormholeTrustedSender {
         return trustedSendersList;
     }
 
-    /// @notice Wormhole addresses are denominated in 32 byte chunks. Converting the address to a bytes20
-    /// then to a bytes32 *left* aligns it, so we right shift to get the proper data
+    /// @notice Converts an EVM address to the Wormhole universal address format (bytes32)
     /// @param addr The address to convert
     /// @return The address as a bytes32
     function addressToBytes(
         address addr
     ) public pure override returns (bytes32) {
-        return bytes32(bytes20(addr)) >> 96;
+        return toUniversalAddress(addr);
     }
 }

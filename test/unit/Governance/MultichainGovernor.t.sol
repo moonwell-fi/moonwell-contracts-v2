@@ -138,11 +138,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             ),
             "governor address not trusted sender"
         );
-        assertEq(
-            address(voteCollection.wormholeRelayer()),
-            address(wormholeRelayerAdapter),
-            "relayer address"
-        );
+        // wormholeRelayer replaced by immutable coreBridge/executor in Executor migration
     }
 
     function testInitLogicFails() public {
@@ -698,6 +694,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             values,
             calldatas,
             description
+            ,new bytes[](0)
         );
 
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
@@ -737,6 +734,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             values,
             calldatas,
             description
+            ,new bytes[](0)
         );
 
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
@@ -756,7 +754,8 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             new address[](0),
             new uint256[](0),
             new bytes[](0),
-            ""
+            "",
+            new bytes[](0)
         );
     }
 

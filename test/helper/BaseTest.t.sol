@@ -56,8 +56,7 @@ contract BaseTest is xWELLDeploy, Test {
     /// @notice pause guardian of the token
     address public pauseGuardian = address(1111111111);
 
-    /// @notice wormhole relayer of the WormholeBridgeAdapter
-    address public wormholeRelayer = address(2222222222);
+    /// @dev wormhole relayer removed - now using Executor pattern with immutable coreBridge/executor
 
     /// @notice duration of the pause
     uint128 public pauseDuration = 10 days;
@@ -89,7 +88,7 @@ contract BaseTest is xWELLDeploy, Test {
                 address wormholeAdapterLogic,
                 address wormholeAdapterProxy,
                 address lockboxAddress
-            ) = deployMoonbeamSystem(address(well), address(proxyAdmin));
+            ) = deployMoonbeamSystem(address(well), address(proxyAdmin), address(0), address(0), address(0));
 
             xwellProxy = xWELL(xwellProxyAddress);
             xwellLogic = xWELL(xwellLogicAddress);
@@ -148,7 +147,6 @@ contract BaseTest is xWELLDeploy, Test {
             address(wormholeBridgeAdapterProxy),
             address(xwellProxy),
             owner,
-            wormholeRelayer,
             chainIds,
             targets
         );

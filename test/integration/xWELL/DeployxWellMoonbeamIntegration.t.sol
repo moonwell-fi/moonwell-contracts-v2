@@ -16,6 +16,8 @@ import {xwellDeployMoonbeam} from "@proposals/mips/mip-xwell/xwellDeployMoonbeam
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {Address} from "@utils/Address.sol";
+import {VaaHelper} from "@test/helper/VaaHelper.sol";
+import {ICoreBridge} from "wormhole-sdk/interfaces/ICoreBridge.sol";
 
 contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
     using ChainIds for uint256;
@@ -69,7 +71,6 @@ contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
 
         vm.expectRevert();
         wormholeAdapter.initialize(
-            address(1),
             address(1),
             address(1),
             new uint16[](0),
@@ -219,19 +220,22 @@ contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         uint16 dstChainId = block.chainid.toBaseWormholeChainId();
-        bytes memory payload = abi.encode(user, mintAmount);
-        bytes32 sender = address(wormholeAdapter).toBytes();
-        bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
+        uint16 localChainId = wormholeAdapter.wormholeChainId();
+        // New payload format: (destinationChainId, to, amount)
+        bytes memory payload = abi.encode(localChainId, user, mintAmount);
         deal(address(well), addresses.getAddress("xWELL_LOCKBOX"), mintAmount);
 
-        vm.prank(address(wormholeAdapter.wormholeRelayer()));
-        wormholeAdapter.receiveWormholeMessages(
-            payload,
-            new bytes[](0),
-            sender,
+        // Set up guardian override and craft signed VAA
+        VaaHelper.setUpGuardianOverride(wormholeAdapter.coreBridge());
+        bytes memory vaa = VaaHelper.craftVaa(
+            wormholeAdapter.coreBridge(),
             dstChainId,
-            nonce
+            address(wormholeAdapter),
+            0, // sequence
+            payload
         );
+
+        wormholeAdapter.executeVAAv1(vaa);
 
         uint256 endingWellBalance = well.balanceOf(user);
         uint256 endingXWellBalance = xwell.balanceOf(user);
@@ -254,7 +258,6 @@ contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
             "total xWELL supply incorrect, should not change"
         );
 
-        assertTrue(wormholeAdapter.processedNonces(nonce), "nonce not used");
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
     }
 }

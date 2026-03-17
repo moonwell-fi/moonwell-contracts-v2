@@ -3,6 +3,7 @@
 @openzeppelin/=lib/openzeppelin-contracts/
 @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/
 @wormhole/=lib/wormhole/ethereum/contracts/
+wormhole-sdk/=lib/wormhole-solidity-sdk/src/
 @protocol=src/
 @test=test/
 @proposals=proposals/

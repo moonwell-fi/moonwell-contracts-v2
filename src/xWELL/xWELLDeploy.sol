@@ -129,7 +129,10 @@ contract xWELLDeploy {
     /// on secondary chain
     /// @param proxyAdmin The proxy admin to use
     function deployWellSystem(
-        address proxyAdmin
+        address proxyAdmin,
+        address coreBridge,
+        address executorAddr,
+        address executorQuoterRouter
     )
         public
         returns (
@@ -142,7 +145,9 @@ contract xWELLDeploy {
         /// deploy the ERC20 wrapper for USDBC
         xwellLogic = address(new xWELL());
 
-        wormholeAdapterLogic = address(new WormholeBridgeAdapter());
+        wormholeAdapterLogic = address(
+            new WormholeBridgeAdapter(coreBridge, executorAddr, executorQuoterRouter)
+        );
 
         /// do not initialize the proxy, that is the final step
         xwellProxy = address(
@@ -161,7 +166,10 @@ contract xWELLDeploy {
     /// @notice well token address on Moonbeam
     function deployMoonbeamSystem(
         address wellAddress,
-        address existingProxyAdmin
+        address existingProxyAdmin,
+        address coreBridge,
+        address executorAddr,
+        address executorQuoterRouter
     )
         public
         returns (
@@ -178,7 +186,7 @@ contract xWELLDeploy {
             xwellProxy,
             wormholeAdapterLogic,
             wormholeAdapter
-        ) = deployWellSystem(existingProxyAdmin);
+        ) = deployWellSystem(existingProxyAdmin, coreBridge, executorAddr, executorQuoterRouter);
         /// lockbox is deployed at the end so that xWELL and wormhole adapter can have the same addresses on all chains.
         lockbox = deployLockBox(
             xwellProxy, /// proxy is actually the xWELL token contract
@@ -210,14 +218,12 @@ contract xWELLDeploy {
         address wormholeAdapter,
         address xwellProxy,
         address tokenOwner,
-        address wormholeRelayerAddress,
         uint16[] memory chainIds,
         address[] memory trustedSenders
     ) public {
         WormholeBridgeAdapter(wormholeAdapter).initialize(
             xwellProxy,
             tokenOwner,
-            wormholeRelayerAddress,
             chainIds,
             trustedSenders
         );

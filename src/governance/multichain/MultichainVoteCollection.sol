@@ -47,7 +47,14 @@ contract MultichainVoteCollection is
 
     /// @notice disable the initializer to stop governance hijacking
     /// and avoid selfdestruct attacks.
-    constructor() {
+    /// @param _coreBridge address of the Wormhole Core Bridge
+    /// @param _executor address of the Wormhole Executor (off-chain quoting)
+    /// @param _executorQuoterRouter address of the Executor Quoter Router (on-chain quoting, address(0) if unavailable)
+    constructor(
+        address _coreBridge,
+        address _executor,
+        address _executorQuoterRouter
+    ) WormholeBridgeBase(_coreBridge, _executor, _executorQuoterRouter) {
         _disableInitializers();
     }
 
@@ -55,14 +62,12 @@ contract MultichainVoteCollection is
     /// @param _xWell address of the xWELL token
     /// @param _stkWell address of the stkWell token
     /// @param _moonbeamGovernor address of the moonbeam governor contract
-    /// @param _wormholeRelayer address of the wormhole relayer
     /// @param _moonbeamWormholeChainId chain id of the moonbeam chain
     /// @param _owner address of the contract
     function initialize(
         address _xWell,
         address _stkWell,
         address _moonbeamGovernor,
-        address _wormholeRelayer,
         uint16 _moonbeamWormholeChainId,
         address _owner
     ) external initializer {
@@ -70,8 +75,6 @@ contract MultichainVoteCollection is
         stkWell = SnapshotInterface(_stkWell);
 
         _addTargetAddress(_moonbeamWormholeChainId, _moonbeamGovernor);
-
-        _setWormholeRelayer(_wormholeRelayer);
 
         _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
 
@@ -243,7 +246,10 @@ contract MultichainVoteCollection is
 
     /// @notice Emits votes to be contabilized on Moonbeam Governor contract
     /// @param proposalId the proposal id
-    function emitVotes(uint256 proposalId) external payable override {
+    function emitVotes(
+        uint256 proposalId,
+        bytes[] calldata signedQuotes
+    ) external payable override {
         /// Get the proposal
         MultichainProposal storage proposal = proposals[proposalId];
 
@@ -274,7 +280,8 @@ contract MultichainVoteCollection is
                 votes.forVotes,
                 votes.againstVotes,
                 votes.abstainVotes
-            )
+            ),
+            signedQuotes
         );
 
         emit VotesEmitted(

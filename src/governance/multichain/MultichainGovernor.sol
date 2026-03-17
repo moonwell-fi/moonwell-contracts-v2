@@ -139,7 +139,14 @@ contract MultichainGovernor is
 
     /// @notice disable the initializer to stop governance hijacking
     /// and avoid selfdestruct attacks.
-    constructor() {
+    /// @param _coreBridge address of the Wormhole Core Bridge
+    /// @param _executor address of the Wormhole Executor (off-chain quoting)
+    /// @param _executorQuoterRouter address of the Executor Quoter Router (on-chain quoting, address(0) if unavailable)
+    constructor(
+        address _coreBridge,
+        address _executor,
+        address _executorQuoterRouter
+    ) WormholeBridgeBase(_coreBridge, _executor, _executorQuoterRouter) {
         _disableInitializers();
     }
 
@@ -169,8 +176,6 @@ contract MultichainGovernor is
         address pauseGuardian;
         /// break glass guardian address
         address breakGlassGuardian;
-        /// wormhole relayer
-        address wormholeRelayer;
     }
 
     /// @notice initialize the governor contract
@@ -202,8 +207,6 @@ contract MultichainGovernor is
 
         /// set the pause guardian
         _grantGuardian(initData.pauseGuardian);
-
-        _setWormholeRelayer(address(initData.wormholeRelayer));
 
         /// sets vote collection contracts
         _addTargetAddresses(trustedSenders);
@@ -564,10 +567,14 @@ contract MultichainGovernor is
     /// ---------------------------------------------- ///
 
     /// @notice allows for re-broadcasting of a proposal in case the
-    /// wormhole relayer or wormhole core contract is paused.
+    /// wormhole core contract is paused or executor delivery failed.
     /// @dev can only be called if the proposal is in the active state
     /// @param proposalId the id of the proposal to rebroadcast
-    function rebroadcastProposal(uint256 proposalId) external payable {
+    /// @param signedQuotes array of signed quotes, one per target chain
+    function rebroadcastProposal(
+        uint256 proposalId,
+        bytes[] calldata signedQuotes
+    ) external payable {
         ProposalState proposalState = state(proposalId);
         require(
             proposalState == ProposalState.Active,
@@ -584,7 +591,7 @@ contract MultichainGovernor is
             proposal.crossChainVoteCollectionEndTimestamp
         );
 
-        _bridgeOutAll(payload);
+        _bridgeOutAll(payload, signedQuotes);
 
         emit ProposalRebroadcasted(proposalId, payload);
     }
@@ -599,7 +606,8 @@ contract MultichainGovernor is
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
-        string memory description
+        string memory description,
+        bytes[] calldata signedQuotes
     ) external payable override whenNotPaused returns (uint256) {
         /// Checks
 
@@ -679,18 +687,18 @@ contract MultichainGovernor is
                 endTimestamp,
                 crossChainVoteCollectionEndTimestamp
             );
-
-            emit ProposalCreated(
-                proposalCount,
-                msg.sender,
-                targets,
-                values,
-                calldatas,
-                startTimestamp,
-                endTimestamp,
-                description
-            );
         }
+
+        emit ProposalCreated(
+            proposalCount,
+            msg.sender,
+            targets,
+            values,
+            calldatas,
+            newProposal.votingStartTime,
+            newProposal.votingEndTime,
+            description
+        );
 
         /// post proposal checks, should never be possible to revert
         /// essentially assertions with revert messages
@@ -705,9 +713,9 @@ contract MultichainGovernor is
 
         /// Interactions
 
-        /// call relayer with information about proposal
+        /// call executor with information about proposal
         /// iterate over chainConfigs and send messages to each of them
-        _bridgeOutAll(payload);
+        _bridgeOutAll(payload, signedQuotes);
 
         return proposalCount;
     }
@@ -1323,7 +1331,7 @@ contract MultichainGovernor is
     /// @notice payable fallback function to receive funds specifically
     /// included for the xWELLRouter to allow tokens to be bridged to other
     /// chains
-    receive() external payable {
+    receive() external payable override {
         emit FallbackReceived(msg.sender, msg.value);
     }
 }

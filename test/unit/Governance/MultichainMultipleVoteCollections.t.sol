@@ -64,9 +64,9 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         );
 
         assertEq(
-            address(governor.wormholeRelayer()),
-            address(wormholeRelayerAdapter),
-            "incorrect wormhole relayer"
+            address(governor.coreBridge()),
+            address(mockCoreBridge),
+            "incorrect core bridge"
         );
         assertTrue(
             voteCollection.isTrustedSender(
@@ -102,10 +102,12 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             address(xwell),
             address(stkWellBase),
             address(governor),
-            address(wormholeRelayerAdapter),
             MOONBEAM_WORMHOLE_CHAIN_ID,
             proxyAdmin,
-            address(this)
+            address(this),
+            address(mockCoreBridge),
+            address(mockExecutor),
+            address(mockQuoterRouter)
         );
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
@@ -165,7 +167,8 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             targets,
             values,
             calldatas,
-            description
+            description,
+            new bytes[](0)
         );
 
         {
@@ -177,7 +180,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
 
         {
             MultichainVoteCollection voteCollection2 = MultichainVoteCollection(
-                proxyVoteCollection2
+                payable(proxyVoteCollection2)
             );
             (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection2
                 .proposalInformation(1);
@@ -194,30 +197,36 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             address(xwell),
             address(stkWellBase),
             address(governor),
-            address(wormholeRelayerAdapter),
             MOONBEAM_WORMHOLE_CHAIN_ID,
             proxyAdmin,
-            address(this)
+            address(this),
+            address(mockCoreBridge),
+            address(mockExecutor),
+            address(mockQuoterRouter)
         );
 
         (address proxyVoteCollection3, ) = deployVoteCollection(
             address(xwell),
             address(stkWellBase),
             address(governor),
-            address(wormholeRelayerAdapter),
             MOONBEAM_WORMHOLE_CHAIN_ID,
             proxyAdmin,
-            address(this)
+            address(this),
+            address(mockCoreBridge),
+            address(mockExecutor),
+            address(mockQuoterRouter)
         );
 
         (address proxyVoteCollection4, ) = deployVoteCollection(
             address(xwell),
             address(stkWellBase),
             address(governor),
-            address(wormholeRelayerAdapter),
             MOONBEAM_WORMHOLE_CHAIN_ID,
             proxyAdmin,
-            address(this)
+            address(this),
+            address(mockCoreBridge),
+            address(mockExecutor),
+            address(mockQuoterRouter)
         );
 
         WormholeTrustedSender.TrustedSender[]
@@ -241,7 +250,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         shouldRevertAt[0] = 2;
         shouldRevertAt[1] = 4;
 
-        wormholeRelayerAdapter.setShouldRevertAtChain(shouldRevertAt, true);
+        mockExecutor.setShouldRevertAtChain(shouldRevertAt, true);
 
         address proposer = address(1);
 
@@ -302,7 +311,8 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             targets,
             values,
             calldatas,
-            description
+            description,
+            new bytes[](0)
         );
 
         {
@@ -313,7 +323,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
 
         {
             MultichainVoteCollection voteCollection2 = MultichainVoteCollection(
-                proxyVoteCollection2
+                payable(proxyVoteCollection2)
             );
             (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection2
                 .proposalInformation(1);
@@ -323,7 +333,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
 
         {
             MultichainVoteCollection voteCollection3 = MultichainVoteCollection(
-                proxyVoteCollection3
+                payable(proxyVoteCollection3)
             );
             (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection3
                 .proposalInformation(1);
@@ -333,7 +343,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
 
         {
             MultichainVoteCollection voteCollection4 = MultichainVoteCollection(
-                proxyVoteCollection4
+                payable(proxyVoteCollection4)
             );
             (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection4
                 .proposalInformation(1);
@@ -351,10 +361,10 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         address proxyVoteCollection2 = testEmitToMultipleVoteCollections();
         uint256 proposalId = 1;
 
-        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+        mockExecutor.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
         MultichainVoteCollection voteCollection2 = MultichainVoteCollection(
-            proxyVoteCollection2
+            payable(proxyVoteCollection2)
         );
         uint256 voteAmount = 4_000_000_000 * 1e18;
 
@@ -471,7 +481,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
                     0
                 );
 
-                voteCollection.emitVotes{value: bridgeCost}(proposalId);
+                voteCollection.emitVotes{value: bridgeCost}(proposalId, new bytes[](0));
 
                 {
                     // check chainVoteCollectorVotes
@@ -526,11 +536,11 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
 
                 vm.deal(address(this), bridgeCost);
 
-                wormholeRelayerAdapter.setSenderChainId(2);
+                mockExecutor.setSenderChainId(2);
                 vm.expectEmit(true, true, true, true, address(governor));
                 emit CrossChainVoteCollected(proposalId, 2, voteAmount, 0, 0);
 
-                voteCollection2.emitVotes{value: bridgeCost}(proposalId);
+                voteCollection2.emitVotes{value: bridgeCost}(proposalId, new bytes[](0));
 
                 {
                     // check chainVoteCollectorVotes

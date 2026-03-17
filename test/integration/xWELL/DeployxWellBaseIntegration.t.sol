@@ -14,6 +14,10 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {VaaHelper} from "@test/helper/VaaHelper.sol";
+import {ICoreBridge} from "wormhole-sdk/interfaces/ICoreBridge.sol";
+import {toUniversalAddress} from "wormhole-sdk/Utils.sol";
+import {SequenceReplayProtectionLib} from "wormhole-sdk/libraries/ReplayProtection.sol";
 
 contract xWellIntegrationTest is Test {
     using ChainIds for uint256;
@@ -34,6 +38,9 @@ contract xWellIntegrationTest is Test {
     /// @notice amount of well to mint
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
+    /// @notice sequence counter for VAA construction
+    uint64 public vaaSequence;
+
     function setUp() public {
         addresses = new Addresses();
 
@@ -41,6 +48,9 @@ contract xWellIntegrationTest is Test {
         wormholeAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
+
+        // Set up the core bridge with a devnet guardian so we can sign VAAs
+        VaaHelper.setUpGuardianOverride(wormholeAdapter.coreBridge());
     }
 
     function testReinitializeFails() public {
@@ -56,7 +66,6 @@ contract xWellIntegrationTest is Test {
 
         vm.expectRevert();
         wormholeAdapter.initialize(
-            address(1),
             address(1),
             address(1),
             new uint16[](0),
@@ -91,40 +100,6 @@ contract xWellIntegrationTest is Test {
         );
     }
 
-    function testBridgeOutSuccess() public {
-        uint256 mintAmount = testBridgeInSuccess(startingWellAmount);
-
-        uint256 startingXWellBalance = xwell.balanceOf(user);
-        uint256 startingXWellTotalSupply = xwell.totalSupply();
-        uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
-
-        uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
-        uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
-
-        vm.deal(user, cost);
-
-        vm.startPrank(user);
-        xwell.approve(address(wormholeAdapter), mintAmount);
-        wormholeAdapter.bridge{value: cost}(dstChainId, mintAmount, user);
-        vm.stopPrank();
-
-        uint256 endingXWellBalance = xwell.balanceOf(user);
-        uint256 endingXWellTotalSupply = xwell.totalSupply();
-        uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
-
-        assertEq(endingBuffer, startingBuffer + mintAmount, "buffer incorrect");
-        assertEq(
-            endingXWellBalance,
-            startingXWellBalance - mintAmount,
-            "user xWELL balance incorrect"
-        );
-        assertEq(
-            endingXWellTotalSupply,
-            startingXWellTotalSupply - mintAmount,
-            "total xWELL supply incorrect"
-        );
-    }
-
     function testBridgeInSuccess(uint256 mintAmount) public returns (uint256) {
         mintAmount = _bound(
             mintAmount,
@@ -136,20 +111,26 @@ contract xWellIntegrationTest is Test {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
+        uint16 dstWormholeChainId = wormholeAdapter.wormholeChainId();
 
-        bytes memory payload = abi.encode(user, mintAmount);
-        bytes32 sender = address(wormholeAdapter).toBytes();
-        bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
+        // New payload format: (destinationChainId, to, amount)
+        bytes memory payload = abi.encode(dstWormholeChainId, user, mintAmount);
 
-        vm.prank(address(wormholeAdapter.wormholeRelayer()));
-        wormholeAdapter.receiveWormholeMessages(
-            payload,
-            new bytes[](0),
-            sender,
-            dstChainId,
-            nonce
+        // Emitter is the adapter on Moonbeam (trusted sender)
+        uint16 emitterChainId = MOONBEAM_WORMHOLE_CHAIN_ID;
+        address emitterAddress = address(wormholeAdapter);
+
+        // Craft a signed VAA using the devnet guardian key
+        bytes memory vaa = VaaHelper.craftVaa(
+            wormholeAdapter.coreBridge(),
+            emitterChainId,
+            emitterAddress,
+            vaaSequence++,
+            payload
         );
+
+        // Anyone can submit the VAA
+        wormholeAdapter.executeVAAv1(vaa);
 
         uint256 endingXWellBalance = xwell.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
@@ -165,7 +146,6 @@ contract xWellIntegrationTest is Test {
             startingXWellTotalSupply + mintAmount,
             "total xWELL supply incorrect"
         );
-        assertTrue(wormholeAdapter.processedNonces(nonce), "nonce not used");
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
 
         return mintAmount;

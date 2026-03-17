@@ -20,7 +20,7 @@ contract DeployMultichainVoteCollectionLogic is Script {
     function run() public {
         vm.startBroadcast();
 
-        new MultichainVoteCollection();
+        new MultichainVoteCollection(address(0), address(0), address(0));
 
         vm.stopBroadcast();
     }

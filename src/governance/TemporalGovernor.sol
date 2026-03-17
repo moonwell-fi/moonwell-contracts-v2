@@ -5,7 +5,8 @@ import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/Enu
 import {Pausable} from "@openzeppelin-contracts/contracts/security/Pausable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {ICoreBridge, CoreBridgeVM} from "wormhole-sdk/interfaces/ICoreBridge.sol";
+import {toUniversalAddress} from "wormhole-sdk/Utils.sol";
 
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 
@@ -28,8 +29,8 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
 
     /// ----------- IMMUTABLES -----------
 
-    /// @notice reference to the wormhole bridge
-    IWormhole public immutable wormholeBridge;
+    /// @notice reference to the wormhole core bridge
+    ICoreBridge public immutable wormholeBridge;
 
     /// @notice returns the amount of time a proposal must wait before being processed.
     uint256 public immutable proposalDelay;
@@ -62,7 +63,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         uint256 _permissionlessUnpauseTime,
         TrustedSender[] memory _trustedSenders
     ) Ownable() {
-        wormholeBridge = IWormhole(wormholeCore);
+        wormholeBridge = ICoreBridge(wormholeCore);
         proposalDelay = _proposalDelay;
         permissionlessUnpauseTime = _permissionlessUnpauseTime;
 
@@ -117,12 +118,11 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         return trustedSendersList;
     }
 
-    /// @notice Wormhole addresses are denominated in 32 byte chunks. Converting the address to a bytes20
-    /// then to a bytes32 *left* aligns it, so we right shift to get the proper data
+    /// @notice Converts an EVM address to the Wormhole universal address format (bytes32)
     /// @param addr The address to convert
     /// @return The address as a bytes32
     function addressToBytes(address addr) public pure returns (bytes32) {
-        return bytes32(bytes20(addr)) >> 96;
+        return toUniversalAddress(addr);
     }
 
     /// @notice only callable through a governance proposal
@@ -306,7 +306,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
 
         // This call accepts single VAAs and headless VAAs
         (
-            IWormhole.VM memory vm,
+            CoreBridgeVM memory vm,
             bool valid,
             string memory reason
         ) = wormholeBridge.parseAndVerifyVM(VAA);
@@ -356,7 +356,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     function _executeProposal(bytes memory VAA, bool overrideDelay) private {
         // This call accepts single VAAs and headless VAAs
         (
-            IWormhole.VM memory vm,
+            CoreBridgeVM memory vm,
             bool valid,
             string memory reason
         ) = wormholeBridge.parseAndVerifyVM(VAA);

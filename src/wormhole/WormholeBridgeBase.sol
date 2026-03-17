@@ -1,15 +1,39 @@
 pragma solidity 0.8.19;
 
-import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
-import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
+import {ICoreBridge, CoreBridgeVM} from "wormhole-sdk/interfaces/ICoreBridge.sol";
+import {IExecutor, IVaaV1Receiver, IExecutorQuoterRouter} from "@protocol/wormhole/IExecutorCompat.sol";
+import {SequenceReplayProtectionLib} from "wormhole-sdk/libraries/ReplayProtection.sol";
+import {RequestLib} from "wormhole-sdk/Executor/Request.sol";
+import {RelayInstructionLib} from "wormhole-sdk/Executor/RelayInstruction.sol";
+import {toUniversalAddress, fromUniversalAddress} from "wormhole-sdk/Utils.sol";
+
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
-/// @notice Wormhole Bridge Base Contract
-/// Useful or when you want to send to and receive from the same addresses
-/// on many different chains
-abstract contract WormholeBridgeBase is IWormholeReceiver {
+/// @notice Wormhole Bridge Base Contract using the Executor pattern.
+/// Sends messages to and receives messages from the same addresses on many
+/// different chains. Replaces the deprecated Standard Relayer with the
+/// Wormhole Executor, supporting both off-chain and on-chain quoting.
+abstract contract WormholeBridgeBase is IVaaV1Receiver {
     using EnumerableSet for EnumerableSet.UintSet;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// -------------------- IMMUTABLES -------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice reference to the Wormhole Core Bridge contract
+    ICoreBridge public immutable coreBridge;
+
+    /// @notice this chain's wormhole chain id
+    uint16 public immutable wormholeChainId;
+
+    /// @notice reference to the Wormhole Executor contract (off-chain quoting)
+    IExecutor public immutable executor;
+
+    /// @notice reference to the Executor Quoter Router (on-chain quoting)
+    IExecutorQuoterRouter public immutable executorQuoterRouter;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -17,15 +41,17 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
 
-    /// @dev packing these variables into a single slot saves a
-    /// COLD SLOAD on bridge out operations.
+    /// @dev Slot 0 layout preserved for proxy compatibility.
+    /// Previously packed: uint96 gasLimit | IWormholeRelayer wormholeRelayer
+    /// Now only gasLimit is used; the bottom 160 bits are dead storage.
 
-    /// @notice gas limit for wormhole relayer, changeable incase gas prices change on external network
+    /// @notice gas limit for executor delivery, changeable in case gas prices
+    /// change on external network
     uint96 public gasLimit;
 
-    /// @notice address of the wormhole relayer cannot be changed by owner
-    /// because the relayer contract is a proxy and should never change its address
-    IWormholeRelayer public wormholeRelayer;
+    /// @dev dead storage - previously held the wormhole relayer address.
+    /// Preserved to maintain storage layout for proxy upgrades.
+    address private __deprecated_wormholeRelayer;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -33,8 +59,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
 
-    /// @notice nonces that have already been processed
-    mapping(bytes32 nonce => bool processed) public processedNonces;
+    /// @dev dead storage - previously held processed nonces for replay protection.
+    /// Now using SequenceReplayProtectionLib for bitmap-based replay protection.
+    mapping(bytes32 => bool) public processedNonces;
 
     /// @notice chain id of the target chain to address for bridging
     /// starts off mapped to itself, but can be changed by governance
@@ -92,6 +119,26 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         address dst,
         bytes payload
     );
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------- CONSTRUCTOR ----------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @param _coreBridge address of the Wormhole Core Bridge
+    /// @param _executor address of the Wormhole Executor (off-chain quoting)
+    /// @param _executorQuoterRouter address of the Executor Quoter Router (on-chain quoting, address(0) if unavailable)
+    constructor(
+        address _coreBridge,
+        address _executor,
+        address _executorQuoterRouter
+    ) {
+        coreBridge = ICoreBridge(_coreBridge);
+        wormholeChainId = ICoreBridge(_coreBridge).chainId();
+        executor = IExecutor(_executor);
+        executorQuoterRouter = IExecutorQuoterRouter(_executorQuoterRouter);
+    }
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -169,17 +216,6 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         }
     }
 
-    /// @notice sets the wormhole relayer contract
-    /// @param _wormholeRelayer address of the wormhole relayer
-    function _setWormholeRelayer(address _wormholeRelayer) internal {
-        require(
-            address(wormholeRelayer) == address(0),
-            "WormholeBridge: relayer already set"
-        );
-
-        wormholeRelayer = IWormholeRelayer(_wormholeRelayer);
-    }
-
     /// --------------------------------------------------------
     /// --------------------------------------------------------
     /// ---------------- View Only Functions -------------------
@@ -207,27 +243,42 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     }
 
     /// @notice Estimate bridge cost to bridge out to a destination chain
-    /// @dev this function returns 0 if the quote fails.
-    /// in all other cases, the value returned should be non zero.
+    /// using on-chain quoting. Returns 0 if the quoter is not available.
     /// @param dstWormholeChainId Destination chain id
     function bridgeCost(
         uint16 dstWormholeChainId
     ) public view returns (uint256 gasCost) {
+        if (address(executorQuoterRouter) == address(0)) {
+            return 0;
+        }
+
+        address target = targetAddress[dstWormholeChainId];
+        if (target == address(0)) {
+            return 0;
+        }
+
+        bytes memory requestBytes = RequestLib.encodeVaaMultiSigRequest(
+            wormholeChainId,
+            toUniversalAddress(address(this)),
+            0 /// sequence is unknown at quote time, doesn't affect cost
+        );
+        bytes memory relayInstructions = RelayInstructionLib.encodeGas(
+            uint128(gasLimit),
+            0
+        );
+
         try
-            wormholeRelayer.quoteEVMDeliveryPrice(
+            executorQuoterRouter.quoteExecution(
                 dstWormholeChainId,
-                0,
-                gasLimit
+                toUniversalAddress(target),
+                address(this),
+                address(0), /// quoter address - use default
+                requestBytes,
+                relayInstructions
             )
-        returns (uint256 cost, uint256) {
-            gasCost = cost;
+        returns (uint256 cost) {
+            gasCost = cost + coreBridge.messageFee();
         } catch {
-            /// this is a bad situation, but we still want to allow the bridge out
-            /// so fail silently and set gasCost to 0.
-            /// Would like to emit an event here, but that would be a side affect
-            /// to the logs and cause this function to be non view.
-            /// the bridge out will most likely fail from this point out, however,
-            /// the proposal on Moonbeam will still be created.
             gasCost = 0;
         }
     }
@@ -249,12 +300,12 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
 
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
     /// @param chainId The wormhole chain id to check
-    /// @param addr The address to check
+    /// @param addr The address to check (bytes32 universal address format)
     function isTrustedSender(
         uint16 chainId,
         bytes32 addr
     ) public view returns (bool) {
-        return isTrustedSender(chainId, fromWormholeFormat(addr));
+        return isTrustedSender(chainId, fromUniversalAddress(addr));
     }
 
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
@@ -273,41 +324,44 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
-    /// @notice Bridge Out Funds to all external chains.
-    /// @param payload Payload to send to the external chain
-    function _bridgeOutAll(bytes memory payload) internal {
+    /// @notice Bridge Out Funds to all external chains using off-chain signed quotes.
+    /// Quotes are obtained at execution time to avoid expiry during multisig signing.
+    /// Overpayment is refunded to msg.sender.
+    /// @param payload Payload to send to the external chains
+    /// @param signedQuotes Array of signed quotes, one per target chain (in order)
+    function _bridgeOutAll(
+        bytes memory payload,
+        bytes[] calldata signedQuotes
+    ) internal {
+        uint256 chainsLength = _targetChains.length();
         require(
-            msg.value >= bridgeCostAll(),
-            "WormholeBridge: total cost not equal to quote"
+            signedQuotes.length == chainsLength,
+            "WormholeBridge: quotes length mismatch"
         );
 
-        uint256 chainsLength = _targetChains.length();
-
         uint256 totalRefundAmount = msg.value;
+        uint256 messageFee = coreBridge.messageFee();
 
         for (uint256 i = 0; i < chainsLength; ) {
             uint16 targetChain = uint16(_targetChains.at(i));
-            uint256 cost = bridgeCost(targetChain);
+            address target = targetAddress[targetChain];
 
-            try
-                wormholeRelayer.sendPayloadToEvm{value: cost}(
-                    targetChain,
-                    targetAddress[targetChain],
-                    payload,
-                    /// no receiver value allowed, only message passing
-                    0,
-                    gasLimit
-                )
-            {
+            try this._bridgeOutSingle{value: totalRefundAmount}(
+                payload,
+                targetChain,
+                target,
+                signedQuotes[i],
+                messageFee
+            ) returns (uint256 cost) {
                 totalRefundAmount -= cost;
                 emit BridgeOutSuccess(
                     targetChain,
                     cost,
-                    targetAddress[targetChain],
+                    target,
                     payload
                 );
             } catch {
-                emit BridgeOutFailed(targetChain, payload, cost);
+                emit BridgeOutFailed(targetChain, payload, 0);
             }
 
             unchecked {
@@ -322,61 +376,199 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         }
     }
 
-    /// @notice callable only by the wormhole relayer
-    /// @param payload the payload of the message, contains the to and amount
-    /// additional vaas, unused parameter
-    /// @param senderAddress the address of the sender on the source chain, bytes32 encoded
-    /// @param sourceChain the chain id of the source chain
-    /// @param nonce the unique message ID
-    function receiveWormholeMessages(
+    /// @notice Bridge Out Funds to all external chains using on-chain quoting.
+    /// @param payload Payload to send to the external chains
+    /// @param quoterAddress Address of the on-chain quoter to use
+    function _bridgeOutAllOnChain(
         bytes memory payload,
-        bytes[] memory, // additionalVaas
-        bytes32 senderAddress,
-        uint16 sourceChain,
-        bytes32 nonce
-    ) external payable override {
-        require(msg.value == 0, "WormholeBridge: no value allowed");
+        address quoterAddress
+    ) internal {
         require(
-            msg.sender == address(wormholeRelayer),
-            "WormholeBridge: only relayer allowed"
+            address(executorQuoterRouter) != address(0),
+            "WormholeBridge: on-chain quoter not available"
         );
+
+        uint256 chainsLength = _targetChains.length();
+        uint256 totalRefundAmount = msg.value;
+        uint256 messageFee = coreBridge.messageFee();
+
+        for (uint256 i = 0; i < chainsLength; ) {
+            uint16 targetChain = uint16(_targetChains.at(i));
+            address target = targetAddress[targetChain];
+
+            try this._bridgeOutSingleOnChain{value: totalRefundAmount}(
+                payload,
+                targetChain,
+                target,
+                quoterAddress,
+                messageFee
+            ) returns (uint256 cost) {
+                totalRefundAmount -= cost;
+                emit BridgeOutSuccess(
+                    targetChain,
+                    cost,
+                    target,
+                    payload
+                );
+            } catch {
+                emit BridgeOutFailed(targetChain, payload, 0);
+            }
+
+            unchecked {
+                i++;
+            }
+        }
+
+        if (totalRefundAmount != 0) {
+            (bool success, ) = msg.sender.call{value: totalRefundAmount}("");
+            require(success, "WormholeBridge: refund failed");
+        }
+    }
+
+    /// @notice Internal helper to bridge out a single message with off-chain quote.
+    /// External so it can be called with try/catch and value forwarding.
+    /// @dev Must only be called by this contract.
+    /// @return cost Total cost of this bridge out (message fee + executor fee)
+    function _bridgeOutSingle(
+        bytes memory payload,
+        uint16 targetChain,
+        address target,
+        bytes calldata signedQuote,
+        uint256 messageFee
+    ) external payable returns (uint256 cost) {
         require(
-            isTrustedSender(sourceChain, senderAddress),
+            msg.sender == address(this),
+            "WormholeBridge: only self"
+        );
+
+        uint64 sequence = coreBridge.publishMessage{value: messageFee}(
+            0, /// nonce unused
+            payload,
+            200 /// finalized consistency level
+        );
+
+        bytes memory requestBytes = RequestLib.encodeVaaMultiSigRequest(
+            wormholeChainId,
+            toUniversalAddress(address(this)),
+            sequence
+        );
+
+        bytes memory relayInstructions = RelayInstructionLib.encodeGas(
+            uint128(gasLimit),
+            0 /// no msg.value on destination
+        );
+
+        uint256 executorFee = msg.value - messageFee;
+        executor.requestExecution{value: executorFee}(
+            targetChain,
+            toUniversalAddress(target),
+            msg.sender, /// refund address
+            signedQuote,
+            requestBytes,
+            relayInstructions
+        );
+
+        cost = messageFee + executorFee;
+    }
+
+    /// @notice Internal helper to bridge out a single message with on-chain quote.
+    /// External so it can be called with try/catch and value forwarding.
+    /// @dev Must only be called by this contract.
+    /// @return cost Total cost of this bridge out (message fee + executor fee)
+    function _bridgeOutSingleOnChain(
+        bytes memory payload,
+        uint16 targetChain,
+        address target,
+        address quoterAddress,
+        uint256 messageFee
+    ) external payable returns (uint256 cost) {
+        require(
+            msg.sender == address(this),
+            "WormholeBridge: only self"
+        );
+
+        uint64 sequence = coreBridge.publishMessage{value: messageFee}(
+            0,
+            payload,
+            200
+        );
+
+        bytes32 targetUniversal = toUniversalAddress(target);
+
+        bytes memory requestBytes = RequestLib.encodeVaaMultiSigRequest(
+            wormholeChainId,
+            toUniversalAddress(address(this)),
+            sequence
+        );
+
+        bytes memory relayInstructions = RelayInstructionLib.encodeGas(
+            uint128(gasLimit),
+            0
+        );
+
+        uint256 executorFee = executorQuoterRouter.quoteExecution(
+            targetChain,
+            targetUniversal,
+            address(this),
+            quoterAddress,
+            requestBytes,
+            relayInstructions
+        );
+
+        executorQuoterRouter.requestExecution{value: executorFee}(
+            targetChain,
+            targetUniversal,
+            address(this), /// refund address
+            quoterAddress,
+            requestBytes,
+            relayInstructions
+        );
+
+        cost = messageFee + executorFee;
+    }
+
+    /// @notice Receive and process a VAA from the Wormhole Executor.
+    /// Verifies the VAA signatures via the Core Bridge, checks peer,
+    /// prevents replay, then delegates to _bridgeIn.
+    /// @param multiSigVaa The signed VAA bytes
+    function executeVAAv1(bytes memory multiSigVaa) external payable override {
+        require(msg.value == 0, "WormholeBridge: no value allowed");
+
+        (
+            CoreBridgeVM memory vm,
+            bool valid,
+            string memory reason
+        ) = coreBridge.parseAndVerifyVM(multiSigVaa);
+
+        require(valid, reason);
+
+        /// verify the sender is a known peer
+        require(
+            targetAddress[vm.emitterChainId] != address(0) &&
+                targetAddress[vm.emitterChainId] ==
+                fromUniversalAddress(vm.emitterAddress),
             "WormholeBridge: sender not trusted"
         );
-        require(
-            !processedNonces[nonce],
-            "WormholeBridge: message already processed"
+
+        /// sequence-based replay protection (bitmap, ~75% cheaper than mapping)
+        SequenceReplayProtectionLib.replayProtect(
+            vm.emitterChainId,
+            vm.emitterAddress,
+            vm.sequence
         );
 
-        processedNonces[nonce] = true;
-
-        _bridgeIn(sourceChain, payload);
+        _bridgeIn(vm.emitterChainId, vm.payload);
     }
 
-    /// @notice converts a bytes32 to address,
-    /// wormhole stores the address in the first 20 bytes
-    /// so if we shift right by 160 bits and there is still
-    /// a non zero value, we know we have the wrong address
-    /// @param whFormatAddress the bytes32 address to convert
-    /// @return the address
-    function fromWormholeFormat(
-        bytes32 whFormatAddress
-    ) public pure returns (address) {
-        require(
-            uint256(whFormatAddress) >> 160 == 0,
-            "WormholeBridge: invalid address"
-        );
-
-        return address(uint160(uint256(whFormatAddress)));
-    }
-
-    // @notice logic for bringing payload in from external chain
-    // @dev must be overridden by implementation contract
-    // @param sourceChain the chain id of the source chain
-    // @param payload the payload of the message
+    /// @notice logic for bringing payload in from external chain
+    /// @dev must be overridden by implementation contract
+    /// @param sourceChain the chain id of the source chain
+    /// @param payload the payload of the message
     function _bridgeIn(
         uint16 sourceChain,
         bytes memory payload
     ) internal virtual;
+
+    /// @notice function to receive Ether for bridge operations
+    receive() external payable virtual {}
 }

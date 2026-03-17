@@ -12,13 +12,15 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {VaaHelper} from "@test/helper/VaaHelper.sol";
+import {ICoreBridge} from "wormhole-sdk/interfaces/ICoreBridge.sol";
 
 contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
     using Address for address;
+    uint64 internal _vaaSeq;
 
     event ProposalCanceled(uint256 proposalId);
 
@@ -120,79 +122,54 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    /// receiveWormholeMessages failure tests
+    /// executeVAAv1 failure tests
     /// value
-    function testReceiveWormholeMessageFailsWithValue() public {
+    function testExecuteVAAv1FailsWithValue() public {
+        bytes memory vaa = VaaHelper.craftVaa(
+            voteCollection.coreBridge(),
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
+            _vaaSeq++,
+            ""
+        );
+
         vm.deal(address(this), 100);
-
         vm.expectRevert("WormholeBridge: no value allowed");
-        voteCollection.receiveWormholeMessages{value: 100}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-
-        vm.expectRevert("WormholeBridge: no value allowed");
-        governor.receiveWormholeMessages{value: 100}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
+        voteCollection.executeVAAv1{value: 100}(vaa);
     }
 
-    /// not relayer address
-    function testReceiveWormholeMessageFailsNotRelayer() public {
-        vm.expectRevert("WormholeBridge: only relayer allowed");
-        voteCollection.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
+    /// untrusted sender
+    function testExecuteVAAv1FailsUntrustedSender() public {
+        bytes memory vaa = VaaHelper.craftVaa(
+            voteCollection.coreBridge(),
             MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
+            address(0xdead), // untrusted
+            _vaaSeq++,
+            ""
         );
 
-        vm.expectRevert("WormholeBridge: only relayer allowed");
-        governor.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            BASE_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
+        vm.expectRevert("WormholeBridge: sender not trusted");
+        voteCollection.executeVAAv1(vaa);
     }
 
-    function testAlreadyProcessedMessageReplayFails() public {
-        uint256 proposalId = testReceiveWormholeMessageSucceeds();
+    function testReplayProtectionPreventsDoubleProcessing() public {
+        uint256 proposalId = testExecuteVAAv1Succeeds();
 
-        bytes memory payloadVoteCollection = abi.encode(proposalId, 0, 0, 0, 0);
+        bytes memory payload = abi.encode(proposalId, 0, 0, 0, 0);
 
-        vm.startPrank(address(governor.wormholeRelayer()));
+        bytes memory vaa = VaaHelper.craftVaa(
+            voteCollection.coreBridge(),
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
+            0, // same sequence as the first VAA
+            payload
+        );
 
         vm.expectRevert("MultichainVoteCollection: proposal already exists");
-        voteCollection.receiveWormholeMessages{value: 0}(
-            payloadVoteCollection,
-            new bytes[](0), /// field unchecked in contract
-            address(governor).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-
-        bytes memory payloadGovernor = abi.encode(proposalId, 0, 0, 0);
-        vm.expectRevert("WormholeBridge: message already processed");
-        governor.receiveWormholeMessages{value: 0}(
-            payloadGovernor,
-            new bytes[](0), /// field unchecked in contract
-            address(voteCollection).toBytes(),
-            BASE_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
+        voteCollection.executeVAAv1(vaa);
     }
 
-    function testReceiveWormholeMessageSucceeds()
+    function testExecuteVAAv1Succeeds()
         public
         returns (uint256 proposalId)
     {
@@ -201,14 +178,15 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
 
         vm.warp(block.timestamp + governor.votingPeriod() + 1);
 
-        vm.prank(address(governor.wormholeRelayer()));
-        governor.receiveWormholeMessages{value: 0}(
-            payload,
-            new bytes[](0), /// field unchecked in contract
-            address(voteCollection).toBytes(),
+        bytes memory vaa = VaaHelper.craftVaa(
+            governor.coreBridge(),
             BASE_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
+            address(voteCollection),
+            _vaaSeq++,
+            payload
         );
+
+        governor.executeVAAv1(vaa);
     }
 
     function _createProposal() private returns (uint256) {
@@ -233,7 +211,8 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
                 targets,
                 values,
                 calldatas,
-                description
+                description,
+                new bytes[](0)
             );
     }
 }

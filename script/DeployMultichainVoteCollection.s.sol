@@ -37,10 +37,12 @@ contract DeployMultichainVoteCollection is Script, MultichainGovernorDeploy {
                     "MULTICHAIN_GOVERNOR_PROXY",
                     block.chainid.toMoonbeamChainId()
                 ),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
                 block.chainid.toMoonbeamWormholeChainId(),
                 addresses.getAddress("MRD_PROXY_ADMIN"),
-                addresses.getAddress("TEMPORAL_GOVERNOR")
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                addresses.getAddress("WORMHOLE_CORE"),
+                addresses.getAddress("WORMHOLE_EXECUTOR"),
+                addresses.getAddress("WORMHOLE_EXECUTOR_QUOTER_ROUTER")
             );
 
         addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy);

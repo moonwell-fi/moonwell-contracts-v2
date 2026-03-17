@@ -8,16 +8,19 @@ import "@forge-std/Test.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {MockCoreBridge, MockExecutor, MockExecutorQuoterRouter} from "@test/mock/MockCoreBridgeExecutor.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 
 /// Helper contract to deploy MultichainGovernor, MultichainVoteCollection,
 /// Ecosystem Reserve, Ecosystem Reserve Controller and StakedWell contracts
 contract MultichainGovernorDeploy is Test {
     function deployMultichainGovernor(
-        address proxyAdmin
+        address proxyAdmin,
+        address coreBridge,
+        address executorAddr,
+        address executorQuoterRouter
     ) public returns (address proxy, address governorImpl) {
-        governorImpl = address(new MultichainGovernor());
+        governorImpl = address(new MultichainGovernor(coreBridge, executorAddr, executorQuoterRouter));
 
         console.log("proxy constructor calldata: ");
         console.logBytes(abi.encode(governorImpl, proxyAdmin, ""));
@@ -28,9 +31,12 @@ contract MultichainGovernorDeploy is Test {
     }
 
     function deployMockMultichainGovernor(
-        address proxyAdmin
+        address proxyAdmin,
+        address coreBridge,
+        address executorAddr,
+        address executorQuoterRouter
     ) public returns (address proxy, address governorImpl) {
-        governorImpl = address(new MockMultichainGovernor());
+        governorImpl = address(new MockMultichainGovernor(coreBridge, executorAddr, executorQuoterRouter));
 
         proxy = address(
             new TransparentUpgradeableProxy(governorImpl, proxyAdmin, "")
@@ -54,22 +60,23 @@ contract MultichainGovernorDeploy is Test {
         address xWell,
         address stkWell,
         address moonbeamGovernor,
-        address relayer,
         uint16 moonbeamWormholeChainId,
         address proxyAdmin,
-        address owner
+        address owner,
+        address coreBridge,
+        address executorAddr,
+        address executorQuoterRouter
     ) public returns (address proxy, address voteCollectionImpl) {
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(address,address,address,address,uint16,address)",
+            "initialize(address,address,address,uint16,address)",
             xWell,
             stkWell,
             moonbeamGovernor,
-            relayer,
             moonbeamWormholeChainId,
             owner
         );
 
-        voteCollectionImpl = address(new MultichainVoteCollection());
+        voteCollectionImpl = address(new MultichainVoteCollection(coreBridge, executorAddr, executorQuoterRouter));
 
         console.log("proxy constructor calldata vote collection: ");
         console.logBytes(abi.encode(voteCollectionImpl, proxyAdmin, initData));
@@ -88,7 +95,9 @@ contract MultichainGovernorDeploy is Test {
         address governorProxy;
         address governorImplementation;
         address voteCollectionProxy;
-        address wormholeRelayerAdapter;
+        address coreBridge;
+        address executor;
+        address executorQuoterRouter;
         address proxyAdmin;
     }
 
@@ -107,50 +116,55 @@ contract MultichainGovernorDeploy is Test {
             ? address(new ProxyAdmin())
             : proxyAdmin;
 
+        // Deploy mock wormhole infrastructure
+        {
+            MockCoreBridge _cb = new MockCoreBridge(moonbeamChainId);
+            MockExecutor _ex = new MockExecutor(address(_cb));
+            MockExecutorQuoterRouter _qr = new MockExecutorQuoterRouter(address(_ex));
+            _ex.setSenderChainId(moonbeamChainId);
+            addresses.coreBridge = address(_cb);
+            addresses.executor = address(_ex);
+            addresses.executorQuoterRouter = address(_qr);
+        }
+
         // deploy governor
-        (
-            address gProxy,
-            address gImplementation
-        ) = deployMockMultichainGovernor(proxyAdmin);
-        address wormholeRelayerAdapter = address(
-            new WormholeRelayerAdapter(new uint16[](0), new uint256[](0))
-        );
-
-        // deploy vote collection
-        (address vProxy, ) = deployVoteCollection(
-            initializeData.xWell,
-            baseStkWell,
-            gProxy,
-            wormholeRelayerAdapter,
-            moonbeamChainId,
-            proxyAdmin,
-            voteCollectionOwner
-        );
-
-        WormholeTrustedSender.TrustedSender[]
-            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                1
+        (addresses.governorProxy, addresses.governorImplementation) =
+            deployMockMultichainGovernor(
+                proxyAdmin,
+                addresses.coreBridge,
+                addresses.executor,
+                addresses.executorQuoterRouter
             );
 
-        trustedSenders[0] = WormholeTrustedSender.TrustedSender({
-            chainId: baseChainId,
-            addr: vProxy
-        });
-
-        /// add wormhole relayer adapter to initialize function
-        initializeData.wormholeRelayer = wormholeRelayerAdapter;
-
-        initializeMultichainGovernor(
-            gProxy,
-            initializeData,
-            trustedSenders,
-            whitelistedCalldata
+        // deploy vote collection
+        (addresses.voteCollectionProxy, ) = deployVoteCollection(
+            initializeData.xWell,
+            baseStkWell,
+            addresses.governorProxy,
+            moonbeamChainId,
+            proxyAdmin,
+            voteCollectionOwner,
+            addresses.coreBridge,
+            addresses.executor,
+            addresses.executorQuoterRouter
         );
 
-        addresses.governorProxy = gProxy;
-        addresses.governorImplementation = gImplementation;
-        addresses.voteCollectionProxy = vProxy;
-        addresses.wormholeRelayerAdapter = wormholeRelayerAdapter;
+        {
+            WormholeTrustedSender.TrustedSender[]
+                memory trustedSenders = new WormholeTrustedSender.TrustedSender[](1);
+            trustedSenders[0] = WormholeTrustedSender.TrustedSender({
+                chainId: baseChainId,
+                addr: addresses.voteCollectionProxy
+            });
+
+            initializeMultichainGovernor(
+                addresses.governorProxy,
+                initializeData,
+                trustedSenders,
+                whitelistedCalldata
+            );
+        }
+
         addresses.proxyAdmin = proxyAdmin;
     }
 
@@ -166,7 +180,7 @@ contract MultichainGovernorDeploy is Test {
         address emissionManager,
         uint128 distributionDuration,
         address governance,
-        address proxyAdmin
+        address _proxyAdmin
     ) public returns (address proxy, address implementation) {
         // deploy mock implementation (uses StakedWellMoonbeam for testing)
         // Note: Using deployCode because StakedWellMoonbeam is in Solidity 0.6.12
@@ -188,13 +202,13 @@ contract MultichainGovernorDeploy is Test {
         );
 
         console.log("proxy constructor calldata mock staked well: ");
-        console.logBytes(abi.encode(implementation, proxyAdmin, initData));
+        console.logBytes(abi.encode(implementation, _proxyAdmin, initData));
 
         // deploy proxy
         proxy = address(
             new TransparentUpgradeableProxy(
                 implementation,
-                proxyAdmin,
+                _proxyAdmin,
                 initData
             )
         );
@@ -209,7 +223,7 @@ contract MultichainGovernorDeploy is Test {
         address emissionManager,
         uint128 distributionDuration,
         address governance,
-        address proxyAdmin
+        address _proxyAdmin
     ) public returns (address proxy, address implementation) {
         // deploy actual stkWELL implementation for Base
         // Note: Using deployCode because StakedWell is in Solidity 0.6.12
@@ -231,13 +245,13 @@ contract MultichainGovernorDeploy is Test {
         );
 
         console.log("proxy constructor calldata staked well: ");
-        console.logBytes(abi.encode(implementation, proxyAdmin, initData));
+        console.logBytes(abi.encode(implementation, _proxyAdmin, initData));
 
         // deploy proxy
         proxy = address(
             new TransparentUpgradeableProxy(
                 implementation,
-                proxyAdmin,
+                _proxyAdmin,
                 initData
             )
         );
@@ -252,15 +266,12 @@ contract MultichainGovernorDeploy is Test {
         address emissionManager,
         uint128 distributionDuration,
         address governance,
-        address proxyAdmin
+        address _proxyAdmin
     ) public returns (address proxy, address implementation) {
-        // deploy actual stkWELL implementation for Moonbeam
-        // Note: Using deployCode because StakedWellMoonbeam is in Solidity 0.6.12
         implementation = deployCode(
             "artifacts/foundry/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
         );
 
-        // generate init calldata
         bytes memory initData = abi.encodeWithSignature(
             "initialize(address,address,uint256,uint256,address,address,uint128,address)",
             stakedToken,
@@ -274,24 +285,19 @@ contract MultichainGovernorDeploy is Test {
         );
 
         console.log("proxy constructor calldata staked well moonbeam: ");
-        console.logBytes(abi.encode(implementation, proxyAdmin, initData));
+        console.logBytes(abi.encode(implementation, _proxyAdmin, initData));
 
-        // deploy proxy
         proxy = address(
             new TransparentUpgradeableProxy(
                 implementation,
-                proxyAdmin,
+                _proxyAdmin,
                 initData
             )
         );
-
-        // NOTE: initializeV2() must be called separately after deployment
-        // to set up timestamp-based snapshot logic. This should be done by
-        // calling initializeV2() on the proxy from a non-admin address.
     }
 
     function deployEcosystemReserve(
-        address proxyAdmin
+        address _proxyAdmin
     )
         public
         returns (
@@ -311,7 +317,7 @@ contract MultichainGovernorDeploy is Test {
         ecosystemReserveProxy = address(
             new TransparentUpgradeableProxy(
                 ecosystemReserveImplementation,
-                proxyAdmin,
+                _proxyAdmin,
                 abi.encodeWithSignature(
                     "initialize(address)",
                     ecosystemReserveController

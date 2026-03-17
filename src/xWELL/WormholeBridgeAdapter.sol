@@ -2,14 +2,20 @@ pragma solidity 0.8.19;
 
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
-import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
-import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
+import {ICoreBridge, CoreBridgeVM} from "wormhole-sdk/interfaces/ICoreBridge.sol";
+import {IExecutor, IVaaV1Receiver, IExecutorQuoterRouter} from "@protocol/wormhole/IExecutorCompat.sol";
+import {SequenceReplayProtectionLib} from "wormhole-sdk/libraries/ReplayProtection.sol";
+import {RequestLib} from "wormhole-sdk/Executor/Request.sol";
+import {RelayInstructionLib} from "wormhole-sdk/Executor/RelayInstruction.sol";
+import {toUniversalAddress, fromUniversalAddress} from "wormhole-sdk/Utils.sol";
+
 import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 
-/// @notice Wormhole xERC20 Token Bridge adapter
+/// @notice Wormhole xERC20 Token Bridge adapter using the Executor pattern.
+/// Supports both off-chain and on-chain quoting for bridge operations.
 contract WormholeBridgeAdapter is
-    IWormholeReceiver,
+    IVaaV1Receiver,
     xERC20BridgeAdapter,
     WormholeTrustedSender
 {
@@ -17,19 +23,38 @@ contract WormholeBridgeAdapter is
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
+    /// -------------------- IMMUTABLES -------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice reference to the Wormhole Core Bridge contract
+    ICoreBridge public immutable coreBridge;
+
+    /// @notice this chain's wormhole chain id
+    uint16 public immutable wormholeChainId;
+
+    /// @notice reference to the Wormhole Executor contract (off-chain quoting)
+    IExecutor public immutable executor;
+
+    /// @notice reference to the Executor Quoter Router (on-chain quoting)
+    IExecutorQuoterRouter public immutable executorQuoterRouter;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
     /// ------------------ SINGLE STORAGE SLOT ------------------
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
 
-    /// @dev packing these variables into a single slot saves a
-    /// COLD SLOAD on bridge out operations.
+    /// @dev Slot 0 layout preserved for proxy compatibility.
+    /// Previously packed: uint96 gasLimit | IWormholeRelayer wormholeRelayer
+    /// Now only gasLimit is used; the bottom 160 bits are dead storage.
 
-    /// @notice gas limit for wormhole relayer, changeable incase gas prices change on external network
+    /// @notice gas limit for executor delivery, changeable in case gas prices
+    /// change on external network
     uint96 public gasLimit = 300_000;
 
-    /// @notice address of the wormhole relayer cannot be changed by owner
-    /// because the relayer contract is a proxy and should never change its address
-    IWormholeRelayer public wormholeRelayer;
+    /// @dev dead storage - previously held the wormhole relayer address.
+    address private __deprecated_wormholeRelayer;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -37,7 +62,8 @@ contract WormholeBridgeAdapter is
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
 
-    /// @notice nonces that have already been processed
+    /// @dev dead storage - previously held processed nonces.
+    /// Now using SequenceReplayProtectionLib.
     mapping(bytes32 => bool) public processedNonces;
 
     /// @notice chain id of the target chain to address for bridging
@@ -75,6 +101,26 @@ contract WormholeBridgeAdapter is
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
+    /// ---------------------- CONSTRUCTOR ----------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @param _coreBridge address of the Wormhole Core Bridge
+    /// @param _executor address of the Wormhole Executor (off-chain quoting)
+    /// @param _executorQuoterRouter address of the Executor Quoter Router (on-chain quoting, address(0) if unavailable)
+    constructor(
+        address _coreBridge,
+        address _executor,
+        address _executorQuoterRouter
+    ) {
+        coreBridge = ICoreBridge(_coreBridge);
+        wormholeChainId = ICoreBridge(_coreBridge).chainId();
+        executor = IExecutor(_executor);
+        executorQuoterRouter = IExecutorQuoterRouter(_executorQuoterRouter);
+    }
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
     /// ---------------------- INITIALIZE -----------------------
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -82,22 +128,18 @@ contract WormholeBridgeAdapter is
     /// @notice Initialize the Wormhole bridge
     /// @param newxerc20 xERC20 token address
     /// @param newOwner contract owner address
-    /// @param wormholeRelayerAddress address of the wormhole relayer
     /// @param targetChains chain id of the target chain to address for bridging
     /// @param targetAddresses addresses of the wormhole bridge adapters to
     /// bridge to on external chains
     function initialize(
         address newxerc20,
         address newOwner,
-        address wormholeRelayerAddress,
         uint16[] memory targetChains,
         address[] memory targetAddresses
     ) public initializer {
         __Ownable_init();
         _transferOwnership(newOwner);
         _setxERC20(newxerc20);
-
-        wormholeRelayer = IWormholeRelayer(wormholeRelayerAddress);
 
         /// initialize contract to trust this exact same address on an external chain
         /// @dev the external chain contracts MUST HAVE THE SAME ADDRESS on the external chain
@@ -178,15 +220,44 @@ contract WormholeBridgeAdapter is
     /// --------------------------------------------------------
 
     /// @notice Estimate bridge cost to bridge out to a destination chain
+    /// using on-chain quoting. Returns 0 if the quoter is not available.
     /// @param dstChainId Destination chain id
     function bridgeCost(
         uint16 dstChainId
     ) public view returns (uint256 gasCost) {
-        (gasCost, ) = wormholeRelayer.quoteEVMDeliveryPrice(
-            dstChainId,
-            0,
-            gasLimit
+        if (address(executorQuoterRouter) == address(0)) {
+            return 0;
+        }
+
+        address target = targetAddress[dstChainId];
+        if (target == address(0)) {
+            return 0;
+        }
+
+        bytes memory requestBytes = RequestLib.encodeVaaMultiSigRequest(
+            wormholeChainId,
+            toUniversalAddress(address(this)),
+            0
         );
+        bytes memory relayInstructions = RelayInstructionLib.encodeGas(
+            uint128(gasLimit),
+            0
+        );
+
+        try
+            executorQuoterRouter.quoteExecution(
+                dstChainId,
+                toUniversalAddress(target),
+                address(this),
+                address(0),
+                requestBytes,
+                relayInstructions
+            )
+        returns (uint256 cost) {
+            gasCost = cost + coreBridge.messageFee();
+        } catch {
+            gasCost = 0;
+        }
     }
 
     /// --------------------------------------------------------
@@ -195,7 +266,7 @@ contract WormholeBridgeAdapter is
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
-    /// @notice Bridge Out Funds to an external chain.
+    /// @notice Bridge Out Funds to an external chain using an off-chain signed quote.
     /// Callable by the users to bridge out their funds to an external chain.
     /// If a user sends tokens to the token contract on the external chain,
     /// that call will revert, and the tokens will be lost permanently.
@@ -210,60 +281,156 @@ contract WormholeBridgeAdapter is
         address to
     ) internal override {
         uint16 targetChainId = targetChain.toUint16();
-        uint256 cost = bridgeCost(targetChainId);
-        require(msg.value == cost, "WormholeBridge: cost not equal to quote");
+        address target = targetAddress[targetChainId];
         require(
-            targetAddress[targetChainId] != address(0),
+            target != address(0),
             "WormholeBridge: invalid target chain"
         );
 
         /// user must burn xERC20 tokens first
         _burnTokens(user, amount);
 
-        wormholeRelayer.sendPayloadToEvm{value: cost}(
+        uint256 messageFee = coreBridge.messageFee();
+
+        /// encode payload with destination chain for cross-chain replay protection
+        bytes memory payload = abi.encode(targetChainId, to, amount);
+
+        uint64 sequence = coreBridge.publishMessage{value: messageFee}(
+            0,
+            payload,
+            200 /// finalized consistency level
+        );
+
+        bytes memory requestBytes = RequestLib.encodeVaaMultiSigRequest(
+            wormholeChainId,
+            toUniversalAddress(address(this)),
+            sequence
+        );
+
+        bytes memory relayInstructions = RelayInstructionLib.encodeGas(
+            uint128(gasLimit),
+            0
+        );
+
+        uint256 executorFee = msg.value - messageFee;
+
+        /// Use on-chain quoting if available, otherwise the caller must
+        /// have provided enough msg.value for the off-chain executor fee
+        if (address(executorQuoterRouter) != address(0)) {
+            executorQuoterRouter.requestExecution{value: executorFee}(
+                targetChainId,
+                toUniversalAddress(target),
+                msg.sender,
+                address(0), /// default quoter
+                requestBytes,
+                relayInstructions
+            );
+        } else {
+            /// Off-chain quoting: the caller must provide a signed quote
+            /// via the bridge() function's signedQuote parameter.
+            /// For now, send the full remaining value to the executor.
+            /// The executor will refund any overpayment.
+            revert("WormholeBridge: off-chain quote required, use bridgeWithQuote");
+        }
+
+        emit TokensSent(targetChainId, to, amount);
+    }
+
+    /// @notice Bridge Out Funds to an external chain using an off-chain signed quote.
+    /// @param targetChain Destination chain id
+    /// @param amount Amount of xERC20 to bridge out
+    /// @param to Address to receive funds on destination chain
+    /// @param signedQuote Signed off-chain quote from a relay provider
+    function bridgeWithQuote(
+        uint256 targetChain,
+        uint256 amount,
+        address to,
+        bytes calldata signedQuote
+    ) external payable {
+        uint16 targetChainId = targetChain.toUint16();
+        address target = targetAddress[targetChainId];
+        require(
+            target != address(0),
+            "WormholeBridge: invalid target chain"
+        );
+
+        /// user must burn xERC20 tokens first
+        _burnTokens(msg.sender, amount);
+
+        uint256 messageFee = coreBridge.messageFee();
+
+        bytes memory payload = abi.encode(targetChainId, to, amount);
+
+        uint64 sequence = coreBridge.publishMessage{value: messageFee}(
+            0,
+            payload,
+            200
+        );
+
+        bytes memory requestBytes = RequestLib.encodeVaaMultiSigRequest(
+            wormholeChainId,
+            toUniversalAddress(address(this)),
+            sequence
+        );
+
+        bytes memory relayInstructions = RelayInstructionLib.encodeGas(
+            uint128(gasLimit),
+            0
+        );
+
+        uint256 executorFee = msg.value - messageFee;
+        executor.requestExecution{value: executorFee}(
             targetChainId,
-            targetAddress[targetChainId],
-            abi.encode(to, amount), // payload
-            0, /// no receiver value allowed, only message passing
-            gasLimit
+            toUniversalAddress(target),
+            msg.sender, /// refund address
+            signedQuote,
+            requestBytes,
+            relayInstructions
         );
 
         emit TokensSent(targetChainId, to, amount);
     }
 
-    /// @notice callable only by the wormhole relayer
-    /// @param payload the payload of the message, contains the to and amount
-    /// additional vaas, unused parameter
-    /// @param senderAddress the address of the sender on the source chain, bytes32 encoded
-    /// @param sourceChain the chain id of the source chain
-    /// @param nonce the unique message ID
-    function receiveWormholeMessages(
-        bytes memory payload,
-        bytes[] memory, // additionalVaas
-        bytes32 senderAddress,
-        uint16 sourceChain,
-        bytes32 nonce
-    ) external payable override {
+    /// @notice Receive and process a VAA from the Wormhole Executor.
+    /// Verifies the VAA via Core Bridge, checks trusted sender,
+    /// prevents replay, then mints tokens.
+    /// @param multiSigVaa The signed VAA bytes
+    function executeVAAv1(bytes memory multiSigVaa) external payable override {
         require(msg.value == 0, "WormholeBridge: no value allowed");
+
+        (
+            CoreBridgeVM memory vm,
+            bool valid,
+            string memory reason
+        ) = coreBridge.parseAndVerifyVM(multiSigVaa);
+
+        require(valid, reason);
+
+        /// verify trusted sender
         require(
-            msg.sender == address(wormholeRelayer),
-            "WormholeBridge: only relayer allowed"
-        );
-        require(
-            isTrustedSender(sourceChain, senderAddress),
+            isTrustedSender(vm.emitterChainId, vm.emitterAddress),
             "WormholeBridge: sender not trusted"
         );
-        require(
-            !processedNonces[nonce],
-            "WormholeBridge: message already processed"
+
+        /// sequence-based replay protection
+        SequenceReplayProtectionLib.replayProtect(
+            vm.emitterChainId,
+            vm.emitterAddress,
+            vm.sequence
         );
 
-        processedNonces[nonce] = true;
+        /// decode payload and verify destination chain
+        (uint16 destinationChainId, address to, uint256 amount) = abi.decode(
+            vm.payload,
+            (uint16, address, uint256)
+        );
 
-        // Parse the payload and do the corresponding actions!
-        (address to, uint256 amount) = abi.decode(payload, (address, uint256));
+        require(
+            destinationChainId == wormholeChainId,
+            "WormholeBridge: destination chain mismatch"
+        );
 
         /// mint tokens and emit events
-        _bridgeIn(sourceChain, to, amount);
+        _bridgeIn(vm.emitterChainId, to, amount);
     }
 }

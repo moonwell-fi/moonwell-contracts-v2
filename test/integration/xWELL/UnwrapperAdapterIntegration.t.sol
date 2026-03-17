@@ -17,6 +17,8 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 import {Address} from "@utils/Address.sol";
+import {VaaHelper} from "@test/helper/VaaHelper.sol";
+import {ICoreBridge} from "wormhole-sdk/interfaces/ICoreBridge.sol";
 
 contract UnwrapperAdapterMoonbeamTest is mipm21 {
     using Address for address;
@@ -71,7 +73,6 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
         wormholeUnwrapperAdapter.initialize(
             address(1),
             address(1),
-            address(1),
             new uint16[](0),
             new address[](0)
         );
@@ -90,7 +91,6 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
 
         vm.expectRevert();
         wormholeAdapter.initialize(
-            address(1),
             address(1),
             address(1),
             new uint16[](0),
@@ -241,18 +241,21 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
         uint256 startingLockboxBuffer = xwell.buffer(address(xerc20Lockbox));
 
         uint16 dstChainId = block.chainid.toBaseWormholeChainId();
-        bytes memory payload = abi.encode(user, mintAmount);
-        bytes32 sender = address(wormholeAdapter).toBytes();
-        bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
+        uint16 localChainId = wormholeAdapter.wormholeChainId();
+        // New payload format: (destinationChainId, to, amount)
+        bytes memory payload = abi.encode(localChainId, user, mintAmount);
 
-        vm.prank(address(wormholeAdapter.wormholeRelayer()));
-        wormholeAdapter.receiveWormholeMessages(
-            payload,
-            new bytes[](0),
-            sender,
+        // Set up guardian override and craft signed VAA
+        VaaHelper.setUpGuardianOverride(wormholeAdapter.coreBridge());
+        bytes memory vaa = VaaHelper.craftVaa(
+            wormholeAdapter.coreBridge(),
             dstChainId,
-            nonce
+            address(wormholeAdapter),
+            0, // sequence
+            payload
         );
+
+        wormholeAdapter.executeVAAv1(vaa);
 
         uint256 endingWellBalance = well.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
@@ -269,7 +272,7 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
             startingXWellTotalSupply,
             "total xWELL supply changed"
         );
-        assertTrue(wormholeAdapter.processedNonces(nonce), "nonce not used");
+        // Replay protection now uses SequenceReplayProtectionLib (bitmap-based)
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
         assertEq(
             startingLockboxBuffer + mintAmount,

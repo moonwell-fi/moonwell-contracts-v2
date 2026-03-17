@@ -5,6 +5,11 @@ import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/Enu
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 contract MockMultichainGovernor is MultichainGovernor {
+    constructor(
+        address _coreBridge,
+        address _executor,
+        address _executorQuoterRouter
+    ) MultichainGovernor(_coreBridge, _executor, _executorQuoterRouter) {}
     using EnumerableSet for EnumerableSet.UintSet;
 
     function newFeature() external pure returns (uint256) {

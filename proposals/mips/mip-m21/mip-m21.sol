@@ -26,7 +26,7 @@ contract mipm21 is GovernanceProposal {
 
     function deploy(Addresses addresses, address) public override {
         if (!addresses.isAddressSet("WORMHOLE_UNWRAPPER_ADAPTER")) {
-            WormholeUnwrapperAdapter wormholeUnwrapperAdapter = new WormholeUnwrapperAdapter();
+            WormholeUnwrapperAdapter wormholeUnwrapperAdapter = new WormholeUnwrapperAdapter(address(0), address(0), address(0));
 
             addresses.addAddress(
                 "WORMHOLE_UNWRAPPER_ADAPTER",

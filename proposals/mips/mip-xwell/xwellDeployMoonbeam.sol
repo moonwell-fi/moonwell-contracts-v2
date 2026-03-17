@@ -92,7 +92,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
                     wormholeAdapterLogic,
                     wormholeAdapter,
                     lockbox
-                ) = deployMoonbeamSystem(wellAddress, existingProxyAdmin);
+                ) = deployMoonbeamSystem(wellAddress, existingProxyAdmin, address(0), address(0), address(0));
 
                 limits[0].bridge = wormholeAdapter;
                 limits[0].rateLimitPerSecond = rateLimitPerSecond;
@@ -126,7 +126,6 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
                 wormholeAdapter,
                 xwellProxy,
                 artemisTimelock,
-                relayer,
                 trustedChainIds,
                 trustedSenders
             );
@@ -186,14 +185,6 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
                 xWELL(wormholeBridgeAdapterProxy).owner(),
                 artemisTimelock,
                 "wormhole bridge adapter owner is incorrect"
-            );
-            assertEq(
-                address(
-                    WormholeBridgeAdapter(wormholeBridgeAdapterProxy)
-                        .wormholeRelayer()
-                ),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
-                "wormhole bridge adapter relayer is incorrect"
             );
             assertEq(
                 WormholeBridgeAdapter(wormholeBridgeAdapterProxy).gasLimit(),

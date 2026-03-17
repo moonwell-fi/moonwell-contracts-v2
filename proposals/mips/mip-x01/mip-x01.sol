@@ -570,7 +570,7 @@ contract mipx01 is HybridProposal, Configs {
         /// validate vote collection contract
         {
             MultichainVoteCollection voteCollection = MultichainVoteCollection(
-                addresses.getAddress("VOTE_COLLECTION_PROXY")
+                payable(addresses.getAddress("VOTE_COLLECTION_PROXY"))
             );
 
             assertEq(
@@ -583,12 +583,6 @@ contract mipx01 is HybridProposal, Configs {
                 address(voteCollection.stkWell()),
                 addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 "incorrect stkWELL"
-            );
-
-            assertEq(
-                address(voteCollection.wormholeRelayer()),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
-                "incorrect WORMHOLE_BRIDGE_RELAYER_PROXY address"
             );
 
             assertEq(

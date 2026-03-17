@@ -10,6 +10,15 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 /// Allows users coming from an external chain back to Moonbeam
 /// to unwrap their xWELL tokens into the underling WELL token.
 contract WormholeUnwrapperAdapter is WormholeBridgeAdapter {
+    /// @param _coreBridge address of the Wormhole Core Bridge
+    /// @param _executor address of the Wormhole Executor
+    /// @param _executorQuoterRouter address of the Executor Quoter Router (address(0) if unavailable)
+    constructor(
+        address _coreBridge,
+        address _executor,
+        address _executorQuoterRouter
+    ) WormholeBridgeAdapter(_coreBridge, _executor, _executorQuoterRouter) {}
+
     /// @notice lockbox for xERC20, can only be set one time
     address public lockbox;
 
