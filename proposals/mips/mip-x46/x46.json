@@ -1,0 +1,40 @@
+{
+    "8453": {
+        "markets": [
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X46",
+                "market": "MOONWELL_USDC",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.82e18,
+                "irm": "",
+                "market": "MOONWELL_LBTC",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_cbETH_MIP_X46",
+                "market": "MOONWELL_cbETH",
+                "reserveFactor": 0.2e18
+            }
+        ],
+        "irModels": [
+            {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 9e18,
+                "kink": 0.9e18,
+                "multiplierPerYear": 0.068e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X46"
+            },
+            {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 3e18,
+                "kink": 0.45e18,
+                "multiplierPerYear": 0.081e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_cbETH_MIP_X46"
+            }
+        ]
+    }
+}
