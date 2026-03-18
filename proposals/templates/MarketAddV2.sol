@@ -569,7 +569,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
                         "_setProtocolSeizeShare(uint256)",
                         config.seizeShare
                     ),
-                    "Set reserve factor on mToken"
+                    "Set protocol seize share on mToken"
                 );
 
                 /// Approvals
