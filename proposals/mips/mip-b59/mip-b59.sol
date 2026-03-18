@@ -29,6 +29,8 @@ contract mipb59 is MarketAddV2 {
         Addresses addresses,
         address deployer
     ) public override {
+        uint256 forkBefore = vm.activeFork();
+
         /// Deploy OEV wrapper for VVV feed on Base
         if (!addresses.isAddressSet(OEV_WRAPPER_NAME)) {
             vm.selectFork(BASE_FORK_ID);
@@ -46,6 +48,10 @@ contract mipb59 is MarketAddV2 {
 
             vm.stopBroadcast();
             addresses.addAddress(OEV_WRAPPER_NAME, address(wrapper));
+        }
+
+        if (vm.activeFork() != forkBefore) {
+            vm.selectFork(forkBefore);
         }
     }
 
@@ -166,6 +172,10 @@ contract mipb59 is MarketAddV2 {
         (, rawChainlinkPrice, , , ) = AggregatorV3Interface(
             addresses.getAddress("CHAINLINK_VVV_USD")
         ).latestRoundData();
+        require(
+            rawChainlinkPrice > 0,
+            "Raw Chainlink VVV/USD price must be positive"
+        );
 
         if (vm.activeFork() != forkBefore) {
             vm.selectFork(forkBefore);
