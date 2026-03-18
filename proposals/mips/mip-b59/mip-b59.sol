@@ -30,10 +30,10 @@ contract mipb59 is MarketAddV2 {
         address deployer
     ) public override {
         uint256 forkBefore = vm.activeFork();
+        vm.selectFork(BASE_FORK_ID);
 
         /// Deploy OEV wrapper for VVV feed on Base
         if (!addresses.isAddressSet(OEV_WRAPPER_NAME)) {
-            vm.selectFork(BASE_FORK_ID);
             vm.startBroadcast(deployer);
 
             ChainlinkOEVWrapper wrapper = new ChainlinkOEVWrapper(
