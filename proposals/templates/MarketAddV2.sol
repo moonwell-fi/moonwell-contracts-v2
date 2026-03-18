@@ -164,6 +164,27 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
         }
     }
 
+    function _validateMarketListing(
+        Comptroller comptroller,
+        address mTokenAddress,
+        uint256 expectedCollateralFactor
+    ) internal {
+        (bool isListed, uint256 collateralFactorMantissa) = comptroller.markets(
+            mTokenAddress
+        );
+        assertTrue(isListed, "market not listed in comptroller");
+        assertEq(
+            collateralFactorMantissa,
+            expectedCollateralFactor,
+            "collateral factor incorrect"
+        );
+
+        uint256 price = comptroller.oracle().getUnderlyingPrice(
+            MToken(mTokenAddress)
+        );
+        assertGt(price, 0, "oracle price is zero");
+    }
+
     function _validate(Addresses addresses, uint256 chainId) internal {
         vm.selectFork(chainId.toForkId());
 
@@ -305,26 +326,11 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
                 assertEq(jrm.kink(), config.jrm.kink);
             }
 
-            /// Market listing and collateral factor assertions
-            {
-                (bool isListed, uint256 collateralFactorMantissa) = comptroller
-                    .markets(addresses.getAddress(config.addressesString));
-
-                assertTrue(isListed, "market not listed in comptroller");
-                assertEq(
-                    collateralFactorMantissa,
-                    config.collateralFactor,
-                    "collateral factor incorrect"
-                );
-            }
-
-            /// Oracle price assertion
-            {
-                uint256 price = comptroller.oracle().getUnderlyingPrice(
-                    MToken(addresses.getAddress(config.addressesString))
-                );
-                assertGt(price, 0, "oracle price is zero");
-            }
+            _validateMarketListing(
+                comptroller,
+                addresses.getAddress(config.addressesString),
+                config.collateralFactor
+            );
         }
 
         if (vm.activeFork() != MOONBEAM_FORK_ID) {
