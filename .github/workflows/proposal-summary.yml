@@ -6,6 +6,10 @@ on:
     paths:
       - 'proposals/mips/**'
 
+concurrency:
+  group: proposal-summary-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   generate-summary:
     if: github.event.pull_request.draft == false
@@ -59,11 +63,12 @@ jobs:
           STANDARD_DIRS=""
           for DIR in ${{ steps.detect.outputs.dirs }}; do
             IS_MARKET_ADD="false"
-            # Primary signal: MTokens.json exists (unique to market-add proposals)
+            HAS_CUSTOM_ACTIONS="false"
+
+            # Check for market-add signals
             if [ -f "$DIR/MTokens.json" ]; then
               IS_MARKET_ADD="true"
             else
-              # Fallback: check if any .sol file inherits from MarketAddV2 or MarketAdd
               for SOL in "$DIR"/*.sol; do
                 if [ -f "$SOL" ] && grep -q "MarketAddV2\|MarketAdd " "$SOL"; then
                   IS_MARKET_ADD="true"
@@ -71,9 +76,20 @@ jobs:
                 fi
               done
             fi
+
+            # Check for custom actions beyond the template (has _pushAction in its own .sol)
+            for SOL in "$DIR"/*.sol; do
+              if [ -f "$SOL" ] && grep -q "_pushAction" "$SOL"; then
+                HAS_CUSTOM_ACTIONS="true"
+                break
+              fi
+            done
+
+            # A proposal can be BOTH market-add AND standard
             if [ "$IS_MARKET_ADD" = "true" ]; then
               MARKET_ADD_DIRS="$MARKET_ADD_DIRS $DIR"
-            else
+            fi
+            if [ "$HAS_CUSTOM_ACTIONS" = "true" ] || [ "$IS_MARKET_ADD" = "false" ]; then
               STANDARD_DIRS="$STANDARD_DIRS $DIR"
             fi
           done
@@ -103,9 +119,15 @@ jobs:
             The following test and source files were also changed in this PR:
             ${{ steps.detect.outputs.test_files }}
 
-            If a directory appears in the market-add list, use ONLY the Market Add Audit template for it.
-            If a directory appears in the standard list, use ONLY the Standard Audit template for it.
-            If both lists have entries, produce separate audit sections for each.
+            If a directory appears in BOTH lists, produce BOTH audit sections for it:
+            - The Market Add Audit covers parameter correctness (MTokens.json vs forum vs markdown).
+            - The Standard Audit covers ONLY the custom actions added beyond the MarketAddV2 template.
+              Skip any actions from the template's super.build() (supply/borrow caps, collateral factor,
+              reserve factor, market initialization, emissions config, etc.) — those are already validated
+              by the parameter comparison. Focus only on actions in the proposal's own build() override
+              (e.g., OEV wrapper deployment, fee redeemer whitelisting, custom contract calls).
+              Similarly, for validate(), only audit assertions beyond super.validate().
+            If a directory appears in only one list, use only that template.
 
             Write the full audit to a file called `pr_comment.md` using the Write tool.
             The file MUST start with the exact HTML comment marker on its own line:
