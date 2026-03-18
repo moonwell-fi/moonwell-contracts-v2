@@ -12,7 +12,7 @@
                 "multiplierPerYear": 0.16e18
             },
             "name": "Moonwell VVV",
-            "priceFeedName": "CHAINLINK_VVV_USD",
+            "priceFeedName": "CHAINLINK_VVV_USD_OEV_WRAPPER",
             "reserveFactor": 0.35e18,
             "seizeShare": 0.03e18,
             "supplyCap": 170000e18,

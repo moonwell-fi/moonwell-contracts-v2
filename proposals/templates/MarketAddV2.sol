@@ -143,7 +143,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
     function afterDeploy(
         Addresses addresses,
         address deployer
-    ) public override selectPrimaryFork {}
+    ) public virtual override selectPrimaryFork {}
 
     function build(
         Addresses addresses
@@ -157,7 +157,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
     function validate(
         Addresses addresses,
         address
-    ) public override selectPrimaryFork {
+    ) public virtual override selectPrimaryFork {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _validate(addresses, chainId);

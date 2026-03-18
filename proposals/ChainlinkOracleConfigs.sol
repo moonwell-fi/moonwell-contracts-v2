@@ -81,6 +81,9 @@ abstract contract ChainlinkOracleConfigs is Test {
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_MAMO_USD", "MAMO", "MOONWELL_MAMO")
         );
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_VVV_USD", "VVV", "MOONWELL_VVV")
+        );
 
         /// Initialize composite oracle configurations for Base
         _compositeOracleConfigs[BASE_CHAIN_ID].push(
