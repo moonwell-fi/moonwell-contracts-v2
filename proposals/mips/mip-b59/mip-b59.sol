@@ -7,6 +7,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MarketAddV2} from "@proposals/templates/MarketAddV2.sol";
 import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {OEVProtocolFeeRedeemer} from "@protocol/OEVProtocolFeeRedeemer.sol";
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import "@protocol/utils/ChainIds.sol";
 
 /// @title MIP-B59: Add VVV Market to Moonwell on Base
@@ -20,6 +21,9 @@ contract mipb59 is MarketAddV2 {
     uint256 public constant MAX_DECREMENTS = 10;
 
     string public constant OEV_WRAPPER_NAME = "CHAINLINK_VVV_USD_OEV_WRAPPER";
+
+    /// @notice Raw Chainlink price saved before simulation for comparison with wrapper
+    int256 public rawChainlinkPrice;
 
     function afterDeploy(
         Addresses addresses,
@@ -117,6 +121,14 @@ contract mipb59 is MarketAddV2 {
             "OEV wrapper cachedRoundId should be > 0"
         );
 
+        /// Validate OEV wrapper returns the same price as the raw Chainlink feed
+        (, int256 wrapperPrice, , , ) = wrapper.latestRoundData();
+        assertEq(
+            wrapperPrice,
+            rawChainlinkPrice,
+            "OEV wrapper price does not match raw Chainlink feed price"
+        );
+
         /// Validate mVVV is whitelisted on the fee redeemer
         OEVProtocolFeeRedeemer feeRedeemer = OEVProtocolFeeRedeemer(
             payable(addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"))
@@ -148,6 +160,12 @@ contract mipb59 is MarketAddV2 {
                     .checked_write(config.initialMintAmount);
             }
         }
+
+        /// Save raw Chainlink VVV/USD price before simulation for later comparison
+        vm.selectFork(BASE_FORK_ID);
+        (, rawChainlinkPrice, , , ) = AggregatorV3Interface(
+            addresses.getAddress("CHAINLINK_VVV_USD")
+        ).latestRoundData();
 
         if (vm.activeFork() != forkBefore) {
             vm.selectFork(forkBefore);
