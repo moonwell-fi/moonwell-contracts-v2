@@ -3,7 +3,7 @@
         "envpath": "proposals/mips/mip-b59/b59.sh",
         "governor": "MultichainGovernor",
         "id": 0,
-        "path": "MarketAddV2.sol/MarketAddV2.json",
+        "path": "mip-b59.sol/mipb59.json",
         "proposalType": "HybridProposal"
     },
     {
