@@ -51,6 +51,35 @@ jobs:
             | sort -u | xargs)
           echo "test_files=$TEST_FILES" >> "$GITHUB_OUTPUT"
 
+      - name: Classify proposal types
+        id: classify
+        if: steps.detect.outputs.skip != 'true'
+        run: |
+          MARKET_ADD_DIRS=""
+          STANDARD_DIRS=""
+          for DIR in ${{ steps.detect.outputs.dirs }}; do
+            IS_MARKET_ADD="false"
+            # Primary signal: MTokens.json exists (unique to market-add proposals)
+            if [ -f "$DIR/MTokens.json" ]; then
+              IS_MARKET_ADD="true"
+            else
+              # Fallback: check if any .sol file inherits from MarketAddV2 or MarketAdd
+              for SOL in "$DIR"/*.sol; do
+                if [ -f "$SOL" ] && grep -q "MarketAddV2\|MarketAdd " "$SOL"; then
+                  IS_MARKET_ADD="true"
+                  break
+                fi
+              done
+            fi
+            if [ "$IS_MARKET_ADD" = "true" ]; then
+              MARKET_ADD_DIRS="$MARKET_ADD_DIRS $DIR"
+            else
+              STANDARD_DIRS="$STANDARD_DIRS $DIR"
+            fi
+          done
+          echo "market_add_dirs=$(echo $MARKET_ADD_DIRS | xargs)" >> "$GITHUB_OUTPUT"
+          echo "standard_dirs=$(echo $STANDARD_DIRS | xargs)" >> "$GITHUB_OUTPUT"
+
       - name: Generate proposal summary
         if: steps.check.outputs.exists != 'true' && steps.detect.outputs.skip != 'true'
         id: generate
@@ -58,18 +87,153 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ github.token }}
-          claude_args: '--allowedTools "Write"'
+          claude_args: '--allowedTools "Write,WebFetch"'
           show_full_output: true
           prompt: |
             You are a DeFi governance proposal auditor for the Moonwell protocol.
 
-            Audit these proposal directories and write the results to a file:
-            ${{ steps.detect.outputs.dirs }}
+            ## Proposal Classification
+
+            Market-add proposals (use the **Market Add Audit** template below):
+            ${{ steps.classify.outputs.market_add_dirs }}
+
+            Standard proposals (use the **Standard Audit** template below):
+            ${{ steps.classify.outputs.standard_dirs }}
 
             The following test and source files were also changed in this PR:
             ${{ steps.detect.outputs.test_files }}
 
-            For EACH directory:
+            If a directory appears in the market-add list, use ONLY the Market Add Audit template for it.
+            If a directory appears in the standard list, use ONLY the Standard Audit template for it.
+            If both lists have entries, produce separate audit sections for each.
+
+            Write the full audit to a file called `pr_comment.md` using the Write tool.
+            The file MUST start with the exact HTML comment marker on its own line:
+            <!-- proposal-summary -->
+
+            ---
+
+            ## Market Add Audit Template
+
+            For each market-add proposal directory, perform the following four-phase audit.
+            This replaces the standard onchain state verification — market-add proposals use the
+            well-tested `MarketAddV2.sol` template, so the audit focuses on **parameter correctness**
+            across three sources: the risk partner's recommendation, the JSON config, and the MIP markdown.
+
+            ### Phase 1 — Read Local Files
+
+            1. Read `MTokens.json` — parse all token configurations per chain ID. Extract:
+               - `collateralFactor`, `reserveFactor`, `seizeShare`, `supplyCap`, `borrowCap`
+               - `jrm.baseRatePerYear`, `jrm.multiplierPerYear`, `jrm.jumpMultiplierPerYear`, `jrm.kink`
+               - `priceFeedName`, `tokenAddressName`, `name`, `symbol`
+            2. Read the MIP markdown (.md file) — find the "Risk Analysis and Recommendations" or
+               "Initial Risk Parameters" section and extract the parameter table
+            3. Read `RewardStreams.json` — note emission token, rates, and end times
+            4. Read the `.sh` file and `.sol` file for additional context
+
+            ### Phase 2 — Find the Forum Discussion and Risk Partner's Comment
+
+            The Moonwell governance forum (forum.moonwell.fi) is the primary source for risk parameter
+            recommendations. Every market listing has a forum discussion thread where Anthias Labs
+            (Moonwell's risk partner) posts their recommended parameters for the new market.
+
+            **Step 1: Find the forum discussion for this market listing.**
+            Use WebFetch to search the Moonwell governance forum:
+            `https://forum.moonwell.fi/search.json?q={tokenName} market`
+            (replace {tokenName} with the `tokenAddressName` from MTokens.json, e.g., "VVV")
+
+            The JSON response has `posts` and `topics` arrays. Look at the `topics` array for
+            the topic most likely to be the formal listing proposal — pick the one whose title
+            is about adding or proposing the token as a market on Moonwell. Note its `id` and `slug`.
+
+            **Step 2: Fetch the topic and find the Anthias Labs comment.**
+            Use WebFetch to fetch: `https://forum.moonwell.fi/t/{slug}/{topic_id}.json`
+            In the JSON response, look through `post_stream.posts` for a post where `username`
+            is "AnthiasLabs" (Moonwell's risk partner). This post contains their risk parameter
+            recommendations for the new market.
+
+            **Step 3: Extract parameters from the Anthias post.**
+            From the Anthias post's `cooked` HTML, extract the risk parameter tables. Parse:
+            - Risk Parameters: Collateral Factor, Reserve Factor, Seize Share, Supply Cap, Borrow Cap
+            - Interest Rate Model: Base Rate, Multiplier, Jump Multiplier, Kink
+            Note: Seize Share may not always be present (defaults to 3%).
+
+            If the forum search fails or no Anthias comment is found, note this explicitly
+            and proceed with a two-source comparison (MTokens.json vs MIP markdown only).
+
+            ### Phase 3 — Cross-Source Parameter Comparison
+
+            Normalize `MTokens.json` Solidity-scaled values to human-readable form:
+
+            | Field | How to Normalize |
+            |-------|-----------------|
+            | `collateralFactor` | ÷ 1e18 × 100 → percentage (e.g., 0.5e18 → 50%) |
+            | `reserveFactor` | ÷ 1e18 × 100 → percentage |
+            | `seizeShare` | ÷ 1e18 × 100 → percentage |
+            | `supplyCap` | ÷ 10^decimals → human number (infer decimals from magnitude) |
+            | `borrowCap` | ÷ 10^decimals → human number |
+            | `jrm.baseRatePerYear` | ÷ 1e18 × 100 → percentage |
+            | `jrm.multiplierPerYear` | ÷ 1e18 → decimal (e.g., 0.16e18 → 0.16) |
+            | `jrm.jumpMultiplierPerYear` | ÷ 1e18 → multiplier (e.g., 3.5e18 → 3.5) |
+            | `jrm.kink` | ÷ 1e18 × 100 → percentage |
+
+            For supply/borrow caps: most ERC-20 tokens use 18 decimals. If the raw value looks like
+            `170000e18` (170000 followed by 18 zeros), the human-readable value is 170,000.
+            For 6-decimal tokens (USDC), `1000000e6` → 1,000,000.
+
+            Compare each parameter across all available sources and flag any discrepancies.
+
+            ### Market Add Output Format
+
+            For each market-add proposal, write:
+
+            # [Proposal Name] — Market Add Audit
+
+            ## Summary
+            - Token: {name} ({symbol}) on {chain name}
+            - Price feed: {priceFeedName} at `{address from chains/*.json}`
+            - Market type: [Supply-only collateral / Full lending market]
+              (supply-only if borrowCap is near zero)
+            - Emissions: {brief summary of RewardStreams.json config}
+
+            ## Parameter Comparison
+
+            | Parameter | MTokens.json | MIP Markdown | Forum Comment | Match |
+            |-----------|-------------|--------------|---------------|-------|
+            | Collateral Factor | X% | X% | X% | ✅/❌ |
+            | Reserve Factor | X% | X% | X% | ✅/❌ |
+            | Seize Share | X% | X% | X% | ✅/❌ |
+            | Supply Cap | X | X | X | ✅/❌ |
+            | Borrow Cap | X | X | X | ✅/❌ |
+            | Base Rate | X% | X% | X% | ✅/❌ |
+            | Multiplier | X | X | X | ✅/❌ |
+            | Jump Multiplier | X | X | X | ✅/❌ |
+            | Kink | X% | X% | X% | ✅/❌ |
+
+            *Anthias forum comment: [{URL}]({URL}) or "Not found"*
+
+            ## Mismatches & Flags
+
+            For each mismatch, describe:
+            - **[Critical]**: Parameter X differs: MTokens.json says A, but Anthias recommended B.
+            If no mismatches: "All parameters are consistent across all sources."
+
+            Also flag:
+            - If the Anthias forum comment was not found
+            - If any parameter appears in one source but is missing from another
+
+            ## Recommendation
+
+            One of:
+            - "Parameters verified — all sources agree. Ready for review."
+            - "Mismatch found in {parameter}: {detail}. Resolve before execution."
+            - "Anthias forum comment not found — manual verification of parameters recommended."
+
+            ---
+
+            ## Standard Audit Template
+
+            For EACH standard proposal directory:
             1. Read ALL files in the directory (.sol, .md, .json, .sh)
             2. Analyze onchain actions from the Solidity contract (build(), deploy(), afterDeploy(), validate())
             3. Check the PR's changed test/source files listed above FIRST — these are the integration and unit tests
@@ -158,17 +322,13 @@ jobs:
             For each before/after state change identified above, check if validate() actually asserts on it.
             Flag any state change that is NOT validated — both the "should change" and "should NOT change" categories.
 
-            ## Output Format
+            ## Standard Audit Output Format
 
             IMPORTANT: Use all the analysis steps above internally to identify gaps, but the final output
             must be CONCISE. Do NOT include the detailed state change tables, risk assessments, or per-getter
             breakdowns in the report. Only include the four sections below.
 
-            Write the audit to a file called `pr_comment.md` using the Write tool.
-            The file MUST start with the exact HTML comment marker on its own line:
-            <!-- proposal-summary -->
-
-            Then for each proposal directory, include ONLY these four sections:
+            For each standard proposal directory, include ONLY these four sections:
 
             # [Proposal Name]
 
@@ -215,7 +375,6 @@ jobs:
 
             IMPORTANT:
             - Write the output ONLY to pr_comment.md using the Write tool — do NOT post any comments
-            - The output must contain ONLY the four sections above (Summary, Recommendation, Gaps & Issues, Onchain Actions) — no other sections
             - Do all detailed analysis internally but keep the final report concise
             - Be precise about onchain actions — extract exact function signatures and parameters
             - Cross-reference every single build() action against validate() checks and test assertions
