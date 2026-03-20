@@ -114,7 +114,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
         }
     }
 
-    function name() external pure override returns (string memory) {
+    function name() external pure virtual override returns (string memory) {
         return "MIP Market Add";
     }
 
@@ -122,7 +122,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
         return MOONBEAM_FORK_ID;
     }
 
-    function initProposal(Addresses) public override {
+    function initProposal(Addresses) public virtual override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _saveMTokens(chainId);
