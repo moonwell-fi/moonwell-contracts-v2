@@ -194,7 +194,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         _setProposalDescription(proposalDescription);
     }
 
-    function name() external pure override returns (string memory) {
+    function name() external pure virtual override returns (string memory) {
         return "MIP Rewards Distribution";
     }
 
@@ -284,7 +284,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         _saveMoonbeamActions(addresses, encodedJson);
     }
 
-    function build(Addresses addresses) public override {
+    function build(Addresses addresses) public virtual override {
         _buildMoonbeamActions(addresses);
 
         for (uint256 i = 0; i < networks.length; i++) {
@@ -449,7 +449,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         );
     }
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public virtual override {
         _validateMoonbeam(addresses);
 
         for (uint256 i = 0; i < networks.length; i++) {
