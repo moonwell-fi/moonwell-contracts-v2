@@ -296,7 +296,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         }
     }
 
-    function beforeSimulationHook(Addresses addresses) public override {
+    function beforeSimulationHook(Addresses addresses) public virtual override {
         _validateSafetyModuleActions();
 
         vm.selectFork(MOONBEAM_FORK_ID);

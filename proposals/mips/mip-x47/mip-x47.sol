@@ -17,6 +17,26 @@ contract mipx47 is RewardsDistributionTemplate {
     string constant EURC_FLAGSHIP = "EURC_FLAGSHIP_METAMORPHO_VAULT";
     string constant cbBTC_FRONTIER = "cbBTC_FRONTIER_METAMORPHO_VAULT";
 
+    function beforeSimulationHook(Addresses addresses) public override {
+        super.beforeSimulationHook(addresses);
+
+        /// mock Anthias calling transferOwnership on each vault
+        vm.selectFork(BASE_FORK_ID);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address anthias = addresses.getAddress("ANTHIAS_MULTISIG");
+
+        vm.startPrank(anthias);
+        Ownable2StepUpgradeable(addresses.getAddress(WETH_FLAGSHIP))
+            .transferOwnership(temporalGovernor);
+        Ownable2StepUpgradeable(addresses.getAddress(USDC_FLAGSHIP))
+            .transferOwnership(temporalGovernor);
+        Ownable2StepUpgradeable(addresses.getAddress(EURC_FLAGSHIP))
+            .transferOwnership(temporalGovernor);
+        Ownable2StepUpgradeable(addresses.getAddress(cbBTC_FRONTIER))
+            .transferOwnership(temporalGovernor);
+        vm.stopPrank();
+    }
+
     function build(Addresses addresses) public override {
         /// standard rewards distribution actions
         super.build(addresses);
