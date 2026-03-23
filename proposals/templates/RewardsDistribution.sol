@@ -284,7 +284,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         _saveMoonbeamActions(addresses, encodedJson);
     }
 
-    function build(Addresses addresses) public virtual override {
+    function build(Addresses addresses) public override {
         _buildMoonbeamActions(addresses);
 
         for (uint256 i = 0; i < networks.length; i++) {
@@ -296,7 +296,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         }
     }
 
-    function beforeSimulationHook(Addresses addresses) public virtual override {
+    function beforeSimulationHook(Addresses addresses) public override {
         _validateSafetyModuleActions();
 
         vm.selectFork(MOONBEAM_FORK_ID);
@@ -449,7 +449,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         );
     }
 
-    function validate(Addresses addresses, address) public virtual override {
+    function validate(Addresses addresses, address) public override {
         _validateMoonbeam(addresses);
 
         for (uint256 i = 0; i < networks.length; i++) {
