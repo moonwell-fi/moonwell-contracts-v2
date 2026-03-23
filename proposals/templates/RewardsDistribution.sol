@@ -194,7 +194,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         _setProposalDescription(proposalDescription);
     }
 
-    function name() external pure virtual override returns (string memory) {
+    function name() external pure override returns (string memory) {
         return "MIP Rewards Distribution";
     }
 

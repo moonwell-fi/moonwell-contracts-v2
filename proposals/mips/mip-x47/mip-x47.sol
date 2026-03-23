@@ -12,8 +12,6 @@ import {RewardsDistributionTemplate} from "@proposals/templates/RewardsDistribut
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// proposals/mips/mip-x47/mip-x47.sol:mipx47
 contract mipx47 is RewardsDistributionTemplate {
-    string public constant override name = "MIP-X47";
-
     string constant WETH_FLAGSHIP = "WETH_FLAGSHIP_METAMORPHO_VAULT";
     string constant USDC_FLAGSHIP = "USDC_FLAGSHIP_METAMORPHO_VAULT";
     string constant EURC_FLAGSHIP = "EURC_FLAGSHIP_METAMORPHO_VAULT";
