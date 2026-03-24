@@ -788,5 +788,10 @@
         "addr": "0x78Feb72aeA00B912ac45438e0764A02213266568",
         "isContract": true,
         "name": "STK_GOVTOKEN_IMPL_V2"
+    },
+    {
+        "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
+        "isContract": true,
+        "name": "PAUSE_GUARDIAN_NEW"
     }
 ]

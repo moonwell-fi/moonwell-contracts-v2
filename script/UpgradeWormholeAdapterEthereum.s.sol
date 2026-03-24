@@ -8,6 +8,7 @@ import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
@@ -15,7 +16,7 @@ import {ETHEREUM_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /*
 
- Upgrade WormholeBridgeAdapter on Ethereum mainnet to V3 (direct VAA verification)
+ Upgrade WormholeBridgeAdapter on Ethereum mainnet to V3 (direct VAA verification) and set new pause guardian
 
  to simulate:
      forge script script/UpgradeWormholeAdapterEthereum.s.sol:UpgradeWormholeAdapterEthereum -vvvv --rpc-url ethereum
@@ -54,6 +55,12 @@ contract UpgradeWormholeAdapterEthereum is Script {
                 "initializeV3(address)",
                 addresses.getAddress("WORMHOLE_CORE")
             )
+        );
+
+        // Update xWELL pause guardian
+        xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
+        xwellProxy.grantPauseGuardian(
+            addresses.getAddress("PAUSE_GUARDIAN_NEW")
         );
 
         vm.stopBroadcast();
@@ -124,6 +131,15 @@ contract UpgradeWormholeAdapterEthereum is Script {
         try adapter.initializeV3(address(1)) {
             revert("Ethereum: initializeV3 should have reverted");
         } catch {}
+
+        // 6. Verify xWELL pause guardian updated
+        xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
+        address expectedGuardian = addresses.getAddress("PAUSE_GUARDIAN_NEW");
+        require(
+            xwellProxy.pauseGuardian() == expectedGuardian,
+            "Ethereum: xWELL pause guardian not updated correctly"
+        );
+        console.log("xWELL pause guardian updated to:", expectedGuardian);
 
         console.log("=== Validation Passed ===\n");
     }

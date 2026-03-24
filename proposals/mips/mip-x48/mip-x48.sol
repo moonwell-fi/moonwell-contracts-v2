@@ -7,6 +7,7 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
@@ -16,7 +17,10 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 /// @author Moonwell Contributors
 /// @notice Proposal to upgrade WormholeBridgeAdapter on Moonbeam, Base, and Optimism
 ///         to V3 with direct Wormhole guardian-signed VAA verification via processVAA(),
-///         replacing dependency on the deprecated Wormhole standard relayer.
+///         replacing dependency on the deprecated Wormhole standard relayer. We also
+///         update the pause guardian on all chains to the new security council safes.
+///         NOTE: Ethereum xWELL deployment is still deployer-owned (until governor migration) so that upgrade
+///         should be done via UpgradeWormholeAdapterEthereum.
 contract mipx48 is HybridProposal {
     using ProposalActions for *;
     using ChainIds for uint256;
@@ -156,6 +160,46 @@ contract mipx48 is HybridProposal {
             "Upgrade WormholeBridgeAdapter on Optimism with initializeV3"
         );
 
+        /// -------------------------------------------------------
+        /// Update xWELL pause guardian on all chains
+        /// -------------------------------------------------------
+
+        // Moonbeam: update xWELL pause guardian
+        vm.selectFork(primaryForkId());
+        _pushAction(
+            addresses.getAddress("xWELL_PROXY"),
+            abi.encodeWithSignature(
+                "grantPauseGuardian(address)",
+                addresses.getAddress("PAUSE_GUARDIAN_NEW")
+            ),
+            "Update xWELL pause guardian on Moonbeam"
+        );
+
+        // Base: update xWELL pause guardian
+        vm.selectFork(BASE_FORK_ID);
+        _pushAction(
+            addresses.getAddress("xWELL_PROXY"),
+            abi.encodeWithSignature(
+                "grantPauseGuardian(address)",
+                addresses.getAddress("PAUSE_GUARDIAN_NEW")
+            ),
+            "Update xWELL pause guardian on Base"
+        );
+
+        // Optimism: update xWELL pause guardian
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _pushAction(
+            addresses.getAddress("xWELL_PROXY"),
+            abi.encodeWithSignature(
+                "grantPauseGuardian(address)",
+                addresses.getAddress("PAUSE_GUARDIAN_NEW")
+            ),
+            "Update xWELL pause guardian on Optimism"
+        );
+
+        // NOTE: Ethereum xWELL is deployer-owned, not governed by MultichainGovernor.
+        // The Ethereum pause guardian update must be done separately via the deployer.
+
         // Switch back to primary fork
         vm.selectFork(primaryForkId());
     }
@@ -170,6 +214,7 @@ contract mipx48 is HybridProposal {
             "Moonbeam",
             addresses.getAddress("MOONBEAM_PROXY_ADMIN")
         );
+        _validatePauseGuardian(addresses, "Moonbeam");
 
         // Validate Base
         vm.selectFork(BASE_FORK_ID);
@@ -178,6 +223,7 @@ contract mipx48 is HybridProposal {
             "Base",
             addresses.getAddress("MRD_PROXY_ADMIN")
         );
+        _validatePauseGuardian(addresses, "Base");
 
         // Validate Optimism
         vm.selectFork(OPTIMISM_FORK_ID);
@@ -186,6 +232,10 @@ contract mipx48 is HybridProposal {
             "Optimism",
             addresses.getAddress("MRD_PROXY_ADMIN")
         );
+        _validatePauseGuardian(addresses, "Optimism");
+
+        // NOTE: Ethereum xWELL pause guardian + bridge adapter upgrade
+        // is handled separately via UpgradeWormholeAdapterEthereum.
 
         // Switch back to primary fork
         vm.selectFork(primaryForkId());
@@ -266,6 +316,24 @@ contract mipx48 is HybridProposal {
         // 8. Verify initializeV3 cannot be called again (reinitializer guard)
         vm.expectRevert("Initializable: contract is already initialized");
         adapter.initializeV3(address(1));
+    }
+
+    /// @notice Validate xWELL pause guardian was updated on a chain
+    function _validatePauseGuardian(
+        Addresses addresses,
+        string memory chainName
+    ) internal view {
+        xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
+        address expectedGuardian = addresses.getAddress("PAUSE_GUARDIAN_NEW");
+
+        assertEq(
+            xwellProxy.pauseGuardian(),
+            expectedGuardian,
+            string.concat(
+                chainName,
+                ": xWELL pause guardian not updated correctly"
+            )
+        );
     }
 
     /// @notice Read proxy implementation via ProxyAdmin.getProxyImplementation
