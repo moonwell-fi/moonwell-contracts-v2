@@ -2,6 +2,7 @@ pragma solidity 0.8.19;
 
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
@@ -43,6 +44,18 @@ contract WormholeBridgeAdapter is
     /// @notice chain id of the target chain to address for bridging
     /// starts off mapped to itself, but can be changed by governance
     mapping(uint16 => address) public targetAddress;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// ------------- V3 STORAGE (post-upgrade) -----------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice Wormhole core bridge for on-chain VAA verification
+    IWormhole public wormhole;
+
+    /// @notice tracks processed VAA hashes to prevent replay
+    mapping(bytes32 => bool) public processedVAAHashes;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -122,6 +135,14 @@ contract WormholeBridgeAdapter is
         _transferOwnership(newOwner);
     }
 
+    /// @notice V3 upgrade: set the Wormhole core bridge address for direct
+    ///         VAA verification, bypassing the deprecated standard relayer.
+    /// @param _wormhole address of the Wormhole core bridge on this chain
+    function initializeV3(address _wormhole) external reinitializer(3) {
+        require(_wormhole != address(0), "WormholeBridgeAdapter: zero address");
+        wormhole = IWormhole(_wormhole);
+    }
+
     /// --------------------------------------------------------
     /// --------------------------------------------------------
     /// ---------------- Admin Only Functions ------------------
@@ -177,16 +198,18 @@ contract WormholeBridgeAdapter is
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
-    /// @notice Estimate bridge cost to bridge out to a destination chain
+    /// @notice Estimate bridge cost to bridge out to a destination chain.
     /// @param dstChainId Destination chain id
     function bridgeCost(
         uint16 dstChainId
     ) public view returns (uint256 gasCost) {
-        (gasCost, ) = wormholeRelayer.quoteEVMDeliveryPrice(
-            dstChainId,
-            0,
-            gasLimit
-        );
+        try
+            wormholeRelayer.quoteEVMDeliveryPrice(dstChainId, 0, gasLimit)
+        returns (uint256 cost, uint256) {
+            gasCost = cost;
+        } catch {
+            gasCost = 0;
+        }
     }
 
     /// --------------------------------------------------------
@@ -197,8 +220,9 @@ contract WormholeBridgeAdapter is
 
     /// @notice Bridge Out Funds to an external chain.
     /// Callable by the users to bridge out their funds to an external chain.
-    /// If a user sends tokens to the token contract on the external chain,
-    /// that call will revert, and the tokens will be lost permanently.
+    /// Publishes a direct application VAA via Wormhole core bridge so that
+    /// guardians sign with this contract as emitter. The VAA can then be
+    /// relayed permissionlessly via processVAA() on the destination chain.
     /// @param user to send funds from, should be msg.sender in all cases
     /// @param targetChain Destination chain id
     /// @param amount Amount of xERC20 to bridge out
@@ -210,28 +234,56 @@ contract WormholeBridgeAdapter is
         address to
     ) internal override {
         uint16 targetChainId = targetChain.toUint16();
-        uint256 cost = bridgeCost(targetChainId);
-        require(msg.value == cost, "WormholeBridge: cost not equal to quote");
         require(
             targetAddress[targetChainId] != address(0),
-            "WormholeBridge: invalid target chain"
+            "WormholeBridgeAdapter: invalid target chain"
+        );
+
+        uint256 cost = bridgeCost(targetChainId);
+        require(
+            msg.value == cost,
+            "WormholeBridgeAdapter: cost not equal to quote"
         );
 
         /// user must burn xERC20 tokens first
         _burnTokens(user, amount);
 
-        wormholeRelayer.sendPayloadToEvm{value: cost}(
-            targetChainId,
-            targetAddress[targetChainId],
-            abi.encode(to, amount), // payload
-            0, /// no receiver value allowed, only message passing
-            gasLimit
-        );
+        /// Publish a direct application VAA via Wormhole core bridge.
+        wormhole.publishMessage{value: cost}(0, abi.encode(to, amount), 200);
 
         emit TokensSent(targetChainId, to, amount);
     }
 
-    /// @notice callable only by the wormhole relayer
+    /// @notice Process a guardian-signed VAA to complete a bridge-in transfer.
+    ///         Callable by anyone (permissionless). The VAA must be signed by
+    ///         the Wormhole guardian quorum. The emitter must be a trusted sender
+    ///         (the WormholeBridgeAdapter on the source chain).
+    /// @param signedVAA The full guardian-signed VAA bytes
+    function processVAA(bytes calldata signedVAA) external {
+        (IWormhole.VM memory vm, bool valid, string memory reason) = wormhole
+            .parseAndVerifyVM(signedVAA);
+
+        require(valid, reason);
+        require(
+            isTrustedSender(vm.emitterChainId, vm.emitterAddress),
+            "WormholeBridgeAdapter: untrusted emitter"
+        );
+
+        require(
+            !processedVAAHashes[vm.hash],
+            "WormholeBridgeAdapter: VAA already processed"
+        );
+        processedVAAHashes[vm.hash] = true;
+
+        (address to, uint256 amount) = abi.decode(
+            vm.payload,
+            (address, uint256)
+        );
+        _bridgeIn(vm.emitterChainId, to, amount);
+    }
+
+    /// @notice callable only by the wormhole relayer (legacy path for
+    ///         in-flight messages during migration from the standard relayer)
     /// @param payload the payload of the message, contains the to and amount
     /// additional vaas, unused parameter
     /// @param senderAddress the address of the sender on the source chain, bytes32 encoded

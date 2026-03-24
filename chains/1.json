@@ -73,5 +73,10 @@
         "addr": "0xdDbf679d6332d9E5b409865b9671d1927255B52A",
         "isContract": false,
         "name": "MOONWELL_DEPLOYER"
+    },
+    {
+        "addr": "0x98f3c9e6E3fACe36bAAd05FE09d375Ef1464288B",
+        "isContract": true,
+        "name": "WORMHOLE_CORE"
     }
 ]

@@ -1,5 +1,6 @@
 pragma solidity 0.8.19;
 
+import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
@@ -8,6 +9,8 @@ import "@test/helper/BaseTest.t.sol";
 
 import {Address} from "@utils/Address.sol";
 import {MockWormholeReceiver} from "@test/mock/MockWormholeReceiver.sol";
+import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
 contract WormholeBridgeAdapterUnitTest is BaseTest {
     using Address for address;
@@ -453,17 +456,24 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     }
 
     /// bridge out tests:
+    /// NOTE: bridge out now requires V3 upgrade (wormhole must be set)
 
     /// incorrect cost
     function testBridgeOutFailsIncorrectCost() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+        mockWormhole.setFee(0);
+
         vm.deal(address(this), 1);
-        vm.expectRevert("WormholeBridge: cost not equal to quote");
+        vm.expectRevert("WormholeBridgeAdapter: cost not equal to quote");
         wormholeBridgeAdapterProxy.bridge{value: 1}(chainId, amount, to);
     }
 
     /// incorrect target chain
     function testBridgeOutFailsIncorrectTargetChain() public {
-        vm.expectRevert("WormholeBridge: invalid target chain");
+        MockWormholeCore mockWormhole = _upgradeToV3();
+        mockWormhole.setFee(0);
+
+        vm.expectRevert("WormholeBridgeAdapter: invalid target chain");
         wormholeBridgeAdapterProxy.bridge{value: 0}(
             chainId + 1, /// invalid chain id
             amount,
@@ -473,12 +483,18 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
 
     /// not enough approvals
     function testBridgeOutFailsNoApproval() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+        mockWormhole.setFee(0);
+
         vm.expectRevert("ERC20: insufficient allowance");
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
     }
 
     /// not enough balance
     function testBridgeOutFailsNotEnoughBalance() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+        mockWormhole.setFee(0);
+
         deal(address(xwellProxy), address(this), amount - 1);
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
 
@@ -488,6 +504,9 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
 
     /// not enough rate limit
     function testBridgeOutFailsNotEnoughBuffer() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+        mockWormhole.setFee(0);
+
         amount = externalChainBufferCap / 2;
         to = address(this);
 
@@ -501,6 +520,9 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     }
 
     function testBridgeOutSucceeds() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+        mockWormhole.setFee(0);
+
         amount = externalChainBufferCap / 2;
         to = address(this);
 
@@ -520,5 +542,276 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
         emit TokensSent(chainId, to, amount);
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
+    }
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// -------------- V3 / processVAA Tests --------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice Helper: deploy MockWormholeCore, deploy new impl,
+    ///         upgrade proxy via proxyAdmin.upgradeAndCall with initializeV3
+    function _upgradeToV3() internal returns (MockWormholeCore mockWormhole) {
+        mockWormhole = new MockWormholeCore();
+
+        WormholeBridgeAdapter newImpl = new WormholeBridgeAdapter();
+
+        bytes memory initData = abi.encodeWithSelector(
+            WormholeBridgeAdapter.initializeV3.selector,
+            address(mockWormhole)
+        );
+
+        vm.prank(proxyAdmin.owner());
+        proxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(address(wormholeBridgeAdapterProxy)),
+            address(newImpl),
+            initData
+        );
+    }
+
+    function testInitializeV3SetsWormhole() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+
+        assertEq(
+            address(wormholeBridgeAdapterProxy.wormhole()),
+            address(mockWormhole),
+            "wormhole address not set after V3 upgrade"
+        );
+    }
+
+    function testInitializeV3RevertsZeroAddress() public {
+        WormholeBridgeAdapter newImpl = new WormholeBridgeAdapter();
+
+        bytes memory initData = abi.encodeWithSelector(
+            WormholeBridgeAdapter.initializeV3.selector,
+            address(0)
+        );
+
+        vm.prank(proxyAdmin.owner());
+        vm.expectRevert("WormholeBridgeAdapter: zero address");
+        proxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(address(wormholeBridgeAdapterProxy)),
+            address(newImpl),
+            initData
+        );
+    }
+
+    function testInitializeV3RevertsDoubleInit() public {
+        _upgradeToV3();
+
+        vm.expectRevert("Initializable: contract is already initialized");
+        wormholeBridgeAdapterProxy.initializeV3(address(1));
+    }
+
+    function testProcessVAARevertsWormholeNotSet() public {
+        /// Without upgrading to V3, wormhole is address(0)
+        /// calling parseAndVerifyVM on address(0) will revert
+        vm.expectRevert();
+        wormholeBridgeAdapterProxy.processVAA(hex"deadbeef");
+    }
+
+    function testProcessVAASuccess() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+
+        bytes memory payload = abi.encode(to, amount);
+        mockWormhole.setStorage(
+            true,
+            chainId,
+            address(wormholeBridgeAdapterProxy).toBytes(),
+            "",
+            payload
+        );
+
+        bytes memory vaaBytes = hex"aabbccdd";
+        uint256 startingBalance = xwellProxy.balanceOf(to);
+
+        vm.expectEmit(
+            true,
+            true,
+            true,
+            true,
+            address(wormholeBridgeAdapterProxy)
+        );
+        emit BridgedIn(chainId, to, amount);
+
+        wormholeBridgeAdapterProxy.processVAA(vaaBytes);
+
+        assertEq(
+            xwellProxy.balanceOf(to) - startingBalance,
+            amount,
+            "incorrect amount minted via processVAA"
+        );
+        assertTrue(
+            wormholeBridgeAdapterProxy.processedVAAHashes(keccak256(vaaBytes)),
+            "VAA hash not marked as processed"
+        );
+    }
+
+    function testProcessVAARevertsInvalidSignature() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+
+        mockWormhole.setStorage(
+            false,
+            chainId,
+            address(wormholeBridgeAdapterProxy).toBytes(),
+            "invalid things",
+            abi.encode(to, amount)
+        );
+
+        vm.expectRevert("invalid things");
+        wormholeBridgeAdapterProxy.processVAA(hex"deadbeef");
+    }
+
+    function testProcessVAARevertsUntrustedEmitter() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+
+        mockWormhole.setStorage(
+            true,
+            chainId,
+            address(0xdead).toBytes(), /// untrusted emitter
+            "",
+            abi.encode(to, amount)
+        );
+
+        vm.expectRevert("WormholeBridgeAdapter: untrusted emitter");
+        wormholeBridgeAdapterProxy.processVAA(hex"deadbeef");
+    }
+
+    function testProcessVAARevertsReplay() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+
+        bytes memory payload = abi.encode(to, amount);
+        mockWormhole.setStorage(
+            true,
+            chainId,
+            address(wormholeBridgeAdapterProxy).toBytes(),
+            "",
+            payload
+        );
+
+        bytes memory vaaBytes = hex"aabbccdd";
+
+        /// First call succeeds
+        wormholeBridgeAdapterProxy.processVAA(vaaBytes);
+
+        /// Second call with same bytes should revert (same keccak256 hash)
+        vm.expectRevert("WormholeBridgeAdapter: VAA already processed");
+        wormholeBridgeAdapterProxy.processVAA(vaaBytes);
+    }
+
+    function testProcessVAARevertsRateLimit() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+
+        /// First VAA: drain the entire buffer
+        uint256 maxBuffer = xwellProxy.buffer(
+            address(wormholeBridgeAdapterProxy)
+        );
+        bytes memory payload1 = abi.encode(to, maxBuffer);
+        mockWormhole.setStorage(
+            true,
+            chainId,
+            address(wormholeBridgeAdapterProxy).toBytes(),
+            "",
+            payload1
+        );
+        wormholeBridgeAdapterProxy.processVAA(hex"01");
+
+        /// Second VAA: amount=1 should hit the rate limit
+        bytes memory payload2 = abi.encode(to, uint256(1));
+        mockWormhole.setStorage(
+            true,
+            chainId,
+            address(wormholeBridgeAdapterProxy).toBytes(),
+            "",
+            payload2
+        );
+
+        vm.expectRevert("RateLimited: rate limit hit");
+        wormholeBridgeAdapterProxy.processVAA(hex"02");
+    }
+
+    function testBridgeCostUsesRelayerTryCatch() public {
+        /// bridgeCost always uses the relayer try-catch.
+        /// MockWormholeReceiver.price() returns 0 so quoteEVMDeliveryPrice
+        /// returns 0, and bridgeCost returns 0 via try-catch.
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        assertEq(
+            cost,
+            0,
+            "bridgeCost should use relayer try-catch and return 0"
+        );
+    }
+
+    function testBridgeCostReturnsZeroWhenRelayerReverts() public {
+        _upgradeToV3();
+
+        /// After V3 upgrade, bridgeCost still uses the relayer try-catch.
+        /// The MockWormholeReceiver is still etched, so it returns 0.
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        assertEq(cost, 0, "bridgeCost should return 0 via try-catch");
+    }
+
+    function testBridgeOutPublishesDirectVAA() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+        mockWormhole.setFee(0);
+
+        /// Mint tokens to a user via the relayer path first so user has balance
+        amount = externalChainBufferCap / 2;
+        to = address(this);
+
+        /// Use relayer path to mint tokens to this address
+        vm.prank(wormholeRelayer);
+        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
+            abi.encode(to, amount),
+            new bytes[](0),
+            address(wormholeBridgeAdapterProxy).toBytes(),
+            chainId,
+            bytes32(uint256(9999))
+        );
+
+        /// Now bridge out via the new V3 path (publishMessage)
+        uint256 bridgeAmount = amount / 2;
+        xwellProxy.approve(address(wormholeBridgeAdapterProxy), bridgeAmount);
+
+        vm.expectEmit(
+            true,
+            true,
+            true,
+            true,
+            address(wormholeBridgeAdapterProxy)
+        );
+        emit TokensSent(chainId, to, bridgeAmount);
+        wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, bridgeAmount, to);
+    }
+
+    function testReceiveWormholeMessagesStillWorks() public {
+        _upgradeToV3();
+
+        /// After V3 upgrade, the legacy relayer path should still work
+        uint256 startingBalance = xwellProxy.balanceOf(to);
+
+        vm.prank(wormholeRelayer);
+        vm.expectEmit(
+            true,
+            true,
+            true,
+            true,
+            address(wormholeBridgeAdapterProxy)
+        );
+        emit BridgedIn(chainId, to, amount);
+        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
+            abi.encode(to, amount),
+            new bytes[](0),
+            address(wormholeBridgeAdapterProxy).toBytes(),
+            chainId,
+            bytes32(uint256(77777))
+        );
+
+        assertEq(
+            xwellProxy.balanceOf(to) - startingBalance,
+            amount,
+            "legacy relayer path should still work after V3 upgrade"
+        );
     }
 }

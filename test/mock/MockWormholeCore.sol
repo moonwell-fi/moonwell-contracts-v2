@@ -9,6 +9,7 @@ contract MockWormholeCore {
     bytes public payload;
     uint16 emitterChainId;
     bytes32 public emitterAddress;
+    uint256 public fee;
 
     function setStorage(
         bool valid,
@@ -22,6 +23,22 @@ contract MockWormholeCore {
         payload = _payload;
         emitterChainId = _emitterChainId;
         emitterAddress = _emitterAddress;
+    }
+
+    function setFee(uint256 _fee) external {
+        fee = _fee;
+    }
+
+    function messageFee() external view returns (uint256) {
+        return fee;
+    }
+
+    function publishMessage(
+        uint32,
+        bytes memory,
+        uint8
+    ) external payable returns (uint64) {
+        return 0;
     }
 
     function parseAndVerifyVM(
