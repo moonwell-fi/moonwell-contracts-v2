@@ -9,7 +9,7 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 
 /// @title MIP-X48: Upgrade WormholeBridgeAdapter for Direct VAA Verification
@@ -65,6 +65,8 @@ contract mipx48 is HybridProposal {
     }
 
     function deploy(Addresses addresses, address) public override {
+        vm.selectFork(primaryForkId());
+
         // Moonbeam
         if (!addresses.isAddressSet("WORMHOLE_BRIDGE_ADAPTER_IMPL_V3")) {
             vm.startBroadcast();
@@ -105,6 +107,8 @@ contract mipx48 is HybridProposal {
     }
 
     function build(Addresses addresses) public override {
+        vm.selectFork(primaryForkId());
+
         // Moonbeam: upgrade WormholeBridgeAdapter proxy with initializeV3
         _pushAction(
             addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
@@ -235,8 +239,32 @@ contract mipx48 is HybridProposal {
             string.concat(chainName, ": wormholeRelayer should not be zero")
         );
 
-        // 5. Verify initializeV3 cannot be called again (reinitializer guard)
-        vm.expectRevert();
+        // 5. Verify xERC20 token address preserved
+        assertEq(
+            address(adapter.xERC20()),
+            addresses.getAddress("xWELL_PROXY"),
+            string.concat(chainName, ": xERC20 corrupted after upgrade")
+        );
+
+        // 6. Verify at least one trusted sender still registered
+        assertTrue(
+            adapter.isTrustedSender(BASE_WORMHOLE_CHAIN_ID, proxy) ||
+                adapter.isTrustedSender(MOONBEAM_WORMHOLE_CHAIN_ID, proxy),
+            string.concat(chainName, ": no trusted senders after upgrade")
+        );
+
+        // 7. Verify owner preserved
+        string memory ownerKey = block.chainid == MOONBEAM_CHAIN_ID
+            ? "MULTICHAIN_GOVERNOR_PROXY"
+            : "TEMPORAL_GOVERNOR";
+        assertEq(
+            adapter.owner(),
+            addresses.getAddress(ownerKey),
+            string.concat(chainName, ": owner changed after upgrade")
+        );
+
+        // 8. Verify initializeV3 cannot be called again (reinitializer guard)
+        vm.expectRevert("Initializable: contract is already initialized");
         adapter.initializeV3(address(1));
     }
 

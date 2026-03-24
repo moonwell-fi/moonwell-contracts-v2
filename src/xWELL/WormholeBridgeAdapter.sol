@@ -47,6 +47,16 @@ contract WormholeBridgeAdapter is
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
+    /// ---------------------- CONSTANTS ------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice Wormhole consistency level for publishMessage.
+    /// 200 = "finalized" — guardians wait for full chain finality
+    uint8 public constant CONSISTENCY_LEVEL = 200;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
     /// ------------- V3 STORAGE (post-upgrade) -----------------
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -249,7 +259,11 @@ contract WormholeBridgeAdapter is
         _burnTokens(user, amount);
 
         /// Publish a direct application VAA via Wormhole core bridge.
-        wormhole.publishMessage{value: cost}(0, abi.encode(to, amount), 200);
+        wormhole.publishMessage{value: cost}(
+            0,
+            abi.encode(to, amount),
+            CONSISTENCY_LEVEL
+        );
 
         emit TokensSent(targetChainId, to, amount);
     }
@@ -283,7 +297,13 @@ contract WormholeBridgeAdapter is
     }
 
     /// @notice callable only by the wormhole relayer (legacy path for
-    ///         in-flight messages during migration from the standard relayer)
+    ///         in-flight messages during migration from the standard relayer).
+    /// @dev    Kept for backward reference. No double-mint risk exists because
+    ///         the two paths have different emitters: the standard relayer publishes
+    ///         delivery VAAs with the relayer contract as emitter (not the adapter),
+    ///         so those VAAs would fail the isTrustedSender check in processVAA().
+    ///         Conversely, direct application VAAs published by _bridgeOut() have
+    ///         the adapter as emitter and can only be processed via processVAA().
     /// @param payload the payload of the message, contains the to and amount
     /// additional vaas, unused parameter
     /// @param senderAddress the address of the sender on the source chain, bytes32 encoded

@@ -46,12 +46,6 @@ contract UpgradeWormholeAdapterEthereum is Script {
         // Deploy new WormholeBridgeAdapter implementation
         address newImpl = address(new WormholeBridgeAdapter());
 
-        // Save old implementation as deprecated
-        addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC_V2", oldImpl);
-
-        // Update logic address to new implementation
-        addresses.changeAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC", newImpl, true);
-
         // Upgrade proxy with initializeV3
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(wormholeAdapterProxy),
@@ -64,6 +58,12 @@ contract UpgradeWormholeAdapterEthereum is Script {
 
         vm.stopBroadcast();
 
+        // Save old implementation as deprecated (outside broadcast — Addresses is local only)
+        addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC_V2", oldImpl);
+
+        // Update logic address to new implementation
+        addresses.changeAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC", newImpl, true);
+
         addresses.printAddresses();
 
         // Run validation
@@ -73,7 +73,7 @@ contract UpgradeWormholeAdapterEthereum is Script {
     function _validateDeployment(
         Addresses addresses,
         ProxyAdmin proxyAdmin
-    ) internal view {
+    ) internal {
         address wormholeAdapterProxy = addresses.getAddress(
             "WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
@@ -120,13 +120,10 @@ contract UpgradeWormholeAdapterEthereum is Script {
         );
         console.log("gasLimit preserved: 300000");
 
-        // 5. Verify initializeV3 cannot be called again
-        // Note: this check is view-only; in simulation the call would revert.
-        // We verify the wormhole address is already set which proves reinitializer(3) was consumed.
-        require(
-            address(adapter.wormhole()) != address(0),
-            "Ethereum: wormhole not set, initializeV3 may not have been called"
-        );
+        // 5. Verify initializeV3 cannot be called again (reinitializer guard)
+        try adapter.initializeV3(address(1)) {
+            revert("Ethereum: initializeV3 should have reverted");
+        } catch {}
 
         console.log("=== Validation Passed ===\n");
     }
