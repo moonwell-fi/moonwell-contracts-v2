@@ -5,6 +5,8 @@ import "@forge-std/Test.sol";
 import "@test/helper/BaseTest.t.sol";
 
 import {MockWormholeReceiver} from "@test/mock/MockWormholeReceiver.sol";
+import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 import {Address} from "@utils/Address.sol";
 
@@ -475,17 +477,34 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
     }
 
     /// bridge out tests:
+    /// NOTE: bridge out now requires V3 upgrade (wormhole must be set)
+
+    /// @notice Helper: initialize V3 with a MockWormholeCore (fee=0)
+    function _initV3() internal returns (MockWormholeCore mockWormhole) {
+        mockWormhole = new MockWormholeCore();
+        mockWormhole.setFee(0);
+        vm.prank(owner);
+        WormholeBridgeAdapter(address(wormholeBridgeAdapterProxy)).initializeV3(
+            address(mockWormhole)
+        );
+    }
 
     /// incorrect cost
     function testBridgeOutFailsIncorrectCost() public {
+        MockWormholeCore mockWormhole = _initV3();
+        mockWormhole.setFee(0);
+
         vm.deal(address(this), 1);
-        vm.expectRevert("WormholeBridge: cost not equal to quote");
+        vm.expectRevert("WormholeBridgeAdapter: cost not equal to quote");
         wormholeBridgeAdapterProxy.bridge{value: 1}(chainId, amount, to);
     }
 
     /// incorrect target chain
     function testBridgeOutFailsIncorrectTargetChain() public {
-        vm.expectRevert("WormholeBridge: invalid target chain");
+        MockWormholeCore mockWormhole = _initV3();
+        mockWormhole.setFee(0);
+
+        vm.expectRevert("WormholeBridgeAdapter: invalid target chain");
         wormholeBridgeAdapterProxy.bridge{value: 0}(
             chainId + 1, /// invalid chain id
             amount,
@@ -495,12 +514,16 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
 
     /// not enough approvals
     function testBridgeOutFailsNoApproval() public {
+        _initV3();
+
         vm.expectRevert("ERC20: insufficient allowance");
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
     }
 
     /// not enough balance
     function testBridgeOutFailsNotEnoughBalance() public {
+        _initV3();
+
         deal(address(xwellProxy), address(this), amount - 1);
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
 
@@ -510,6 +533,8 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
 
     /// not enough rate limit
     function testBridgeOutFailsNotEnoughBuffer() public {
+        _initV3();
+
         amount = externalChainBufferCap / 2;
         to = address(this);
 
@@ -523,6 +548,8 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
     }
 
     function testBridgeOutSucceeds() public {
+        _initV3();
+
         amount = externalChainBufferCap / 2;
         to = address(this);
 
