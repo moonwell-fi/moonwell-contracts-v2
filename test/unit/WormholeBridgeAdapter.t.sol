@@ -554,6 +554,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     ///         upgrade proxy via proxyAdmin.upgradeAndCall with initializeV3
     function _upgradeToV3() internal returns (MockWormholeCore mockWormhole) {
         mockWormhole = new MockWormholeCore();
+        mockWormhole.setChainId(chainId); /// mock returns this chain's wormhole ID
 
         WormholeBridgeAdapter newImpl = new WormholeBridgeAdapter();
 
@@ -614,7 +615,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     function testProcessVAASuccess() public {
         MockWormholeCore mockWormhole = _upgradeToV3();
 
-        bytes memory payload = abi.encode(to, amount);
+        bytes memory payload = abi.encode(to, amount, chainId);
         mockWormhole.setStorage(
             true,
             chainId,
@@ -656,7 +657,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             chainId,
             address(wormholeBridgeAdapterProxy).toBytes(),
             "invalid things",
-            abi.encode(to, amount)
+            abi.encode(to, amount, chainId)
         );
 
         vm.expectRevert("invalid things");
@@ -671,7 +672,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             chainId,
             address(0xdead).toBytes(), /// untrusted emitter
             "",
-            abi.encode(to, amount)
+            abi.encode(to, amount, chainId)
         );
 
         vm.expectRevert("WormholeBridgeAdapter: untrusted emitter");
@@ -681,7 +682,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     function testProcessVAARevertsReplay() public {
         MockWormholeCore mockWormhole = _upgradeToV3();
 
-        bytes memory payload = abi.encode(to, amount);
+        bytes memory payload = abi.encode(to, amount, chainId);
         mockWormhole.setStorage(
             true,
             chainId,
@@ -707,7 +708,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         uint256 maxBuffer = xwellProxy.buffer(
             address(wormholeBridgeAdapterProxy)
         );
-        bytes memory payload1 = abi.encode(to, maxBuffer);
+        bytes memory payload1 = abi.encode(to, maxBuffer, chainId);
         mockWormhole.setStorage(
             true,
             chainId,
@@ -718,7 +719,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.processVAA(hex"01");
 
         /// Second VAA: amount=1 should hit the rate limit
-        bytes memory payload2 = abi.encode(to, uint256(1));
+        bytes memory payload2 = abi.encode(to, uint256(1), chainId);
         mockWormhole.setStorage(
             true,
             chainId,
@@ -813,5 +814,25 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             amount,
             "legacy relayer path should still work after V3 upgrade"
         );
+    }
+
+    function testProcessVAARevertsWrongTargetChain() public {
+        MockWormholeCore mockWormhole = _upgradeToV3();
+
+        /// Payload encodes a different target chain than the mock's chainId().
+        /// This simulates a VAA meant for Optimism (chain 24) being replayed on
+        /// Base (chain 30, which is what the mock returns).
+        uint16 wrongChainId = chainId + 1;
+        bytes memory payload = abi.encode(to, amount, wrongChainId);
+        mockWormhole.setStorage(
+            true,
+            chainId,
+            address(wormholeBridgeAdapterProxy).toBytes(),
+            "",
+            payload
+        );
+
+        vm.expectRevert("WormholeBridgeAdapter: invalid target chain");
+        wormholeBridgeAdapterProxy.processVAA(hex"cc");
     }
 }

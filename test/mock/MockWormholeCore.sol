@@ -10,6 +10,7 @@ contract MockWormholeCore {
     uint16 emitterChainId;
     bytes32 public emitterAddress;
     uint256 public fee;
+    uint16 public wormholeChainId;
 
     function setStorage(
         bool valid,
@@ -27,6 +28,14 @@ contract MockWormholeCore {
 
     function setFee(uint256 _fee) external {
         fee = _fee;
+    }
+
+    function setChainId(uint16 _chainId) external {
+        wormholeChainId = _chainId;
+    }
+
+    function chainId() external view returns (uint16) {
+        return wormholeChainId;
     }
 
     function messageFee() external view returns (uint256) {

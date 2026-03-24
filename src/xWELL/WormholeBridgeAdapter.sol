@@ -261,7 +261,7 @@ contract WormholeBridgeAdapter is
         /// Publish a direct application VAA via Wormhole core bridge.
         wormhole.publishMessage{value: cost}(
             0,
-            abi.encode(to, amount),
+            abi.encode(to, amount, targetChainId),
             CONSISTENCY_LEVEL
         );
 
@@ -289,9 +289,13 @@ contract WormholeBridgeAdapter is
         );
         processedVAAHashes[vm.hash] = true;
 
-        (address to, uint256 amount) = abi.decode(
+        (address to, uint256 amount, uint16 targetChainId) = abi.decode(
             vm.payload,
-            (address, uint256)
+            (address, uint256, uint16)
+        );
+        require(
+            targetChainId == wormhole.chainId(),
+            "WormholeBridgeAdapter: invalid target chain"
         );
         _bridgeIn(vm.emitterChainId, to, amount);
     }

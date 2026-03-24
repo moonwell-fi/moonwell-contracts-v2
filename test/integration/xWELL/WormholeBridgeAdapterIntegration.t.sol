@@ -68,6 +68,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         );
         vm.etch(wormholeCoreAddr, runtimeBytecode);
         mockWormholeCore = MockWormholeCore(wormholeCoreAddr);
+        mockWormholeCore.setChainId(currentWormholeChainId);
     }
 
     // ---------------------------------------------------------------
@@ -128,7 +129,11 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     function testProcessVAASuccess() public {
         uint256 mintAmount = 1000e18;
 
-        bytes memory payload = abi.encode(recipient, mintAmount);
+        bytes memory payload = abi.encode(
+            recipient,
+            mintAmount,
+            currentWormholeChainId
+        );
         bytes32 emitterAddress = address(adapter).toBytes();
 
         mockWormholeCore.setStorage(
@@ -168,7 +173,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(recipient, mintAmount)
+            abi.encode(recipient, mintAmount, currentWormholeChainId)
         );
 
         bytes memory signedVAA = abi.encode("replay-test-vaa");
@@ -189,7 +194,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(0xDEAD).toBytes(),
             "",
-            abi.encode(recipient, uint256(1000e18))
+            abi.encode(recipient, uint256(1000e18), currentWormholeChainId)
         );
 
         vm.expectRevert("WormholeBridgeAdapter: untrusted emitter");
@@ -238,7 +243,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(recipient, mintAmount)
+            abi.encode(recipient, mintAmount, currentWormholeChainId)
         );
 
         bytes memory signedVAA = abi.encode("cross-path-vaa");
@@ -268,7 +273,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(recipient, excessAmount)
+            abi.encode(recipient, excessAmount, currentWormholeChainId)
         );
 
         vm.expectRevert("RateLimited: rate limit hit");
@@ -398,7 +403,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(address(0), uint256(1000e18))
+            abi.encode(address(0), uint256(1000e18), currentWormholeChainId)
         );
 
         vm.expectRevert("ERC20: mint to the zero address");
@@ -439,43 +444,37 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             "source: total supply not reduced"
         );
 
-        /// --- Destination chain: switch fork and mint via processVAA ---
-        /// Pick a different fork as destination
+        /// --- Destination chain: mint via processVAA ---
+        _processVAAOnDestFork(user, bridgeAmount);
+    }
+
+    /// @notice Helper: switch to dest fork, etch mock, processVAA, verify mint + replay
+    function _processVAAOnDestFork(
+        address user,
+        uint256 bridgeAmount
+    ) internal {
         uint256 destForkId = currentWormholeChainId ==
             MOONBEAM_WORMHOLE_CHAIN_ID
             ? BASE_FORK_ID
             : MOONBEAM_FORK_ID;
         vm.selectFork(destForkId);
 
-        /// Re-resolve adapter on destination (same proxy address across chains)
         WormholeBridgeAdapter destAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
         xWELL destXwell = xWELL(addresses.getAddress("xWELL_PROXY"));
-        address destWormholeCore = addresses.getAddress("WORMHOLE_CORE");
 
-        /// Etch mock onto destination's WORMHOLE_CORE
-        bytes memory runtimeBytecode = vm.getDeployedCode(
-            "MockWormholeCore.sol"
-        );
-        vm.etch(destWormholeCore, runtimeBytecode);
-        MockWormholeCore destMock = MockWormholeCore(destWormholeCore);
-
-        /// Configure mock: emitter = adapter on source chain (same address)
-        destMock.setStorage(
-            true,
-            currentWormholeChainId, // source chain's wormhole ID
-            address(destAdapter).toBytes(), // same address across chains
-            "",
-            abi.encode(user, bridgeAmount)
+        /// Etch mock and configure
+        _etchMockOnCurrentFork(
+            destAdapter,
+            currentWormholeChainId,
+            abi.encode(user, bridgeAmount, block.chainid.toWormholeChainId())
         );
 
         uint256 destBalanceBefore = destXwell.balanceOf(user);
 
-        /// Process VAA on destination
         destAdapter.processVAA(abi.encode("e2e-cross-chain-vaa"));
 
-        /// Verify mint on destination
         assertEq(
             destXwell.balanceOf(user) - destBalanceBefore,
             bridgeAmount,
@@ -485,5 +484,113 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         /// Verify replay protection on destination
         vm.expectRevert("WormholeBridgeAdapter: VAA already processed");
         destAdapter.processVAA(abi.encode("e2e-cross-chain-vaa"));
+    }
+
+    /// @notice Etch MockWormholeCore onto current fork's WORMHOLE_CORE and configure it
+    function _etchMockOnCurrentFork(
+        WormholeBridgeAdapter destAdapter,
+        uint16 emitterChainId,
+        bytes memory payload
+    ) internal {
+        address core = addresses.getAddress("WORMHOLE_CORE");
+        vm.etch(core, vm.getDeployedCode("MockWormholeCore.sol"));
+        MockWormholeCore mock = MockWormholeCore(core);
+
+        uint16 thisChainId = block.chainid.toWormholeChainId();
+        mock.setChainId(thisChainId);
+        mock.setStorage(
+            true,
+            emitterChainId,
+            address(destAdapter).toBytes(),
+            "",
+            payload
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // Test 14: Cross-chain replay rejection (targetChainId mismatch)
+    // ---------------------------------------------------------------
+
+    /// @notice A VAA destined for chain A must NOT be processable on chain B.
+    ///         The payload includes targetChainId which is validated against
+    ///         wormhole.chainId() on the receiving chain. Without this check,
+    ///         an attacker could replay the same VAA on every chain the protocol
+    ///         is deployed to, multiplying minted tokens.
+    function testProcessVAARevertsWrongTargetChain() public {
+        uint256 mintAmount = 1000e18;
+
+        /// Explicitly re-set chainId on the mock to ensure it returns
+        /// currentWormholeChainId (guards against stale storage after vm.etch)
+        mockWormholeCore.setChainId(currentWormholeChainId);
+
+        /// Encode payload targeting a DIFFERENT chain (sourceWormholeChainId != currentWormholeChainId)
+        mockWormholeCore.setStorage(
+            true,
+            sourceWormholeChainId,
+            address(adapter).toBytes(),
+            "",
+            abi.encode(recipient, mintAmount, sourceWormholeChainId) /// wrong target chain
+        );
+
+        vm.expectRevert("WormholeBridgeAdapter: invalid target chain");
+        adapter.processVAA(abi.encode("wrong-target-chain-vaa"));
+    }
+
+    // ---------------------------------------------------------------
+    // Test 15: Cross-chain replay — full multi-fork scenario
+    // ---------------------------------------------------------------
+
+    /// @notice Simulate the exact attack: bridge to Base, then try to replay
+    ///         the same VAA on Moonbeam. The VAA has targetChainId=Base so
+    ///         Moonbeam must reject it.
+    function testCrossChainReplayRejectedOnDifferentFork() public {
+        uint256 mintAmount = 1000e18;
+
+        /// --- Step 1: Process VAA successfully on current chain ---
+        mockWormholeCore.setStorage(
+            true,
+            sourceWormholeChainId,
+            address(adapter).toBytes(),
+            "",
+            abi.encode(recipient, mintAmount, currentWormholeChainId)
+        );
+
+        uint256 balanceBefore = xwellProxy.balanceOf(recipient);
+        adapter.processVAA(abi.encode("cross-chain-replay-vaa"));
+
+        assertEq(
+            xwellProxy.balanceOf(recipient) - balanceBefore,
+            mintAmount,
+            "legitimate mint should succeed"
+        );
+
+        /// --- Step 2: Switch to a different fork and try to replay ---
+        _replayOnOtherForkReverts(mintAmount);
+    }
+
+    /// @notice Helper: switch to other fork, etch mock with wrong targetChainId, expect revert
+    function _replayOnOtherForkReverts(uint256 mintAmount) internal {
+        uint256 otherForkId = currentWormholeChainId ==
+            MOONBEAM_WORMHOLE_CHAIN_ID
+            ? BASE_FORK_ID
+            : MOONBEAM_FORK_ID;
+        vm.selectFork(otherForkId);
+
+        WormholeBridgeAdapter otherAdapter = WormholeBridgeAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        /// Use currentWormholeChainId as emitter chain — the other fork
+        /// trusts the adapter from the original fork's chain. For example,
+        /// if original=Base(30) and other=Moonbeam, Moonbeam trusts Base(30).
+        _etchMockOnCurrentFork(
+            otherAdapter,
+            currentWormholeChainId, /// emitter from original fork (trusted by other fork)
+            abi.encode(recipient, mintAmount, currentWormholeChainId) /// wrong target
+        );
+
+        /// This must revert because targetChainId (original chain) != otherChainId
+        vm.expectRevert("WormholeBridgeAdapter: invalid target chain");
+        otherAdapter.processVAA(abi.encode("cross-chain-replay-vaa"));
     }
 }
