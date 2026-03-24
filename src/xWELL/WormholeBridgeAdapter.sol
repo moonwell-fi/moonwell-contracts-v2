@@ -208,7 +208,8 @@ contract WormholeBridgeAdapter is
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
-    /// @notice Estimate bridge cost to bridge out to a destination chain.
+    /// @notice Estimate bridge cost to bridge out to a destination chain, including
+    ///         the wormhole message fee.
     /// @param dstChainId Destination chain id
     function bridgeCost(
         uint16 dstChainId
@@ -216,9 +217,9 @@ contract WormholeBridgeAdapter is
         try
             wormholeRelayer.quoteEVMDeliveryPrice(dstChainId, 0, gasLimit)
         returns (uint256 cost, uint256) {
-            gasCost = cost;
+            gasCost = cost + wormhole.messageFee();
         } catch {
-            gasCost = 0;
+            gasCost = wormhole.messageFee();
         }
     }
 
