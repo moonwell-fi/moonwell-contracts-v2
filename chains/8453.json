@@ -180,6 +180,26 @@
         "name": "EURC_METAMORPHO_VAULT"
     },
     {
+        "addr": "0x89BeDBB1C4837444Da215A377275Ff96A84D6f53",
+        "isContract": true,
+        "name": "WETH_FLAGSHIP_METAMORPHO_VAULT"
+    },
+    {
+        "addr": "0x48a90E85be5C56b0A669985A12ee7C449fC79965",
+        "isContract": true,
+        "name": "USDC_FLAGSHIP_METAMORPHO_VAULT"
+    },
+    {
+        "addr": "0x5083b1387Ec3d4Ee6467B83890D98f1AF93F7c48",
+        "isContract": true,
+        "name": "EURC_FLAGSHIP_METAMORPHO_VAULT"
+    },
+    {
+        "addr": "0xdbA76Bc542bb07538e046B40F2e8a215B409F7A8",
+        "isContract": true,
+        "name": "cbBTC_FRONTIER_METAMORPHO_VAULT"
+    },
+    {
         "addr": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
         "name": "USDC",
         "isContract": true
