@@ -733,9 +733,10 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     }
 
     function testBridgeCostUsesRelayerTryCatch() public {
-        /// bridgeCost always uses the relayer try-catch.
+        /// bridgeCost calls wormhole.messageFee() so V3 upgrade is required.
         /// MockWormholeReceiver.price() returns 0 so quoteEVMDeliveryPrice
-        /// returns 0, and bridgeCost returns 0 via try-catch.
+        /// returns 0, and messageFee() returns 0 → bridgeCost returns 0.
+        _upgradeToV3();
         uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
         assertEq(
             cost,
