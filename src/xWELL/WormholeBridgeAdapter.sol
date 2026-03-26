@@ -301,46 +301,18 @@ contract WormholeBridgeAdapter is
         _bridgeIn(vm.emitterChainId, to, amount);
     }
 
-    /// @notice callable only by the wormhole relayer (legacy path for
-    ///         in-flight messages during migration from the standard relayer).
-    /// @dev    Kept for backward reference. No double-mint risk exists because
-    ///         the two paths have different emitters: the standard relayer publishes
-    ///         delivery VAAs with the relayer contract as emitter (not the adapter),
-    ///         so those VAAs would fail the isTrustedSender check in processVAA().
-    ///         Conversely, direct application VAAs published by _bridgeOut() have
-    ///         the adapter as emitter and can only be processed via processVAA().
-    /// @param payload the payload of the message, contains the to and amount
-    /// additional vaas, unused parameter
-    /// @param senderAddress the address of the sender on the source chain, bytes32 encoded
-    /// @param sourceChain the chain id of the source chain
-    /// @param nonce the unique message ID
+    /// @notice legacy relayer entry point — deprecated
+    /// @dev kept to satisfy the IWormholeReceiver interface
     function receiveWormholeMessages(
-        bytes memory payload,
+        bytes memory, // payload
         bytes[] memory, // additionalVaas
-        bytes32 senderAddress,
-        uint16 sourceChain,
-        bytes32 nonce
+        bytes32, // senderAddress
+        uint16, // sourceChain
+        bytes32 // nonce
     ) external payable override {
-        require(msg.value == 0, "WormholeBridge: no value allowed");
         require(
-            msg.sender == address(wormholeRelayer),
-            "WormholeBridge: only relayer allowed"
+            address(wormhole) == address(0),
+            "WormholeBridgeAdapter: relayer disabled"
         );
-        require(
-            isTrustedSender(sourceChain, senderAddress),
-            "WormholeBridge: sender not trusted"
-        );
-        require(
-            !processedNonces[nonce],
-            "WormholeBridge: message already processed"
-        );
-
-        processedNonces[nonce] = true;
-
-        // Parse the payload and do the corresponding actions!
-        (address to, uint256 amount) = abi.decode(payload, (address, uint256));
-
-        /// mint tokens and emit events
-        _bridgeIn(sourceChain, to, amount);
     }
 }

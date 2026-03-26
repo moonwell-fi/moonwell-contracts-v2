@@ -344,114 +344,18 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
-    /// receiveWormholeMessages failure tests
-    /// value
-    function testReceiveWormholeMessageFailsWithValue() public {
-        vm.deal(address(this), 100);
-        vm.expectRevert("WormholeBridge: no value allowed");
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 100}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            chainId,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    /// not relayer address
-    function testReceiveWormholeMessageFailsNotRelayer() public {
-        vm.expectRevert("WormholeBridge: only relayer allowed");
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            chainId,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    /// already processed
-
-    function testAlreadyProcessedMessageReplayFails(bytes32 nonce) public {
-        testReceiveWormholeMessageSucceeds(nonce);
+    /// receiveWormholeMessages is deprecated and should revert after V3 upgrade
+    function testReceiveWormholeMessagesRevertsAfterV3() public {
+        _upgradeToV3();
 
         vm.prank(wormholeRelayer);
-        vm.expectRevert("WormholeBridge: message already processed");
+        vm.expectRevert("WormholeBridgeAdapter: relayer disabled");
         wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
             abi.encode(to, amount),
             new bytes[](0),
             address(wormholeBridgeAdapterProxy).toBytes(),
             chainId,
-            nonce
-        );
-    }
-
-    /// not trusted sender from external chain
-    function testReceiveWormholeMessageFailsNotTrustedExternalChain() public {
-        vm.expectRevert("WormholeBridge: sender not trusted");
-        vm.prank(wormholeRelayer);
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            chainId,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    function testReceiveWormholeMessageSucceeds(bytes32 nonce) public {
-        uint256 startingBalance = xwellProxy.balanceOf(to);
-        uint256 startingTotalSupply = xwellProxy.totalSupply();
-
-        vm.prank(wormholeRelayer);
-        vm.expectEmit(
-            true,
-            true,
-            true,
-            true,
-            address(wormholeBridgeAdapterProxy)
-        );
-        emit BridgedIn(chainId, to, amount);
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            abi.encode(to, amount),
-            new bytes[](0),
-            address(wormholeBridgeAdapterProxy).toBytes(),
-            chainId,
-            nonce
-        );
-
-        assertEq(
-            xwellProxy.balanceOf(to) - startingBalance,
-            amount,
-            "incorrect amount received"
-        );
-        assertEq(
-            xwellProxy.totalSupply() - startingTotalSupply,
-            amount,
-            "incorrect total supply increase"
-        );
-        assertTrue(
-            wormholeBridgeAdapterProxy.processedNonces(nonce),
-            "nonce not used"
-        );
-    }
-
-    /// bridge in, test not enough rate limit
-    function testBridgeInFailsRateLimitExhausted(bytes32 nonce) public {
-        amount = xwellProxy.buffer(address(wormholeBridgeAdapterProxy));
-        unchecked {
-            testReceiveWormholeMessageSucceeds(bytes32(uint256(nonce) + 1));
-        }
-        amount = 1;
-
-        vm.prank(wormholeRelayer);
-        vm.expectRevert("RateLimited: rate limit hit");
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            abi.encode(to, amount),
-            new bytes[](0),
-            address(wormholeBridgeAdapterProxy).toBytes(),
-            chainId,
-            nonce
+            bytes32(uint256(77777))
         );
     }
 
@@ -510,7 +414,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         amount = externalChainBufferCap / 2;
         to = address(this);
 
-        testReceiveWormholeMessageSucceeds(bytes32(uint256(1)));
+        _mintViaProcessVAA(mockWormhole, to, amount, hex"aa01");
 
         amount = externalChainBufferCap;
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
@@ -526,7 +430,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         amount = externalChainBufferCap / 2;
         to = address(this);
 
-        testReceiveWormholeMessageSucceeds(bytes32(uint256(1)));
+        _mintViaProcessVAA(mockWormhole, to, amount, hex"aa02");
 
         amount = externalChainBufferCap;
 
@@ -549,6 +453,23 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     /// -------------- V3 / processVAA Tests --------------------
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
+
+    /// @notice Helper: mint tokens via processVAA using a MockWormholeCore
+    function _mintViaProcessVAA(
+        MockWormholeCore mockWormhole,
+        address recipient,
+        uint256 mintAmount,
+        bytes memory vaaBytes
+    ) internal {
+        mockWormhole.setStorage(
+            true,
+            chainId,
+            address(wormholeBridgeAdapterProxy).toBytes(),
+            "",
+            abi.encode(recipient, mintAmount, chainId)
+        );
+        wormholeBridgeAdapterProxy.processVAA(vaaBytes);
+    }
 
     /// @notice Helper: deploy MockWormholeCore, deploy new impl,
     ///         upgrade proxy via proxyAdmin.upgradeAndCall with initializeV3
@@ -758,19 +679,11 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         MockWormholeCore mockWormhole = _upgradeToV3();
         mockWormhole.setFee(0);
 
-        /// Mint tokens to a user via the relayer path first so user has balance
+        /// Mint tokens to a user via processVAA so user has balance
         amount = externalChainBufferCap / 2;
         to = address(this);
 
-        /// Use relayer path to mint tokens to this address
-        vm.prank(wormholeRelayer);
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            abi.encode(to, amount),
-            new bytes[](0),
-            address(wormholeBridgeAdapterProxy).toBytes(),
-            chainId,
-            bytes32(uint256(9999))
-        );
+        _mintViaProcessVAA(mockWormhole, to, amount, hex"aa03");
 
         /// Now bridge out via the new V3 path (publishMessage)
         uint256 bridgeAmount = amount / 2;
@@ -785,36 +698,6 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
         emit TokensSent(chainId, to, bridgeAmount);
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, bridgeAmount, to);
-    }
-
-    function testReceiveWormholeMessagesStillWorks() public {
-        _upgradeToV3();
-
-        /// After V3 upgrade, the legacy relayer path should still work
-        uint256 startingBalance = xwellProxy.balanceOf(to);
-
-        vm.prank(wormholeRelayer);
-        vm.expectEmit(
-            true,
-            true,
-            true,
-            true,
-            address(wormholeBridgeAdapterProxy)
-        );
-        emit BridgedIn(chainId, to, amount);
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            abi.encode(to, amount),
-            new bytes[](0),
-            address(wormholeBridgeAdapterProxy).toBytes(),
-            chainId,
-            bytes32(uint256(77777))
-        );
-
-        assertEq(
-            xwellProxy.balanceOf(to) - startingBalance,
-            amount,
-            "legacy relayer path should still work after V3 upgrade"
-        );
     }
 
     function testProcessVAARevertsWrongTargetChain() public {

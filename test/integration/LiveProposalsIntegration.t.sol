@@ -23,6 +23,7 @@ import {LiveProposalCheck} from "@test/utils/LiveProposalCheck.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 contract LiveProposalsIntegrationTest is LiveProposalCheck {
+    using stdStorage for StdStorage;
     using String for string;
 
     using Bytes for bytes;
@@ -72,10 +73,9 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
     // mock wormhole to simulate the queue step
     function testExecutingLiveProposalsMockWormhole() public {
         /// ----------------------------------------------------------
-        /// ---------------- Wormhole Relayer Etching ----------------
+        /// ---- Mock Wormhole Adapter (relayer + core bridge) --------
         /// ----------------------------------------------------------
 
-        /// mock relayer so we can simulate bridging well
         WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter(
             new uint16[](0),
             new uint256[](0)
@@ -83,51 +83,61 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
         vm.makePersistent(address(wormholeRelayer));
         vm.label(address(wormholeRelayer), "MockWormholeRelayer");
 
-        /// we need to set this so that the relayer mock knows that for the next sendPayloadToEvm
-        /// call it must switch forks
         wormholeRelayer.setIsMultichainTest(true);
         wormholeRelayer.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+        wormholeRelayer.setMockChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
 
-        // set mock as the wormholeRelayer address on bridge adapter
-        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-        );
+        bytes32 mockAddr = bytes32(uint256(uint160(address(wormholeRelayer))));
 
-        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
+        /// Override wormhole + relayer slots on all forks for governor,
+        /// voteCollection, and xWELL adapter so _wormhole() returns the mock.
 
-        // encode gasLimit and relayer address since is stored in a single slot
-        // relayer is first due to how evm pack values into a single storage
-        bytes32 encodedData = bytes32(
-            (uint256(uint160(address(wormholeRelayer))) << 96) |
-                uint256(gasLimit)
-        );
-
-        vm.selectFork(BASE_FORK_ID);
-
-        /// stores the wormhole mock address in the wormholeRelayer variable
-        vm.store(
-            address(wormholeBridgeAdapter),
-            bytes32(uint256(153)),
-            encodedData
-        );
-
-        vm.selectFork(OPTIMISM_FORK_ID);
-
-        /// stores the wormhole mock address in the wormholeRelayer variable
-        vm.store(
-            address(wormholeBridgeAdapter),
-            bytes32(uint256(153)),
-            encodedData
-        );
-
+        /// --- Moonbeam ---
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        /// stores the wormhole mock address in the wormholeRelayer variable
+        /// Governor: wormhole slot + relayer slot (103)
+        uint256 govWormholeSlot = stdstore
+            .target(address(governor))
+            .sig("wormhole()")
+            .find();
+        vm.store(address(governor), bytes32(govWormholeSlot), mockAddr);
         vm.store(
-            address(wormholeBridgeAdapter),
-            bytes32(uint256(153)),
-            encodedData
+            address(governor),
+            bytes32(uint256(103)),
+            mockAddr /// relayer slot (gasLimit stays 0 which is fine for mock)
         );
+
+        /// xWELL adapter: wormhole slot + relayer slot
+        address adapter = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
+        uint256 adapterWormholeSlot = stdstore
+            .target(adapter)
+            .sig("wormhole()")
+            .find();
+        vm.store(adapter, bytes32(adapterWormholeSlot), mockAddr);
+
+        /// --- Base ---
+        vm.selectFork(BASE_FORK_ID);
+        address vcBase = addresses.getAddress("VOTE_COLLECTION_PROXY");
+        uint256 vcSlot = stdstore.target(vcBase).sig("wormhole()").find();
+        vm.store(vcBase, bytes32(vcSlot), mockAddr);
+        vm.store(vcBase, bytes32(0), mockAddr); /// relayer slot
+
+        adapter = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
+        adapterWormholeSlot = stdstore.target(adapter).sig("wormhole()").find();
+        vm.store(adapter, bytes32(adapterWormholeSlot), mockAddr);
+
+        /// --- Optimism ---
+        vm.selectFork(OPTIMISM_FORK_ID);
+        address vcOpt = addresses.getAddress("VOTE_COLLECTION_PROXY");
+        uint256 vcOptSlot = stdstore.target(vcOpt).sig("wormhole()").find();
+        vm.store(vcOpt, bytes32(vcOptSlot), mockAddr);
+        vm.store(vcOpt, bytes32(0), mockAddr); /// relayer slot
+
+        adapter = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
+        adapterWormholeSlot = stdstore.target(adapter).sig("wormhole()").find();
+        vm.store(adapter, bytes32(adapterWormholeSlot), mockAddr);
+
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         /// ----------------------------------------------------------
         /// ----------------------------------------------------------

@@ -6,6 +6,7 @@ import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {SnapshotInterface} from "@protocol/governance/multichain/SnapshotInterface.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
@@ -137,6 +138,18 @@ contract MultichainGovernor is
     /// and needs to be reinstated by governance
     address public override breakGlassGuardian;
 
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// ------------- V2 STORAGE (post-upgrade) -----------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice Wormhole core bridge for on-chain VAA verification
+    IWormhole public wormhole;
+
+    /// @notice tracks processed VAA hashes to prevent replay
+    mapping(bytes32 => bool) public processedVAAHashes;
+
     /// @notice disable the initializer to stop governance hijacking
     /// and avoid selfdestruct attacks.
     constructor() {
@@ -215,6 +228,14 @@ contract MultichainGovernor is
                 _updateApprovedCalldata(calldatas[i], true);
             }
         }
+    }
+
+    /// @notice V2 upgrade: set the Wormhole core bridge address for direct
+    ///         VAA verification, bypassing the deprecated standard relayer.
+    /// @param wormholeCore address of the Wormhole core bridge on this chain
+    function initializeV2(address wormholeCore) external reinitializer(2) {
+        require(wormholeCore != address(0), "MultichainGovernor: zero address");
+        wormhole = IWormhole(wormholeCore);
     }
 
     /// --------------------------------------------------------- ///
@@ -1318,6 +1339,23 @@ contract MultichainGovernor is
             againstVotes,
             abstainVotes
         );
+    }
+
+    /// @notice return the wormhole core contract
+    function _wormhole() internal view override returns (IWormhole) {
+        return wormhole;
+    }
+
+    /// @notice check if a VAA hash has been processed
+    function _isVAAHashProcessed(
+        bytes32 hash
+    ) internal view override returns (bool) {
+        return processedVAAHashes[hash];
+    }
+
+    /// @notice mark a VAA hash as processed
+    function _setVAAHashProcessed(bytes32 hash) internal override {
+        processedVAAHashes[hash] = true;
     }
 
     /// @notice payable fallback function to receive funds specifically

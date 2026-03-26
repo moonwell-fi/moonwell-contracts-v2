@@ -4,6 +4,7 @@ import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 
 /// @notice Wormhole Bridge Base Contract
 /// Useful or when you want to send to and receive from the same addresses
@@ -51,6 +52,16 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// should be impossible to ever have duplicate values in this set
     /// the reason being that the add function only adds if the value is not already in the set
     EnumerableSet.UintSet internal _targetChains;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// ------------- V2 STORAGE (post-upgrade) -----------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice Wormhole consistency level for publishMessage.
+    /// 200 = "finalized" — guardians wait for full chain finality
+    uint8 public constant CONSISTENCY_LEVEL = 200;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -220,7 +231,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
                 gasLimit
             )
         returns (uint256 cost, uint256) {
-            gasCost = cost;
+            gasCost = cost + _wormhole().messageFee();
         } catch {
             /// this is a bad situation, but we still want to allow the bridge out
             /// so fail silently and set gasCost to 0.
@@ -228,7 +239,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             /// to the logs and cause this function to be non view.
             /// the bridge out will most likely fail from this point out, however,
             /// the proposal on Moonbeam will still be created.
-            gasCost = 0;
+            gasCost = 0 + _wormhole().messageFee();
         }
     }
 
@@ -290,13 +301,10 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             uint256 cost = bridgeCost(targetChain);
 
             try
-                wormholeRelayer.sendPayloadToEvm{value: cost}(
-                    targetChain,
-                    targetAddress[targetChain],
-                    payload,
-                    /// no receiver value allowed, only message passing
+                _wormhole().publishMessage{value: cost}(
                     0,
-                    gasLimit
+                    payload,
+                    CONSISTENCY_LEVEL
                 )
             {
                 totalRefundAmount -= cost;
@@ -322,36 +330,42 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         }
     }
 
-    /// @notice callable only by the wormhole relayer
-    /// @param payload the payload of the message, contains the to and amount
-    /// additional vaas, unused parameter
-    /// @param senderAddress the address of the sender on the source chain, bytes32 encoded
-    /// @param sourceChain the chain id of the source chain
-    /// @param nonce the unique message ID
+    /// @notice legacy relayer entry point — deprecated
+    /// @dev kept to satisfy the IWormholeReceiver interface
     function receiveWormholeMessages(
-        bytes memory payload,
+        bytes memory, // payload
         bytes[] memory, // additionalVaas
-        bytes32 senderAddress,
-        uint16 sourceChain,
-        bytes32 nonce
+        bytes32, // senderAddress
+        uint16, // sourceChain
+        bytes32 // nonce
     ) external payable override {
-        require(msg.value == 0, "WormholeBridge: no value allowed");
         require(
-            msg.sender == address(wormholeRelayer),
-            "WormholeBridge: only relayer allowed"
+            address(_wormhole()) == address(0),
+            "WormholeBridge: relayer deprecated"
         );
+    }
+
+    /// @notice Process a guardian-signed VAA to complete a payload transfer.
+    ///         Callable by anyone (permissionless). The VAA must be signed by
+    ///         the Wormhole guardian quorum. The emitter must be a trusted sender
+    /// @param signedVAA The full guardian-signed VAA bytes
+    function processVAA(bytes calldata signedVAA) external {
+        (IWormhole.VM memory vm, bool valid, string memory reason) = _wormhole()
+            .parseAndVerifyVM(signedVAA);
+
+        require(valid, reason);
         require(
-            isTrustedSender(sourceChain, senderAddress),
-            "WormholeBridge: sender not trusted"
-        );
-        require(
-            !processedNonces[nonce],
-            "WormholeBridge: message already processed"
+            isTrustedSender(vm.emitterChainId, vm.emitterAddress),
+            "WormholeBridge: untrusted emitter"
         );
 
-        processedNonces[nonce] = true;
+        require(
+            !_isVAAHashProcessed(vm.hash),
+            "WormholeBridge: VAA already processed"
+        );
+        _setVAAHashProcessed(vm.hash);
 
-        _bridgeIn(sourceChain, payload);
+        _bridgeIn(vm.emitterChainId, vm.payload);
     }
 
     /// @notice converts a bytes32 to address,
@@ -379,4 +393,16 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         uint16 sourceChain,
         bytes memory payload
     ) internal virtual;
+
+    /// @notice return the wormhole core contract
+    function _wormhole() internal view virtual returns (IWormhole);
+
+    /// @notice check if a VAA hash has already been processed (replay protection).
+    ///         Storage lives in the leaf contract to avoid shifting existing slots.
+    function _isVAAHashProcessed(
+        bytes32 hash
+    ) internal view virtual returns (bool);
+
+    /// @notice mark a VAA hash as processed.
+    function _setVAAHashProcessed(bytes32 hash) internal virtual;
 }

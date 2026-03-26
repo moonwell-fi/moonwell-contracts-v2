@@ -7,6 +7,8 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -75,11 +77,11 @@ contract mipx48 is HybridProposal {
         if (!addresses.isAddressSet("WORMHOLE_BRIDGE_ADAPTER_IMPL_V3")) {
             vm.startBroadcast();
             address implementation = address(new WormholeBridgeAdapter());
+            vm.stopBroadcast();
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_IMPL_V3",
                 implementation
             );
-            vm.stopBroadcast();
         }
 
         // Base
@@ -87,11 +89,11 @@ contract mipx48 is HybridProposal {
         if (!addresses.isAddressSet("WORMHOLE_BRIDGE_ADAPTER_IMPL_V3")) {
             vm.startBroadcast();
             address implementation = address(new WormholeBridgeAdapter());
+            vm.stopBroadcast();
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_IMPL_V3",
                 implementation
             );
-            vm.stopBroadcast();
         }
 
         // Optimism
@@ -99,11 +101,42 @@ contract mipx48 is HybridProposal {
         if (!addresses.isAddressSet("WORMHOLE_BRIDGE_ADAPTER_IMPL_V3")) {
             vm.startBroadcast();
             address implementation = address(new WormholeBridgeAdapter());
+            vm.stopBroadcast();
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_IMPL_V3",
                 implementation
             );
+        }
+
+        /// -------------------------------------------------------
+        /// Deploy MultichainGovernor + MultichainVoteCollection impls
+        /// -------------------------------------------------------
+
+        // Moonbeam: MultichainGovernor
+        vm.selectFork(primaryForkId());
+        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_IMPL_V2")) {
+            vm.startBroadcast();
+            address govImpl = address(new MultichainGovernor());
             vm.stopBroadcast();
+            addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL_V2", govImpl);
+        }
+
+        // Base: MultichainVoteCollection
+        vm.selectFork(BASE_FORK_ID);
+        if (!addresses.isAddressSet("VOTE_COLLECTION_IMPL_V2")) {
+            vm.startBroadcast();
+            address vcImpl = address(new MultichainVoteCollection());
+            vm.stopBroadcast();
+            addresses.addAddress("VOTE_COLLECTION_IMPL_V2", vcImpl);
+        }
+
+        // Optimism: MultichainVoteCollection
+        vm.selectFork(OPTIMISM_FORK_ID);
+        if (!addresses.isAddressSet("VOTE_COLLECTION_IMPL_V2")) {
+            vm.startBroadcast();
+            address vcImpl = address(new MultichainVoteCollection());
+            vm.stopBroadcast();
+            addresses.addAddress("VOTE_COLLECTION_IMPL_V2", vcImpl);
         }
 
         // Switch back to primary fork
@@ -200,8 +233,57 @@ contract mipx48 is HybridProposal {
         // NOTE: Ethereum xWELL is deployer-owned, not governed by MultichainGovernor.
         // The Ethereum pause guardian update must be done separately via the deployer.
 
-        // Switch back to primary fork
+        /// -------------------------------------------------------
+        /// Upgrade MultichainGovernor + MultichainVoteCollection
+        /// -------------------------------------------------------
+
+        // Base: upgrade MultichainVoteCollection with initializeV2
+        vm.selectFork(BASE_FORK_ID);
+        _pushAction(
+            addresses.getAddress("MRD_PROXY_ADMIN"),
+            abi.encodeWithSignature(
+                "upgradeAndCall(address,address,bytes)",
+                addresses.getAddress("VOTE_COLLECTION_PROXY"),
+                addresses.getAddress("VOTE_COLLECTION_IMPL_V2"),
+                abi.encodeWithSignature(
+                    "initializeV2(address)",
+                    addresses.getAddress("WORMHOLE_CORE")
+                )
+            ),
+            "Upgrade MultichainVoteCollection on Base with initializeV2"
+        );
+
+        // Optimism: upgrade MultichainVoteCollection with initializeV2
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _pushAction(
+            addresses.getAddress("MRD_PROXY_ADMIN"),
+            abi.encodeWithSignature(
+                "upgradeAndCall(address,address,bytes)",
+                addresses.getAddress("VOTE_COLLECTION_PROXY"),
+                addresses.getAddress("VOTE_COLLECTION_IMPL_V2"),
+                abi.encodeWithSignature(
+                    "initializeV2(address)",
+                    addresses.getAddress("WORMHOLE_CORE")
+                )
+            ),
+            "Upgrade MultichainVoteCollection on Optimism with initializeV2"
+        );
+
+        // Moonbeam: upgrade MultichainGovernor with initializeV2
         vm.selectFork(primaryForkId());
+        _pushAction(
+            addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
+            abi.encodeWithSignature(
+                "upgradeAndCall(address,address,bytes)",
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+                addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL_V2"),
+                abi.encodeWithSignature(
+                    "initializeV2(address)",
+                    addresses.getAddress("WORMHOLE_CORE")
+                )
+            ),
+            "Upgrade MultichainGovernor on Moonbeam with initializeV2"
+        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -209,30 +291,34 @@ contract mipx48 is HybridProposal {
     function validate(Addresses addresses, address) public override {
         // Validate Moonbeam
         vm.selectFork(primaryForkId());
-        _validateChainUpgrade(
-            addresses,
-            "Moonbeam",
-            addresses.getAddress("MOONBEAM_PROXY_ADMIN")
-        );
+        _validateChainUpgrade(addresses, "Moonbeam");
         _validatePauseGuardian(addresses, "Moonbeam");
 
         // Validate Base
         vm.selectFork(BASE_FORK_ID);
-        _validateChainUpgrade(
-            addresses,
-            "Base",
-            addresses.getAddress("MRD_PROXY_ADMIN")
-        );
+        _validateChainUpgrade(addresses, "Base");
         _validatePauseGuardian(addresses, "Base");
 
         // Validate Optimism
         vm.selectFork(OPTIMISM_FORK_ID);
-        _validateChainUpgrade(
-            addresses,
-            "Optimism",
-            addresses.getAddress("MRD_PROXY_ADMIN")
-        );
+        _validateChainUpgrade(addresses, "Optimism");
         _validatePauseGuardian(addresses, "Optimism");
+
+        /// -------------------------------------------------------
+        /// Validate MultichainGovernor + MultichainVoteCollection
+        /// -------------------------------------------------------
+
+        // Validate Governor on Moonbeam
+        vm.selectFork(primaryForkId());
+        _validateGovernorUpgrade(addresses, "Moonbeam");
+
+        // Validate VoteCollection on Base
+        vm.selectFork(BASE_FORK_ID);
+        _validateVoteCollectionUpgrade(addresses, "Base");
+
+        // Validate VoteCollection on Optimism
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _validateVoteCollectionUpgrade(addresses, "Optimism");
 
         // NOTE: Ethereum xWELL pause guardian + bridge adapter upgrade
         // is handled separately via UpgradeWormholeAdapterEthereum.
@@ -244,26 +330,30 @@ contract mipx48 is HybridProposal {
     /// @notice Validate the WormholeBridgeAdapter upgrade on a single chain
     /// @param addresses The addresses contract
     /// @param chainName Human-readable chain name for error messages
-    /// @param proxyAdmin The proxy admin address on this chain
     function _validateChainUpgrade(
         Addresses addresses,
-        string memory chainName,
-        address proxyAdmin
+        string memory chainName
     ) internal {
         address proxy = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
         address expectedImpl = addresses.getAddress(
             "WORMHOLE_BRIDGE_ADAPTER_IMPL_V3"
         );
         address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
+        string memory proxyAdminKey = block.chainid == MOONBEAM_CHAIN_ID
+            ? "MOONBEAM_PROXY_ADMIN"
+            : "MRD_PROXY_ADMIN";
+        address proxyAdmin = addresses.getAddress(proxyAdminKey);
 
-        // 1. Verify proxy implementation updated
-        address actualImpl = _getProxyImplementation(proxyAdmin, proxy);
+        // 1. Verify proxy implementation is set to V3
+        address actualImpl = ProxyAdmin(proxyAdmin).getProxyImplementation(
+            ITransparentUpgradeableProxy(proxy)
+        );
         assertEq(
             actualImpl,
             expectedImpl,
             string.concat(
                 chainName,
-                ": WormholeBridgeAdapter implementation not upgraded"
+                ": WormholeBridgeAdapter proxy not upgraded to V3"
             )
         );
 
@@ -336,15 +426,75 @@ contract mipx48 is HybridProposal {
         );
     }
 
-    /// @notice Read proxy implementation via ProxyAdmin.getProxyImplementation
-    function _getProxyImplementation(
-        address proxyAdmin,
-        address proxy
-    ) internal view returns (address) {
-        (bool success, bytes memory data) = proxyAdmin.staticcall(
-            abi.encodeWithSignature("getProxyImplementation(address)", proxy)
+    /// @notice Validate MultichainGovernor upgrade
+    function _validateGovernorUpgrade(
+        Addresses addresses,
+        string memory chainName
+    ) internal {
+        address proxy = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        address expectedImpl = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_IMPL_V2"
         );
-        require(success, "Failed to get proxy implementation");
-        return abi.decode(data, (address));
+        address proxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
+
+        // Verify proxy implementation is set to V2
+        address actualImpl = ProxyAdmin(proxyAdmin).getProxyImplementation(
+            ITransparentUpgradeableProxy(proxy)
+        );
+        assertEq(
+            actualImpl,
+            expectedImpl,
+            string.concat(
+                chainName,
+                ": MultichainGovernor proxy not upgraded to V2"
+            )
+        );
+
+        MultichainGovernor gov = MultichainGovernor(payable(proxy));
+        address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
+
+        assertEq(
+            address(gov.wormhole()),
+            wormholeCore,
+            string.concat(chainName, ": governor wormhole not set")
+        );
+
+        vm.expectRevert("Initializable: contract is already initialized");
+        gov.initializeV2(address(1));
+    }
+
+    /// @notice Validate MultichainVoteCollection upgrade
+    function _validateVoteCollectionUpgrade(
+        Addresses addresses,
+        string memory chainName
+    ) internal {
+        address proxy = addresses.getAddress("VOTE_COLLECTION_PROXY");
+        address expectedImpl = addresses.getAddress("VOTE_COLLECTION_IMPL_V2");
+        address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
+
+        // Verify proxy implementation is set to V2
+        address actualImpl = ProxyAdmin(proxyAdmin).getProxyImplementation(
+            ITransparentUpgradeableProxy(proxy)
+        );
+        assertEq(
+            actualImpl,
+            expectedImpl,
+            string.concat(
+                chainName,
+                ": MultichainVoteCollection proxy not upgraded to V2"
+            )
+        );
+
+        MultichainVoteCollection vc = MultichainVoteCollection(proxy);
+        address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
+
+        assertEq(
+            address(vc.wormhole()),
+            wormholeCore,
+            string.concat(chainName, ": voteCollection wormhole not set")
+        );
+
+        vm.expectRevert("Initializable: contract is already initialized");
+        vc.initializeV2(address(1));
     }
 }

@@ -120,33 +120,9 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    /// receiveWormholeMessages failure tests
-    /// value
-    function testReceiveWormholeMessageFailsWithValue() public {
-        vm.deal(address(this), 100);
-
-        vm.expectRevert("WormholeBridge: no value allowed");
-        voteCollection.receiveWormholeMessages{value: 100}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-
-        vm.expectRevert("WormholeBridge: no value allowed");
-        governor.receiveWormholeMessages{value: 100}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    /// not relayer address
-    function testReceiveWormholeMessageFailsNotRelayer() public {
-        vm.expectRevert("WormholeBridge: only relayer allowed");
+    /// receiveWormholeMessages is deprecated and reverts after V2 upgrade
+    function testReceiveWormholeMessagesRevertsAfterV2() public {
+        vm.expectRevert("WormholeBridge: relayer deprecated");
         voteCollection.receiveWormholeMessages{value: 0}(
             "",
             new bytes[](0),
@@ -155,7 +131,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             bytes32(type(uint256).max)
         );
 
-        vm.expectRevert("WormholeBridge: only relayer allowed");
+        vm.expectRevert("WormholeBridge: relayer deprecated");
         governor.receiveWormholeMessages{value: 0}(
             "",
             new bytes[](0),
@@ -165,49 +141,23 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    function testAlreadyProcessedMessageReplayFails() public {
-        uint256 proposalId = testReceiveWormholeMessageSucceeds();
-
-        bytes memory payloadVoteCollection = abi.encode(proposalId, 0, 0, 0, 0);
-
-        vm.startPrank(address(governor.wormholeRelayer()));
-
-        vm.expectRevert("MultichainVoteCollection: proposal already exists");
-        voteCollection.receiveWormholeMessages{value: 0}(
-            payloadVoteCollection,
-            new bytes[](0), /// field unchecked in contract
-            address(governor).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-
-        bytes memory payloadGovernor = abi.encode(proposalId, 0, 0, 0);
-        vm.expectRevert("WormholeBridge: message already processed");
-        governor.receiveWormholeMessages{value: 0}(
-            payloadGovernor,
-            new bytes[](0), /// field unchecked in contract
-            address(voteCollection).toBytes(),
-            BASE_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    function testReceiveWormholeMessageSucceeds()
-        public
-        returns (uint256 proposalId)
-    {
+    /// processVAA delivers votes to governor via the mock adapter
+    function testProcessVAASucceeds() public returns (uint256 proposalId) {
         proposalId = _createProposal();
-        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
 
         vm.warp(block.timestamp + governor.votingPeriod() + 1);
 
-        vm.prank(address(governor.wormholeRelayer()));
-        governor.receiveWormholeMessages{value: 0}(
+        /// Configure the mock: emitter is voteCollection on Base chain
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+
+        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
+
+        /// Deliver via processVAA path — emitter is voteCollection from Base
+        wormholeRelayerAdapter.deliverBridgeOut(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
             payload,
-            new bytes[](0), /// field unchecked in contract
-            address(voteCollection).toBytes(),
-            BASE_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
+            address(voteCollection)
         );
     }
 

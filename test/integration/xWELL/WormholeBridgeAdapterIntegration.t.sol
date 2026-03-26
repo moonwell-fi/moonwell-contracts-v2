@@ -202,42 +202,16 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     }
 
     // ---------------------------------------------------------------
-    // Test 5: No double-mint across paths (relayer vs processVAA)
+    // Test 5: Multiple processVAA calls with different VAAs succeed,
+    //         replay of either reverts
     // ---------------------------------------------------------------
 
-    function testProcessVAANoDoubleMintAcrossPaths() public {
+    function testProcessVAAMultipleMintsThenReplay() public {
         uint256 mintAmount = 500e18;
-
-        /// --- Step 1: legacy receiveWormholeMessages path ---
-        bytes memory relayerPayload = abi.encode(recipient, mintAmount);
-        bytes32 trustedSender = address(adapter).toBytes();
-        bytes32 nonce = keccak256(
-            abi.encode(relayerPayload, block.timestamp, "relayer-nonce")
-        );
 
         uint256 balanceBefore = xwellProxy.balanceOf(recipient);
 
-        vm.prank(wormholeRelayerAddr);
-        adapter.receiveWormholeMessages(
-            relayerPayload,
-            new bytes[](0),
-            trustedSender,
-            sourceWormholeChainId,
-            nonce
-        );
-
-        uint256 balanceAfterRelayer = xwellProxy.balanceOf(recipient);
-        assertEq(
-            balanceAfterRelayer - balanceBefore,
-            mintAmount,
-            "relayer path did not mint correctly"
-        );
-        assertTrue(
-            adapter.processedNonces(nonce),
-            "relayer nonce not recorded"
-        );
-
-        /// --- Step 2: processVAA path (separate dedup) ---
+        /// --- Step 1: first processVAA ---
         mockWormholeCore.setStorage(
             true,
             sourceWormholeChainId,
@@ -246,18 +220,40 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             abi.encode(recipient, mintAmount, currentWormholeChainId)
         );
 
-        bytes memory signedVAA = abi.encode("cross-path-vaa");
-        adapter.processVAA(signedVAA);
+        bytes memory signedVAA1 = abi.encode("first-vaa");
+        adapter.processVAA(signedVAA1);
 
+        uint256 balanceAfterFirst = xwellProxy.balanceOf(recipient);
         assertEq(
-            xwellProxy.balanceOf(recipient) - balanceAfterRelayer,
+            balanceAfterFirst - balanceBefore,
             mintAmount,
-            "VAA path did not mint correctly"
+            "first processVAA did not mint correctly"
         );
 
-        /// --- Step 3: replay of same VAA reverts ---
+        /// --- Step 2: second processVAA with different bytes ---
+        mockWormholeCore.setStorage(
+            true,
+            sourceWormholeChainId,
+            address(adapter).toBytes(),
+            "",
+            abi.encode(recipient, mintAmount, currentWormholeChainId)
+        );
+
+        bytes memory signedVAA2 = abi.encode("second-vaa");
+        adapter.processVAA(signedVAA2);
+
+        assertEq(
+            xwellProxy.balanceOf(recipient) - balanceAfterFirst,
+            mintAmount,
+            "second processVAA did not mint correctly"
+        );
+
+        /// --- Step 3: replay of either VAA reverts ---
         vm.expectRevert("WormholeBridgeAdapter: VAA already processed");
-        adapter.processVAA(signedVAA);
+        adapter.processVAA(signedVAA1);
+
+        vm.expectRevert("WormholeBridgeAdapter: VAA already processed");
+        adapter.processVAA(signedVAA2);
     }
 
     // ---------------------------------------------------------------
@@ -281,37 +277,18 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     }
 
     // ---------------------------------------------------------------
-    // Test 7: receiveWormholeMessages backward compat after V3 upgrade
+    // Test 7: receiveWormholeMessages reverts after V3 upgrade
     // ---------------------------------------------------------------
 
-    function testReceiveWormholeMessagesBackwardCompat() public {
-        uint256 mintAmount = 1000e18;
-
-        bytes memory payload = abi.encode(recipient, mintAmount);
-        bytes32 trustedSender = address(adapter).toBytes();
-        bytes32 nonce = keccak256(
-            abi.encode(payload, block.timestamp, "backward-compat-nonce")
-        );
-
-        uint256 balanceBefore = xwellProxy.balanceOf(recipient);
-
+    function testReceiveWormholeMessagesReverts() public {
         vm.prank(wormholeRelayerAddr);
+        vm.expectRevert("WormholeBridgeAdapter: relayer disabled");
         adapter.receiveWormholeMessages(
-            payload,
+            abi.encode(recipient, uint256(1000e18)),
             new bytes[](0),
-            trustedSender,
+            address(adapter).toBytes(),
             sourceWormholeChainId,
-            nonce
-        );
-
-        assertEq(
-            xwellProxy.balanceOf(recipient) - balanceBefore,
-            mintAmount,
-            "backward compat bridge-in failed"
-        );
-        assertTrue(
-            adapter.processedNonces(nonce),
-            "nonce not marked as processed"
+            keccak256("some-nonce")
         );
     }
 

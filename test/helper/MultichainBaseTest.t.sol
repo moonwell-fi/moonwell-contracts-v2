@@ -12,6 +12,7 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {BridgeOutHelper} from "@test/helper/BridgeOutHelper.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
@@ -257,6 +258,12 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         );
 
         wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+        wormholeRelayerAdapter.setMockChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+
+        /// Initialize V2 on governor and voteCollection to set wormhole core
+        /// to the mock adapter. This enables processVAA and publishMessage.
+        governor.initializeV2(address(wormholeRelayerAdapter));
+        voteCollection.initializeV2(address(wormholeRelayerAdapter));
 
         xwell.addBridge(
             MintLimits.RateLimitMidPointInfo({
@@ -308,6 +315,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         uint256 bridgeCost = governor.bridgeCostAll();
 
         vm.deal(creator, bridgeCost);
+        vm.recordLogs();
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -325,7 +333,20 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         assertEq(proposalId, endProposalCount, "proposal id incorrect");
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
 
+        /// publishMessage does not auto-deliver; parse BridgeOutSuccess events
+        /// and manually relay each to the target via processVAA
+        _deliverBridgeOutEvents(address(governor));
+
         return proposalId;
+    }
+
+    /// @notice Convenience wrapper around BridgeOutHelper.deliverBridgeOutEvents
+    function _deliverBridgeOutEvents(address emitter) internal {
+        BridgeOutHelper.deliverBridgeOutEvents(
+            vm,
+            wormholeRelayerAdapter,
+            emitter
+        );
     }
 
     // helper functions

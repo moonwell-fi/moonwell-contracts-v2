@@ -28,6 +28,7 @@ import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {BridgeOutHelper} from "@test/helper/BridgeOutHelper.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
@@ -53,6 +54,7 @@ export DO_VALIDATE=true
 
 */
 contract MultichainProposalTest is PostProposalCheck {
+    using stdStorage for StdStorage;
     using ChainIds for uint256;
 
     MultichainVoteCollection public voteCollection;
@@ -161,10 +163,15 @@ contract MultichainProposalTest is PostProposalCheck {
             vm.selectFork(MOONBEAM_FORK_ID);
 
             /// ----------------------------------------------------------
-            /// ---------------- Wormhole Relayer Etching ----------------
+            /// ---- Mock Wormhole Adapter (relayer + core bridge) --------
             /// ----------------------------------------------------------
 
-            /// mock relayer so we can simulate bridging well
+            /// The WormholeRelayerAdapter mock implements both the legacy
+            /// relayer interface AND the IWormhole core bridge interface.
+            /// After MIP-X48 executes, governor/voteCollection have their
+            /// wormhole storage set to the real WORMHOLE_CORE. We overwrite
+            /// that slot with the mock address so _wormhole() returns the
+            /// persistent mock (needed for cross-fork auto-delivery).
             wormholeRelayerAdapter = new WormholeRelayerAdapter(
                 new uint16[](0),
                 new uint256[](0)
@@ -172,52 +179,104 @@ contract MultichainProposalTest is PostProposalCheck {
             vm.makePersistent(address(wormholeRelayerAdapter));
             vm.label(address(wormholeRelayerAdapter), "MockWormholeRelayer");
 
-            /// we need to set this so that the relayer mock knows that for the next sendPayloadToEvm
-            /// call it must switch forks
             wormholeRelayerAdapter.setIsMultichainTest(true);
             wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+            wormholeRelayerAdapter.setMockChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
 
-            // set mock as the wormholeRelayer address on bridge adapter
+            /// Encode gasLimit + relayer address packed into a single slot
             WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
             );
-
             uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
-
-            // encode gasLimit and relayer address since is stored in a single slot
-            // relayer is first due to how evm pack values into a single storage
-            bytes32 encodedData = bytes32(
+            bytes32 encodedRelayerData = bytes32(
                 (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
                     uint256(gasLimit)
             );
 
-            vm.selectFork(BASE_FORK_ID);
-
-            /// stores the wormhole mock address in the wormholeRelayer variable
-            vm.store(address(voteCollection), bytes32(0), encodedData);
-
-            vm.selectFork(OPTIMISM_FORK_ID);
-            vm.warp(startTimestamp);
-
-            address voteCollectionOptimism = addresses.getAddress(
-                "VOTE_COLLECTION_PROXY"
+            /// --- Moonbeam: Governor ---
+            /// Overwrite wormhole slot with mock address.
+            /// Slot 125 = MultichainGovernor.wormhole (V2 storage).
+            /// Using hardcoded slot because stdstore.find() can be unreliable
+            /// with complex proxy storage layouts on forked chains.
+            vm.store(
+                address(governor),
+                bytes32(uint256(125)),
+                bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
             );
-
-            /// stores the wormhole mock address in the wormholeRelayer variable
-            vm.store(voteCollectionOptimism, bytes32(0), encodedData);
-
-            vm.selectFork(MOONBEAM_FORK_ID);
-
-            /// stores the wormhole mock address in the wormholeRelayer variable
+            /// Overwrite relayer slot (for bridgeCost try-catch).
+            /// In MultichainGovernor, wormholeRelayer is alone at slot 103
+            /// (gasLimit is at slot 102, NOT packed with relayer).
             vm.store(
                 address(governor),
                 bytes32(uint256(103)),
                 bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
             );
+
+            /// --- Base: VoteCollection ---
+            /// Slot 159 = MultichainVoteCollection.wormhole (V2 storage).
+            vm.selectFork(BASE_FORK_ID);
+            vm.store(
+                address(voteCollection),
+                bytes32(uint256(159)),
+                bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
+            );
+            vm.store(address(voteCollection), bytes32(0), encodedRelayerData);
+
+            /// --- Optimism: VoteCollection ---
+            vm.selectFork(OPTIMISM_FORK_ID);
+            vm.warp(startTimestamp);
+            address voteCollectionOptimism = addresses.getAddress(
+                "VOTE_COLLECTION_PROXY"
+            );
+            vm.store(
+                voteCollectionOptimism,
+                bytes32(uint256(159)),
+                bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
+            );
+            vm.store(voteCollectionOptimism, bytes32(0), encodedRelayerData);
+
+            /// Also overwrite the xWELL bridge adapter's wormhole slot
+            /// so bridgeCost / processVAA work on the adapter too
+            vm.selectFork(MOONBEAM_FORK_ID);
+            uint256 adapterWormholeSlot = stdstore
+                .target(address(wormholeBridgeAdapter))
+                .sig("wormhole()")
+                .find();
+            vm.selectFork(MOONBEAM_FORK_ID);
+            vm.store(
+                address(wormholeBridgeAdapter),
+                bytes32(adapterWormholeSlot),
+                bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
+            );
+
+            vm.selectFork(BASE_FORK_ID);
+            address baseBridgeAdapter = addresses.getAddress(
+                "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+            );
+            uint256 baseAdapterSlot = stdstore
+                .target(baseBridgeAdapter)
+                .sig("wormhole()")
+                .find();
+            vm.store(
+                baseBridgeAdapter,
+                bytes32(baseAdapterSlot),
+                bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
+            );
+
+            vm.selectFork(MOONBEAM_FORK_ID);
             /// ----------------------------------------------------------
             /// ----------------------------------------------------------
             /// ----------------------------------------------------------
         }
+    }
+
+    /// @notice Convenience wrapper: parse BridgeOutSuccess events and deliver via processVAA
+    function _deliverBridgeOutEvents(address emitter) internal {
+        BridgeOutHelper.deliverBridgeOutEvents(
+            vm,
+            wormholeRelayerAdapter,
+            emitter
+        );
     }
 
     function testSetup() public {
@@ -1259,12 +1318,14 @@ contract MultichainProposalTest is PostProposalCheck {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
+        vm.recordLogs();
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
             calldatas,
             description
         );
+        _deliverBridgeOutEvents(address(governor));
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -1356,12 +1417,14 @@ contract MultichainProposalTest is PostProposalCheck {
 
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
+        vm.recordLogs();
         proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
             calldatas,
             description
         );
+        _deliverBridgeOutEvents(address(governor));
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -1745,12 +1808,14 @@ contract MultichainProposalTest is PostProposalCheck {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
+        vm.recordLogs();
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
             calldatas,
             description
         );
+        _deliverBridgeOutEvents(address(governor));
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -1834,12 +1899,14 @@ contract MultichainProposalTest is PostProposalCheck {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
+        vm.recordLogs();
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
             calldatas,
             description
         );
+        _deliverBridgeOutEvents(address(governor));
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -1899,24 +1966,22 @@ contract MultichainProposalTest is PostProposalCheck {
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
-            uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
-
+            /// Re-deliver the same proposal — should fail with "proposal already exists"
             wormholeRelayerAdapter.setSilenceFailure(true);
 
-            vm.deal(address(governor), gasCost);
             vm.expectEmit();
             emit MockWormholeRelayerError(
                 "MultichainVoteCollection: proposal already exists"
             );
 
-            vm.prank(address(governor));
-            wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-                30,
+            wormholeRelayerAdapter.deliverBridgeOut(
+                BASE_WORMHOLE_CHAIN_ID,
                 address(voteCollection),
                 payload,
-                0,
-                0
+                address(governor)
             );
+
+            wormholeRelayerAdapter.setSilenceFailure(false);
         }
     }
 

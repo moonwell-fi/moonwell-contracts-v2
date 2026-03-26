@@ -107,6 +107,9 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             proxyAdmin,
             address(this)
         );
+        MultichainVoteCollection(proxyVoteCollection2).initializeV2(
+            address(wormholeRelayerAdapter)
+        );
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 1
@@ -161,12 +164,14 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             payload
         );
 
+        vm.recordLogs();
         governor.propose{value: bridgeCost}(
             targets,
             values,
             calldatas,
             description
         );
+        _deliverBridgeOutEvents(address(governor));
 
         {
             // vote collections should have the proposal
@@ -189,6 +194,10 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         assertEq(proxyVoteCollection2.balance, 0, "balance should be zero");
     }
 
+    /// @notice Test that when publishMessage succeeds for all chains but we
+    ///         only deliver to some, only those vote collections receive the
+    ///         proposal. This simulates guardian/relayer delivery failure for
+    ///         chains 2 and 4 (messages published but never relayed).
     function testEmitToMultipleVoteCollectionsSomeFails() public {
         (address proxyVoteCollection2, ) = deployVoteCollection(
             address(xwell),
@@ -198,6 +207,9 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             MOONBEAM_WORMHOLE_CHAIN_ID,
             proxyAdmin,
             address(this)
+        );
+        MultichainVoteCollection(proxyVoteCollection2).initializeV2(
+            address(wormholeRelayerAdapter)
         );
 
         (address proxyVoteCollection3, ) = deployVoteCollection(
@@ -209,6 +221,9 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             proxyAdmin,
             address(this)
         );
+        MultichainVoteCollection(proxyVoteCollection3).initializeV2(
+            address(wormholeRelayerAdapter)
+        );
 
         (address proxyVoteCollection4, ) = deployVoteCollection(
             address(xwell),
@@ -218,6 +233,9 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             MOONBEAM_WORMHOLE_CHAIN_ID,
             proxyAdmin,
             address(this)
+        );
+        MultichainVoteCollection(proxyVoteCollection4).initializeV2(
+            address(wormholeRelayerAdapter)
         );
 
         WormholeTrustedSender.TrustedSender[]
@@ -236,12 +254,6 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
 
         vm.prank(address(governor));
         governor.addExternalChainConfigs(_trustedSenders);
-
-        uint16[] memory shouldRevertAt = new uint16[](2);
-        shouldRevertAt[0] = 2;
-        shouldRevertAt[1] = 4;
-
-        wormholeRelayerAdapter.setShouldRevertAtChain(shouldRevertAt, true);
 
         address proposer = address(1);
 
@@ -280,6 +292,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             endTimestamp + governor.crossChainVoteCollectionPeriod()
         );
 
+        /// publishMessage is chain-agnostic, so all 4 chains get BridgeOutSuccess
         vm.expectEmit(true, true, true, true, address(governor));
         emit BridgeOutSuccess(
             BASE_WORMHOLE_CHAIN_ID,
@@ -289,13 +302,18 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         );
 
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(2, payload, bridgeCost / 4);
+        emit BridgeOutSuccess(2, bridgeCost / 4, proxyVoteCollection2, payload);
 
         vm.expectEmit(true, true, true, true, address(governor));
         emit BridgeOutSuccess(3, bridgeCost / 4, proxyVoteCollection3, payload);
 
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(4, payload, bridgeCost / 4);
+        emit BridgeOutSuccess(4, bridgeCost / 4, proxyVoteCollection4, payload);
+
+        /// Record logs, propose, then selectively deliver only to
+        /// BASE_WORMHOLE_CHAIN_ID and chain 3 (skip chains 2 and 4 to
+        /// simulate guardian/relayer delivery failure)
+        vm.recordLogs();
 
         vm.prank(proposer);
         governor.propose{value: bridgeCost}(
@@ -304,6 +322,33 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             calldatas,
             description
         );
+
+        /// Manually deliver only to the chains that should succeed
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 bridgeOutSuccessTopic = keccak256(
+            "BridgeOutSuccess(uint16,uint256,address,bytes)"
+        );
+
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] == bridgeOutSuccessTopic) {
+                (
+                    uint16 dstChainId,
+                    ,
+                    address dst,
+                    bytes memory eventPayload
+                ) = abi.decode(logs[i].data, (uint16, uint256, address, bytes));
+
+                /// Skip delivery to chains 2 and 4 (simulating failure)
+                if (dstChainId == 2 || dstChainId == 4) continue;
+
+                wormholeRelayerAdapter.deliverBridgeOut(
+                    dstChainId,
+                    dst,
+                    eventPayload,
+                    address(governor)
+                );
+            }
+        }
 
         {
             (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection
@@ -462,6 +507,10 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
 
                 vm.deal(address(this), bridgeCost);
 
+                vm.recordLogs();
+                voteCollection.emitVotes{value: bridgeCost}(proposalId);
+
+                /// Expect CrossChainVoteCollected to be emitted during delivery
                 vm.expectEmit(true, true, true, true, address(governor));
                 emit CrossChainVoteCollected(
                     proposalId,
@@ -470,8 +519,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
                     voteAmount,
                     0
                 );
-
-                voteCollection.emitVotes{value: bridgeCost}(proposalId);
+                _deliverBridgeOutEvents(address(voteCollection));
 
                 {
                     // check chainVoteCollectorVotes
@@ -527,10 +575,14 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
                 vm.deal(address(this), bridgeCost);
 
                 wormholeRelayerAdapter.setSenderChainId(2);
+
+                vm.recordLogs();
+                voteCollection2.emitVotes{value: bridgeCost}(proposalId);
+
+                /// Expect CrossChainVoteCollected to be emitted during delivery
                 vm.expectEmit(true, true, true, true, address(governor));
                 emit CrossChainVoteCollected(proposalId, 2, voteAmount, 0, 0);
-
-                voteCollection2.emitVotes{value: bridgeCost}(proposalId);
+                _deliverBridgeOutEvents(address(voteCollection2));
 
                 {
                     // check chainVoteCollectorVotes
