@@ -383,5 +383,15 @@
         "addr": "0xEa913dFa6b61F4d287FC68B3CbDC8B61B49223dd",
         "isContract": true,
         "name": "PAUSE_GUARDIAN"
+    },
+    {
+        "addr": "0x48e70f68712bD275982e8351DFe1993A828c6412",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V3"
+    },
+    {
+        "addr": "0x65299Eb6a77ee1b1a7eF7051cce71005b2A707aB",
+        "isContract": true,
+        "name": "MULTICHAIN_GOVERNOR_IMPL_V2"
     }
 ]

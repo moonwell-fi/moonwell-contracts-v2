@@ -1,7 +1,6 @@
 pragma solidity 0.8.19;
 
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
-import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
@@ -9,7 +8,7 @@ import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 /// @notice Wormhole Bridge Base Contract
 /// Useful or when you want to send to and receive from the same addresses
 /// on many different chains
-abstract contract WormholeBridgeBase is IWormholeReceiver {
+abstract contract WormholeBridgeBase {
     using EnumerableSet for EnumerableSet.UintSet;
 
     /// ---------------------------------------------------------
@@ -335,21 +334,6 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         }
     }
 
-    /// @notice legacy relayer entry point — deprecated
-    /// @dev kept to satisfy the IWormholeReceiver interface
-    function receiveWormholeMessages(
-        bytes memory, // payload
-        bytes[] memory, // additionalVaas
-        bytes32, // senderAddress
-        uint16, // sourceChain
-        bytes32 // nonce
-    ) external payable override {
-        require(
-            address(_wormhole()) == address(0),
-            "WormholeBridge: relayer deprecated"
-        );
-    }
-
     /// @notice Process a guardian-signed VAA to complete a payload transfer.
     ///         Callable by anyone (permissionless). The VAA must be signed by
     ///         the Wormhole guardian quorum. The emitter must be a trusted sender
@@ -361,13 +345,10 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         require(valid, reason);
         require(
             isTrustedSender(vm.emitterChainId, vm.emitterAddress),
-            "WormholeBridge: untrusted emitter"
+            "untrusted emitter"
         );
 
-        require(
-            !_isVAAHashProcessed(vm.hash),
-            "WormholeBridge: VAA already processed"
-        );
+        require(!_isVAAHashProcessed(vm.hash), "VAA already processed");
         _setVAAHashProcessed(vm.hash);
 
         /// Parse the target
@@ -378,7 +359,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         require(
             targetChain == _wormhole().chainId() &&
                 targetAddress == address(this),
-            "WormholeBridge: invalid target"
+            "invalid target"
         );
 
         _bridgeIn(vm.emitterChainId, payload);

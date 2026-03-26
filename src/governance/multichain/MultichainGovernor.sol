@@ -148,86 +148,12 @@ contract MultichainGovernor is
     IWormhole public wormhole;
 
     /// @notice tracks processed VAA hashes to prevent replay
-    mapping(bytes32 => bool) public processedVAAHashes;
+    mapping(bytes32 => bool) internal processedVAAHashes;
 
     /// @notice disable the initializer to stop governance hijacking
     /// and avoid selfdestruct attacks.
     constructor() {
         _disableInitializers();
-    }
-
-    /// @notice struct containing initializer data
-    struct InitializeData {
-        /// well token address
-        address well;
-        /// xWell token address
-        address xWell;
-        /// stkWell token address
-        address stkWell;
-        /// crowdsale token distributor address
-        address distributor;
-        /// proposal threshold
-        uint256 proposalThreshold;
-        /// voting period in seconds
-        uint256 votingPeriodSeconds;
-        /// cross chain voting collection period in seconds
-        uint256 crossChainVoteCollectionPeriod;
-        /// number of total votes required to meet quorum
-        uint256 quorum;
-        /// maximum number of live proposals a user can have at a single point in time
-        uint256 maxUserLiveProposals;
-        /// pause duration in seconds
-        uint128 pauseDuration;
-        /// pause guardian address
-        address pauseGuardian;
-        /// break glass guardian address
-        address breakGlassGuardian;
-        /// wormhole relayer
-        address wormholeRelayer;
-    }
-
-    /// @notice initialize the governor contract
-    /// @param initData initialization data
-    /// @param trustedSenders that can relay messages to this contract
-    /// @param calldatas calldatas to whitelist for break glass guardian
-    function initialize(
-        InitializeData memory initData,
-        WormholeTrustedSender.TrustedSender[] memory trustedSenders,
-        bytes[] calldata calldatas
-    ) external initializer {
-        xWell = xWELL(initData.xWell);
-        well = SnapshotInterface(initData.well);
-        stkWell = SnapshotInterface(initData.stkWell);
-        distributor = SnapshotInterface(initData.distributor);
-
-        _setProposalThreshold(initData.proposalThreshold);
-        _setVotingPeriod(initData.votingPeriodSeconds);
-        _setCrossChainVoteCollectionPeriod(
-            initData.crossChainVoteCollectionPeriod
-        );
-        _setQuorum(initData.quorum);
-        _setMaxUserLiveProposals(initData.maxUserLiveProposals);
-        _setBreakGlassGuardian(initData.breakGlassGuardian);
-
-        __Pausable_init();
-
-        _updatePauseDuration(initData.pauseDuration);
-
-        /// set the pause guardian
-        _grantGuardian(initData.pauseGuardian);
-
-        _setWormholeRelayer(address(initData.wormholeRelayer));
-
-        /// sets vote collection contracts
-        _addTargetAddresses(trustedSenders);
-
-        _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
-
-        unchecked {
-            for (uint256 i = 0; i < calldatas.length; i++) {
-                _updateApprovedCalldata(calldatas[i], true);
-            }
-        }
     }
 
     /// @notice V2 upgrade: set the Wormhole core bridge address for direct
@@ -429,30 +355,6 @@ contract MultichainGovernor is
         return totalLiveProposals;
     }
 
-    /// @notice returns all proposals a user has that are live
-    /// a proposal is considered live if it is active or pending
-    /// @param user The address of the user to check
-    function getUserLiveProposals(
-        address user
-    ) external view returns (uint256[] memory) {
-        uint256[] memory userProposals = new uint256[](
-            currentUserLiveProposals(user)
-        );
-        uint256[] memory allUserProposals = _userLiveProposals[user].values();
-        uint256 userLiveProposalIndex = 0;
-
-        unchecked {
-            for (uint256 i = 0; i < allUserProposals.length; i++) {
-                if (proposalActive(allUserProposals[i])) {
-                    userProposals[userLiveProposalIndex] = allUserProposals[i];
-                    userLiveProposalIndex++;
-                }
-            }
-        }
-
-        return userProposals;
-    }
-
     /// @notice returns the total voting power for an address at a given block number and timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
@@ -496,25 +398,6 @@ contract MultichainGovernor is
         return
             proposalState == ProposalState.Active ||
             proposalState == ProposalState.CrossChainVoteCollection;
-    }
-
-    /// @notice return the votes for a particular chain and proposal
-    /// @param proposalId the id of the proposal to check
-    /// @param wormholeChainId the chain id to check votes from
-    function chainAddressVotes(
-        uint256 proposalId,
-        uint16 wormholeChainId
-    )
-        external
-        view
-        returns (uint256 forVotes, uint256 againstVotes, uint256 abstainVotes)
-    {
-        VoteCounts storage voteCounts = chainVoteCollectorVotes[
-            wormholeChainId
-        ][proposalId];
-        forVotes = voteCounts.forVotes;
-        againstVotes = voteCounts.againstVotes;
-        abstainVotes = voteCounts.abstainVotes;
     }
 
     /// @notice The current state of a given proposal
@@ -936,14 +819,6 @@ contract MultichainGovernor is
         _setProposalThreshold(newProposalThreshold);
     }
 
-    /// @notice updates the maximum user live proposals
-    /// @param newMaxLiveProposals the new maximum live proposals
-    function updateMaxUserLiveProposals(
-        uint256 newMaxLiveProposals
-    ) external override onlyGovernor {
-        _setMaxUserLiveProposals(newMaxLiveProposals);
-    }
-
     /// @notice updates the quorum, callable only by this contract
     /// @param newQuorum the new quorum
     function updateQuorum(uint256 newQuorum) external override onlyGovernor {
@@ -974,18 +849,6 @@ contract MultichainGovernor is
         address newGuardian
     ) external override onlyGovernor {
         _setBreakGlassGuardian(newGuardian);
-    }
-
-    /// @notice set a gas limit for the relayer on the external chain
-    /// should only be called if there is a change in gas prices on the external chain
-    /// @param newGasLimit new gas limit to set
-    function setGasLimit(uint96 newGasLimit) external onlyGovernor {
-        require(
-            newGasLimit >= Constants.MIN_GAS_LIMIT,
-            "MultichainGovernor: gas limit too low"
-        );
-
-        _setGasLimit(newGasLimit);
     }
 
     /// @notice grant new pause guardian

@@ -1453,5 +1453,15 @@
         "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
         "isContract": true,
         "name": "PAUSE_GUARDIAN"
+    },
+    {
+        "addr": "0xb84543e036054E2cD5394A9D99fa701Eef666df4",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V3"
+    },
+    {
+        "addr": "0xf81094eedd37DA759E837D727D940f14b18b6c76",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL_V2"
     }
 ]
