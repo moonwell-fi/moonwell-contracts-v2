@@ -35,6 +35,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     uint96 public gasLimit;
 
     /// @notice address of the wormhole relayer cannot be changed by owner
+    /// @dev DEPRECATED
     /// because the relayer contract is a proxy and should never change its address
     IWormholeRelayer public wormholeRelayer;
 

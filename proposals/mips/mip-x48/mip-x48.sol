@@ -6,6 +6,7 @@ import "@forge-std/Test.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
@@ -403,7 +404,17 @@ contract mipx48 is HybridProposal {
             string.concat(chainName, ": owner changed after upgrade")
         );
 
-        // 8. Verify initializeV3 cannot be called again (reinitializer guard)
+        // 8. Verify Wormhole core messageFee is 0 (bridge-out cost assumption)
+        assertEq(
+            IWormhole(wormholeCore).messageFee(),
+            0,
+            string.concat(
+                chainName,
+                ": Wormhole messageFee is non-zero - bridgeCost assumption violated"
+            )
+        );
+
+        // 9. Verify initializeV3 cannot be called again (reinitializer guard)
         vm.expectRevert("Initializable: contract is already initialized");
         adapter.initializeV3(address(1));
     }

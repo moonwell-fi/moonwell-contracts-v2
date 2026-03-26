@@ -18,6 +18,16 @@ contract WormholeBridgeAdapter is
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
+    /// ---------------------- CONSTANTS ------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice Wormhole consistency level for publishMessage.
+    /// 200 = "finalized" — guardians wait for full chain finality
+    uint8 public constant CONSISTENCY_LEVEL = 200;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
     /// ------------------ SINGLE STORAGE SLOT ------------------
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -30,6 +40,7 @@ contract WormholeBridgeAdapter is
 
     /// @notice address of the wormhole relayer cannot be changed by owner
     /// because the relayer contract is a proxy and should never change its address
+    /// @dev DEPRECATED
     IWormholeRelayer public wormholeRelayer;
 
     /// ---------------------------------------------------------
@@ -44,16 +55,6 @@ contract WormholeBridgeAdapter is
     /// @notice chain id of the target chain to address for bridging
     /// starts off mapped to itself, but can be changed by governance
     mapping(uint16 => address) public targetAddress;
-
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-    /// ---------------------- CONSTANTS ------------------------
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-
-    /// @notice Wormhole consistency level for publishMessage.
-    /// 200 = "finalized" — guardians wait for full chain finality
-    uint8 public constant CONSISTENCY_LEVEL = 200;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
