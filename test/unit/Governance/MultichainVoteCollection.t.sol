@@ -1353,7 +1353,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             innerPayload
         );
 
-        vm.expectRevert("MultichainVoteCollection: invalid target");
+        vm.expectRevert("WormholeBridge: invalid target");
         wormholeRelayerAdapter.deliverBridgeOut(
             BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
@@ -1371,7 +1371,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             innerPayload
         );
 
-        vm.expectRevert("MultichainVoteCollection: invalid target");
+        vm.expectRevert("WormholeBridge: invalid target");
         wormholeRelayerAdapter.deliverBridgeOut(
             BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),

@@ -370,7 +370,18 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         );
         _setVAAHashProcessed(vm.hash);
 
-        _bridgeIn(vm.emitterChainId, vm.payload);
+        /// Parse the target
+        (uint16 targetChain, address targetAddress, bytes memory payload) = abi
+            .decode(vm.payload, (uint16, address, bytes));
+
+        /// Validate we are the target
+        require(
+            targetChain == _wormhole().chainId() &&
+                targetAddress == address(this),
+            "WormholeBridge: invalid target"
+        );
+
+        _bridgeIn(vm.emitterChainId, payload);
     }
 
     /// @notice converts a bytes32 to address,
