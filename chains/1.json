@@ -78,10 +78,5 @@
         "addr": "0x98f3c9e6E3fACe36bAAd05FE09d375Ef1464288B",
         "isContract": true,
         "name": "WORMHOLE_CORE"
-    },
-    {
-        "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
-        "isContract": true,
-        "name": "PAUSE_GUARDIAN"
     }
 ]

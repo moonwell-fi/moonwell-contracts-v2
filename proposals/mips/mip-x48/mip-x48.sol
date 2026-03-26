@@ -13,7 +13,7 @@ import {MultichainVoteCollection} from "@protocol/governance/multichain/Multicha
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 
 /// @title MIP-X48: Upgrade WormholeBridgeAdapter and WormholeBridgeBase for Direct VAA Verification - this impacts
@@ -389,12 +389,35 @@ contract mipx48 is HybridProposal {
             string.concat(chainName, ": xERC20 corrupted after upgrade")
         );
 
-        // 6. Verify at least one trusted sender still registered
-        assertTrue(
-            adapter.isTrustedSender(BASE_WORMHOLE_CHAIN_ID, proxy) ||
+        // 6. Verify all trusted senders still registered (every other chain)
+        if (block.chainid == MOONBEAM_CHAIN_ID) {
+            assertTrue(
+                adapter.isTrustedSender(BASE_WORMHOLE_CHAIN_ID, proxy),
+                string.concat(chainName, ": Base trusted sender missing")
+            );
+            assertTrue(
+                adapter.isTrustedSender(OPTIMISM_WORMHOLE_CHAIN_ID, proxy),
+                string.concat(chainName, ": Optimism trusted sender missing")
+            );
+        } else if (block.chainid == BASE_CHAIN_ID) {
+            assertTrue(
                 adapter.isTrustedSender(MOONBEAM_WORMHOLE_CHAIN_ID, proxy),
-            string.concat(chainName, ": no trusted senders after upgrade")
-        );
+                string.concat(chainName, ": Moonbeam trusted sender missing")
+            );
+            assertTrue(
+                adapter.isTrustedSender(OPTIMISM_WORMHOLE_CHAIN_ID, proxy),
+                string.concat(chainName, ": Optimism trusted sender missing")
+            );
+        } else if (block.chainid == OPTIMISM_CHAIN_ID) {
+            assertTrue(
+                adapter.isTrustedSender(MOONBEAM_WORMHOLE_CHAIN_ID, proxy),
+                string.concat(chainName, ": Moonbeam trusted sender missing")
+            );
+            assertTrue(
+                adapter.isTrustedSender(BASE_WORMHOLE_CHAIN_ID, proxy),
+                string.concat(chainName, ": Base trusted sender missing")
+            );
+        }
 
         // 7. Verify owner preserved
         string memory ownerKey = block.chainid == MOONBEAM_CHAIN_ID
