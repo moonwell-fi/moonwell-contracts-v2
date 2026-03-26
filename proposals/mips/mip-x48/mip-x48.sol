@@ -16,12 +16,14 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 
-/// @title MIP-X48: Upgrade WormholeBridgeAdapter for Direct VAA Verification
+/// @title MIP-X48: Upgrade WormholeBridgeAdapter and WormholeBridgeBase for Direct VAA Verification - this impacts
+///        xWELL, MultichainGovernor, and MultichainVoteCollection
 /// @author Moonwell Contributors
-/// @notice Proposal to upgrade WormholeBridgeAdapter on Moonbeam, Base, and Optimism
+/// @notice Proposal to upgrade xWELL on Moonbeam, Base, and Optimism
 ///         to V3 with direct Wormhole guardian-signed VAA verification via processVAA(),
-///         replacing dependency on the deprecated Wormhole standard relayer. We also
-///         update the pause guardian on all chains to the new security council safes.
+///         replacing dependency on the deprecated Wormhole standard relayer. We also upgrade MultichainGovernor on
+///         Moonbeam, and MultichainVoteCollection on Base and Optimism.
+///         update the pause guardian on all chains to the new security council safes. Also upgrades
 ///         NOTE: Ethereum xWELL deployment is still deployer-owned (until governor migration) so that upgrade
 ///         should be done via UpgradeWormholeAdapterEthereum.
 contract mipx48 is HybridProposal {
