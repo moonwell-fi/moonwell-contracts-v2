@@ -1278,11 +1278,21 @@ contract MultichainGovernor is
     /// this means that votes cannot be updated from a given chain and proposal
     /// once they are received.
     /// @param sourceChain the chain id of the source chain
-    /// @param payload contains proposalId, forVotes, againstVotes, abstainVotes
+    /// @param _payload contains encoded target + proposalId, forVotes, againstVotes, abstainVotes
     function _bridgeIn(
         uint16 sourceChain,
-        bytes memory payload
+        bytes memory _payload
     ) internal override {
+        /// Parse the target
+        (uint16 targetChain, address targetAddress, bytes memory payload) = abi
+            .decode(_payload, (uint16, address, bytes));
+
+        /// Validate we are the target
+        require(
+            targetChain == wormhole.chainId() && targetAddress == address(this),
+            "MultichainGovernor: invalid target"
+        );
+
         /// payload should be 4 uint256s
         require(
             payload.length == 128,

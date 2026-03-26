@@ -34,7 +34,20 @@ library BridgeOutHelper {
                 (uint16 dstChainId, , address dst, bytes memory payload) = abi
                     .decode(logs[i].data, (uint16, uint256, address, bytes));
 
-                adapter.deliverBridgeOut(dstChainId, dst, payload, emitter);
+                /// _bridgeOutAll publishes abi.encode(targetChain, targetAddr, payload)
+                /// but BridgeOutSuccess emits the raw inner payload. Re-wrap so
+                /// the receiver's _bridgeIn can decode the (uint16, address, bytes) envelope.
+                bytes memory wrappedPayload = abi.encode(
+                    dstChainId,
+                    dst,
+                    payload
+                );
+                adapter.deliverBridgeOut(
+                    dstChainId,
+                    dst,
+                    wrappedPayload,
+                    emitter
+                );
             }
         }
     }

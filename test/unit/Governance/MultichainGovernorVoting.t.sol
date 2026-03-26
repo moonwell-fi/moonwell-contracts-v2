@@ -2859,8 +2859,53 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
     // bridge in
 
+    function testBridgeInInvalidTargetChain() public {
+        bytes memory innerPayload = abi.encode(0, 0, 0, 0);
+        /// wrap with WRONG target chain (Base instead of Moonbeam)
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(governor),
+            innerPayload
+        );
+
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+
+        vm.expectRevert("MultichainGovernor: invalid target");
+        wormholeRelayerAdapter.deliverBridgeOut(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
+            payload,
+            address(voteCollection)
+        );
+    }
+
+    function testBridgeInInvalidTargetAddress() public {
+        bytes memory innerPayload = abi.encode(0, 0, 0, 0);
+        /// wrap with correct chain but WRONG target address
+        bytes memory payload = abi.encode(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
+
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+
+        vm.expectRevert("MultichainGovernor: invalid target");
+        wormholeRelayerAdapter.deliverBridgeOut(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
+            payload,
+            address(voteCollection)
+        );
+    }
+
     function testBridgeInWrongPayloadLength() public {
-        bytes memory payload = abi.encode(0, 0, 0);
+        bytes memory innerPayload = abi.encode(0, 0, 0);
+        bytes memory payload = abi.encode(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
+            innerPayload
+        );
 
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
@@ -2876,7 +2921,12 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     function testBridgeInProposalNotInCrossChainPeriod() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
+        bytes memory innerPayload = abi.encode(proposalId, 0, 0, 0);
+        bytes memory payload = abi.encode(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
+            innerPayload
+        );
 
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 

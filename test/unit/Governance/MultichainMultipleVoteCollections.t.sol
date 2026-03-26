@@ -341,10 +341,15 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
                 /// Skip delivery to chains 2 and 4 (simulating failure)
                 if (dstChainId == 2 || dstChainId == 4) continue;
 
+                bytes memory wrappedPayload = abi.encode(
+                    dstChainId,
+                    dst,
+                    eventPayload
+                );
                 wormholeRelayerAdapter.deliverBridgeOut(
                     dstChainId,
                     dst,
-                    eventPayload,
+                    wrappedPayload,
                     address(governor)
                 );
             }

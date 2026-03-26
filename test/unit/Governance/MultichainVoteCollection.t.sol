@@ -1344,8 +1344,49 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     // bridge in
 
+    function testBridgeInInvalidTargetChain() public {
+        bytes memory innerPayload = abi.encode(0, 0, 0, 0, 0);
+        /// wrap with WRONG target chain (Moonbeam instead of Base)
+        bytes memory payload = abi.encode(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
+
+        vm.expectRevert("MultichainVoteCollection: invalid target");
+        wormholeRelayerAdapter.deliverBridgeOut(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            payload,
+            address(governor)
+        );
+    }
+
+    function testBridgeInInvalidTargetAddress() public {
+        bytes memory innerPayload = abi.encode(0, 0, 0, 0, 0);
+        /// wrap with correct chain but WRONG target address
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(governor),
+            innerPayload
+        );
+
+        vm.expectRevert("MultichainVoteCollection: invalid target");
+        wormholeRelayerAdapter.deliverBridgeOut(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            payload,
+            address(governor)
+        );
+    }
+
     function testBridgeInWrongSourceChain() public {
-        bytes memory payload = abi.encode(0, 0, 0, 0, 0);
+        bytes memory innerPayload = abi.encode(0, 0, 0, 0, 0);
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
         /// Set wrong sender chain — voteCollection trusts governor from Moonbeam, not Base
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
@@ -1359,7 +1400,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testBridgeInWrongPayloadLength() public {
-        bytes memory payload = abi.encode(0, 0, 0, 0);
+        bytes memory innerPayload = abi.encode(0, 0, 0, 0);
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
 
         vm.expectRevert("MultichainVoteCollection: invalid payload length");
         wormholeRelayerAdapter.deliverBridgeOut(
@@ -1373,7 +1419,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testBridgeInProposalAlreadyExist() public {
         uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
-        bytes memory payload = abi.encode(proposalId, 0, 0, 0, 0);
+        bytes memory innerPayload = abi.encode(proposalId, 0, 0, 0, 0);
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
 
         vm.expectRevert("MultichainVoteCollection: proposal already exists");
         wormholeRelayerAdapter.deliverBridgeOut(
@@ -1387,7 +1438,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testBridgeInVotingSnapshotTimeGreaterThanStartTime() public {
         vm.warp(1);
 
-        bytes memory payload = abi.encode(0, 4, 3, 3, 4);
+        bytes memory innerPayload = abi.encode(0, 4, 3, 3, 4);
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
 
         vm.expectRevert(
             "MultichainVoteCollection: snapshot time must be before start time"
@@ -1403,7 +1459,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testBridgeInVotingSnapshotTimeEqStartTime() public {
         vm.warp(1);
 
-        bytes memory payload = abi.encode(0, 4, 4, 3, 4);
+        bytes memory innerPayload = abi.encode(0, 4, 4, 3, 4);
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
 
         vm.expectRevert(
             "MultichainVoteCollection: snapshot time must be before start time"
@@ -1418,7 +1479,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     function testBridgeInVotingStartTimeGreaterThanVoteEndTime() public {
         vm.warp(1);
-        bytes memory payload = abi.encode(0, 2, 3, 2, 0);
+        bytes memory innerPayload = abi.encode(0, 2, 3, 2, 0);
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
 
         vm.expectRevert(
             "MultichainVoteCollection: start time must be before end time"
@@ -1433,7 +1499,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     function testBridgeInVoteCollectionEndLtThanVoteEndTime() public {
         vm.warp(1);
-        bytes memory payload = abi.encode(0, 2, 3, 4, 0);
+        bytes memory innerPayload = abi.encode(0, 2, 3, 4, 0);
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
 
         vm.expectRevert(
             "MultichainVoteCollection: end time must be before vote collection end"
@@ -1448,7 +1519,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     function testBridgeInVotingStartTimeEqVoteEndTime() public {
         vm.warp(1);
-        bytes memory payload = abi.encode(0, 1, 2, 2, 0);
+        bytes memory innerPayload = abi.encode(0, 1, 2, 2, 0);
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
 
         vm.expectRevert(
             "MultichainVoteCollection: start time must be before end time"
@@ -1462,7 +1538,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testBridgeInVotingEndTimeLessThanTimestamp() public {
-        bytes memory payload = abi.encode(0, 0, 1, 2, 0);
+        bytes memory innerPayload = abi.encode(0, 0, 1, 2, 0);
+        bytes memory payload = abi.encode(
+            BASE_WORMHOLE_CHAIN_ID,
+            address(voteCollection),
+            innerPayload
+        );
 
         vm.expectRevert(
             "MultichainVoteCollection: end time must be in the future"
@@ -1480,7 +1561,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         uint256 proposalId = testEmitVotesToGovernorSucceeded();
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
-        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
+        bytes memory innerPayload = abi.encode(proposalId, 0, 0, 0);
+        bytes memory payload = abi.encode(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
+            innerPayload
+        );
 
         vm.expectRevert("MultichainGovernor: vote already collected");
         wormholeRelayerAdapter.deliverBridgeOut(

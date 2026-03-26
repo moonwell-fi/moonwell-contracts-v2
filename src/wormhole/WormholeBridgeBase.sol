@@ -14,6 +14,16 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
+    /// ---------------------- CONSTANTS ------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice Wormhole consistency level for publishMessage.
+    /// 200 = "finalized" — guardians wait for full chain finality
+    uint8 public constant CONSISTENCY_LEVEL = 200;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
     /// ------------------ SINGLE STORAGE SLOT ------------------
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -52,16 +62,6 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// should be impossible to ever have duplicate values in this set
     /// the reason being that the add function only adds if the value is not already in the set
     EnumerableSet.UintSet internal _targetChains;
-
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-    /// ------------- V2 STORAGE (post-upgrade) -----------------
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-
-    /// @notice Wormhole consistency level for publishMessage.
-    /// 200 = "finalized" — guardians wait for full chain finality
-    uint8 public constant CONSISTENCY_LEVEL = 200;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -303,7 +303,11 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             try
                 _wormhole().publishMessage{value: cost}(
                     0,
-                    payload,
+                    abi.encode(
+                        targetChain,
+                        targetAddress[targetChain],
+                        payload
+                    ),
                     CONSISTENCY_LEVEL
                 )
             {

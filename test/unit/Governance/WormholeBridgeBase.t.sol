@@ -150,7 +150,12 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         /// Configure the mock: emitter is voteCollection on Base chain
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
-        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
+        bytes memory innerPayload = abi.encode(proposalId, 0, 0, 0);
+        bytes memory payload = abi.encode(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
+            innerPayload
+        );
 
         /// Deliver via processVAA path — emitter is voteCollection from Base
         wormholeRelayerAdapter.deliverBridgeOut(

@@ -1336,6 +1336,8 @@ contract MultichainProposalTest is PostProposalCheck {
         _assertProposalCreated(proposalId, address(this));
 
         vm.selectFork(BASE_FORK_ID);
+        /// warp Base into voting window (matches testVotingOnBasexWellSucceeds pattern)
+        vm.warp(initialTimestamp + 2);
 
         {
             (
@@ -1974,10 +1976,15 @@ contract MultichainProposalTest is PostProposalCheck {
                 "MultichainVoteCollection: proposal already exists"
             );
 
+            bytes memory wrappedPayload = abi.encode(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection),
+                payload
+            );
             wormholeRelayerAdapter.deliverBridgeOut(
                 BASE_WORMHOLE_CHAIN_ID,
                 address(voteCollection),
-                payload,
+                wrappedPayload,
                 address(governor)
             );
 

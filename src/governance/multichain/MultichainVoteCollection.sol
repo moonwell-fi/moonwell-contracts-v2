@@ -313,9 +313,19 @@ contract MultichainVoteCollection is
     /// --------------------------------------------------------- ///
 
     /// @notice bridge proposals from moonbeam
-    /// @param payload the payload of the message, contains proposalId, votingStartTime,
+    /// @param _payload the payload of the message, contains encoded target + proposalId, votingStartTime,
     ///                votingEndTime and voteCollectionEndTime
-    function _bridgeIn(uint16, bytes memory payload) internal override {
+    function _bridgeIn(uint16, bytes memory _payload) internal override {
+        /// Parse the target
+        (uint16 targetChain, address targetAddress, bytes memory payload) = abi
+            .decode(_payload, (uint16, address, bytes));
+
+        /// Validate we are the target
+        require(
+            targetChain == wormhole.chainId() && targetAddress == address(this),
+            "MultichainVoteCollection: invalid target"
+        );
+
         /// payload should be 5 uint256s
         require(
             payload.length == 160,
