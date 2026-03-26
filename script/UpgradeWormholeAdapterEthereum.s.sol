@@ -59,9 +59,7 @@ contract UpgradeWormholeAdapterEthereum is Script {
 
         // Update xWELL pause guardian
         xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
-        xwellProxy.grantPauseGuardian(
-            addresses.getAddress("PAUSE_GUARDIAN_NEW")
-        );
+        xwellProxy.grantPauseGuardian(addresses.getAddress("PAUSE_GUARDIAN"));
 
         vm.stopBroadcast();
 
@@ -134,7 +132,7 @@ contract UpgradeWormholeAdapterEthereum is Script {
 
         // 6. Verify xWELL pause guardian updated
         xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
-        address expectedGuardian = addresses.getAddress("PAUSE_GUARDIAN_NEW");
+        address expectedGuardian = addresses.getAddress("PAUSE_GUARDIAN");
         require(
             xwellProxy.pauseGuardian() == expectedGuardian,
             "Ethereum: xWELL pause guardian not updated correctly"

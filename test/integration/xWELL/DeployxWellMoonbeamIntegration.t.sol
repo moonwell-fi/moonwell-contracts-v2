@@ -228,14 +228,21 @@ contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
             ProxyAdmin pa = ProxyAdmin(
                 addresses.getAddress("MOONBEAM_PROXY_ADMIN")
             );
+            address newImpl = address(new WormholeUnwrapperAdapter());
             vm.prank(pa.owner());
             pa.upgradeAndCall(
                 ITransparentUpgradeableProxy(address(wormholeAdapter)),
-                address(new WormholeUnwrapperAdapter()),
+                newImpl,
                 abi.encodeWithSelector(
                     WormholeBridgeAdapter.initializeV3.selector,
                     address(mockWormhole)
                 )
+            );
+
+            address lockboxAddr = addresses.getAddress("xWELL_LOCKBOX");
+            vm.prank(wormholeAdapter.owner());
+            WormholeUnwrapperAdapter(address(wormholeAdapter)).setLockbox(
+                lockboxAddr
             );
 
             deal(

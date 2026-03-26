@@ -206,7 +206,7 @@ contract mipx48 is HybridProposal {
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature(
                 "grantPauseGuardian(address)",
-                addresses.getAddress("PAUSE_GUARDIAN_NEW")
+                addresses.getAddress("PAUSE_GUARDIAN")
             ),
             "Update xWELL pause guardian on Moonbeam"
         );
@@ -217,7 +217,7 @@ contract mipx48 is HybridProposal {
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature(
                 "grantPauseGuardian(address)",
-                addresses.getAddress("PAUSE_GUARDIAN_NEW")
+                addresses.getAddress("PAUSE_GUARDIAN")
             ),
             "Update xWELL pause guardian on Base"
         );
@@ -228,7 +228,7 @@ contract mipx48 is HybridProposal {
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature(
                 "grantPauseGuardian(address)",
-                addresses.getAddress("PAUSE_GUARDIAN_NEW")
+                addresses.getAddress("PAUSE_GUARDIAN")
             ),
             "Update xWELL pause guardian on Optimism"
         );
@@ -427,7 +427,7 @@ contract mipx48 is HybridProposal {
         string memory chainName
     ) internal view {
         xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
-        address expectedGuardian = addresses.getAddress("PAUSE_GUARDIAN_NEW");
+        address expectedGuardian = addresses.getAddress("PAUSE_GUARDIAN");
 
         assertEq(
             xwellProxy.pauseGuardian(),
