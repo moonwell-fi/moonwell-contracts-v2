@@ -325,7 +325,7 @@ contract xWellRouterMoonbeamTest is Test {
 
         well.approve(address(router), mintAmount);
 
-        vm.expectRevert("WormholeBridge: invalid target chain");
+        vm.expectRevert("WormholeBridgeAdapter: invalid target chain");
         router.bridgeToSender{value: bridgeCost}(
             mintAmount,
             ETHEREUM_WORMHOLE_CHAIN_ID

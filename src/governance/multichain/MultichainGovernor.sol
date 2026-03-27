@@ -972,7 +972,7 @@ contract MultichainGovernor is
     function _updateApprovedCalldata(
         bytes calldata data,
         bool approved
-    ) private {
+    ) internal {
         /// can only approve if it is not already approved
         if (approved == true) {
             require(
@@ -997,7 +997,7 @@ contract MultichainGovernor is
     /// reasonable bounds.
     function _setCrossChainVoteCollectionPeriod(
         uint256 _crossChainVoteCollectionPeriod
-    ) private {
+    ) internal {
         require(
             _crossChainVoteCollectionPeriod >=
                 Constants.MIN_CROSS_CHAIN_VOTE_COLLECTION_PERIOD &&
@@ -1018,7 +1018,7 @@ contract MultichainGovernor is
     /// @notice user max live proposals cannot be zero, as that would brick governance permanently
     /// 0 < max live proposals <= max user proposal count
     /// @param _maxUserLiveProposals the new max user live proposals
-    function _setMaxUserLiveProposals(uint256 _maxUserLiveProposals) private {
+    function _setMaxUserLiveProposals(uint256 _maxUserLiveProposals) internal {
         require(
             _maxUserLiveProposals != 0 &&
                 _maxUserLiveProposals <= Constants.MAX_USER_PROPOSAL_COUNT,
@@ -1033,7 +1033,7 @@ contract MultichainGovernor is
 
     /// @dev minimum quorum is 0, maximum quorum value is enforced
     /// @param _quorum the new quorum
-    function _setQuorum(uint256 _quorum) private {
+    function _setQuorum(uint256 _quorum) internal {
         require(
             _quorum <= Constants.MAX_QUORUM,
             "MultichainGovernor: invalid quorum"
@@ -1048,7 +1048,7 @@ contract MultichainGovernor is
     /// @dev lower and upper bounds are enforced to prevent a proposal from
     /// continuing indefinitely and breaking governance
     /// @param _votingPeriod the new voting period
-    function _setVotingPeriod(uint256 _votingPeriod) private {
+    function _setVotingPeriod(uint256 _votingPeriod) internal {
         require(
             _votingPeriod >= Constants.MIN_VOTING_PERIOD &&
                 _votingPeriod <= Constants.MAX_VOTING_PERIOD,
@@ -1065,7 +1065,7 @@ contract MultichainGovernor is
     /// @dev upper and lower bounds enforced to prevent a scenario
     /// where users cannot propose to the governor
     /// @param _proposalThreshold the new proposal threshold
-    function _setProposalThreshold(uint256 _proposalThreshold) private {
+    function _setProposalThreshold(uint256 _proposalThreshold) internal {
         require(
             _proposalThreshold >= Constants.MIN_PROPOSAL_THRESHOLD &&
                 _proposalThreshold <= Constants.MAX_PROPOSAL_THRESHOLD,
@@ -1080,7 +1080,7 @@ contract MultichainGovernor is
 
     /// @dev valid state for break glass guardian to be address(0)
     /// @param newGuardian the new guardian address
-    function _setBreakGlassGuardian(address newGuardian) private {
+    function _setBreakGlassGuardian(address newGuardian) internal {
         address oldGuardian = breakGlassGuardian;
         breakGlassGuardian = newGuardian;
 

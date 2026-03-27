@@ -14,6 +14,7 @@ import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 
+import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
 contract MockTimelock {
@@ -146,7 +147,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testInitLogicFails() public {
-        MultichainGovernor.InitializeData memory initData;
+        MockMultichainGovernor.InitializeData memory initData;
         WormholeTrustedSender.TrustedSender[]
             memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
@@ -154,7 +155,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         vm.expectRevert("Initializable: contract is already initialized");
 
-        MultichainGovernor(payable(governorLogic)).initialize(
+        MockMultichainGovernor(payable(governorLogic)).initialize(
             initData,
             trustedSenders,
             new bytes[](0)

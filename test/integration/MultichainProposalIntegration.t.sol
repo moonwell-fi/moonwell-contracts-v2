@@ -565,29 +565,16 @@ contract MultichainProposalTest is PostProposalCheck {
     function testInitializeMultichainGovernorFails() public {
         vm.selectFork(MOONBEAM_FORK_ID);
         /// test impl and logic contract initialization
-        MultichainGovernor.InitializeData memory initializeData;
-        WormholeTrustedSender.TrustedSender[]
-            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                0
-            );
-        bytes[] memory whitelistedCalldata = new bytes[](0);
-
+        /// NOTE: initialize() was removed from production MultichainGovernor to
+        /// reduce contract size. Test uses initializeV2 revert check instead.
         vm.expectRevert("Initializable: contract is already initialized");
-        governor.initialize(
-            initializeData,
-            trustedSenders,
-            whitelistedCalldata
-        );
+        governor.initializeV2(address(1));
 
-        governor = MultichainGovernor(
+        MultichainGovernor govImpl = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL"))
         );
         vm.expectRevert("Initializable: contract is already initialized");
-        governor.initialize(
-            initializeData,
-            trustedSenders,
-            whitelistedCalldata
-        );
+        govImpl.initializeV2(address(1));
     }
 
     function testInitializeEcosystemReserveFails() public {
@@ -2956,17 +2943,12 @@ contract MultichainProposalTest is PostProposalCheck {
 
         require(proposalFound, "proposal not created");
 
-        uint256[] memory currentUserLiveProposals = governor
-            .getUserLiveProposals(proposer);
-        bool userProposalFound = false;
-
-        for (uint256 i = 0; i < currentUserLiveProposals.length; i++) {
-            if (currentUserLiveProposals[i] == proposalid) {
-                userProposalFound = true;
-                break;
-            }
-        }
-        require(userProposalFound, "proposal not created");
+        /// getUserLiveProposals was removed from prod governor to save size;
+        /// verify the proposer has at least one live proposal instead.
+        require(
+            governor.currentUserLiveProposals(proposer) > 0,
+            "proposer has no live proposals"
+        );
     }
 
     function testGrantGuardianRoleAfterPause() public {

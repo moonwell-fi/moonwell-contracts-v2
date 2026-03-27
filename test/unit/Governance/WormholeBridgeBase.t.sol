@@ -120,26 +120,8 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    /// receiveWormholeMessages is deprecated and reverts after V2 upgrade
-    function testReceiveWormholeMessagesRevertsAfterV2() public {
-        vm.expectRevert("WormholeBridge: relayer deprecated");
-        voteCollection.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-
-        vm.expectRevert("WormholeBridge: relayer deprecated");
-        governor.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            BASE_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-    }
+    /// receiveWormholeMessages was removed from WormholeBridgeBase in V2.
+    /// The function no longer exists on-chain — no revert test needed.
 
     /// processVAA delivers votes to governor via the mock adapter
     function testProcessVAASucceeds() public returns (uint256 proposalId) {

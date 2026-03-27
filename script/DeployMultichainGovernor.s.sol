@@ -39,11 +39,11 @@ contract MultichainGovernorDeploy is Test {
 
     function initializeMultichainGovernor(
         address governorProxy,
-        MultichainGovernor.InitializeData memory initializeData,
+        MockMultichainGovernor.InitializeData memory initializeData,
         WormholeTrustedSender.TrustedSender[] memory trustedSenders,
         bytes[] memory whitelistedCalldata
     ) public {
-        MultichainGovernor(payable(governorProxy)).initialize(
+        MockMultichainGovernor(payable(governorProxy)).initialize(
             initializeData,
             trustedSenders,
             whitelistedCalldata
@@ -95,7 +95,7 @@ contract MultichainGovernorDeploy is Test {
     /// @notice for testing purposes only, not to be used in production as both
     /// contracts are deployed on the same chain
     function deployGovernorRelayerAndVoteCollection(
-        MultichainGovernor.InitializeData memory initializeData,
+        MockMultichainGovernor.InitializeData memory initializeData,
         bytes[] memory whitelistedCalldata,
         address proxyAdmin,
         uint16 moonbeamChainId,

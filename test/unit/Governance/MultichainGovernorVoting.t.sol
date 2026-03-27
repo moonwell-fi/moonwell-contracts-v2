@@ -2870,7 +2870,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
-        vm.expectRevert("WormholeBridge: invalid target");
+        vm.expectRevert("invalid target");
         wormholeRelayerAdapter.deliverBridgeOut(
             MOONBEAM_WORMHOLE_CHAIN_ID,
             address(governor),
@@ -2890,7 +2890,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
-        vm.expectRevert("WormholeBridge: invalid target");
+        vm.expectRevert("invalid target");
         wormholeRelayerAdapter.deliverBridgeOut(
             MOONBEAM_WORMHOLE_CHAIN_ID,
             address(governor),

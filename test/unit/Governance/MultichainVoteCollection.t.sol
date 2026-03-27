@@ -1353,7 +1353,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             innerPayload
         );
 
-        vm.expectRevert("WormholeBridge: invalid target");
+        vm.expectRevert("invalid target");
         wormholeRelayerAdapter.deliverBridgeOut(
             BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
@@ -1371,7 +1371,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             innerPayload
         );
 
-        vm.expectRevert("WormholeBridge: invalid target");
+        vm.expectRevert("invalid target");
         wormholeRelayerAdapter.deliverBridgeOut(
             BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
@@ -1390,7 +1390,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         /// Set wrong sender chain — voteCollection trusts governor from Moonbeam, not Base
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
-        vm.expectRevert("WormholeBridge: untrusted emitter");
+        vm.expectRevert("untrusted emitter");
         wormholeRelayerAdapter.deliverBridgeOut(
             BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),

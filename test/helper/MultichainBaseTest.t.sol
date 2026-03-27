@@ -218,7 +218,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             stkWellBase = IStakedWell(stkWellProxy);
         }
 
-        MultichainGovernor.InitializeData memory initData;
+        MockMultichainGovernor.InitializeData memory initData;
 
         initData.proposalThreshold = proposalThreshold;
         initData.votingPeriodSeconds = votingPeriodSeconds;
