@@ -268,6 +268,11 @@ contract mipx49 is HybridProposal {
             address(gov.wormhole()) != address(0),
             "governor wormhole core not set"
         );
+        assertEq(
+            gov.bridgeCost(0),
+            gov.wormhole().messageFee(),
+            "governor bridgeCost should equal messageFee"
+        );
     }
 
     function _validateVoteCollection(
@@ -299,6 +304,14 @@ contract mipx49 is HybridProposal {
         assertTrue(
             address(vc.wormhole()) != address(0),
             string.concat(chainName, ": voteCollection wormhole core not set")
+        );
+        assertEq(
+            vc.bridgeCost(0),
+            vc.wormhole().messageFee(),
+            string.concat(
+                chainName,
+                ": voteCollection bridgeCost should equal messageFee"
+            )
         );
     }
 }
