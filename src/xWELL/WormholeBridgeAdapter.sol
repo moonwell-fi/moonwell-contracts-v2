@@ -23,8 +23,8 @@ contract WormholeBridgeAdapter is
     /// ---------------------------------------------------------
 
     /// @notice Wormhole consistency level for publishMessage.
-    /// 200 = "finalized" — guardians wait for full chain finality
-    uint8 public constant CONSISTENCY_LEVEL = 200;
+    /// 1 = "finalized" — guardians wait for full chain finality
+    uint8 public constant CONSISTENCY_LEVEL = 1;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
