@@ -6,16 +6,19 @@ import "@forge-std/Test.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 
-/// @title MIP-X49: Fix xWELL WormholeBridgeAdapter Consistency Level
-/// @notice Upgrades WormholeBridgeAdapter on Moonbeam, Base, and Optimism to
-///         fix the Wormhole consistency level from 200 (instant) to 1 (finalized).
+/// @title MIP-X49: Fix Wormhole Consistency Level (200 -> 1)
+/// @notice Upgrades WormholeBridgeAdapter on Moonbeam, Base, and Optimism,
+///         MultichainGovernor on Moonbeam, and MultichainVoteCollection on
+///         Base and Optimism to fix CONSISTENCY_LEVEL from 200 (instant) to
+///         1 (finalized).
 contract mipx49 is HybridProposal {
     using ProposalActions for *;
     using ChainIds for uint256;
@@ -34,47 +37,74 @@ contract mipx49 is HybridProposal {
     }
 
     function deploy(Addresses addresses, address) public override {
-        // Deploy new WormholeBridgeAdapter impl on each chain
-        // (CONSISTENCY_LEVEL = 1 baked into bytecode)
+        /// -------------------------------------------------------
+        /// Deploy WormholeBridgeAdapter V4 impls
+        /// -------------------------------------------------------
 
         vm.selectFork(primaryForkId());
         if (!addresses.isAddressSet("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")) {
             vm.startBroadcast();
-            address implementation = address(new WormholeBridgeAdapter());
+            address impl = address(new WormholeBridgeAdapter());
             vm.stopBroadcast();
-            addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_IMPL_V4",
-                implementation
-            );
+            addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4", impl);
         }
 
         vm.selectFork(BASE_FORK_ID);
         if (!addresses.isAddressSet("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")) {
             vm.startBroadcast();
-            address implementation = address(new WormholeBridgeAdapter());
+            address impl = address(new WormholeBridgeAdapter());
             vm.stopBroadcast();
-            addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_IMPL_V4",
-                implementation
-            );
+            addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4", impl);
         }
 
         vm.selectFork(OPTIMISM_FORK_ID);
         if (!addresses.isAddressSet("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")) {
             vm.startBroadcast();
-            address implementation = address(new WormholeBridgeAdapter());
+            address impl = address(new WormholeBridgeAdapter());
             vm.stopBroadcast();
-            addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_IMPL_V4",
-                implementation
-            );
+            addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4", impl);
+        }
+
+        /// -------------------------------------------------------
+        /// Deploy MultichainGovernor V3 impl (Moonbeam only)
+        /// -------------------------------------------------------
+
+        vm.selectFork(primaryForkId());
+        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_IMPL_V3")) {
+            vm.startBroadcast();
+            address impl = address(new MultichainGovernor());
+            vm.stopBroadcast();
+            addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL_V3", impl);
+        }
+
+        /// -------------------------------------------------------
+        /// Deploy MultichainVoteCollection V3 impls (Base + Optimism)
+        /// -------------------------------------------------------
+
+        vm.selectFork(BASE_FORK_ID);
+        if (!addresses.isAddressSet("VOTE_COLLECTION_IMPL_V3")) {
+            vm.startBroadcast();
+            address impl = address(new MultichainVoteCollection());
+            vm.stopBroadcast();
+            addresses.addAddress("VOTE_COLLECTION_IMPL_V3", impl);
+        }
+
+        vm.selectFork(OPTIMISM_FORK_ID);
+        if (!addresses.isAddressSet("VOTE_COLLECTION_IMPL_V3")) {
+            vm.startBroadcast();
+            address impl = address(new MultichainVoteCollection());
+            vm.stopBroadcast();
+            addresses.addAddress("VOTE_COLLECTION_IMPL_V3", impl);
         }
 
         vm.selectFork(primaryForkId());
     }
 
     function build(Addresses addresses) public override {
-        // Moonbeam: upgrade WormholeBridgeAdapter proxy (no reinitializer needed)
+        /// -------------------------------------------------------
+        /// Moonbeam: WormholeBridgeAdapter + MultichainGovernor
+        /// -------------------------------------------------------
+
         vm.selectFork(primaryForkId());
         _pushAction(
             addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
@@ -83,20 +113,23 @@ contract mipx49 is HybridProposal {
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")
             ),
-            "Upgrade WormholeBridgeAdapter on Moonbeam to fix consistency level"
+            "Upgrade WormholeBridgeAdapter on Moonbeam"
         );
 
-        // Moonbeam: re-grant xWELL pause guardian (consumed after pause/unpause)
         _pushAction(
-            addresses.getAddress("xWELL_PROXY"),
+            addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
             abi.encodeWithSignature(
-                "grantPauseGuardian(address)",
-                addresses.getAddress("PAUSE_GUARDIAN")
+                "upgrade(address,address)",
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+                addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL_V3")
             ),
-            "Re-grant xWELL pause guardian on Moonbeam"
+            "Upgrade MultichainGovernor on Moonbeam"
         );
 
-        // Base: upgrade WormholeBridgeAdapter proxy
+        /// -------------------------------------------------------
+        /// Base: WormholeBridgeAdapter + MultichainVoteCollection
+        /// -------------------------------------------------------
+
         vm.selectFork(BASE_FORK_ID);
         _pushAction(
             addresses.getAddress("MRD_PROXY_ADMIN"),
@@ -105,20 +138,23 @@ contract mipx49 is HybridProposal {
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")
             ),
-            "Upgrade WormholeBridgeAdapter on Base to fix consistency level"
+            "Upgrade WormholeBridgeAdapter on Base"
         );
 
-        // Base: re-grant xWELL pause guardian (consumed after pause/unpause)
         _pushAction(
-            addresses.getAddress("xWELL_PROXY"),
+            addresses.getAddress("MRD_PROXY_ADMIN"),
             abi.encodeWithSignature(
-                "grantPauseGuardian(address)",
-                addresses.getAddress("PAUSE_GUARDIAN")
+                "upgrade(address,address)",
+                addresses.getAddress("VOTE_COLLECTION_PROXY"),
+                addresses.getAddress("VOTE_COLLECTION_IMPL_V3")
             ),
-            "Re-grant xWELL pause guardian on Base"
+            "Upgrade MultichainVoteCollection on Base"
         );
 
-        // Optimism: upgrade WormholeBridgeAdapter proxy
+        /// -------------------------------------------------------
+        /// Optimism: WormholeBridgeAdapter + MultichainVoteCollection
+        /// -------------------------------------------------------
+
         vm.selectFork(OPTIMISM_FORK_ID);
         _pushAction(
             addresses.getAddress("MRD_PROXY_ADMIN"),
@@ -127,65 +163,39 @@ contract mipx49 is HybridProposal {
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")
             ),
-            "Upgrade WormholeBridgeAdapter on Optimism to fix consistency level"
+            "Upgrade WormholeBridgeAdapter on Optimism"
         );
 
-        // Optimism: re-grant xWELL pause guardian (consumed after pause/unpause)
         _pushAction(
-            addresses.getAddress("xWELL_PROXY"),
+            addresses.getAddress("MRD_PROXY_ADMIN"),
             abi.encodeWithSignature(
-                "grantPauseGuardian(address)",
-                addresses.getAddress("PAUSE_GUARDIAN")
+                "upgrade(address,address)",
+                addresses.getAddress("VOTE_COLLECTION_PROXY"),
+                addresses.getAddress("VOTE_COLLECTION_IMPL_V3")
             ),
-            "Re-grant xWELL pause guardian on Optimism"
+            "Upgrade MultichainVoteCollection on Optimism"
         );
-    }
-
-    /// @notice Simulate the pause/unpause that will happen before this proposal
-    ///         executes on-chain. xWELL will be paused after x48 to prevent
-    ///         bridging with instant finality, then unpaused before x49.
-    ///         This consumes the pause guardian on each chain.
-    function beforeSimulationHook(Addresses addresses) public override {
-        uint256[] memory forks = new uint256[](3);
-        forks[0] = MOONBEAM_FORK_ID;
-        forks[1] = BASE_FORK_ID;
-        forks[2] = OPTIMISM_FORK_ID;
-
-        for (uint256 i = 0; i < forks.length; i++) {
-            vm.selectFork(forks[i]);
-
-            xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
-            address guardian = xwellProxy.pauseGuardian();
-
-            // Only pause/unpause if guardian is still set (not already consumed)
-            if (guardian != address(0) && !xwellProxy.pauseUsed()) {
-                vm.prank(guardian);
-                xwellProxy.pause();
-
-                vm.prank(guardian);
-                xwellProxy.unpause();
-            }
-        }
-
-        vm.selectFork(primaryForkId());
     }
 
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
         vm.selectFork(primaryForkId());
-        _validateChain(addresses, "Moonbeam");
+        _validateAdapter(addresses, "Moonbeam");
+        _validateGovernor(addresses);
 
         vm.selectFork(BASE_FORK_ID);
-        _validateChain(addresses, "Base");
+        _validateAdapter(addresses, "Base");
+        _validateVoteCollection(addresses, "Base");
 
         vm.selectFork(OPTIMISM_FORK_ID);
-        _validateChain(addresses, "Optimism");
+        _validateAdapter(addresses, "Optimism");
+        _validateVoteCollection(addresses, "Optimism");
 
         vm.selectFork(primaryForkId());
     }
 
-    function _validateChain(
+    function _validateAdapter(
         Addresses addresses,
         string memory chainName
     ) internal {
@@ -198,48 +208,90 @@ contract mipx49 is HybridProposal {
             : "MRD_PROXY_ADMIN";
         address proxyAdmin = addresses.getAddress(proxyAdminKey);
 
-        // Verify proxy implementation is set to V4
         address actualImpl = ProxyAdmin(proxyAdmin).getProxyImplementation(
             ITransparentUpgradeableProxy(proxy)
         );
         assertEq(
             actualImpl,
             expectedImpl,
-            string.concat(
-                chainName,
-                ": WormholeBridgeAdapter proxy not upgraded to V4"
-            )
+            string.concat(chainName, ": adapter not upgraded to V4")
         );
 
-        // Verify consistency level is 1
         WormholeBridgeAdapter adapter = WormholeBridgeAdapter(proxy);
         assertEq(
             adapter.CONSISTENCY_LEVEL(),
             1,
-            string.concat(chainName, ": CONSISTENCY_LEVEL should be 1")
+            string.concat(chainName, ": adapter CONSISTENCY_LEVEL should be 1")
         );
 
-        // Verify adapter state preserved
         assertTrue(
             address(adapter.wormhole()) != address(0),
-            string.concat(chainName, ": wormhole core should be set")
+            string.concat(chainName, ": adapter wormhole core not set")
         );
         assertTrue(
             address(adapter.xERC20()) != address(0),
-            string.concat(chainName, ": xERC20 should be set")
+            string.concat(chainName, ": adapter xERC20 not set")
         );
         assertEq(
             adapter.gasLimit(),
             300_000,
-            string.concat(chainName, ": gasLimit should be preserved")
+            string.concat(chainName, ": adapter gasLimit changed")
+        );
+    }
+
+    function _validateGovernor(Addresses addresses) internal {
+        address proxy = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        address expectedImpl = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_IMPL_V3"
+        );
+        address proxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
+
+        address actualImpl = ProxyAdmin(proxyAdmin).getProxyImplementation(
+            ITransparentUpgradeableProxy(proxy)
+        );
+        assertEq(actualImpl, expectedImpl, "governor not upgraded to V3");
+
+        MultichainGovernor gov = MultichainGovernor(payable(proxy));
+        assertEq(
+            gov.CONSISTENCY_LEVEL(),
+            1,
+            "governor CONSISTENCY_LEVEL should be 1"
+        );
+        assertTrue(
+            address(gov.wormhole()) != address(0),
+            "governor wormhole core not set"
+        );
+    }
+
+    function _validateVoteCollection(
+        Addresses addresses,
+        string memory chainName
+    ) internal {
+        address proxy = addresses.getAddress("VOTE_COLLECTION_PROXY");
+        address expectedImpl = addresses.getAddress("VOTE_COLLECTION_IMPL_V3");
+        address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
+
+        address actualImpl = ProxyAdmin(proxyAdmin).getProxyImplementation(
+            ITransparentUpgradeableProxy(proxy)
+        );
+        assertEq(
+            actualImpl,
+            expectedImpl,
+            string.concat(chainName, ": voteCollection not upgraded to V3")
         );
 
-        // Verify xWELL pause guardian re-granted
-        xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
+        MultichainVoteCollection vc = MultichainVoteCollection(proxy);
         assertEq(
-            xwellProxy.pauseGuardian(),
-            addresses.getAddress("PAUSE_GUARDIAN"),
-            string.concat(chainName, ": xWELL pause guardian not re-granted")
+            vc.CONSISTENCY_LEVEL(),
+            1,
+            string.concat(
+                chainName,
+                ": voteCollection CONSISTENCY_LEVEL should be 1"
+            )
+        );
+        assertTrue(
+            address(vc.wormhole()) != address(0),
+            string.concat(chainName, ": voteCollection wormhole core not set")
         );
     }
 }
