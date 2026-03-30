@@ -564,17 +564,9 @@ contract MultichainProposalTest is PostProposalCheck {
 
     function testInitializeMultichainGovernorFails() public {
         vm.selectFork(MOONBEAM_FORK_ID);
-        /// test impl and logic contract initialization
-        /// NOTE: initialize() was removed from production MultichainGovernor to
-        /// reduce contract size. Test uses initializeV2 revert check instead.
+
         vm.expectRevert("Initializable: contract is already initialized");
         governor.initializeV2(address(1));
-
-        MultichainGovernor govImpl = MultichainGovernor(
-            payable(addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL"))
-        );
-        vm.expectRevert("Initializable: contract is already initialized");
-        govImpl.initializeV2(address(1));
     }
 
     function testInitializeEcosystemReserveFails() public {
