@@ -6,6 +6,7 @@ import "@forge-std/Test.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -85,6 +86,16 @@ contract mipx49 is HybridProposal {
             "Upgrade WormholeBridgeAdapter on Moonbeam to fix consistency level"
         );
 
+        // Moonbeam: re-grant xWELL pause guardian (consumed after pause/unpause)
+        _pushAction(
+            addresses.getAddress("xWELL_PROXY"),
+            abi.encodeWithSignature(
+                "grantPauseGuardian(address)",
+                addresses.getAddress("PAUSE_GUARDIAN")
+            ),
+            "Re-grant xWELL pause guardian on Moonbeam"
+        );
+
         // Base: upgrade WormholeBridgeAdapter proxy
         vm.selectFork(BASE_FORK_ID);
         _pushAction(
@@ -95,6 +106,16 @@ contract mipx49 is HybridProposal {
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")
             ),
             "Upgrade WormholeBridgeAdapter on Base to fix consistency level"
+        );
+
+        // Base: re-grant xWELL pause guardian (consumed after pause/unpause)
+        _pushAction(
+            addresses.getAddress("xWELL_PROXY"),
+            abi.encodeWithSignature(
+                "grantPauseGuardian(address)",
+                addresses.getAddress("PAUSE_GUARDIAN")
+            ),
+            "Re-grant xWELL pause guardian on Base"
         );
 
         // Optimism: upgrade WormholeBridgeAdapter proxy
@@ -108,6 +129,45 @@ contract mipx49 is HybridProposal {
             ),
             "Upgrade WormholeBridgeAdapter on Optimism to fix consistency level"
         );
+
+        // Optimism: re-grant xWELL pause guardian (consumed after pause/unpause)
+        _pushAction(
+            addresses.getAddress("xWELL_PROXY"),
+            abi.encodeWithSignature(
+                "grantPauseGuardian(address)",
+                addresses.getAddress("PAUSE_GUARDIAN")
+            ),
+            "Re-grant xWELL pause guardian on Optimism"
+        );
+    }
+
+    /// @notice Simulate the pause/unpause that will happen before this proposal
+    ///         executes on-chain. xWELL will be paused after x48 to prevent
+    ///         bridging with instant finality, then unpaused before x49.
+    ///         This consumes the pause guardian on each chain.
+    function beforeSimulationHook(Addresses addresses) public override {
+        uint256[] memory forks = new uint256[](3);
+        forks[0] = MOONBEAM_FORK_ID;
+        forks[1] = BASE_FORK_ID;
+        forks[2] = OPTIMISM_FORK_ID;
+
+        for (uint256 i = 0; i < forks.length; i++) {
+            vm.selectFork(forks[i]);
+
+            xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
+            address guardian = xwellProxy.pauseGuardian();
+
+            // Only pause/unpause if guardian is still set (not already consumed)
+            if (guardian != address(0) && !xwellProxy.pauseUsed()) {
+                vm.prank(guardian);
+                xwellProxy.pause();
+
+                vm.prank(guardian);
+                xwellProxy.unpause();
+            }
+        }
+
+        vm.selectFork(primaryForkId());
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -159,7 +219,7 @@ contract mipx49 is HybridProposal {
             string.concat(chainName, ": CONSISTENCY_LEVEL should be 1")
         );
 
-        // Verify state preserved
+        // Verify adapter state preserved
         assertTrue(
             address(adapter.wormhole()) != address(0),
             string.concat(chainName, ": wormhole core should be set")
@@ -172,6 +232,14 @@ contract mipx49 is HybridProposal {
             adapter.gasLimit(),
             300_000,
             string.concat(chainName, ": gasLimit should be preserved")
+        );
+
+        // Verify xWELL pause guardian re-granted
+        xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
+        assertEq(
+            xwellProxy.pauseGuardian(),
+            addresses.getAddress("PAUSE_GUARDIAN"),
+            string.concat(chainName, ": xWELL pause guardian not re-granted")
         );
     }
 }
