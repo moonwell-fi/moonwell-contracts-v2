@@ -237,6 +237,13 @@ contract mipx49 is HybridProposal {
             300_000,
             string.concat(chainName, ": adapter gasLimit changed")
         );
+
+        // Verify bridgeCost returns only messageFee (no relayer quote)
+        assertEq(
+            adapter.bridgeCost(0),
+            adapter.wormhole().messageFee(),
+            string.concat(chainName, ": bridgeCost should equal messageFee")
+        );
     }
 
     function _validateGovernor(Addresses addresses) internal {
