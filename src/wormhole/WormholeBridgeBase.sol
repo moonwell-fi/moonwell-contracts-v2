@@ -217,30 +217,12 @@ abstract contract WormholeBridgeBase {
         return _targetChains.length();
     }
 
-    /// @notice Estimate bridge cost to bridge out to a destination chain
-    /// @dev this function returns 0 if the quote fails.
-    /// in all other cases, the value returned should be non zero.
-    /// @param dstWormholeChainId Destination chain id
-    function bridgeCost(
-        uint16 dstWormholeChainId
-    ) public view returns (uint256 gasCost) {
-        try
-            wormholeRelayer.quoteEVMDeliveryPrice(
-                dstWormholeChainId,
-                0,
-                gasLimit
-            )
-        returns (uint256 cost, uint256) {
-            gasCost = cost + _wormhole().messageFee();
-        } catch {
-            /// this is a bad situation, but we still want to allow the bridge out
-            /// so fail silently and set gasCost to 0.
-            /// Would like to emit an event here, but that would be a side affect
-            /// to the logs and cause this function to be non view.
-            /// the bridge out will most likely fail from this point out, however,
-            /// the proposal on Moonbeam will still be created.
-            gasCost = 0 + _wormhole().messageFee();
-        }
+    /// @notice Estimate bridge cost to bridge out to a destination chain.
+    ///         Returns the Wormhole core messageFee (currently 0 on all chains).
+    ///         The deprecated relayer quoter is no longer called since we use
+    ///         direct publishMessage via Wormhole core.
+    function bridgeCost(uint16) public view returns (uint256) {
+        return _wormhole().messageFee();
     }
 
     /// @notice Estimate bridge cost to bridge out to all chains
