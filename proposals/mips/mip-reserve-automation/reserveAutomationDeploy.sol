@@ -132,7 +132,9 @@ contract ReserveAutomationDeploy is Script, Test {
 
     function validate(Addresses addresses) public view {
         address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
-        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+        address pauseGuardian = addresses.getAddress(
+            "PAUSE_GUARDIAN_DEPRECATED"
+        );
         address xWellProxy = addresses.getAddress("xWELL_PROXY");
         address holdingDeposit = addresses.getAddress(
             "RESERVE_WELL_HOLDING_DEPOSIT"

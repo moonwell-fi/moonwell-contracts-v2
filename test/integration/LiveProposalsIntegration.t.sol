@@ -91,51 +91,39 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
 
         /// Override wormhole + relayer slots on all forks for governor,
         /// voteCollection, and xWELL adapter so _wormhole() returns the mock.
+        /// Use _tryOverrideWormhole to handle contracts that may not yet be
+        /// upgraded (wormhole() doesn't exist on old impls).
 
         /// --- Moonbeam ---
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        /// Governor: wormhole slot + relayer slot (103)
-        uint256 govWormholeSlot = stdstore
-            .target(address(governor))
-            .sig("wormhole()")
-            .find();
-        vm.store(address(governor), bytes32(govWormholeSlot), mockAddr);
+        _tryOverrideWormhole(address(governor), mockAddr);
         vm.store(
             address(governor),
             bytes32(uint256(103)),
             mockAddr /// relayer slot (gasLimit stays 0 which is fine for mock)
         );
 
-        /// xWELL adapter: wormhole slot + relayer slot
         address adapter = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
-        uint256 adapterWormholeSlot = stdstore
-            .target(adapter)
-            .sig("wormhole()")
-            .find();
-        vm.store(adapter, bytes32(adapterWormholeSlot), mockAddr);
+        _tryOverrideWormhole(adapter, mockAddr);
 
         /// --- Base ---
         vm.selectFork(BASE_FORK_ID);
         address vcBase = addresses.getAddress("VOTE_COLLECTION_PROXY");
-        uint256 vcSlot = stdstore.target(vcBase).sig("wormhole()").find();
-        vm.store(vcBase, bytes32(vcSlot), mockAddr);
+        _tryOverrideWormhole(vcBase, mockAddr);
         vm.store(vcBase, bytes32(0), mockAddr); /// relayer slot
 
         adapter = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
-        adapterWormholeSlot = stdstore.target(adapter).sig("wormhole()").find();
-        vm.store(adapter, bytes32(adapterWormholeSlot), mockAddr);
+        _tryOverrideWormhole(adapter, mockAddr);
 
         /// --- Optimism ---
         vm.selectFork(OPTIMISM_FORK_ID);
         address vcOpt = addresses.getAddress("VOTE_COLLECTION_PROXY");
-        uint256 vcOptSlot = stdstore.target(vcOpt).sig("wormhole()").find();
-        vm.store(vcOpt, bytes32(vcOptSlot), mockAddr);
+        _tryOverrideWormhole(vcOpt, mockAddr);
         vm.store(vcOpt, bytes32(0), mockAddr); /// relayer slot
 
         adapter = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
-        adapterWormholeSlot = stdstore.target(adapter).sig("wormhole()").find();
-        vm.store(adapter, bytes32(adapterWormholeSlot), mockAddr);
+        _tryOverrideWormhole(adapter, mockAddr);
 
         vm.selectFork(MOONBEAM_FORK_ID);
 
@@ -159,6 +147,19 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
         for (uint256 i = devProposals.length; i > 0; i--) {
             proposalMap.setEnv(devProposals[i - 1].envPath);
             proposalMap.runProposal(addresses, devProposals[i - 1].path);
+        }
+    }
+
+    /// @notice Try to override the wormhole slot on a contract via stdstore.
+    ///         If the contract hasn't been upgraded yet and wormhole() doesn't
+    ///         exist, the stdstore lookup will fail — catch and skip.
+    function _tryOverrideWormhole(address target, bytes32 mockAddr) internal {
+        (bool success, ) = target.staticcall(
+            abi.encodeWithSignature("wormhole()")
+        );
+        if (success) {
+            uint256 slot = stdstore.target(target).sig("wormhole()").find();
+            vm.store(target, bytes32(slot), mockAddr);
         }
     }
 }

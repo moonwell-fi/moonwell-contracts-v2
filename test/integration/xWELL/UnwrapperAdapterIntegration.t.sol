@@ -59,13 +59,25 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
 
-        /// Initialize V3 with MockWormholeCore so bridgeCost/processVAA work
+        /// Set up MockWormholeCore for processVAA tests.
+        /// If the adapter is already V3-initialized on the live fork,
+        /// override the wormhole address directly via vm.store.
         mockWormholeCore = new MockWormholeCore();
         mockWormholeCore.setFee(0);
         mockWormholeCore.setChainId(uint16(MOONBEAM_WORMHOLE_CHAIN_ID));
 
-        vm.prank(wormholeAdapter.owner());
-        wormholeAdapter.initializeV3(address(mockWormholeCore));
+        if (address(wormholeAdapter.wormhole()) != address(0)) {
+            /// Already V3-initialized — override wormhole core directly
+            /// wormhole is at storage slot 156 in WormholeBridgeAdapter
+            vm.store(
+                address(wormholeAdapter),
+                bytes32(uint256(156)),
+                bytes32(uint256(uint160(address(mockWormholeCore))))
+            );
+        } else {
+            vm.prank(wormholeAdapter.owner());
+            wormholeAdapter.initializeV3(address(mockWormholeCore));
+        }
 
         deal(address(well), user, startingWellAmount);
     }
