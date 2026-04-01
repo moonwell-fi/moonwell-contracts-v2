@@ -90,7 +90,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "voteCollection not whitelisted to send messages in"
         );
 
-        assertTrue(governor.bridgeCostAll() != 0, "no targets");
+        assertTrue(governor.getAllTargetChainsLength() != 0, "no targets");
 
         assertEq(
             governor.getAllTargetChains().length,
@@ -1187,39 +1187,34 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     function testEmitVotesRefundFails() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
-        uint256 bridgeCost = voteCollection.bridgeCost(
-            MOONBEAM_WORMHOLE_CHAIN_ID
-        );
         (, , uint256 endTimestamp, , , , , ) = voteCollection
             .proposalInformation(proposalId);
         vm.warp(endTimestamp + 1);
 
-        vm.deal(address(this), bridgeCost * 2);
+        /// Send excess ETH so the refund path is triggered
+        uint256 excessValue = 1 ether;
+        vm.deal(address(this), excessValue);
 
+        _receivingFunds = false;
         vm.expectRevert("WormholeBridge: refund failed");
-        voteCollection.emitVotes{value: bridgeCost * 2}(proposalId);
+        voteCollection.emitVotes{value: excessValue}(proposalId);
     }
 
     function testEmitVotesRefundSucceeds() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
-        uint256 bridgeCost = voteCollection.bridgeCost(
-            MOONBEAM_WORMHOLE_CHAIN_ID
-        );
         (, , uint256 endTimestamp, , , , , ) = voteCollection
             .proposalInformation(proposalId);
         vm.warp(endTimestamp + 1);
         _receivingFunds = true;
 
-        vm.deal(address(this), bridgeCost * 5);
+        /// Send excess ETH; with bridgeCost=0 the full amount is refunded
+        uint256 excessValue = 1 ether;
+        vm.deal(address(this), excessValue);
 
-        voteCollection.emitVotes{value: bridgeCost * 5}(proposalId);
-        assertEq(
-            address(this).balance,
-            bridgeCost * 4,
-            "incorrect refund amount"
-        );
+        voteCollection.emitVotes{value: excessValue}(proposalId);
+        assertEq(address(this).balance, excessValue, "incorrect refund amount");
     }
 
     function testEmitVotesProposalHasNoVotes() public {
@@ -1248,9 +1243,10 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         _assertGovernanceBalance();
     }
 
-    function testEmitVotesProposalEndTimeHasPassedBridgeOutIncorrectAmount()
-        public
-    {
+    /// @notice With bridgeCost returning 0 (messageFee), underpaying is
+    ///         impossible. Instead test that excess ETH triggers a refund
+    ///         failure when the caller cannot receive funds.
+    function testEmitVotesExcessValueRefundFails() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
         (, , uint256 endTimestamp, , , , , ) = voteCollection
@@ -1259,12 +1255,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         // test at the last timestamp of vote period
         vm.warp(endTimestamp + 1);
 
-        uint256 cost = voteCollection.bridgeCost(MOONBEAM_WORMHOLE_CHAIN_ID) -
-            1;
-        vm.deal(address(this), cost);
+        uint256 excessValue = 1 ether;
+        vm.deal(address(this), excessValue);
 
-        vm.expectRevert("WormholeBridge: total cost not equal to quote");
-        voteCollection.emitVotes{value: cost}(proposalId);
+        _receivingFunds = false;
+        vm.expectRevert("WormholeBridge: refund failed");
+        voteCollection.emitVotes{value: excessValue}(proposalId);
 
         _assertGovernanceBalance();
     }

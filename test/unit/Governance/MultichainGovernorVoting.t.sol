@@ -310,7 +310,10 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         _assertGovernanceBalance();
     }
 
-    function testProposeUpdateProposalThresholdFailsIncorrectGas() public {
+    /// @notice With bridgeCost returning 0 (messageFee), underpaying is no
+    ///         longer possible. Instead, verify that sending excess ETH when
+    ///         the caller cannot receive refunds causes a revert.
+    function testProposeExcessValueRefundFails() public {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
@@ -324,11 +327,20 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             100_000_000 * 1e18
         );
 
-        uint256 bridgeCost = governor.bridgeCostAll() - 1; /// 1 Wei less than needed
-        vm.deal(address(this), bridgeCost);
+        _delegateVoteAmountForUser(
+            address(well),
+            address(this),
+            governor.proposalThreshold()
+        );
 
-        vm.expectRevert("WormholeBridge: total cost not equal to quote");
-        governor.propose{value: bridgeCost}(
+        vm.roll(block.number + 1);
+
+        uint256 excessValue = 1 ether;
+        vm.deal(address(this), excessValue);
+
+        _receivingFunds = false;
+        vm.expectRevert("WormholeBridge: refund failed");
+        governor.propose{value: excessValue}(
             targets,
             values,
             calldatas,
@@ -429,6 +441,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         return proposalId;
     }
 
+    /// @notice When publishMessage reverts and the caller sent excess ETH,
+    ///         the refund should fail if the caller has no receive function.
     function testBridgeFailOutRefundFail() public {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -455,10 +469,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         // address(this) doesn't have fallback function
         address proposer = address(this);
-        uint256 bridgeCost = governor.bridgeCostAll();
-        vm.deal(proposer, bridgeCost);
-
-        uint256 proposerBalance = proposer.balance;
+        uint256 excessValue = 1 ether;
+        vm.deal(proposer, excessValue);
 
         /// Make publishMessage revert to simulate Wormhole core failure
         wormholeRelayerAdapter.setShouldRevertPublishMessage(true);
@@ -472,38 +484,17 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.roll(block.number + 1);
 
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(BASE_WORMHOLE_CHAIN_ID, payload, bridgeCost);
+        emit BridgeOutFailed(BASE_WORMHOLE_CHAIN_ID, payload, 0);
 
         _receivingFunds = false;
         vm.expectRevert("WormholeBridge: refund failed");
         vm.prank(proposer);
-        uint256 proposalId = governor.propose{value: bridgeCost}(
+        governor.propose{value: excessValue}(
             targets,
             values,
             calldatas,
             description
         );
-
-        wormholeRelayerAdapter.setShouldRevertPublishMessage(false);
-
-        uint256[] memory proposals = governor.liveProposals();
-
-        bool proposalFound;
-
-        for (uint256 i = 0; i < proposals.length; i++) {
-            if (proposals[i] == proposalId) {
-                proposalFound = true;
-                break;
-            }
-        }
-
-        assertFalse(proposalFound, "proposal found in live proposals");
-
-        uint256 proposerBalanceAfter = proposer.balance;
-
-        // call revert so proposer balance should not change
-        assertEq(proposerBalanceAfter, proposerBalance, "incorrect balance");
-        assertEq(proposerBalanceAfter, bridgeCost, "incorrect balance");
 
         _assertGovernanceBalance();
     }
@@ -808,23 +799,27 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         _assertGovernanceBalance();
     }
 
-    function testRebroadcastProposalFailsNoValue() public {
+    /// @notice With bridgeCost returning 0 (messageFee), rebroadcast with no
+    ///         value should succeed. Verify the opposite: sending excess ETH
+    ///         triggers a refund failure when caller cannot receive funds.
+    function testRebroadcastProposalSucceedsNoValue() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.expectRevert("WormholeBridge: total cost not equal to quote");
+        _receivingFunds = true;
         governor.rebroadcastProposal(proposalId);
 
         _assertGovernanceBalance();
     }
 
-    function testRebroadcastProposalFailsIncorrectValue() public {
+    function testRebroadcastProposalExcessValueRefundFails() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        uint256 cost = governor.bridgeCostAll() - 2012;
-        vm.deal(address(this), cost);
+        uint256 excessValue = 1 ether;
+        vm.deal(address(this), excessValue);
 
-        vm.expectRevert("WormholeBridge: total cost not equal to quote");
-        governor.rebroadcastProposal{value: cost}(proposalId);
+        _receivingFunds = false;
+        vm.expectRevert("WormholeBridge: refund failed");
+        governor.rebroadcastProposal{value: excessValue}(proposalId);
 
         _assertGovernanceBalance();
     }

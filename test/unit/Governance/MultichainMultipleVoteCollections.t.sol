@@ -83,7 +83,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             "voteCollection not whitelisted to send messages in"
         );
 
-        assertTrue(governor.bridgeCostAll() != 0, "no targets");
+        assertTrue(governor.getAllTargetChainsLength() != 0, "no targets");
 
         assertEq(
             governor.getAllTargetChains().length,
