@@ -23,7 +23,8 @@ contract WormholeBridgeAdapter is
     /// ---------------------------------------------------------
 
     /// @notice Wormhole consistency level for publishMessage.
-    /// 1 = "finalized" — guardians wait for full chain finality
+    /// 1 = finalized: on Ethereum this means L1 finality (~15 min);
+    ///                on Base/Optimism this means L2 safe head finality.
     uint8 public constant CONSISTENCY_LEVEL = 1;
 
     /// ---------------------------------------------------------
@@ -50,6 +51,9 @@ contract WormholeBridgeAdapter is
     /// ---------------------------------------------------------
 
     /// @notice nonces that have already been processed
+    /// @dev DEPRECATED — used by the old Wormhole standard relayer path.
+    ///      Superseded by processedVAAHashes. Retained to preserve storage
+    ///      layout for upgradeable proxies.
     mapping(bytes32 => bool) public processedNonces;
 
     /// @notice chain id of the target chain to address for bridging
