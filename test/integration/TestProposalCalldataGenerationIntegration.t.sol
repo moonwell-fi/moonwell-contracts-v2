@@ -52,6 +52,7 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             // 127 (mip-x34), 121 (mip-x32), 137 (mip-b55: bridgeCost is dynamic),
             // 134 (mip-x38), 141 (mip-x43), 143 (mip-b57): inherit ChainlinkOracleConfigs
             // which grows when new markets are added
+            // 147 (mip-b58): bridgeCost changed after x48 (FIND-002)
             if (
                 multichainGovernorProposals[i - 1].id == 0 ||
                 multichainGovernorProposals[i - 1].id == 127 ||
@@ -59,7 +60,8 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
                 multichainGovernorProposals[i - 1].id == 134 ||
                 multichainGovernorProposals[i - 1].id == 137 ||
                 multichainGovernorProposals[i - 1].id == 141 ||
-                multichainGovernorProposals[i - 1].id == 143
+                multichainGovernorProposals[i - 1].id == 143 ||
+                multichainGovernorProposals[i - 1].id == 147
             ) {
                 continue;
             }

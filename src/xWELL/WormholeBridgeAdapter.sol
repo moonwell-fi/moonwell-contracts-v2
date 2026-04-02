@@ -23,8 +23,9 @@ contract WormholeBridgeAdapter is
     /// ---------------------------------------------------------
 
     /// @notice Wormhole consistency level for publishMessage.
-    /// 200 = "finalized" — guardians wait for full chain finality
-    uint8 public constant CONSISTENCY_LEVEL = 200;
+    /// 1 = finalized: on Ethereum this means L1 finality (~15 min);
+    ///                on Base/Optimism this means L2 safe head finality.
+    uint8 public constant CONSISTENCY_LEVEL = 1;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -50,6 +51,9 @@ contract WormholeBridgeAdapter is
     /// ---------------------------------------------------------
 
     /// @notice nonces that have already been processed
+    /// @dev DEPRECATED — used by the old Wormhole standard relayer path.
+    ///      Superseded by processedVAAHashes. Retained to preserve storage
+    ///      layout for upgradeable proxies.
     mapping(bytes32 => bool) public processedNonces;
 
     /// @notice chain id of the target chain to address for bridging
@@ -209,19 +213,12 @@ contract WormholeBridgeAdapter is
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
-    /// @notice Estimate bridge cost to bridge out to a destination chain, including
-    ///         the wormhole message fee.
-    /// @param dstChainId Destination chain id
-    function bridgeCost(
-        uint16 dstChainId
-    ) public view returns (uint256 gasCost) {
-        try
-            wormholeRelayer.quoteEVMDeliveryPrice(dstChainId, 0, gasLimit)
-        returns (uint256 cost, uint256) {
-            gasCost = cost + wormhole.messageFee();
-        } catch {
-            gasCost = wormhole.messageFee();
-        }
+    /// @notice Estimate bridge cost to bridge out to a destination chain.
+    ///         Returns the Wormhole core messageFee (currently 0 on all chains).
+    ///         The deprecated relayer quoter is no longer called since V3 uses
+    ///         direct publishMessage via Wormhole core.
+    function bridgeCost(uint16) public view returns (uint256) {
+        return wormhole.messageFee();
     }
 
     /// --------------------------------------------------------

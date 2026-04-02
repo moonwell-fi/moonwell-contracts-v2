@@ -599,17 +599,18 @@ contract MultichainProposalTest is PostProposalCheck {
         vm.selectFork(MOONBEAM_FORK_ID);
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
+        /// bridgeCost now returns wormhole core messageFee which is 0 on all chains
         uint256 gasCost = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         ).bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
-        assertTrue(gasCost != 0, "gas cost is 0 bridgeCost");
+        assertEq(gasCost, 0, "bridgeCost should equal messageFee (0)");
 
         gasCost = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         ).bridgeCostAll();
 
-        assertTrue(gasCost != 0, "gas cost is 0 gas cost all");
+        assertEq(gasCost, 0, "bridgeCostAll should equal 0");
     }
 
     function testRetrieveGasPriceBaseSucceeds() public {
@@ -617,17 +618,18 @@ contract MultichainProposalTest is PostProposalCheck {
 
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
+        /// bridgeCost now returns wormhole core messageFee which is 0 on all chains
         uint256 gasCost = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY")
         ).bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
-        assertTrue(gasCost != 0, "gas cost is 0 bridgeCost");
+        assertEq(gasCost, 0, "bridgeCost should equal messageFee (0)");
 
         gasCost = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY")
         ).bridgeCostAll();
 
-        assertTrue(gasCost != 0, "gas cost is 0 gas cost all");
+        assertEq(gasCost, 0, "bridgeCostAll should equal 0");
     }
 
     function testProposeOnMoonbeamWellSucceeds() public {

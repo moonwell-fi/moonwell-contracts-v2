@@ -18,8 +18,9 @@ abstract contract WormholeBridgeBase {
     /// ---------------------------------------------------------
 
     /// @notice Wormhole consistency level for publishMessage.
-    /// 200 = "finalized" — guardians wait for full chain finality
-    uint8 public constant CONSISTENCY_LEVEL = 200;
+    /// 1 = finalized: on Ethereum this means L1 finality (~15 min);
+    ///                on Base/Optimism this means L2 safe head finality.
+    uint8 public constant CONSISTENCY_LEVEL = 1;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -45,6 +46,9 @@ abstract contract WormholeBridgeBase {
     /// ---------------------------------------------------------
 
     /// @notice nonces that have already been processed
+    /// @dev DEPRECATED — used by the old Wormhole standard relayer path.
+    ///      Superseded by processedVAAHashes in leaf contracts. Retained
+    ///      to preserve storage layout for upgradeable proxies.
     mapping(bytes32 nonce => bool processed) public processedNonces;
 
     /// @notice chain id of the target chain to address for bridging
@@ -217,30 +221,12 @@ abstract contract WormholeBridgeBase {
         return _targetChains.length();
     }
 
-    /// @notice Estimate bridge cost to bridge out to a destination chain
-    /// @dev this function returns 0 if the quote fails.
-    /// in all other cases, the value returned should be non zero.
-    /// @param dstWormholeChainId Destination chain id
-    function bridgeCost(
-        uint16 dstWormholeChainId
-    ) public view returns (uint256 gasCost) {
-        try
-            wormholeRelayer.quoteEVMDeliveryPrice(
-                dstWormholeChainId,
-                0,
-                gasLimit
-            )
-        returns (uint256 cost, uint256) {
-            gasCost = cost + _wormhole().messageFee();
-        } catch {
-            /// this is a bad situation, but we still want to allow the bridge out
-            /// so fail silently and set gasCost to 0.
-            /// Would like to emit an event here, but that would be a side affect
-            /// to the logs and cause this function to be non view.
-            /// the bridge out will most likely fail from this point out, however,
-            /// the proposal on Moonbeam will still be created.
-            gasCost = 0 + _wormhole().messageFee();
-        }
+    /// @notice Estimate bridge cost to bridge out to a destination chain.
+    ///         Returns the Wormhole core messageFee (currently 0 on all chains).
+    ///         The deprecated relayer quoter is no longer called since we use
+    ///         direct publishMessage via Wormhole core.
+    function bridgeCost(uint16) public view returns (uint256) {
+        return _wormhole().messageFee();
     }
 
     /// @notice Estimate bridge cost to bridge out to all chains
@@ -352,13 +338,13 @@ abstract contract WormholeBridgeBase {
         _setVAAHashProcessed(vm.hash);
 
         /// Parse the target
-        (uint16 targetChain, address targetAddress, bytes memory payload) = abi
+        (uint16 targetChain, address targetContract, bytes memory payload) = abi
             .decode(vm.payload, (uint16, address, bytes));
 
         /// Validate we are the target
         require(
             targetChain == _wormhole().chainId() &&
-                targetAddress == address(this),
+                targetContract == address(this),
             "invalid target"
         );
 

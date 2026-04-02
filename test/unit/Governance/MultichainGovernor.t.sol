@@ -116,14 +116,10 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
         assertEq(
             governor.bridgeCost(MOONBASE_WORMHOLE_CHAIN_ID),
-            0.1 ether,
-            "bridgecost incorrect"
+            0,
+            "bridgecost should equal messageFee (0)"
         );
-        assertEq(
-            governor.bridgeCostAll(),
-            0.1 ether,
-            "bridgecostall incorrect"
-        );
+        assertEq(governor.bridgeCostAll(), 0, "bridgecostall should equal 0");
     }
 
     function testVoteCollectionSetup() public view {
