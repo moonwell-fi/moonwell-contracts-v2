@@ -1,0 +1,12 @@
+{
+    "8453": [
+        {
+            "feeMultiplier": 3000,
+            "maxDecrements": 10,
+            "maxRoundDelay": 10,
+            "mTokenName": "MOONWELL_VVV",
+            "underlyingFeedName": "CHAINLINK_VVV_USD",
+            "wrapperName": "CHAINLINK_VVV_USD_OEV_WRAPPER"
+        }
+    ]
+}

@@ -94,7 +94,7 @@ mkdir -p "$target_dir"
 # Number of failed mutations
 failed_mutation=0
 
-is_current_mutation_failed=0 # Intialized as false
+is_current_mutation_failed=0 # Initialized as false
 
 # Append Mutation Result to Result_MultichainGovernor.md with desired format
 output_title "Mutation Results\n"

@@ -1,0 +1,23 @@
+{
+    "8453": [
+        {
+            "addressesString": "MOONWELL_VVV",
+            "borrowCap": 0.1e18,
+            "collateralFactor": 0.5e18,
+            "initialMintAmount": 1e18,
+            "jrm": {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 3.5e18,
+                "kink": 0.35e18,
+                "multiplierPerYear": 0.16e18
+            },
+            "name": "Moonwell VVV",
+            "priceFeedName": "CHAINLINK_VVV_USD_OEV_WRAPPER",
+            "reserveFactor": 0.35e18,
+            "seizeShare": 0.03e18,
+            "supplyCap": 170000e18,
+            "symbol": "mVVV",
+            "tokenAddressName": "VVV"
+        }
+    ]
+}
