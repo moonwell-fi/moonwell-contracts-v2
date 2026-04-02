@@ -2,8 +2,6 @@
 pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
@@ -135,7 +133,8 @@ contract xWellIntegrationTest is Test {
             xwell.buffer(address(wormholeAdapter))
         );
 
-        /// --- Upgrade impl + swap wormhole to mock for processVAA testing ---
+        /// Swap wormhole core with mock for processVAA testing.
+        /// The adapter is already V3-initialized on-chain after mip-x48.
         bytes memory vaaBytes;
         {
             uint16 currentWormholeChainId = uint16(BASE_WORMHOLE_CHAIN_ID);
@@ -143,17 +142,7 @@ contract xWellIntegrationTest is Test {
             MockWormholeCore mockWormhole = new MockWormholeCore();
             mockWormhole.setChainId(currentWormholeChainId);
 
-            /// Upgrade to latest local impl to test current branch code
-            WormholeBridgeAdapter newImpl = new WormholeBridgeAdapter();
-            ProxyAdmin pa = ProxyAdmin(addresses.getAddress("MRD_PROXY_ADMIN"));
-            vm.prank(pa.owner());
-            pa.upgrade(
-                ITransparentUpgradeableProxy(address(wormholeAdapter)),
-                address(newImpl)
-            );
-
-            /// Adapter is already V3-initialized on-chain, so just override
-            /// the wormhole core address (slot 156) with the mock
+            /// Override the wormhole core address (slot 156) with the mock
             vm.store(
                 address(wormholeAdapter),
                 bytes32(uint256(156)),
