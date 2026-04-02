@@ -18,7 +18,7 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {Address} from "@utils/Address.sol";
 
-contract DeployxWellMoonbeamTest is PostProposalCheck {
+contract DeployxWellMoonbeamPostProposalTest is PostProposalCheck {
     using ChainIds for uint256;
     using Address for address;
 

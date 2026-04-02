@@ -19,7 +19,7 @@ import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {Address} from "@utils/Address.sol";
 
-contract UnwrapperAdapterMoonbeamTest is PostProposalCheck {
+contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
     using Address for address;
     using ChainIds for uint256;
 
