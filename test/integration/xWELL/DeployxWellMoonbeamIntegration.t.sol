@@ -16,7 +16,6 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {xwellDeployMoonbeam} from "@proposals/mips/mip-xwell/xwellDeployMoonbeam.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {Address} from "@utils/Address.sol";
@@ -210,6 +209,9 @@ contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
         );
     }
 
+    /// @notice After mip-x48, the adapter is already V3-initialized with
+    ///         WormholeBridgeAdapter (not WormholeUnwrapperAdapter). processVAA
+    ///         now mints xWELL to the user instead of unwrapping WELL.
     function testBridgeInSuccess(uint256 mintAmount) public {
         mintAmount = _bound(
             mintAmount,
@@ -217,7 +219,7 @@ contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
             xwell.buffer(address(wormholeAdapter))
         );
 
-        /// --- V3 upgrade + mock setup in scoped block to avoid stack-too-deep ---
+        /// --- Upgrade impl + swap wormhole to mock for processVAA testing ---
         bytes memory vaaBytes;
         {
             uint16 currentWormholeChainId = uint16(MOONBEAM_WORMHOLE_CHAIN_ID);
@@ -225,30 +227,23 @@ contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
             MockWormholeCore mockWormhole = new MockWormholeCore();
             mockWormhole.setChainId(currentWormholeChainId);
 
+            /// Upgrade to latest local impl to test current branch code
             ProxyAdmin pa = ProxyAdmin(
                 addresses.getAddress("MOONBEAM_PROXY_ADMIN")
             );
-            address newImpl = address(new WormholeUnwrapperAdapter());
+            address newImpl = address(new WormholeBridgeAdapter());
             vm.prank(pa.owner());
-            pa.upgradeAndCall(
+            pa.upgrade(
                 ITransparentUpgradeableProxy(address(wormholeAdapter)),
-                newImpl,
-                abi.encodeWithSelector(
-                    WormholeBridgeAdapter.initializeV3.selector,
-                    address(mockWormhole)
-                )
+                newImpl
             );
 
-            address lockboxAddr = addresses.getAddress("xWELL_LOCKBOX");
-            vm.prank(wormholeAdapter.owner());
-            WormholeUnwrapperAdapter(address(wormholeAdapter)).setLockbox(
-                lockboxAddr
-            );
-
-            deal(
-                address(well),
-                addresses.getAddress("xWELL_LOCKBOX"),
-                mintAmount
+            /// Adapter is already V3-initialized on-chain, so just override
+            /// the wormhole core address (slot 156) with the mock
+            vm.store(
+                address(wormholeAdapter),
+                bytes32(uint256(156)),
+                bytes32(uint256(uint160(address(mockWormhole))))
             );
 
             mockWormhole.setStorage(
@@ -263,7 +258,6 @@ contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
         }
 
         /// --- Bridge in via processVAA ---
-        uint256 startingWellBalance = well.balanceOf(user);
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
@@ -272,18 +266,13 @@ contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
 
         assertEq(
             xwell.balanceOf(user),
-            startingXWellBalance,
-            "user xWELL balance incorrect, should not change"
-        );
-        assertEq(
-            well.balanceOf(user),
-            startingWellBalance + mintAmount,
-            "user WELL balance incorrect, did not increase"
+            startingXWellBalance + mintAmount,
+            "user xWELL balance incorrect"
         );
         assertEq(
             xwell.totalSupply(),
-            startingXWellTotalSupply,
-            "total xWELL supply incorrect, should not change"
+            startingXWellTotalSupply + mintAmount,
+            "total xWELL supply incorrect"
         );
         assertTrue(
             wormholeAdapter.processedVAAHashes(keccak256(vaaBytes)),

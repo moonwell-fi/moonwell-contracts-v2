@@ -82,8 +82,21 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
         deal(address(well), user, startingWellAmount);
     }
 
+    /// @notice mipm21's validate() is stale after mip-x48 upgraded the adapter
+    ///         from WormholeUnwrapperAdapter to WormholeBridgeAdapter.
+    ///         Validate that the adapter is correctly configured instead.
     function testValidate() public view {
-        validate(addresses, address(0));
+        assertTrue(
+            address(wormholeAdapter.wormhole()) != address(0),
+            "wormhole core not set"
+        );
+        assertTrue(
+            wormholeAdapter.isTrustedSender(
+                wormholeBaseChainid,
+                address(wormholeAdapter)
+            ),
+            "self on base not trusted sender"
+        );
     }
 
     function testInitializeLogicContractFails() public {
@@ -251,18 +264,19 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
         );
     }
 
+    /// @notice After mip-x48, the adapter is WormholeBridgeAdapter (not
+    ///         WormholeUnwrapperAdapter), so processVAA mints xWELL to the
+    ///         user instead of unwrapping WELL through the lockbox.
     function testBridgeInSuccess(uint256 mintAmount) public {
         mintAmount = _bound(
             mintAmount,
             1,
             xwell.buffer(address(wormholeAdapter))
         );
-        deal(address(well), address(xerc20Lockbox), mintAmount);
 
-        uint256 startingWellBalance = well.balanceOf(user);
+        uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
-        uint256 startingLockboxBuffer = xwell.buffer(address(xerc20Lockbox));
 
         /// Configure mock: emitter is the adapter on Base chain
         uint16 sourceChainId = wormholeBaseChainid;
@@ -281,30 +295,24 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
         );
         wormholeAdapter.processVAA(vaaBytes);
 
-        uint256 endingWellBalance = well.balanceOf(user);
-        uint256 endingXWellTotalSupply = xwell.totalSupply();
-        uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
-        uint256 endingLockboxBuffer = xwell.buffer(address(xerc20Lockbox));
-
         assertEq(
-            endingWellBalance,
-            startingWellBalance + mintAmount,
-            "user WELL balance incorrect"
+            xwell.balanceOf(user),
+            startingXWellBalance + mintAmount,
+            "user xWELL balance incorrect"
         );
         assertEq(
-            endingXWellTotalSupply,
-            startingXWellTotalSupply,
-            "total xWELL supply changed"
+            xwell.totalSupply(),
+            startingXWellTotalSupply + mintAmount,
+            "total xWELL supply incorrect"
         );
         assertTrue(
             wormholeAdapter.processedVAAHashes(keccak256(vaaBytes)),
             "VAA hash not processed"
         );
-        assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
         assertEq(
-            startingLockboxBuffer + mintAmount,
-            endingLockboxBuffer,
-            "lockbox buffer incorrect"
+            xwell.buffer(address(wormholeAdapter)),
+            startingBuffer - mintAmount,
+            "buffer incorrect"
         );
     }
 }
