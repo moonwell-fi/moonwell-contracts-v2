@@ -135,7 +135,7 @@ contract xWellIntegrationTest is Test {
             xwell.buffer(address(wormholeAdapter))
         );
 
-        /// --- V3 upgrade + processVAA in scoped block to avoid stack-too-deep ---
+        /// --- Upgrade impl + swap wormhole to mock for processVAA testing ---
         bytes memory vaaBytes;
         {
             uint16 currentWormholeChainId = uint16(BASE_WORMHOLE_CHAIN_ID);
@@ -143,16 +143,21 @@ contract xWellIntegrationTest is Test {
             MockWormholeCore mockWormhole = new MockWormholeCore();
             mockWormhole.setChainId(currentWormholeChainId);
 
+            /// Upgrade to latest local impl to test current branch code
             WormholeBridgeAdapter newImpl = new WormholeBridgeAdapter();
             ProxyAdmin pa = ProxyAdmin(addresses.getAddress("MRD_PROXY_ADMIN"));
             vm.prank(pa.owner());
-            pa.upgradeAndCall(
+            pa.upgrade(
                 ITransparentUpgradeableProxy(address(wormholeAdapter)),
-                address(newImpl),
-                abi.encodeWithSelector(
-                    WormholeBridgeAdapter.initializeV3.selector,
-                    address(mockWormhole)
-                )
+                address(newImpl)
+            );
+
+            /// Adapter is already V3-initialized on-chain, so just override
+            /// the wormhole core address (slot 156) with the mock
+            vm.store(
+                address(wormholeAdapter),
+                bytes32(uint256(156)),
+                bytes32(uint256(uint160(address(mockWormhole))))
             );
 
             mockWormhole.setStorage(
