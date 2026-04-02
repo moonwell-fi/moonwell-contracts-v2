@@ -34,11 +34,11 @@ contract BridgeValidationHookIntegrationTest is Test {
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
 
-        // Query actual bridge cost from the real router
+        // Query actual bridge cost from the real router.
+        // After mip-x48 (FIND-002), bridgeCost returns messageFee() which
+        // is currently 0 on all chains since the deprecated relayer quoter
+        // was removed.
         actualBridgeCost = router.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
-
-        // Ensure we have a valid bridge cost
-        require(actualBridgeCost > 0, "Bridge cost should be greater than 0");
     }
 
     /// ============ SUCCESS TESTS ============
