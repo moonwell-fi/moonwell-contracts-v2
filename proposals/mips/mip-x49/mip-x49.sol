@@ -120,6 +120,20 @@ contract mipx49 is HybridProposal {
             "Upgrade to WormholeUnwrapperAdapter on Moonbeam (fix mip-x48)"
         );
 
+        /// Re-set the lockbox after upgrading to WormholeUnwrapperAdapter.
+        /// The original lockbox was at slot 156, but mip-x48's initializeV3
+        /// overwrote it with the wormhole core address. The new layout puts
+        /// lockbox at slot 158 (after wormhole + processedVAAHashes), which
+        /// is empty and needs to be initialized.
+        _pushAction(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            abi.encodeWithSignature(
+                "setLockbox(address)",
+                addresses.getAddress("xWELL_LOCKBOX")
+            ),
+            "Re-set lockbox on Moonbeam unwrapper (storage lost during x48)"
+        );
+
         _pushAction(
             addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
             abi.encodeWithSignature(
