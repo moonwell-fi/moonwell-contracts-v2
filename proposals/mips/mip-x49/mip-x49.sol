@@ -33,6 +33,36 @@ contract mipx49 is HybridProposal {
         _setProposalDescription(proposalDescription);
     }
 
+    function run() public override {
+        primaryForkId().createForksAndSelect();
+
+        Addresses addresses = new Addresses();
+        vm.makePersistent(address(addresses));
+
+        initProposal(addresses);
+
+        (, address deployerAddress, ) = vm.readCallers();
+
+        if (DO_DEPLOY) deploy(addresses, deployerAddress);
+        if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
+
+        if (DO_BUILD) build(addresses);
+        if (DO_RUN) run(addresses, deployerAddress);
+        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
+        if (DO_VALIDATE) {
+            validate(addresses, deployerAddress);
+            console.log("Validation completed for proposal ", this.name());
+        }
+        if (DO_PRINT) {
+            printProposalActionSteps();
+
+            addresses.removeAllRestrictions();
+            printCalldata(addresses);
+
+            _printAddressesChanges(addresses);
+        }
+    }
+
     function primaryForkId() public pure override returns (uint256) {
         return MOONBEAM_FORK_ID;
     }
@@ -46,11 +76,11 @@ contract mipx49 is HybridProposal {
         /// behavior that was lost when mip-x48 mistakenly upgraded to
         /// plain WormholeBridgeAdapter)
         vm.selectFork(primaryForkId());
-        if (!addresses.isAddressSet("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")) {
+        if (!addresses.isAddressSet("WORMHOLE_UNWRAPPER_ADAPTER_IMPL_V4")) {
             vm.startBroadcast();
             address impl = address(new WormholeUnwrapperAdapter());
             vm.stopBroadcast();
-            addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4", impl);
+            addresses.addAddress("WORMHOLE_UNWRAPPER_ADAPTER_IMPL_V4", impl);
         }
 
         vm.selectFork(BASE_FORK_ID);
@@ -115,7 +145,7 @@ contract mipx49 is HybridProposal {
             abi.encodeWithSignature(
                 "upgrade(address,address)",
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")
+                addresses.getAddress("WORMHOLE_UNWRAPPER_ADAPTER_IMPL_V4")
             ),
             "Upgrade to WormholeUnwrapperAdapter on Moonbeam (fix mip-x48)"
         );
@@ -216,7 +246,7 @@ contract mipx49 is HybridProposal {
 
     /// @notice Validate that the Moonbeam adapter is the unwrapper variant
     ///         and the lockbox storage survived the x48 upgrade round-trip.
-    function _validateMoonbeamUnwrapper(Addresses addresses) internal {
+    function _validateMoonbeamUnwrapper(Addresses addresses) internal view {
         WormholeUnwrapperAdapter unwrapper = WormholeUnwrapperAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
@@ -231,11 +261,18 @@ contract mipx49 is HybridProposal {
     function _validateAdapter(
         Addresses addresses,
         string memory chainName
-    ) internal {
+    ) internal view {
         address proxy = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
-        address expectedImpl = addresses.getAddress(
-            "WORMHOLE_BRIDGE_ADAPTER_IMPL_V4"
-        );
+        address expectedImpl;
+        if (block.chainid == MOONBEAM_CHAIN_ID) {
+            expectedImpl = addresses.getAddress(
+                "WORMHOLE_UNWRAPPER_ADAPTER_IMPL_V4"
+            );
+        } else {
+            expectedImpl = addresses.getAddress(
+                "WORMHOLE_BRIDGE_ADAPTER_IMPL_V4"
+            );
+        }
         string memory proxyAdminKey = block.chainid == MOONBEAM_CHAIN_ID
             ? "MOONBEAM_PROXY_ADMIN"
             : "MRD_PROXY_ADMIN";
@@ -279,7 +316,7 @@ contract mipx49 is HybridProposal {
         );
     }
 
-    function _validateGovernor(Addresses addresses) internal {
+    function _validateGovernor(Addresses addresses) internal view {
         address proxy = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
         address expectedImpl = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_IMPL_V3"
@@ -311,7 +348,7 @@ contract mipx49 is HybridProposal {
     function _validateVoteCollection(
         Addresses addresses,
         string memory chainName
-    ) internal {
+    ) internal view {
         address proxy = addresses.getAddress("VOTE_COLLECTION_PROXY");
         address expectedImpl = addresses.getAddress("VOTE_COLLECTION_IMPL_V3");
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");

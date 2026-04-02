@@ -393,5 +393,15 @@
         "addr": "0x65299Eb6a77ee1b1a7eF7051cce71005b2A707aB",
         "isContract": true,
         "name": "MULTICHAIN_GOVERNOR_IMPL_V2"
+    },
+    {
+        "addr": "0x24Af32b0C4c94f0D406fBC3C8815666356299c58",
+        "isContract": true,
+        "name": "WORMHOLE_UNWRAPPER_ADAPTER_IMPL_V4"
+    },
+    {
+        "addr": "0x0EA81678E4DEb33aaD9E214dF76be3158b4209ab",
+        "isContract": true,
+        "name": "MULTICHAIN_GOVERNOR_IMPL_V3"
     }
 ]

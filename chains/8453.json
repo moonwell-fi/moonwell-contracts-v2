@@ -1488,5 +1488,15 @@
         "addr": "0xD6aFC41DD78043C55273e217f69E5e1248793B7A",
         "isContract": true,
         "name": "CHAINLINK_VVV_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0x7599aa7F32bda9Ef644f6cB0482c64fC26f68799",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V4"
+    },
+    {
+        "addr": "0x3fBB877C8d5cF56b30FD29D21E865cA58f127472",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL_V3"
     }
 ]
