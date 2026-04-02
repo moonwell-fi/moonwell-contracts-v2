@@ -1,6 +1,6 @@
 #!/bin/bash
-export JSON_PATH=proposals/mips/mip-x49/x49.json
-export DESCRIPTION_PATH=proposals/mips/mip-x49/x49.md
+export JSON_PATH=proposals/mips/mip-x50/x50.json
+export DESCRIPTION_PATH=proposals/mips/mip-x50/x50.md
 export PRIMARY_FORK_ID=0
 
 echo "JSON_PATH=$JSON_PATH"
