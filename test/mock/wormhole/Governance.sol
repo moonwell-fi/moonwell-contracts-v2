@@ -109,7 +109,7 @@ abstract contract Governance is
         );
 
         // Verify the Guardian Set keys are not empty, this guards
-        // against the accidential upgrade to an empty GuardianSet
+        // against the accidental upgrade to an empty GuardianSet
         require(
             upgrade.newGuardianSet.keys.length > 0,
             "new guardian set is empty"

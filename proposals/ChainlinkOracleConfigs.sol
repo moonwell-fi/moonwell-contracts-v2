@@ -81,6 +81,9 @@ abstract contract ChainlinkOracleConfigs is Test {
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_MAMO_USD", "MAMO", "MOONWELL_MAMO")
         );
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_VVV_USD", "VVV", "MOONWELL_VVV")
+        );
 
         /// Initialize composite oracle configurations for Base
         _compositeOracleConfigs[BASE_CHAIN_ID].push(
@@ -133,6 +136,8 @@ abstract contract ChainlinkOracleConfigs is Test {
         );
 
         /// Initialize oracle configurations for Optimism
+        /// Note: CHAINLINK_WELL_USD OEV wrapper was not upgraded on Optimism
+        /// (no _DEPRECATED variant exists on chain 10). See mip-x14 _getWrapperName.
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_USDC_USD", "USDC", "MOONWELL_USDC")
         );

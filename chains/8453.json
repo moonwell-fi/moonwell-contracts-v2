@@ -1463,5 +1463,30 @@
         "addr": "0xf81094eedd37DA759E837D727D940f14b18b6c76",
         "isContract": true,
         "name": "VOTE_COLLECTION_IMPL_V2"
+    },
+    {
+        "addr": "0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf",
+        "isContract": true,
+        "name": "VVV"
+    },
+    {
+        "addr": "0xaABc55Ca55D70B034e4daA2551A224239890282F",
+        "isContract": true,
+        "name": "CHAINLINK_VVV_USD"
+    },
+    {
+        "addr": "0xCF1A3322977ef557899ad2BF3056d8411EdC87A1",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_VVV"
+    },
+    {
+        "addr": "0xD64BCb70C613a6D1F4D7D57Ba64bb4a0767A9682",
+        "isContract": true,
+        "name": "MOONWELL_VVV"
+    },
+    {
+        "addr": "0xD6aFC41DD78043C55273e217f69E5e1248793B7A",
+        "isContract": true,
+        "name": "CHAINLINK_VVV_USD_OEV_WRAPPER"
     }
 ]
