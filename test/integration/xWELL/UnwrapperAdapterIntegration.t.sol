@@ -16,7 +16,6 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
-import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {Address} from "@utils/Address.sol";
 
 contract UnwrapperAdapterMoonbeamTest is mipm21 {
@@ -38,9 +37,6 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
     /// @notice wormhole bridge adapter contract
     WormholeBridgeAdapter public wormholeAdapter;
 
-    /// @notice mock wormhole core for processVAA tests
-    MockWormholeCore public mockWormholeCore;
-
     /// @notice user address for testing
     address user = address(0x123);
 
@@ -59,44 +55,11 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
 
-        /// Set up MockWormholeCore for processVAA tests.
-        /// If the adapter is already V3-initialized on the live fork,
-        /// override the wormhole address directly via vm.store.
-        mockWormholeCore = new MockWormholeCore();
-        mockWormholeCore.setFee(0);
-        mockWormholeCore.setChainId(uint16(MOONBEAM_WORMHOLE_CHAIN_ID));
-
-        if (address(wormholeAdapter.wormhole()) != address(0)) {
-            /// Already V3-initialized — override wormhole core directly
-            /// wormhole is at storage slot 156 in WormholeBridgeAdapter
-            vm.store(
-                address(wormholeAdapter),
-                bytes32(uint256(156)),
-                bytes32(uint256(uint160(address(mockWormholeCore))))
-            );
-        } else {
-            vm.prank(wormholeAdapter.owner());
-            wormholeAdapter.initializeV3(address(mockWormholeCore));
-        }
-
         deal(address(well), user, startingWellAmount);
     }
 
-    /// @notice mipm21's validate() is stale after mip-x48 upgraded the adapter
-    ///         from WormholeUnwrapperAdapter to WormholeBridgeAdapter.
-    ///         Validate that the adapter is correctly configured instead.
     function testValidate() public view {
-        assertTrue(
-            address(wormholeAdapter.wormhole()) != address(0),
-            "wormhole core not set"
-        );
-        assertTrue(
-            wormholeAdapter.isTrustedSender(
-                wormholeBaseChainid,
-                address(wormholeAdapter)
-            ),
-            "self on base not trusted sender"
-        );
+        validate(addresses, address(0));
     }
 
     function testInitializeLogicContractFails() public {
@@ -264,55 +227,54 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
         );
     }
 
-    /// @notice After mip-x48, the adapter is WormholeBridgeAdapter (not
-    ///         WormholeUnwrapperAdapter), so processVAA mints xWELL to the
-    ///         user instead of unwrapping WELL through the lockbox.
     function testBridgeInSuccess(uint256 mintAmount) public {
         mintAmount = _bound(
             mintAmount,
             1,
             xwell.buffer(address(wormholeAdapter))
         );
+        deal(address(well), address(xerc20Lockbox), mintAmount);
 
-        uint256 startingXWellBalance = xwell.balanceOf(user);
+        uint256 startingWellBalance = well.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
+        uint256 startingLockboxBuffer = xwell.buffer(address(xerc20Lockbox));
 
-        /// Configure mock: emitter is the adapter on Base chain
-        uint16 sourceChainId = wormholeBaseChainid;
-        mockWormholeCore.setStorage(
-            true,
-            sourceChainId,
-            address(wormholeAdapter).toBytes(),
-            "",
-            abi.encode(user, mintAmount, uint16(MOONBEAM_WORMHOLE_CHAIN_ID))
+        uint16 dstChainId = block.chainid.toBaseWormholeChainId();
+        bytes memory payload = abi.encode(user, mintAmount);
+        bytes32 sender = address(wormholeAdapter).toBytes();
+        bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
+
+        vm.prank(address(wormholeAdapter.wormholeRelayer()));
+        wormholeAdapter.receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            sender,
+            dstChainId,
+            nonce
         );
 
-        bytes memory vaaBytes = abi.encode(
-            "bridge-in-vaa",
-            mintAmount,
-            block.timestamp
-        );
-        wormholeAdapter.processVAA(vaaBytes);
+        uint256 endingWellBalance = well.balanceOf(user);
+        uint256 endingXWellTotalSupply = xwell.totalSupply();
+        uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
+        uint256 endingLockboxBuffer = xwell.buffer(address(xerc20Lockbox));
 
         assertEq(
-            xwell.balanceOf(user),
-            startingXWellBalance + mintAmount,
-            "user xWELL balance incorrect"
+            endingWellBalance,
+            startingWellBalance + mintAmount,
+            "user WELL balance incorrect"
         );
         assertEq(
-            xwell.totalSupply(),
-            startingXWellTotalSupply + mintAmount,
-            "total xWELL supply incorrect"
+            endingXWellTotalSupply,
+            startingXWellTotalSupply,
+            "total xWELL supply changed"
         );
-        assertTrue(
-            wormholeAdapter.processedVAAHashes(keccak256(vaaBytes)),
-            "VAA hash not processed"
-        );
+        assertTrue(wormholeAdapter.processedNonces(nonce), "nonce not used");
+        assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
         assertEq(
-            xwell.buffer(address(wormholeAdapter)),
-            startingBuffer - mintAmount,
-            "buffer incorrect"
+            startingLockboxBuffer + mintAmount,
+            endingLockboxBuffer,
+            "lockbox buffer incorrect"
         );
     }
 }
