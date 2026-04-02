@@ -7,6 +7,7 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -41,10 +42,13 @@ contract mipx49 is HybridProposal {
         /// Deploy WormholeBridgeAdapter V4 impls
         /// -------------------------------------------------------
 
+        /// Moonbeam: deploy WormholeUnwrapperAdapter (restores unwrap
+        /// behavior that was lost when mip-x48 mistakenly upgraded to
+        /// plain WormholeBridgeAdapter)
         vm.selectFork(primaryForkId());
         if (!addresses.isAddressSet("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")) {
             vm.startBroadcast();
-            address impl = address(new WormholeBridgeAdapter());
+            address impl = address(new WormholeUnwrapperAdapter());
             vm.stopBroadcast();
             addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4", impl);
         }
@@ -102,7 +106,7 @@ contract mipx49 is HybridProposal {
 
     function build(Addresses addresses) public override {
         /// -------------------------------------------------------
-        /// Moonbeam: WormholeBridgeAdapter + MultichainGovernor
+        /// Moonbeam: WormholeUnwrapperAdapter + MultichainGovernor
         /// -------------------------------------------------------
 
         vm.selectFork(primaryForkId());
@@ -113,7 +117,7 @@ contract mipx49 is HybridProposal {
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V4")
             ),
-            "Upgrade WormholeBridgeAdapter on Moonbeam"
+            "Upgrade to WormholeUnwrapperAdapter on Moonbeam (fix mip-x48)"
         );
 
         _pushAction(
@@ -182,6 +186,7 @@ contract mipx49 is HybridProposal {
     function validate(Addresses addresses, address) public override {
         vm.selectFork(primaryForkId());
         _validateAdapter(addresses, "Moonbeam");
+        _validateMoonbeamUnwrapper(addresses);
         _validateGovernor(addresses);
 
         vm.selectFork(BASE_FORK_ID);
@@ -193,6 +198,20 @@ contract mipx49 is HybridProposal {
         _validateVoteCollection(addresses, "Optimism");
 
         vm.selectFork(primaryForkId());
+    }
+
+    /// @notice Validate that the Moonbeam adapter is the unwrapper variant
+    ///         and the lockbox storage survived the x48 upgrade round-trip.
+    function _validateMoonbeamUnwrapper(Addresses addresses) internal {
+        WormholeUnwrapperAdapter unwrapper = WormholeUnwrapperAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        assertEq(
+            unwrapper.lockbox(),
+            addresses.getAddress("xWELL_LOCKBOX"),
+            "Moonbeam: unwrapper lockbox not set (storage lost during x48)"
+        );
     }
 
     function _validateAdapter(
