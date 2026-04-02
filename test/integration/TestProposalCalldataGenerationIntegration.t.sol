@@ -49,12 +49,17 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             );
         for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
             // exclude proposals that are not onchain yet or proposals with dynamic calldata:
-            // 127 (mip-x34), 121 (mip-x32), 137 (mip-b55: bridgeCost is dynamic)
+            // 127 (mip-x34), 121 (mip-x32), 137 (mip-b55: bridgeCost is dynamic),
+            // 134 (mip-x38), 141 (mip-x43), 143 (mip-b57): inherit ChainlinkOracleConfigs
+            // which grows when new markets are added
             if (
                 multichainGovernorProposals[i - 1].id == 0 ||
                 multichainGovernorProposals[i - 1].id == 127 ||
                 multichainGovernorProposals[i - 1].id == 121 ||
-                multichainGovernorProposals[i - 1].id == 137
+                multichainGovernorProposals[i - 1].id == 134 ||
+                multichainGovernorProposals[i - 1].id == 137 ||
+                multichainGovernorProposals[i - 1].id == 141 ||
+                multichainGovernorProposals[i - 1].id == 143
             ) {
                 continue;
             }
