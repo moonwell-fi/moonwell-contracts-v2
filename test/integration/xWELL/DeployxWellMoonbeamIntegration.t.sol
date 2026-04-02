@@ -3,8 +3,6 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
@@ -16,8 +14,6 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {xwellDeployMoonbeam} from "@proposals/mips/mip-xwell/xwellDeployMoonbeam.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
-import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {Address} from "@utils/Address.sol";
 
@@ -217,82 +213,48 @@ contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
             xwell.buffer(address(wormholeAdapter))
         );
 
-        /// --- V3 upgrade + mock setup in scoped block to avoid stack-too-deep ---
-        bytes memory vaaBytes;
-        {
-            uint16 currentWormholeChainId = uint16(MOONBEAM_WORMHOLE_CHAIN_ID);
-
-            MockWormholeCore mockWormhole = new MockWormholeCore();
-            mockWormhole.setChainId(currentWormholeChainId);
-
-            ProxyAdmin pa = ProxyAdmin(
-                addresses.getAddress("MOONBEAM_PROXY_ADMIN")
-            );
-            address newImpl = address(new WormholeUnwrapperAdapter());
-            vm.prank(pa.owner());
-            pa.upgradeAndCall(
-                ITransparentUpgradeableProxy(address(wormholeAdapter)),
-                newImpl,
-                abi.encodeWithSelector(
-                    WormholeBridgeAdapter.initializeV3.selector,
-                    address(mockWormhole)
-                )
-            );
-
-            address lockboxAddr = addresses.getAddress("xWELL_LOCKBOX");
-            vm.prank(wormholeAdapter.owner());
-            WormholeUnwrapperAdapter(address(wormholeAdapter)).setLockbox(
-                lockboxAddr
-            );
-
-            deal(
-                address(well),
-                addresses.getAddress("xWELL_LOCKBOX"),
-                mintAmount
-            );
-
-            mockWormhole.setStorage(
-                true,
-                uint16(BASE_WORMHOLE_CHAIN_ID),
-                address(wormholeAdapter).toBytes(),
-                "",
-                abi.encode(user, mintAmount, currentWormholeChainId)
-            );
-
-            vaaBytes = abi.encode("bridge-in-vaa", mintAmount);
-        }
-
-        /// --- Bridge in via processVAA ---
         uint256 startingWellBalance = well.balanceOf(user);
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        wormholeAdapter.processVAA(vaaBytes);
+        uint16 dstChainId = block.chainid.toBaseWormholeChainId();
+        bytes memory payload = abi.encode(user, mintAmount);
+        bytes32 sender = address(wormholeAdapter).toBytes();
+        bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
+        deal(address(well), addresses.getAddress("xWELL_LOCKBOX"), mintAmount);
+
+        vm.prank(address(wormholeAdapter.wormholeRelayer()));
+        wormholeAdapter.receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            sender,
+            dstChainId,
+            nonce
+        );
+
+        uint256 endingWellBalance = well.balanceOf(user);
+        uint256 endingXWellBalance = xwell.balanceOf(user);
+        uint256 endingXWellTotalSupply = xwell.totalSupply();
+        uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
 
         assertEq(
-            xwell.balanceOf(user),
+            endingXWellBalance,
             startingXWellBalance,
             "user xWELL balance incorrect, should not change"
         );
         assertEq(
-            well.balanceOf(user),
             startingWellBalance + mintAmount,
+            endingWellBalance,
             "user WELL balance incorrect, did not increase"
         );
         assertEq(
-            xwell.totalSupply(),
+            endingXWellTotalSupply,
             startingXWellTotalSupply,
             "total xWELL supply incorrect, should not change"
         );
-        assertTrue(
-            wormholeAdapter.processedVAAHashes(keccak256(vaaBytes)),
-            "VAA hash not processed"
-        );
-        assertEq(
-            xwell.buffer(address(wormholeAdapter)),
-            startingBuffer - mintAmount,
-            "buffer incorrect"
-        );
+
+        assertTrue(wormholeAdapter.processedNonces(nonce), "nonce not used");
+        assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
     }
 }
