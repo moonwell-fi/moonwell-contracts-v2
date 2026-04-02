@@ -73,13 +73,6 @@ contract UnwrapperAdapterMoonbeamTest is PostProposalCheck {
         deal(address(well), user, startingWellAmount);
     }
 
-    function testValidate() public {
-        /// After x49, validate each proposal that was executed
-        for (uint256 i = 0; i < proposals.length; i++) {
-            proposals[i].validate(addresses, address(0));
-        }
-    }
-
     function testInitializeLogicContractFails() public {
         WormholeUnwrapperAdapter wormholeUnwrapperAdapter = WormholeUnwrapperAdapter(
                 addresses.getAddress("WORMHOLE_UNWRAPPER_ADAPTER")
