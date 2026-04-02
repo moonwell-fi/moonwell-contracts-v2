@@ -163,6 +163,8 @@ contract BridgeValidationHookIntegrationTest is Test {
     }
 
     function testInvalidBridgeTooLowRevertMessage() public {
+        /// Range validation is meaningless when bridgeCost is 0 (all multiples are 0)
+        vm.skip(actualBridgeCost == 0);
         InvalidBridgeTooLowProposal proposal = new InvalidBridgeTooLowProposal(
             actualBridgeCost
         );
@@ -233,6 +235,7 @@ contract BridgeValidationHookIntegrationTest is Test {
     }
 
     function testInvalidBridgeTooHighRevertMessage() public {
+        vm.skip(actualBridgeCost == 0);
         InvalidBridgeTooHighProposal proposal = new InvalidBridgeTooHighProposal(
                 actualBridgeCost
             );
@@ -281,6 +284,7 @@ contract BridgeValidationHookIntegrationTest is Test {
     /// ============ EDGE CASE TESTS ============
 
     function testBoundaryConditionJustBelowMinimum() public {
+        vm.skip(actualBridgeCost == 0);
         // Test with 3.99x (just below minimum)
         BoundaryBelowMinimumProposal proposal = new BoundaryBelowMinimumProposal(
                 actualBridgeCost
@@ -324,6 +328,7 @@ contract BridgeValidationHookIntegrationTest is Test {
     }
 
     function testBoundaryConditionJustAboveMaximum() public {
+        vm.skip(actualBridgeCost == 0);
         // Test with 10.01x (just above maximum)
         BoundaryAboveMaximumProposal proposal = new BoundaryAboveMaximumProposal(
                 actualBridgeCost
