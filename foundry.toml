@@ -12,15 +12,15 @@ rpc_storage_caching = { chains = "all", endpoints = "all" }
 ignored_warnings_from = ["src/MErc20Delegator.sol", "src/tokensale/TokenSaleDistributorProxy.sol"]
 gas_limit = "18446744073709551615" # u64::MAX
 block_gas_limit = "18446744073709551615"
-revert_strings = "debug"
-sparse_mode = true # compiles files that match filter criteria
+# revert_strings = "debug"
+# sparse_mode = true # compiles files that match filter criteria
 
 # We can have quite some control over the optimiser when using the new IR one.
 [profile.default.optimizer_details]
 #        # Enables the new ABI optimiser.
 
 [profile.default.optimizer_details.yul_details]
-stack_allocation = true   # Improves allocation of stack slots for variables.
+# stack_allocation = true   # Improves allocation of stack slots for variables.
 
 [profile.debug]
 # Make things chattier when debugging in case of test failures, giving us more
