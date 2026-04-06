@@ -78,5 +78,10 @@
         "addr": "0x98f3c9e6E3fACe36bAAd05FE09d375Ef1464288B",
         "isContract": true,
         "name": "WORMHOLE_CORE"
+    },
+    {
+        "addr": "0x2dc66C40bb15F0470e40508B43cD64D0b4F57180",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V2"
     }
 ]

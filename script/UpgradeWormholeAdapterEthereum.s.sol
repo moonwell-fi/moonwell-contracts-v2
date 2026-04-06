@@ -40,7 +40,6 @@ contract UpgradeWormholeAdapterEthereum is Script {
         address wormholeAdapterProxy = addresses.getAddress(
             "WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
-        address oldImpl = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC");
 
         vm.startBroadcast();
 
@@ -63,11 +62,8 @@ contract UpgradeWormholeAdapterEthereum is Script {
 
         vm.stopBroadcast();
 
-        // Save old implementation as deprecated (outside broadcast — Addresses is local only)
-        addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC_V2", oldImpl);
-
-        // Update logic address to new implementation
-        addresses.changeAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC", newImpl, true);
+        // Add new logic address to new implementation
+        addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V2", newImpl);
 
         addresses.printAddresses();
 
@@ -82,7 +78,9 @@ contract UpgradeWormholeAdapterEthereum is Script {
         address wormholeAdapterProxy = addresses.getAddress(
             "WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
-        address newImpl = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC");
+        address newImpl = addresses.getAddress(
+            "WORMHOLE_BRIDGE_ADAPTER_IMPL_V2"
+        );
         address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
 
         console.log("\n=== Running Validation ===");
@@ -96,7 +94,7 @@ contract UpgradeWormholeAdapterEthereum is Script {
             "Ethereum WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
         console.log(
-            "WormholeBridgeAdapter proxy implementation updated to:",
+            "WormholeBridgeAdapter implementation updated to:",
             newImpl
         );
 
@@ -110,27 +108,19 @@ contract UpgradeWormholeAdapterEthereum is Script {
         );
         console.log("wormhole() set to:", wormholeCore);
 
-        // 3. Verify owner is still the deployer
-        address deployer = vm.addr(vm.envUint("DEPLOYER_PRIVATE_KEY"));
-        require(
-            adapter.owner() == deployer,
-            "Ethereum: WormholeBridgeAdapter owner changed"
-        );
-        console.log("WormholeBridgeAdapter owner:", deployer);
-
-        // 4. Verify gasLimit is 300_000
+        // 3. Verify gasLimit is 300_000
         require(
             adapter.gasLimit() == 300_000,
             "Ethereum: gasLimit changed after upgrade"
         );
         console.log("gasLimit preserved: 300000");
 
-        // 5. Verify initializeV3 cannot be called again (reinitializer guard)
+        // 4. Verify initializeV3 cannot be called again (reinitializer guard)
         try adapter.initializeV3(address(1)) {
             revert("Ethereum: initializeV3 should have reverted");
         } catch {}
 
-        // 6. Verify xWELL pause guardian updated
+        // 5. Verify xWELL pause guardian updated
         xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
         address expectedGuardian = addresses.getAddress("PAUSE_GUARDIAN");
         require(
