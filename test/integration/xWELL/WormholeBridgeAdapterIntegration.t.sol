@@ -7,7 +7,9 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {Address} from "@utils/Address.sol";
 import {MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
@@ -331,15 +333,32 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     // Test 12: E2E cross-chain bridge (burn on source, mint on dest)
     // ---------------------------------------------------------------
 
-    /// @dev Skipped: cross-fork test requires proposal execution on dest fork,
-    ///      but PostProposalCheck state doesn't persist across vm.selectFork.
-    ///      The dest adapter proxy still points to V4 impl after fork switch.
-    function skipTestE2ECrossChainBridge() public {
+    function testE2ECrossChainBridge() public {
         /// --- Source chain: burn tokens via bridge() ---
         address user = address(0xBEEF);
         uint256 bridgeAmount = 1000e18;
 
-        deal(address(xwellProxy), user, bridgeAmount);
+        /// Get xWELL to user. On Moonbeam (unwrapper), deposit WELL via lockbox.
+        /// On Base/Optimism, mint via executeVAAv1 (properly updates rate limiter).
+        if (block.chainid == MOONBEAM_CHAIN_ID) {
+            IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
+            address lockbox = addresses.getAddress("xWELL_LOCKBOX");
+            deal(address(well), user, bridgeAmount);
+            vm.startPrank(user);
+            well.approve(lockbox, bridgeAmount);
+            XERC20Lockbox(lockbox).deposit(bridgeAmount);
+            vm.stopPrank();
+        } else {
+            bytes32 emitterAddr = bytes32(uint256(uint160(address(adapter))));
+            mockWormholeCore.setStorage(
+                true,
+                sourceWormholeChainId,
+                emitterAddr,
+                "",
+                abi.encode(user, bridgeAmount)
+            );
+            adapter.executeVAAv1(abi.encode("mint-for-bridge-out"));
+        }
 
         /// Etch mock executor so requestExecution succeeds
         address executorAddr = address(adapter.executor());
@@ -379,7 +398,8 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         _executeVAAOnDestFork(user, bridgeAmount);
     }
 
-    /// @notice Helper: switch to dest fork, etch mock, executeVAAv1, verify mint + replay
+    /// @notice Helper: switch to dest fork, etch mock, executeVAAv1, verify mint + replay.
+    ///         Handles Moonbeam (unwrapper delivers WELL) vs Base/Optimism (delivers xWELL).
     function _executeVAAOnDestFork(
         address user,
         uint256 bridgeAmount
@@ -393,7 +413,6 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         WormholeBridgeAdapter destAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
-        xWELL destXwell = xWELL(addresses.getAddress("xWELL_PROXY"));
 
         /// Etch mock and configure
         _etchMockOnCurrentFork(
@@ -402,15 +421,30 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             abi.encode(user, bridgeAmount)
         );
 
-        uint256 destBalanceBefore = destXwell.balanceOf(user);
+        if (block.chainid == MOONBEAM_CHAIN_ID) {
+            /// Moonbeam: unwrapper delivers WELL via lockbox
+            IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
+            address lockbox = addresses.getAddress("xWELL_LOCKBOX");
+            deal(address(well), lockbox, bridgeAmount);
 
-        destAdapter.executeVAAv1(abi.encode("e2e-cross-chain-vaa"));
-
-        assertEq(
-            destXwell.balanceOf(user) - destBalanceBefore,
-            bridgeAmount,
-            "dest: tokens not minted correctly"
-        );
+            uint256 wellBefore = well.balanceOf(user);
+            destAdapter.executeVAAv1(abi.encode("e2e-cross-chain-vaa"));
+            assertEq(
+                well.balanceOf(user) - wellBefore,
+                bridgeAmount,
+                "dest (Moonbeam): WELL not delivered correctly"
+            );
+        } else {
+            /// Base/Optimism: regular adapter delivers xWELL
+            xWELL destXwell = xWELL(addresses.getAddress("xWELL_PROXY"));
+            uint256 destBalanceBefore = destXwell.balanceOf(user);
+            destAdapter.executeVAAv1(abi.encode("e2e-cross-chain-vaa"));
+            assertEq(
+                destXwell.balanceOf(user) - destBalanceBefore,
+                bridgeAmount,
+                "dest: xWELL not minted correctly"
+            );
+        }
 
         /// Verify replay protection on destination (same sequence reverts)
         vm.expectRevert();
