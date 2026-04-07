@@ -616,18 +616,34 @@ contract MultichainProposalTest is PostProposalCheck {
     function testRetrieveGasPriceBaseSucceeds() public {
         vm.selectFork(BASE_FORK_ID);
 
+        /// The VoteCollection cross-chain upgrade (MIP-X48) may not have been
+        /// relayed via TemporalGovernor yet. Upgrade the proxy in-test so that
+        /// bridgeCost() uses the new implementation (messageFee-only).
+        address vcProxy = addresses.getAddress("VOTE_COLLECTION_PROXY");
+        address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
+        address vcImplV2 = address(new MultichainVoteCollection());
+
+        address temporalGovAddr = addresses.getAddress("TEMPORAL_GOVERNOR");
+        vm.prank(temporalGovAddr);
+        ProxyAdmin(proxyAdmin).upgradeAndCall(
+            ITransparentUpgradeableProxy(vcProxy),
+            vcImplV2,
+            abi.encodeWithSignature(
+                "initializeV2(address)",
+                addresses.getAddress("WORMHOLE_CORE")
+            )
+        );
+
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
         /// bridgeCost now returns wormhole core messageFee which is 0 on all chains
-        uint256 gasCost = MultichainVoteCollection(
-            addresses.getAddress("VOTE_COLLECTION_PROXY")
-        ).bridgeCost(BASE_WORMHOLE_CHAIN_ID);
+        uint256 gasCost = MultichainVoteCollection(vcProxy).bridgeCost(
+            BASE_WORMHOLE_CHAIN_ID
+        );
 
         assertEq(gasCost, 0, "bridgeCost should equal messageFee (0)");
 
-        gasCost = MultichainVoteCollection(
-            addresses.getAddress("VOTE_COLLECTION_PROXY")
-        ).bridgeCostAll();
+        gasCost = MultichainVoteCollection(vcProxy).bridgeCostAll();
 
         assertEq(gasCost, 0, "bridgeCostAll should equal 0");
     }
