@@ -171,7 +171,20 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             );
         for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
             uint256 id = multichainGovernorProposals[i - 1].id;
-            if (_isExcludedMultichain(id) || id <= 131) continue;
+            if (_isExcludedMultichain(id) || id <= 131 || id > 145) continue;
+            _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
+        }
+    }
+
+    function testMultichainGovernorCalldataMatchBatch5() public {
+        ProposalFields[]
+            memory multichainGovernorProposals = filterByGovernorAndProposalType(
+                "MultichainGovernor",
+                "HybridProposal"
+            );
+        for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
+            uint256 id = multichainGovernorProposals[i - 1].id;
+            if (_isExcludedMultichain(id) || id <= 145) continue;
             _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
         }
     }
