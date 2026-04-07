@@ -623,8 +623,8 @@ contract MultichainProposalTest is PostProposalCheck {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
         address vcImplV2 = address(new MultichainVoteCollection());
 
-        address temporalGovAddr = addresses.getAddress("TEMPORAL_GOVERNOR");
-        vm.prank(temporalGovAddr);
+        address proxyAdminOwner = Ownable(proxyAdmin).owner();
+        vm.prank(proxyAdminOwner);
         ProxyAdmin(proxyAdmin).upgradeAndCall(
             ITransparentUpgradeableProxy(vcProxy),
             vcImplV2,

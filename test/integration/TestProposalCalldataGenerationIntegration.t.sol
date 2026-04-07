@@ -122,8 +122,9 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         console.log("Found onchain calldata for proposal: ", proposal.name());
     }
 
-    /// @dev Split into two tests to avoid EVM memory allocation panic (0x41)
-    function testMultichainGovernorCalldataMatchOlderHalf() public {
+    /// @dev Split into three tests to avoid EVM memory allocation panic (0x41).
+    /// Each batch processes ~37 proposals in its own EVM execution context.
+    function testMultichainGovernorCalldataMatchBatch1() public {
         ProposalFields[]
             memory multichainGovernorProposals = filterByGovernorAndProposalType(
                 "MultichainGovernor",
@@ -131,12 +132,12 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             );
         for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
             uint256 id = multichainGovernorProposals[i - 1].id;
-            if (_isExcludedMultichain(id) || id > 80) continue;
+            if (_isExcludedMultichain(id) || id > 58) continue;
             _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
         }
     }
 
-    function testMultichainGovernorCalldataMatchNewerHalf() public {
+    function testMultichainGovernorCalldataMatchBatch2() public {
         ProposalFields[]
             memory multichainGovernorProposals = filterByGovernorAndProposalType(
                 "MultichainGovernor",
@@ -144,7 +145,20 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             );
         for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
             uint256 id = multichainGovernorProposals[i - 1].id;
-            if (_isExcludedMultichain(id) || id <= 80) continue;
+            if (_isExcludedMultichain(id) || id <= 58 || id > 104) continue;
+            _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
+        }
+    }
+
+    function testMultichainGovernorCalldataMatchBatch3() public {
+        ProposalFields[]
+            memory multichainGovernorProposals = filterByGovernorAndProposalType(
+                "MultichainGovernor",
+                "HybridProposal"
+            );
+        for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
+            uint256 id = multichainGovernorProposals[i - 1].id;
+            if (_isExcludedMultichain(id) || id <= 104) continue;
             _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
         }
     }
