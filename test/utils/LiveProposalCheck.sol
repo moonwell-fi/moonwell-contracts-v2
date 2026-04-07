@@ -66,7 +66,9 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
         while (count < 10) {
             // TODO remove this once we have the ability to cancel proposals
-            if (proposalId != 90) {
+            // 147 (mip-b58): already executed on-chain but ProposalView
+            // state is stale — skip to avoid re-execution failures.
+            if (proposalId != 90 && proposalId != 147) {
                 IMultichainGovernor.ProposalState state = governor.state(
                     proposalId
                 );
@@ -107,7 +109,10 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             uint256 count = 0;
 
             while (count < 10) {
+                // 147 (mip-b58): already executed but ProposalView
+                // state is stale — skip to avoid re-execution failures.
                 if (
+                    proposalStart != 147 &&
                     proposalView.proposalStates(proposalStart) ==
                     ProposalView.ProposalState.Queued
                 ) {

@@ -46,7 +46,7 @@
     },
     {
         "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
-        "name": "PAUSE_GUARDIAN",
+        "name": "PAUSE_GUARDIAN_DEPRECATED",
         "isContract": false
     },
     {

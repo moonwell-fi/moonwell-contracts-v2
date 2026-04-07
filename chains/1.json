@@ -5,7 +5,7 @@
         "name": "WORMHOLE_BRIDGE_RELAYER_PROXY"
     },
     {
-        "addr": "0x10b83c88e88910Cd5293324800d1a6e751004bE5",
+        "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
         "isContract": true,
         "name": "PAUSE_GUARDIAN"
     },
@@ -73,5 +73,15 @@
         "addr": "0xdDbf679d6332d9E5b409865b9671d1927255B52A",
         "isContract": false,
         "name": "MOONWELL_DEPLOYER"
+    },
+    {
+        "addr": "0x98f3c9e6E3fACe36bAAd05FE09d375Ef1464288B",
+        "isContract": true,
+        "name": "WORMHOLE_CORE"
+    },
+    {
+        "addr": "0x2dc66C40bb15F0470e40508B43cD64D0b4F57180",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V2"
     }
 ]

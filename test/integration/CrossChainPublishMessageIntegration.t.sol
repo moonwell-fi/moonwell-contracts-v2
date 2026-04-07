@@ -126,10 +126,8 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                     1
             );
 
-            /// increments each time the Multichain Governor publishes a message
-            uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
-                address(governor)
-            );
+            /// @dev nextSequence removed — was unused and IWormhole.nextSequence
+            ///      is not view-compatible with the on-chain Wormhole core
 
             bytes memory temporalGovExecDataBase;
             if (proposal.getActionsByType(ActionType.Base).length != 0) {

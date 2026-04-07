@@ -110,7 +110,7 @@ abstract contract Configs is Test {
             MockWormholeCore wormholeCore = new MockWormholeCore();
 
             addresses.addAddress("WORMHOLE_CORE", address(wormholeCore));
-            addresses.addAddress("PAUSE_GUARDIAN", address(this));
+            addresses.addAddress("PAUSE_GUARDIAN_DEPRECATED", address(this));
         }
     }
 
