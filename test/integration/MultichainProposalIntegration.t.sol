@@ -617,21 +617,22 @@ contract MultichainProposalTest is PostProposalCheck {
         vm.selectFork(BASE_FORK_ID);
 
         /// The VoteCollection cross-chain upgrade (MIP-X48) may not have been
-        /// relayed via TemporalGovernor yet. Upgrade the proxy in-test so that
-        /// bridgeCost() uses the new implementation (messageFee-only).
+        /// relayed via TemporalGovernor yet. Swap the proxy implementation via
+        /// EIP-1967 storage slot and set the wormhole address so bridgeCost()
+        /// uses the new messageFee-only logic.
         address vcProxy = addresses.getAddress("VOTE_COLLECTION_PROXY");
-        address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
         address vcImplV2 = address(new MultichainVoteCollection());
 
-        address proxyAdminOwner = Ownable(proxyAdmin).owner();
-        vm.prank(proxyAdminOwner);
-        ProxyAdmin(proxyAdmin).upgradeAndCall(
-            ITransparentUpgradeableProxy(vcProxy),
-            vcImplV2,
-            abi.encodeWithSignature(
-                "initializeV2(address)",
-                addresses.getAddress("WORMHOLE_CORE")
-            )
+        /// EIP-1967 implementation slot:
+        /// bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
+        bytes32 IMPL_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+        vm.store(vcProxy, IMPL_SLOT, bytes32(uint256(uint160(vcImplV2))));
+
+        /// Set wormhole storage (slot 159) to the mock so messageFee() returns 0
+        vm.store(
+            vcProxy,
+            bytes32(uint256(159)),
+            bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
         );
 
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
