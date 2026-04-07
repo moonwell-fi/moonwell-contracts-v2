@@ -47,18 +47,23 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         // 134 (mip-x38), 141 (mip-x43), 143 (mip-b57): inherit ChainlinkOracleConfigs
         // which grows when new markets are added
         // 147 (mip-b58): bridgeCost changed after x48 (FIND-002)
-        // >= 146: newer proposals use heavy templates (MarketAddV3, RewardsDistribution,
-        // mip-x48, mip-x49) that cause EVM OOM even in small batches on CI runners
+        // 146, 148, 150, 151, 152, 153: heavy templates (MarketAddV3,
+        // RewardsDistribution, mip-x48, mip-x49) that OOM on CI runners
         return
             id == 0 ||
-            id == 127 ||
             id == 121 ||
+            id == 127 ||
             id == 134 ||
             id == 137 ||
             id == 141 ||
             id == 143 ||
+            id == 146 ||
             id == 147 ||
-            id >= 146;
+            id == 148 ||
+            id == 150 ||
+            id == 151 ||
+            id == 152 ||
+            id == 153;
     }
 
     function _verifyMultichainProposal(ProposalFields memory p) internal {
