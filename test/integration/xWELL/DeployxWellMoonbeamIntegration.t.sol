@@ -14,6 +14,7 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
+import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {Address} from "@utils/Address.sol";
@@ -118,6 +119,30 @@ contract DeployxWellMoonbeamPostProposalTest is PostProposalCheck {
         );
     }
 
+    /// @notice After x50, validate V5 Executor state on Moonbeam
+    function testExecutorStateAfterV5Upgrade() public view {
+        assertTrue(
+            address(wormholeAdapter.executor()) != address(0),
+            "Moonbeam: executor not set after V5"
+        );
+        assertEq(
+            wormholeAdapter.wormholeChainId(),
+            uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
+            "Moonbeam: wormholeChainId mismatch"
+        );
+        /// Moonbeam has no on-chain quoter
+        assertEq(
+            address(wormholeAdapter.executorQuoterRouter()),
+            address(0),
+            "Moonbeam: executorQuoterRouter should be zero"
+        );
+        assertEq(
+            wormholeAdapter.bridgeCost(0),
+            0,
+            "Moonbeam: bridgeCost should be 0 (no quoter)"
+        );
+    }
+
     function testMintViaLockbox(
         uint96 mintAmount
     ) public returns (uint256 minted) {
@@ -186,6 +211,9 @@ contract DeployxWellMoonbeamPostProposalTest is PostProposalCheck {
         );
     }
 
+    /// @notice Bridge out using the off-chain signed quote path.
+    ///         Moonbeam has no on-chain quoter, so we use the off-chain path
+    ///         and etch a mock executor to accept the request.
     function testBridgeOutSuccess() public {
         uint256 mintAmount = testMintViaLockbox(uint96(startingWellAmount));
 
@@ -194,13 +222,24 @@ contract DeployxWellMoonbeamPostProposalTest is PostProposalCheck {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         uint16 dstChainId = block.chainid.toBaseWormholeChainId();
-        uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
-        vm.deal(user, cost);
+        /// Etch mock executor so requestExecution succeeds
+        address executorAddr = address(wormholeAdapter.executor());
+        MockExecutorQuoterRouter mockExecutor = new MockExecutorQuoterRouter();
+        vm.etch(executorAddr, address(mockExecutor).code);
+
+        uint256 messageFee = wormholeAdapter.wormhole().messageFee();
+        uint256 executorFee = 0.001 ether;
+        vm.deal(user, messageFee + executorFee);
 
         vm.startPrank(user);
         xwell.approve(address(wormholeAdapter), mintAmount);
-        wormholeAdapter.bridge{value: cost}(dstChainId, mintAmount, user);
+        wormholeAdapter.bridge{value: messageFee + executorFee}(
+            dstChainId,
+            mintAmount,
+            user,
+            hex"deadbeef" // off-chain signed quote
+        );
         vm.stopPrank();
 
         uint256 endingXWellBalance = xwell.balanceOf(user);

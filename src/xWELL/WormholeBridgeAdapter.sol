@@ -182,17 +182,17 @@ contract WormholeBridgeAdapter is
         wormhole = IWormhole(_wormhole);
     }
 
-    /// @notice V4 upgrade: migrate from processVAA to Executor framework
+    /// @notice V5 upgrade: migrate to Wormhole Executor framework
     /// @param _executorAddress Executor address for off-chain quote flow
     /// @param _executorQuoterRouterAddress Executor Quoter Router for on-chain quoting (address(0) if not available)
     /// @param _quoterAddr on-chain quoter address for pricing execution (address(0) if not available)
     /// @param _wormholeChainId this chain's Wormhole chain ID
-    function initializeV4(
+    function initializeV5(
         address _executorAddress,
         address _executorQuoterRouterAddress,
         address _quoterAddr,
         uint16 _wormholeChainId
-    ) external reinitializer(4) {
+    ) external reinitializer(5) {
         require(
             _executorAddress != address(0),
             "WormholeBridge: zero executor"

@@ -67,13 +67,13 @@ contract UpgradeWormholeBridgeAdapterEthereum is Script {
         address newImpl = address(new WormholeBridgeAdapter());
         console.log("  New implementation:", newImpl);
 
-        // Upgrade and initialize V4 (executor framework)
+        // Upgrade and initialize V5 (executor framework)
         // V3 (wormhole core bridge) is already set on-chain
         ProxyAdmin(proxyAdmin).upgradeAndCall(
             ITransparentUpgradeableProxy(adapterProxy),
             newImpl,
             abi.encodeWithSignature(
-                "initializeV4(address,address,address,uint16)",
+                "initializeV5(address,address,address,uint16)",
                 addresses.getAddress("WORMHOLE_EXECUTOR"),
                 addresses.getAddress("WORMHOLE_QUOTER_ROUTER"),
                 addresses.getAddress("WORMHOLE_QUOTER"),

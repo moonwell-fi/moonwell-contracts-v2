@@ -169,8 +169,8 @@ contract BaseTest is xWELLDeploy, Test {
         /// V3: set wormhole core bridge
         wormholeBridgeAdapterProxy.initializeV3(address(mockCoreBridge));
 
-        /// V4: migrate to executor framework
-        wormholeBridgeAdapterProxy.initializeV4(
+        /// V5: migrate to executor framework
+        wormholeBridgeAdapterProxy.initializeV5(
             address(mockExecutorQuoterRouter), /// executor (off-chain quote)
             address(mockExecutorQuoterRouter), /// executorQuoterRouter (on-chain quote)
             address(0), /// quoter address (not needed for mock)

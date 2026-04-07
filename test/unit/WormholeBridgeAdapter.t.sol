@@ -158,9 +158,9 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
-    function testInitializeV4FailsAlreadyInitialized() public {
+    function testInitializeV5FailsAlreadyInitialized() public {
         vm.expectRevert("Initializable: contract is already initialized");
-        wormholeBridgeAdapterProxy.initializeV4(
+        wormholeBridgeAdapterProxy.initializeV5(
             address(mockExecutorQuoterRouter),
             address(mockExecutorQuoterRouter),
             address(0),

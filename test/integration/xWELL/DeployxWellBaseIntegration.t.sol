@@ -13,15 +13,14 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
-import {MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract xWellIntegrationTest is Test {
+contract xWellIntegrationTest is PostProposalCheck {
     using ChainIds for uint256;
     using Address for address;
-
-    /// @notice all addresses
-    Addresses public addresses;
 
     /// @notice logic contract, not initializable
     xWELL public xwell;
@@ -35,8 +34,10 @@ contract xWellIntegrationTest is Test {
     /// @notice amount of well to mint
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
-    function setUp() public {
-        addresses = new Addresses();
+    function setUp() public override {
+        super.setUp();
+
+        vm.selectFork(BASE_FORK_ID);
 
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         wormholeAdapter = WormholeBridgeAdapter(
@@ -92,6 +93,27 @@ contract xWellIntegrationTest is Test {
         );
     }
 
+    /// @notice After x50, validate V5 Executor state on Base
+    function testExecutorStateAfterV5Upgrade() public view {
+        assertTrue(
+            address(wormholeAdapter.executor()) != address(0),
+            "Base: executor not set after V5"
+        );
+        assertEq(
+            wormholeAdapter.wormholeChainId(),
+            uint16(BASE_WORMHOLE_CHAIN_ID),
+            "Base: wormholeChainId mismatch"
+        );
+        /// Base has on-chain quoter
+        assertTrue(
+            address(wormholeAdapter.executorQuoterRouter()) != address(0),
+            "Base: executorQuoterRouter should be set"
+        );
+    }
+
+    /// @notice Bridge out using the off-chain signed quote path.
+    ///         We etch a mock executor onto the real executor address so that
+    ///         requestExecution succeeds without needing a valid signed quote.
     function testBridgeOutSuccess() public {
         uint256 mintAmount = testBridgeInSuccess(startingWellAmount);
 
@@ -100,13 +122,25 @@ contract xWellIntegrationTest is Test {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
-        uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
-        vm.deal(user, cost);
+        /// Etch MockExecutorQuoterRouter onto the real executor address
+        /// so requestExecution succeeds without real Wormhole infrastructure
+        address executorAddr = address(wormholeAdapter.executor());
+        MockExecutorQuoterRouter mockExecutor = new MockExecutorQuoterRouter();
+        vm.etch(executorAddr, address(mockExecutor).code);
+
+        uint256 messageFee = wormholeAdapter.wormhole().messageFee();
+        uint256 executorFee = 0.001 ether;
+        vm.deal(user, messageFee + executorFee);
 
         vm.startPrank(user);
         xwell.approve(address(wormholeAdapter), mintAmount);
-        wormholeAdapter.bridge{value: cost}(dstChainId, mintAmount, user);
+        wormholeAdapter.bridge{value: messageFee + executorFee}(
+            dstChainId,
+            mintAmount,
+            user,
+            hex"deadbeef" // off-chain signed quote
+        );
         vm.stopPrank();
 
         uint256 endingXWellBalance = xwell.balanceOf(user);
@@ -134,7 +168,7 @@ contract xWellIntegrationTest is Test {
         );
 
         /// Swap wormhole core with mock for executeVAAv1 testing.
-        /// The adapter is already V3-initialized on-chain after mip-x48.
+        /// After x50, the adapter is V5 with Executor framework.
         bytes memory vaaBytes;
         {
             MockWormholeCore mockWormhole = new MockWormholeCore();
