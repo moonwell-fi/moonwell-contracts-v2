@@ -137,7 +137,7 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
         );
     }
 
-    /// @notice After x50, validate V5 Executor state on Moonbeam unwrapper
+    /// @notice After x51, validate V5 Executor state on Moonbeam unwrapper
     function testExecutorStateAfterV5Upgrade() public view {
         assertTrue(
             address(wormholeAdapter.executor()) != address(0),

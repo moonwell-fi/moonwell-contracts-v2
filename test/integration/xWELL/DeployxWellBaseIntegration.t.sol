@@ -93,7 +93,7 @@ contract xWellIntegrationTest is PostProposalCheck {
         );
     }
 
-    /// @notice After x50, validate V5 Executor state on Base
+    /// @notice After x51, validate V5 Executor state on Base
     function testExecutorStateAfterV5Upgrade() public view {
         assertTrue(
             address(wormholeAdapter.executor()) != address(0),
@@ -168,7 +168,7 @@ contract xWellIntegrationTest is PostProposalCheck {
         );
 
         /// Swap wormhole core with mock for executeVAAv1 testing.
-        /// After x50, the adapter is V5 with Executor framework.
+        /// After x51, the adapter is V5 with Executor framework.
         bytes memory vaaBytes;
         {
             MockWormholeCore mockWormhole = new MockWormholeCore();
