@@ -122,8 +122,8 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         console.log("Found onchain calldata for proposal: ", proposal.name());
     }
 
-    /// @dev Split into three tests to avoid EVM memory allocation panic (0x41).
-    /// Each batch processes ~37 proposals in its own EVM execution context.
+    /// @dev Split into four tests to avoid EVM memory allocation panic (0x41).
+    /// Each batch processes ~15-38 proposals in its own EVM execution context.
     function testMultichainGovernorCalldataMatchBatch1() public {
         ProposalFields[]
             memory multichainGovernorProposals = filterByGovernorAndProposalType(
@@ -158,7 +158,20 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             );
         for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
             uint256 id = multichainGovernorProposals[i - 1].id;
-            if (_isExcludedMultichain(id) || id <= 104) continue;
+            if (_isExcludedMultichain(id) || id <= 104 || id > 131) continue;
+            _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
+        }
+    }
+
+    function testMultichainGovernorCalldataMatchBatch4() public {
+        ProposalFields[]
+            memory multichainGovernorProposals = filterByGovernorAndProposalType(
+                "MultichainGovernor",
+                "HybridProposal"
+            );
+        for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
+            uint256 id = multichainGovernorProposals[i - 1].id;
+            if (_isExcludedMultichain(id) || id <= 131) continue;
             _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
         }
     }
