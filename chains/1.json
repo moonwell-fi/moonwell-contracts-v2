@@ -80,6 +80,21 @@
         "name": "WORMHOLE_CORE"
     },
     {
+        "addr": "0x84EEe8dBa37C36947397E1E11251cA9A06Fc6F8a",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
+        "addr": "0xF22F1c0A3a8Cb42F695601731974784C499C4EF3",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER_ROUTER"
+    },
+    {
+        "addr": "0xA25862D222Eb8343505c12d96e097e4332468D60",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER"
+    },
+    {
         "addr": "0x2dc66C40bb15F0470e40508B43cD64D0b4F57180",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V2"

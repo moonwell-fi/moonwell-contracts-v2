@@ -34,7 +34,7 @@ contract DeployxWellMoonbeamPostProposalTest is PostProposalCheck {
     /// @notice wormhole bridge adapter contract
     WormholeBridgeAdapter public wormholeAdapter;
 
-    /// @notice mock wormhole core for processVAA tests
+    /// @notice mock wormhole core for executeVAAv1 tests
     MockWormholeCore public mockWormholeCore;
 
     /// @notice user address for testing
@@ -55,7 +55,7 @@ contract DeployxWellMoonbeamPostProposalTest is PostProposalCheck {
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
 
-        /// Set up MockWormholeCore for processVAA tests.
+        /// Set up MockWormholeCore for executeVAAv1 tests.
         mockWormholeCore = new MockWormholeCore();
         mockWormholeCore.setFee(0);
         mockWormholeCore.setChainId(uint16(MOONBEAM_WORMHOLE_CHAIN_ID));
@@ -221,7 +221,7 @@ contract DeployxWellMoonbeamPostProposalTest is PostProposalCheck {
     }
 
     /// @notice After x49, the adapter is WormholeUnwrapperAdapter with lockbox
-    ///         restored. processVAA mints xWELL then unwraps to WELL via lockbox.
+    ///         restored. executeVAAv1 mints xWELL then unwraps to WELL via lockbox.
     function testBridgeInSuccess(uint256 mintAmount) public {
         mintAmount = _bound(
             mintAmount,
@@ -242,11 +242,11 @@ contract DeployxWellMoonbeamPostProposalTest is PostProposalCheck {
             wormholeBaseChainid,
             address(wormholeAdapter).toBytes(),
             "",
-            abi.encode(user, mintAmount, uint16(MOONBEAM_WORMHOLE_CHAIN_ID))
+            abi.encode(user, mintAmount)
         );
 
         bytes memory vaaBytes = abi.encode("bridge-in-vaa", mintAmount);
-        wormholeAdapter.processVAA(vaaBytes);
+        wormholeAdapter.executeVAAv1(vaaBytes);
 
         uint256 endingWellBalance = well.balanceOf(user);
         uint256 endingXWellBalance = xwell.balanceOf(user);
@@ -267,10 +267,6 @@ contract DeployxWellMoonbeamPostProposalTest is PostProposalCheck {
             endingXWellTotalSupply,
             startingXWellTotalSupply,
             "total xWELL supply incorrect, should not change"
-        );
-        assertTrue(
-            wormholeAdapter.processedVAAHashes(keccak256(vaaBytes)),
-            "VAA hash not processed"
         );
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
     }

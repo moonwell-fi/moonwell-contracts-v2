@@ -90,6 +90,11 @@
         "isContract": true
     },
     {
+        "addr": "0x85D06449C78064c2E02d787e9DC71716786F8D19",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
         "name": "WORMHOLE_BRIDGE_RELAYER_PROXY",
         "isContract": true

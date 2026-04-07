@@ -133,14 +133,12 @@ contract xWellIntegrationTest is Test {
             xwell.buffer(address(wormholeAdapter))
         );
 
-        /// Swap wormhole core with mock for processVAA testing.
+        /// Swap wormhole core with mock for executeVAAv1 testing.
         /// The adapter is already V3-initialized on-chain after mip-x48.
         bytes memory vaaBytes;
         {
-            uint16 currentWormholeChainId = uint16(BASE_WORMHOLE_CHAIN_ID);
-
             MockWormholeCore mockWormhole = new MockWormholeCore();
-            mockWormhole.setChainId(currentWormholeChainId);
+            mockWormhole.setChainId(uint16(BASE_WORMHOLE_CHAIN_ID));
 
             /// Override the wormhole core address (slot 156) with the mock
             vm.store(
@@ -154,18 +152,18 @@ contract xWellIntegrationTest is Test {
                 uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
                 address(wormholeAdapter).toBytes(),
                 "",
-                abi.encode(user, mintAmount, currentWormholeChainId)
+                abi.encode(user, mintAmount)
             );
 
             vaaBytes = abi.encode("bridge-in-vaa", mintAmount);
         }
 
-        /// --- Bridge in via processVAA ---
+        /// --- Bridge in via executeVAAv1 ---
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        wormholeAdapter.processVAA(vaaBytes);
+        wormholeAdapter.executeVAAv1(vaaBytes);
 
         assertEq(
             xwell.balanceOf(user),
@@ -176,10 +174,6 @@ contract xWellIntegrationTest is Test {
             xwell.totalSupply(),
             startingXWellTotalSupply + mintAmount,
             "total xWELL supply incorrect"
-        );
-        assertTrue(
-            wormholeAdapter.processedVAAHashes(keccak256(vaaBytes)),
-            "VAA hash not processed"
         );
         assertEq(
             xwell.buffer(address(wormholeAdapter)),

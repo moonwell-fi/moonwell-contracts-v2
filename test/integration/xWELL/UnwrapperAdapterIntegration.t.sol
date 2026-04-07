@@ -35,7 +35,7 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
     /// @notice wormhole bridge adapter contract
     WormholeBridgeAdapter public wormholeAdapter;
 
-    /// @notice mock wormhole core for processVAA tests
+    /// @notice mock wormhole core for executeVAAv1 tests
     MockWormholeCore public mockWormholeCore;
 
     /// @notice user address for testing
@@ -56,7 +56,7 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
 
-        /// Set up MockWormholeCore for processVAA tests.
+        /// Set up MockWormholeCore for executeVAAv1 tests.
         /// Override the wormhole address via vm.store since adapter is
         /// already V3-initialized after x48+x49 execution.
         mockWormholeCore = new MockWormholeCore();
@@ -239,7 +239,7 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
     }
 
     /// @notice After x49, the adapter is WormholeUnwrapperAdapter with lockbox
-    ///         restored. processVAA mints xWELL then unwraps to WELL via lockbox.
+    ///         restored. executeVAAv1 mints xWELL then unwraps to WELL via lockbox.
     function testBridgeInSuccess(uint256 mintAmount) public {
         mintAmount = _bound(
             mintAmount,
@@ -259,7 +259,7 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
             wormholeBaseChainid,
             address(wormholeAdapter).toBytes(),
             "",
-            abi.encode(user, mintAmount, uint16(MOONBEAM_WORMHOLE_CHAIN_ID))
+            abi.encode(user, mintAmount)
         );
 
         bytes memory vaaBytes = abi.encode(
@@ -267,7 +267,7 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
             mintAmount,
             block.timestamp
         );
-        wormholeAdapter.processVAA(vaaBytes);
+        wormholeAdapter.executeVAAv1(vaaBytes);
 
         uint256 endingWellBalance = well.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
@@ -283,10 +283,6 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
             endingXWellTotalSupply,
             startingXWellTotalSupply,
             "total xWELL supply changed"
-        );
-        assertTrue(
-            wormholeAdapter.processedVAAHashes(keccak256(vaaBytes)),
-            "VAA hash not processed"
         );
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
         assertEq(

@@ -110,6 +110,21 @@
         "isContract": true
     },
     {
+        "addr": "0x9E1936E91A4a5AE5A5F75fFc472D6cb8e93597ea",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
+        "addr": "0x265fd0500a430d65d6D79Cd8707F24C048604658",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER_ROUTER"
+    },
+    {
+        "addr": "0xA25862D222Eb8343505c12d96e097e4332468D60",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER"
+    },
+    {
         "addr": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
         "name": "USDBC",
         "isContract": true
