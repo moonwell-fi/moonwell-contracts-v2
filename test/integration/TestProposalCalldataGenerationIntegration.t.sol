@@ -41,101 +41,111 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         );
     }
 
-    function testMultichainGovernorCalldataMatch() public {
+    function _isExcludedMultichain(uint256 id) internal pure returns (bool) {
+        // exclude proposals that are not onchain yet or proposals with dynamic calldata:
+        // 127 (mip-x34), 121 (mip-x32), 137 (mip-b55: bridgeCost is dynamic),
+        // 134 (mip-x38), 141 (mip-x43), 143 (mip-b57): inherit ChainlinkOracleConfigs
+        // which grows when new markets are added
+        // 147 (mip-b58): bridgeCost changed after x48 (FIND-002)
+        return
+            id == 0 ||
+            id == 127 ||
+            id == 121 ||
+            id == 134 ||
+            id == 137 ||
+            id == 141 ||
+            id == 143 ||
+            id == 147;
+    }
+
+    function _verifyMultichainProposal(ProposalFields memory p) internal {
+        setEnv(p.envPath);
+
+        string memory proposalPath = p.path;
+
+        console.log("Proposal path: ", proposalPath);
+        console.log("Proposal env path: ", p.envPath);
+
+        HybridProposal proposal = HybridProposal(deployCode(proposalPath));
+        vm.label(
+            address(proposal),
+            string(
+                abi.encodePacked(
+                    "Proposal ",
+                    proposal.name(),
+                    " - ",
+                    proposalPath
+                )
+            )
+        );
+        vm.makePersistent(address(proposal));
+
+        vm.selectFork(proposal.primaryForkId());
+
+        proposal.initProposal(addresses);
+        proposal.build(addresses);
+
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = proposal.getTargetsPayloadsValues(addresses);
+        bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
+
+        cleanEnv(p.envPath);
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+
+        bytes32 onchainHash;
+        {
+            (
+                address[] memory onchainTargets,
+                uint256[] memory onchainValues,
+                bytes[] memory onchainCalldatas
+            ) = governor.getProposalData(p.id);
+
+            onchainHash = keccak256(
+                abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+            );
+        }
+
+        assertEq(
+            hash,
+            onchainHash,
+            string(
+                abi.encodePacked(
+                    "Hashes do not match for proposal ",
+                    vm.toString(p.id)
+                )
+            )
+        );
+        console.log("Found onchain calldata for proposal: ", proposal.name());
+    }
+
+    /// @dev Split into two tests to avoid EVM memory allocation panic (0x41)
+    function testMultichainGovernorCalldataMatchOlderHalf() public {
         ProposalFields[]
             memory multichainGovernorProposals = filterByGovernorAndProposalType(
                 "MultichainGovernor",
                 "HybridProposal"
             );
         for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
-            // exclude proposals that are not onchain yet or proposals with dynamic calldata:
-            // 127 (mip-x34), 121 (mip-x32), 137 (mip-b55: bridgeCost is dynamic),
-            // 134 (mip-x38), 141 (mip-x43), 143 (mip-b57): inherit ChainlinkOracleConfigs
-            // which grows when new markets are added
-            // 147 (mip-b58): bridgeCost changed after x48 (FIND-002)
-            if (
-                multichainGovernorProposals[i - 1].id == 0 ||
-                multichainGovernorProposals[i - 1].id == 127 ||
-                multichainGovernorProposals[i - 1].id == 121 ||
-                multichainGovernorProposals[i - 1].id == 134 ||
-                multichainGovernorProposals[i - 1].id == 137 ||
-                multichainGovernorProposals[i - 1].id == 141 ||
-                multichainGovernorProposals[i - 1].id == 143 ||
-                multichainGovernorProposals[i - 1].id == 147
-            ) {
-                continue;
-            }
+            uint256 id = multichainGovernorProposals[i - 1].id;
+            if (_isExcludedMultichain(id) || id > 80) continue;
+            _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
+        }
+    }
 
-            setEnv(multichainGovernorProposals[i - 1].envPath);
-
-            string memory proposalPath = multichainGovernorProposals[i - 1]
-                .path;
-
-            console.log("Proposal path: ", proposalPath);
-            console.log(
-                "Proposal env path: ",
-                multichainGovernorProposals[i - 1].envPath
+    function testMultichainGovernorCalldataMatchNewerHalf() public {
+        ProposalFields[]
+            memory multichainGovernorProposals = filterByGovernorAndProposalType(
+                "MultichainGovernor",
+                "HybridProposal"
             );
-
-            HybridProposal proposal = HybridProposal(deployCode(proposalPath));
-            vm.label(
-                address(proposal),
-                string(
-                    abi.encodePacked(
-                        "Proposal ",
-                        proposal.name(),
-                        " - ",
-                        proposalPath
-                    )
-                )
-            );
-            vm.makePersistent(address(proposal));
-
-            vm.selectFork(proposal.primaryForkId());
-
-            proposal.initProposal(addresses);
-            proposal.build(addresses);
-
-            (
-                address[] memory targets,
-                uint256[] memory values,
-                bytes[] memory calldatas
-            ) = proposal.getTargetsPayloadsValues(addresses);
-            bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
-
-            cleanEnv(multichainGovernorProposals[i - 1].envPath);
-
-            vm.selectFork(MOONBEAM_FORK_ID);
-
-            bytes32 onchainHash;
-            {
-                (
-                    address[] memory onchainTargets,
-                    uint256[] memory onchainValues,
-                    bytes[] memory onchainCalldatas
-                ) = governor.getProposalData(
-                        multichainGovernorProposals[i - 1].id
-                    );
-
-                onchainHash = keccak256(
-                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
-                );
-            }
-
-            assertEq(
-                hash,
-                onchainHash,
-                string(
-                    abi.encodePacked(
-                        "Hashes do not match for proposal ",
-                        vm.toString(multichainGovernorProposals[i - 1].id)
-                    )
-                )
-            );
-            console.log(
-                "Found onchain calldata for proposal: ",
-                proposal.name()
-            );
+        for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
+            uint256 id = multichainGovernorProposals[i - 1].id;
+            if (_isExcludedMultichain(id) || id <= 80) continue;
+            _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
         }
     }
 
