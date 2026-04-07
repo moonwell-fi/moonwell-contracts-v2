@@ -423,7 +423,6 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
-        vm.makePersistent(address(wormholeBridgeAdapter));
 
         uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
 
@@ -435,7 +434,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
         vm.selectFork(chainId.toForkId());
         vm.store(
-            address(wormholeBridgeAdapter),
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
             bytes32(uint256(153)),
             encodedData
         );
@@ -443,7 +442,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         vm.selectFork(primaryForkId());
 
         vm.store(
-            address(wormholeBridgeAdapter),
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
             bytes32(uint256(153)),
             encodedData
         );

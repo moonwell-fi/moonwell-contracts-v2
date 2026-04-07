@@ -180,7 +180,9 @@ contract DeployXWellEthereum is Script, xWELLDeploy {
         // 2. Deploy xWELL system if not exists
         if (!addresses.isAddressSet("xWELL_PROXY")) {
             // TODO: use grantPauseGuardian in the proposal script to set new PAUSE_GUARDIAN
-            address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+            address pauseGuardian = addresses.getAddress(
+                "PAUSE_GUARDIAN_DEPRECATED"
+            );
 
             (
                 address xwellLogic,
@@ -405,7 +407,7 @@ contract DeployXWellEthereum is Script, xWELLDeploy {
         // Validate pause guardian
         require(
             xWELL(xwellProxy).pauseGuardian() ==
-                addresses.getAddress("PAUSE_GUARDIAN"),
+                addresses.getAddress("PAUSE_GUARDIAN_DEPRECATED"),
             "Ethereum: pause guardian is incorrect (should be PAUSE_GUARDIAN)"
         );
 

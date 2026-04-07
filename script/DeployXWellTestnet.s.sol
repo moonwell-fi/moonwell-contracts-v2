@@ -24,8 +24,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
     NETWORK_PATH=./utils/testnetchains.json forge script script/DeployXWellTestnet.s.sol:DeployXWellTestnet -vvvv --rpc-url chainAlias
 
  to run:
-    NETWORK_PATH=./utils/testnetchains.json forge script script/DeployXWellTestnet.s.sol:DeployXWellTestnet -vvvv \ 
-    --rpc-url chainAlias --broadcast --etherscan-api-key chainAlias --verify 
+    NETWORK_PATH=./utils/testnetchains.json forge script script/DeployXWellTestnet.s.sol:DeployXWellTestnet -vvvv \
+    --rpc-url chainAlias --broadcast --etherscan-api-key chainAlias --verify
 
     Deployer address must be `0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e` for nonces to match
 
@@ -57,7 +57,9 @@ contract DeployXWellTestnet is Script, xWELLDeploy, Networks {
             vm.startBroadcast();
 
             address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
-            address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+            address pauseGuardian = addresses.getAddress(
+                "PAUSE_GUARDIAN_DEPRECATED"
+            );
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
             address relayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
 
@@ -220,7 +222,9 @@ contract DeployXWellTestnet is Script, xWELLDeploy, Networks {
             address wormholeAdapter = addresses.getAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY"
             );
-            address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+            address pauseGuardian = addresses.getAddress(
+                "PAUSE_GUARDIAN_DEPRECATED"
+            );
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
             address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 

@@ -12,7 +12,8 @@ import {ChainIds} from "@utils/ChainIds.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
+import {MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract xWellIntegrationTest is Test {
@@ -132,41 +133,59 @@ contract xWellIntegrationTest is Test {
             xwell.buffer(address(wormholeAdapter))
         );
 
+        /// Swap wormhole core with mock for processVAA testing.
+        /// The adapter is already V3-initialized on-chain after mip-x48.
+        bytes memory vaaBytes;
+        {
+            uint16 currentWormholeChainId = uint16(BASE_WORMHOLE_CHAIN_ID);
+
+            MockWormholeCore mockWormhole = new MockWormholeCore();
+            mockWormhole.setChainId(currentWormholeChainId);
+
+            /// Override the wormhole core address (slot 156) with the mock
+            vm.store(
+                address(wormholeAdapter),
+                bytes32(uint256(156)),
+                bytes32(uint256(uint160(address(mockWormhole))))
+            );
+
+            mockWormhole.setStorage(
+                true,
+                uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
+                address(wormholeAdapter).toBytes(),
+                "",
+                abi.encode(user, mintAmount, currentWormholeChainId)
+            );
+
+            vaaBytes = abi.encode("bridge-in-vaa", mintAmount);
+        }
+
+        /// --- Bridge in via processVAA ---
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
-
-        bytes memory payload = abi.encode(user, mintAmount);
-        bytes32 sender = address(wormholeAdapter).toBytes();
-        bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
-
-        vm.prank(address(wormholeAdapter.wormholeRelayer()));
-        wormholeAdapter.receiveWormholeMessages(
-            payload,
-            new bytes[](0),
-            sender,
-            dstChainId,
-            nonce
-        );
-
-        uint256 endingXWellBalance = xwell.balanceOf(user);
-        uint256 endingXWellTotalSupply = xwell.totalSupply();
-        uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
+        wormholeAdapter.processVAA(vaaBytes);
 
         assertEq(
-            endingXWellBalance,
+            xwell.balanceOf(user),
             startingXWellBalance + mintAmount,
             "user xWELL balance incorrect"
         );
         assertEq(
-            endingXWellTotalSupply,
+            xwell.totalSupply(),
             startingXWellTotalSupply + mintAmount,
             "total xWELL supply incorrect"
         );
-        assertTrue(wormholeAdapter.processedNonces(nonce), "nonce not used");
-        assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
+        assertTrue(
+            wormholeAdapter.processedVAAHashes(keccak256(vaaBytes)),
+            "VAA hash not processed"
+        );
+        assertEq(
+            xwell.buffer(address(wormholeAdapter)),
+            startingBuffer - mintAmount,
+            "buffer incorrect"
+        );
 
         return mintAmount;
     }

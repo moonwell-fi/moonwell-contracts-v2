@@ -265,24 +265,29 @@ contract xWellRouterMoonbeamTest is Test {
         return mintAmount;
     }
 
-    function testBridgeToSenderFailsInsufficientGlmr() public {
-        vm.expectRevert("xWELLRouter: insufficient GLMR sent");
+    /// @notice With bridgeCost returning 0 (messageFee), the insufficient GLMR
+    ///         check passes for any msg.value >= 0. Instead, sending amount=0
+    ///         hits MintLimits: deplete amount cannot be 0.
+    function testBridgeToSenderFailsZeroAmount() public {
+        vm.expectRevert("MintLimits: deplete amount cannot be 0");
         router.bridgeToSender{value: 1}(0, BASE_WORMHOLE_CHAIN_ID);
     }
 
+    /// @notice With bridgeCost returning 0, send excess ETH to trigger
+    ///         a refund failure when caller cannot receive funds.
     function testBridgeToSenderFailsRefund() public {
         uint256 mintAmount = xwell.buffer(address(wormholeAdapter)) / 2;
 
         deal(address(well), address(this), mintAmount);
 
-        uint256 bridgeCost = router.bridgeCost(BASE_WORMHOLE_CHAIN_ID) * 2; /// a little extra
-        vm.deal(address(this), bridgeCost);
+        uint256 excessValue = 1 ether;
+        vm.deal(address(this), excessValue);
 
         well.approve(address(router), mintAmount);
 
         fallbackReverts = true;
         vm.expectRevert("xWELLRouter: failed to refund excess GLMR");
-        router.bridgeToSender{value: bridgeCost}(
+        router.bridgeToSender{value: excessValue}(
             mintAmount,
             BASE_WORMHOLE_CHAIN_ID
         );
@@ -325,7 +330,7 @@ contract xWellRouterMoonbeamTest is Test {
 
         well.approve(address(router), mintAmount);
 
-        vm.expectRevert("WormholeBridge: invalid target chain");
+        vm.expectRevert("WormholeBridgeAdapter: invalid target chain");
         router.bridgeToSender{value: bridgeCost}(
             mintAmount,
             ETHEREUM_WORMHOLE_CHAIN_ID

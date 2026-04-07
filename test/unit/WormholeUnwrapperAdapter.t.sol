@@ -5,6 +5,8 @@ import "@forge-std/Test.sol";
 import "@test/helper/BaseTest.t.sol";
 
 import {MockWormholeReceiver} from "@test/mock/MockWormholeReceiver.sol";
+import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 import {Address} from "@utils/Address.sol";
 
@@ -356,136 +358,68 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
         );
     }
 
-    /// receiveWormholeMessages failure tests
-    /// value
-    function testReceiveWormholeMessageFailsWithValue() public {
-        vm.deal(address(this), 100);
-        vm.expectRevert("WormholeBridge: no value allowed");
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 100}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            chainId,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    /// not relayer address
-    function testReceiveWormholeMessageFailsNotRelayer() public {
-        vm.expectRevert("WormholeBridge: only relayer allowed");
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            chainId,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    /// already processed
-
-    function testAlreadyProcessedMessageReplayFails(bytes32 nonce) public {
-        testReceiveWormholeMessageSucceeds(nonce);
+    /// receiveWormholeMessages is deprecated and should revert after V3 upgrade
+    function testReceiveWormholeMessagesRevertsAfterV3() public {
+        _initV3();
 
         vm.prank(wormholeRelayer);
-        vm.expectRevert("WormholeBridge: message already processed");
+        vm.expectRevert("WormholeBridgeAdapter: relayer disabled");
         wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
             abi.encode(to, amount),
             new bytes[](0),
             address(wormholeBridgeAdapterProxy).toBytes(),
             chainId,
-            nonce
-        );
-    }
-
-    /// not trusted sender from external chain
-    function testReceiveWormholeMessageFailsNotTrustedExternalChain() public {
-        vm.expectRevert("WormholeBridge: sender not trusted");
-        vm.prank(wormholeRelayer);
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            chainId,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    function testReceiveWormholeMessageSucceeds(bytes32 nonce) public {
-        uint256 startingBalance = well.balanceOf(to);
-        uint256 startingTotalSupply = xwellProxy.totalSupply();
-
-        vm.prank(wormholeRelayer);
-        vm.expectEmit(
-            true,
-            true,
-            true,
-            true,
-            address(wormholeBridgeAdapterProxy)
-        );
-        emit BridgedIn(chainId, address(wormholeBridgeAdapterProxy), amount);
-
-        uint256 startingGas = gasleft();
-
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            abi.encode(to, amount),
-            new bytes[](0),
-            address(wormholeBridgeAdapterProxy).toBytes(),
-            chainId,
-            nonce
-        );
-
-        uint256 endingGas = gasleft();
-
-        console.log("gas used: ", startingGas - endingGas);
-
-        assertEq(
-            well.balanceOf(to) - startingBalance,
-            amount,
-            "incorrect amount received"
-        );
-        assertEq(
-            xwellProxy.totalSupply(),
-            startingTotalSupply,
-            "total supply changed"
-        );
-        assertTrue(
-            wormholeBridgeAdapterProxy.processedNonces(nonce),
-            "nonce not used"
-        );
-    }
-
-    /// bridge in, test not enough rate limit
-    function testBridgeInFailsRateLimitExhausted(bytes32 nonce) public {
-        amount = xwellProxy.buffer(address(wormholeBridgeAdapterProxy));
-        unchecked {
-            testReceiveWormholeMessageSucceeds(bytes32(uint256(nonce) + 1));
-        }
-        amount = 1;
-
-        vm.prank(wormholeRelayer);
-        vm.expectRevert("RateLimited: rate limit hit");
-        wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
-            abi.encode(to, amount),
-            new bytes[](0),
-            address(wormholeBridgeAdapterProxy).toBytes(),
-            chainId,
-            nonce
+            bytes32(uint256(77777))
         );
     }
 
     /// bridge out tests:
+    /// NOTE: bridge out now requires V3 upgrade (wormhole must be set)
+
+    /// @notice Helper: initialize V3 with a MockWormholeCore (fee=0, chainId set)
+    function _initV3() internal returns (MockWormholeCore mockWormhole) {
+        mockWormhole = new MockWormholeCore();
+        mockWormhole.setFee(0);
+        mockWormhole.setChainId(chainId);
+        vm.prank(owner);
+        WormholeBridgeAdapter(address(wormholeBridgeAdapterProxy)).initializeV3(
+            address(mockWormhole)
+        );
+    }
+
+    /// @notice Helper: mint tokens via processVAA using a MockWormholeCore
+    function _mintViaProcessVAA(
+        MockWormholeCore mockWormhole,
+        address recipient,
+        uint256 mintAmount,
+        bytes memory vaaBytes
+    ) internal {
+        mockWormhole.setStorage(
+            true,
+            chainId,
+            address(wormholeBridgeAdapterProxy).toBytes(),
+            "",
+            abi.encode(recipient, mintAmount, chainId)
+        );
+        wormholeBridgeAdapterProxy.processVAA(vaaBytes);
+    }
 
     /// incorrect cost
     function testBridgeOutFailsIncorrectCost() public {
+        MockWormholeCore mockWormhole = _initV3();
+        mockWormhole.setFee(0);
+
         vm.deal(address(this), 1);
-        vm.expectRevert("WormholeBridge: cost not equal to quote");
+        vm.expectRevert("WormholeBridgeAdapter: cost not equal to quote");
         wormholeBridgeAdapterProxy.bridge{value: 1}(chainId, amount, to);
     }
 
     /// incorrect target chain
     function testBridgeOutFailsIncorrectTargetChain() public {
-        vm.expectRevert("WormholeBridge: invalid target chain");
+        MockWormholeCore mockWormhole = _initV3();
+        mockWormhole.setFee(0);
+
+        vm.expectRevert("WormholeBridgeAdapter: invalid target chain");
         wormholeBridgeAdapterProxy.bridge{value: 0}(
             chainId + 1, /// invalid chain id
             amount,
@@ -495,12 +429,16 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
 
     /// not enough approvals
     function testBridgeOutFailsNoApproval() public {
+        _initV3();
+
         vm.expectRevert("ERC20: insufficient allowance");
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
     }
 
     /// not enough balance
     function testBridgeOutFailsNotEnoughBalance() public {
+        _initV3();
+
         deal(address(xwellProxy), address(this), amount - 1);
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
 
@@ -510,10 +448,12 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
 
     /// not enough rate limit
     function testBridgeOutFailsNotEnoughBuffer() public {
+        MockWormholeCore mockWormhole = _initV3();
+
         amount = externalChainBufferCap / 2;
         to = address(this);
 
-        testReceiveWormholeMessageSucceeds(bytes32(uint256(1)));
+        _mintViaProcessVAA(mockWormhole, to, amount, hex"aa01");
 
         amount = externalChainBufferCap;
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
@@ -523,10 +463,12 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
     }
 
     function testBridgeOutSucceeds() public {
+        MockWormholeCore mockWormhole = _initV3();
+
         amount = externalChainBufferCap / 2;
         to = address(this);
 
-        testReceiveWormholeMessageSucceeds(bytes32(uint256(1)));
+        _mintViaProcessVAA(mockWormhole, to, amount, hex"aa02");
 
         amount = externalChainBufferCap;
 
