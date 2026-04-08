@@ -508,9 +508,7 @@ contract mipx52 is HybridProposal {
         initData.breakGlassGuardian = addresses.getAddress(
             "BREAK_GLASS_GUARDIAN"
         );
-        initData.wormholeRelayer = addresses.getAddress(
-            "WORMHOLE_BRIDGE_RELAYER_PROXY"
-        );
+        initData.wormholeCore = addresses.getAddress("WORMHOLE_CORE");
 
         // Build trusted senders array (vote collection contracts)
         WormholeTrustedSender.TrustedSender[]
