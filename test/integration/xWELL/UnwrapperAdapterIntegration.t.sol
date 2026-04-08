@@ -297,7 +297,12 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
             wormholeBaseChainid,
             address(wormholeAdapter).toBytes(),
             "",
-            abi.encode(user, mintAmount)
+            abi.encode(
+                user,
+                mintAmount,
+                uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
+                address(wormholeAdapter)
+            )
         );
 
         bytes memory vaaBytes = abi.encode(

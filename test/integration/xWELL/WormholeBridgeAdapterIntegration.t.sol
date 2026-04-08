@@ -126,7 +126,12 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     function testExecuteVAAv1Success() public {
         uint256 mintAmount = 1000e18;
 
-        bytes memory payload = abi.encode(recipient, mintAmount);
+        bytes memory payload = abi.encode(
+            recipient,
+            mintAmount,
+            currentWormholeChainId,
+            address(adapter)
+        );
         bytes32 emitterAddress = address(adapter).toBytes();
 
         mockWormholeCore.setStorage(
@@ -161,7 +166,12 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(recipient, mintAmount)
+            abi.encode(
+                recipient,
+                mintAmount,
+                currentWormholeChainId,
+                address(adapter)
+            )
         );
 
         bytes memory encodedVaa = abi.encode("replay-test-vaa");
@@ -183,7 +193,12 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(0xDEAD).toBytes(),
             "",
-            abi.encode(recipient, uint256(1000e18))
+            abi.encode(
+                recipient,
+                uint256(1000e18),
+                currentWormholeChainId,
+                address(adapter)
+            )
         );
 
         vm.expectRevert("WormholeBridge: sender not trusted");
@@ -203,7 +218,12 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(recipient, excessAmount)
+            abi.encode(
+                recipient,
+                excessAmount,
+                currentWormholeChainId,
+                address(adapter)
+            )
         );
 
         vm.expectRevert("RateLimited: rate limit hit");
@@ -355,7 +375,12 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
                 sourceWormholeChainId,
                 emitterAddr,
                 "",
-                abi.encode(user, bridgeAmount)
+                abi.encode(
+                    user,
+                    bridgeAmount,
+                    currentWormholeChainId,
+                    address(adapter)
+                )
             );
             adapter.executeVAAv1(abi.encode("mint-for-bridge-out"));
         }
@@ -414,11 +439,17 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
 
-        /// Etch mock and configure
+        /// Etch mock and configure — payload includes dest chain ID and dest adapter address
+        uint16 destWormholeChainId = block.chainid.toWormholeChainId();
         _etchMockOnCurrentFork(
             destAdapter,
             currentWormholeChainId,
-            abi.encode(user, bridgeAmount)
+            abi.encode(
+                user,
+                bridgeAmount,
+                destWormholeChainId,
+                address(destAdapter)
+            )
         );
 
         if (block.chainid == MOONBEAM_CHAIN_ID) {

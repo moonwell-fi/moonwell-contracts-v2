@@ -224,7 +224,12 @@ contract xWellIntegrationTest is Test {
                 uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
                 address(wormholeAdapter).toBytes(),
                 "",
-                abi.encode(user, mintAmount)
+                abi.encode(
+                    user,
+                    mintAmount,
+                    block.chainid.toWormholeChainId(),
+                    address(wormholeAdapter)
+                )
             );
 
             vaaBytes = abi.encode("bridge-in-vaa", mintAmount);

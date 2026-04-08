@@ -62,12 +62,13 @@ contract MockCoreBridgeForAdapter {
     }
 
     function parseAndVerifyVM(
-        bytes calldata
+        bytes calldata encodedVaa
     )
         external
         view
         returns (IWormhole.VM memory vm, bool _valid, string memory _reason)
     {
+        vm.hash = keccak256(encodedVaa);
         vm.emitterChainId = vmEmitterChainId;
         vm.emitterAddress = vmEmitterAddress;
         vm.sequence = vmSequence;

@@ -328,7 +328,12 @@ contract WormholeBridgeAdapter is
         /// user must burn xERC20 tokens first
         _burnTokens(user, amount);
 
-        bytes memory payload = abi.encode(to, amount);
+        bytes memory payload = abi.encode(
+            to,
+            amount,
+            targetChainId,
+            targetAddress[targetChainId]
+        );
 
         /// Step 1: Publish message via Core Bridge
         uint256 messageFee = wormhole.messageFee();
@@ -390,7 +395,12 @@ contract WormholeBridgeAdapter is
         /// user must burn xERC20 tokens first
         _burnTokens(user, amount);
 
-        bytes memory payload = abi.encode(to, amount);
+        bytes memory payload = abi.encode(
+            to,
+            amount,
+            targetChainId,
+            targetAddress[targetChainId]
+        );
 
         /// Publish message via Core Bridge
         uint256 messageFee = wormhole.messageFee();
@@ -440,6 +450,13 @@ contract WormholeBridgeAdapter is
             "WormholeBridge: sender not trusted"
         );
 
+        /// Backward-compat: reject VAAs already processed via the old processVAA path
+        require(
+            !processedVAAHashes[vm.hash],
+            "WormholeBridge: VAA already processed"
+        );
+        processedVAAHashes[vm.hash] = true;
+
         /// Bitmap-based replay protection (deterministic storage slots, no mapping needed)
         SequenceReplayProtectionLib.replayProtect(
             vm.emitterChainId,
@@ -448,9 +465,20 @@ contract WormholeBridgeAdapter is
         );
 
         /// Parse the payload and do the corresponding actions!
-        (address to, uint256 amount) = abi.decode(
-            vm.payload,
-            (address, uint256)
+        (
+            address to,
+            uint256 amount,
+            uint16 targetChainId,
+            address targetAddr
+        ) = abi.decode(vm.payload, (address, uint256, uint16, address));
+
+        require(
+            targetChainId == wormhole.chainId(),
+            "WormholeBridge: invalid target chain"
+        );
+        require(
+            targetAddr == address(this),
+            "WormholeBridge: invalid target address"
         );
 
         /// mint tokens and emit events

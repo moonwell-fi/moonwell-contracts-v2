@@ -90,7 +90,12 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
         bytes32 emitterAddr = bytes32(
             uint256(uint160(address(wormholeBridgeAdapterProxy)))
         );
-        bytes memory payload = abi.encode(to, amount);
+        bytes memory payload = abi.encode(
+            to,
+            amount,
+            chainId,
+            address(wormholeBridgeAdapterProxy)
+        );
         bytes memory encodedVaa = _setupVaa(
             chainId,
             emitterAddr,
@@ -325,7 +330,12 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
 
     function testExecuteVAAv1FailsUntrustedSender() public {
         bytes32 untrustedEmitter = bytes32(uint256(uint160(address(0xdead))));
-        bytes memory payload = abi.encode(to, amount);
+        bytes memory payload = abi.encode(
+            to,
+            amount,
+            chainId,
+            address(wormholeBridgeAdapterProxy)
+        );
         bytes memory encodedVaa = _setupVaa(
             chainId,
             untrustedEmitter,
@@ -343,7 +353,12 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
         bytes32 emitterAddr = bytes32(
             uint256(uint160(address(wormholeBridgeAdapterProxy)))
         );
-        bytes memory payload = abi.encode(to, amount);
+        bytes memory payload = abi.encode(
+            to,
+            amount,
+            chainId,
+            address(wormholeBridgeAdapterProxy)
+        );
         bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 0, payload);
 
         vm.expectRevert();
@@ -357,7 +372,12 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
         bytes32 emitterAddr = bytes32(
             uint256(uint160(address(wormholeBridgeAdapterProxy)))
         );
-        bytes memory payload = abi.encode(to, amount);
+        bytes memory payload = abi.encode(
+            to,
+            amount,
+            chainId,
+            address(wormholeBridgeAdapterProxy)
+        );
         bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 0, payload);
 
         vm.expectEmit(
@@ -383,7 +403,12 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
         bytes32 emitterAddr = bytes32(
             uint256(uint160(address(wormholeBridgeAdapterProxy)))
         );
-        bytes memory payload = abi.encode(to, amount);
+        bytes memory payload = abi.encode(
+            to,
+            amount,
+            chainId,
+            address(wormholeBridgeAdapterProxy)
+        );
         bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 1, payload);
 
         vm.expectRevert("RateLimited: rate limit hit");
