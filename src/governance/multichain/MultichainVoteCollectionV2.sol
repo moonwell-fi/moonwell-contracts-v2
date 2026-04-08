@@ -88,16 +88,16 @@ contract MultichainVoteCollectionV2 is
         _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
     }
 
-    /// @notice initialize v2
+    /// @notice initialize v3
     /// @param _votingPowerAggregator address of the voting power aggregator
     /// @param _ethereumWormholeChainId wormhole chain id of the new governor to add
     /// @param _ethereumGovernor address of the new governor to add
     /// @custom:oz-upgrades-validate-as-initializer
-    function initializeV2(
+    function initializeV3(
         address _votingPowerAggregator,
         uint16 _ethereumWormholeChainId,
         address _ethereumGovernor
-    ) external reinitializer(2) {
+    ) external reinitializer(3) {
         require(
             _votingPowerAggregator != address(0),
             "MultichainVoteCollectionV2: voting power aggregator cannot be zero address"

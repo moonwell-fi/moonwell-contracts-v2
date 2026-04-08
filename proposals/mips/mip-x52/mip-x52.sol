@@ -307,9 +307,7 @@ contract mipx52 is HybridProposal {
         if (
             !addresses.isAddressSet("VOTE_COLLECTION_V2_PROXY", block.chainid)
         ) {
-            address wormholeRelayer = addresses.getAddress(
-                "WORMHOLE_BRIDGE_RELAYER_PROXY"
-            );
+            address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
             address temporalGovernor = addresses.getAddress(
                 "TEMPORAL_GOVERNOR"
             );
@@ -332,7 +330,7 @@ contract mipx52 is HybridProposal {
                 "initialize(address,address,address,uint16,address)",
                 votingPowerAggregator,
                 ethereumGovernorV2,
-                wormholeRelayer,
+                wormholeCore,
                 ETHEREUM_WORMHOLE_CHAIN_ID,
                 temporalGovernor
             );
@@ -1056,12 +1054,12 @@ contract mipx52 is HybridProposal {
             "Upgrade MultichainVoteCollection to V2 on Base",
             ActionType.Base
         );
-        // Call initializeV2 on Base VoteCollection - set VotingPowerAggregator and add new Ethereum governor
+        // Call initializeV3 on Base VoteCollection - set VotingPowerAggregator and add new Ethereum governor
         // Old Moonbeam governor is hardcoded and will be removed automatically
         _pushAction(
             baseVoteCollectionProxy,
             abi.encodeWithSignature(
-                "initializeV2(address,uint16,address)",
+                "initializeV3(address,uint16,address)",
                 baseVotingPowerAggregator,
                 ETHEREUM_WORMHOLE_CHAIN_ID,
                 ethereumGovernorV2
@@ -1156,12 +1154,12 @@ contract mipx52 is HybridProposal {
             "Upgrade MultichainVoteCollection to V2 on Optimism",
             ActionType.Optimism
         );
-        // Call initializeV2 on Optimism VoteCollection - set VotingPowerAggregator and add new Ethereum governor
+        // Call initializeV3 on Optimism VoteCollection - set VotingPowerAggregator and add new Ethereum governor
         // Old Moonbeam governor is hardcoded and will be removed automatically
         _pushAction(
             optimismVoteCollectionProxy,
             abi.encodeWithSignature(
-                "initializeV2(address,uint16,address)",
+                "initializeV3(address,uint16,address)",
                 optimismVotingPowerAggregator,
                 ETHEREUM_WORMHOLE_CHAIN_ID,
                 ethereumGovernorV2
@@ -1545,9 +1543,9 @@ contract mipx52 is HybridProposal {
         );
 
         assertEq(
-            address(governor.wormholeRelayer()),
-            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
-            "wormholeRelayer not set correctly on MultichainGovernorV2"
+            address(governor.wormhole()),
+            addresses.getAddress("WORMHOLE_CORE"),
+            "wormhole not set correctly on MultichainGovernorV2"
         );
 
         // 9. Validate Ethereum VotingPowerAggregator state (configured in afterDeploy)

@@ -2398,12 +2398,12 @@ contract MultichainProposalIntegrationV2 is
         // Base VoteCollection
         vm.selectFork(BASE_FORK_ID);
         vm.expectRevert("Initializable: contract is already initialized");
-        baseVoteCollection.initializeV2(address(1), 2, address(1));
+        baseVoteCollection.initializeV3(address(1), 2, address(1));
 
         // Optimism VoteCollection
         vm.selectFork(OPTIMISM_FORK_ID);
         vm.expectRevert("Initializable: contract is already initialized");
-        optimismVoteCollection.initializeV2(address(1), 2, address(1));
+        optimismVoteCollection.initializeV3(address(1), 2, address(1));
 
         // Moonbeam VoteCollection
         vm.selectFork(MOONBEAM_FORK_ID);

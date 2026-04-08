@@ -159,13 +159,13 @@ contract MultichainGovernorDeploy is Test {
             )
         );
 
-        // Call initializeV2 with VotingPowerAggregator
-        // The new initializeV2 signature only takes 3 parameters:
+        // Call initializeV3 with VotingPowerAggregator
+        // The new initializeV3 signature only takes 3 parameters:
         // - votingPowerAggregator
         // - ethereumWormholeChainId (for the new governor)
         // - ethereumGovernor (address of the new governor)
         // The old Moonbeam governor is hardcoded as a constant and removed automatically
-        MultichainVoteCollectionV2(proxy).initializeV2(
+        MultichainVoteCollectionV2(proxy).initializeV3(
             votingPowerProxy,
             moonbeamWormholeChainId,
             moonbeamGovernor
