@@ -358,7 +358,7 @@ contract WormholeBridgeAdapter is
         executor.requestExecution{value: msg.value - messageFee}(
             targetChainId,
             peerAddr,
-            tx.origin,
+            msg.sender,
             signedQuote,
             requestBytes,
             relayInstructions
