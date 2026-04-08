@@ -4,20 +4,15 @@ import "@forge-std/Test.sol";
 
 import "@utils/ChainIds.sol";
 
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
+import {IMultichainGovernorV2, MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
-import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
-
-import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
-import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
+import {MultichainBaseTestV2} from "@test/helper/MultichainBaseTestV2.t.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 
 contract MockTimelock {
     function transferOwnership(address) external pure returns (bool) {
@@ -25,7 +20,7 @@ contract MockTimelock {
     }
 }
 
-contract MultichainGovernorUnitTest is MultichainBaseTest {
+contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
     event BreakGlassGuardianChanged(address oldValue, address newValue);
     event PauseGuardianUpdated(
         address indexed oldPauseGuardian,
@@ -44,15 +39,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testGovernorSetup() public view {
-        assertTrue(
-            governor.useTimestamps(),
-            "useTimestamps should be true since stkWellMoonbeam uses timestamps"
-        );
-        assertEq(
-            governor.gasLimit(),
-            Constants.MIN_GAS_LIMIT,
-            "incorrect gas limit vote collection"
-        );
         assertEq(governor.proposalCount(), 0, "proposalCount");
         assertEq(
             governor.breakGlassGuardian(),
@@ -76,34 +62,23 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             "crossChainVoteCollectionPeriod"
         );
         assertEq(governor.quorum(), quorum, "quorum");
-        assertEq(
-            governor.maxUserLiveProposals(),
-            maxUserLiveProposals,
-            "maxUserLiveProposals"
-        );
         assertEq(governor.pauseStartTime(), 0, "pauseStartTime");
         assertEq(governor.pauseDuration(), pauseDuration, "pauseDuration");
         assertEq(governor.pauseGuardian(), pauseGuardian, "pauseGuardian");
         assertFalse(governor.paused(), "paused");
         assertFalse(governor.pauseUsed(), "paused used");
 
-        assertEq(address(governor.well()), address(well), "well address");
-        assertEq(address(governor.xWell()), address(xwell), "xwell");
+        // V2: votingPower reference instead of individual tokens
         assertEq(
-            address(governor.stkWell()),
-            address(stkWellMoonbeam),
-            "stkwell"
-        );
-        assertEq(
-            address(governor.distributor()),
-            address(distributor),
-            "distributor"
+            address(governor.votingPower()),
+            address(votingPowerAggregator),
+            "votingPower"
         );
 
         assertEq(
             address(governor.targetAddress(BASE_WORMHOLE_CHAIN_ID)),
             address(voteCollection),
-            "target address on moonbeam incorrect"
+            "target address on base incorrect"
         );
 
         assertEq(
@@ -119,16 +94,22 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         assertEq(
             governor.bridgeCost(MOONBASE_WORMHOLE_CHAIN_ID),
             0,
-            "bridgecost should equal messageFee (0)"
+            "bridgecost incorrect"
         );
-        assertEq(governor.bridgeCostAll(), 0, "bridgecostall should equal 0");
+        assertEq(governor.bridgeCostAll(), 0, "bridgecostall incorrect");
     }
 
     function testVoteCollectionSetup() public view {
-        assertEq(
-            address(voteCollection.xWell()),
-            address(xwell),
-            "xWell address"
+        // V2: votingPower aggregator instead of direct xWell reference
+        // Vote collection has its own separate VotingPowerAggregator instance
+        assertTrue(
+            address(voteCollection.votingPower()) != address(0),
+            "votingPower aggregator should not be zero"
+        );
+        assertTrue(
+            address(voteCollection.votingPower()) !=
+                address(votingPowerAggregator),
+            "vote collection should have separate voting power aggregator from governor"
         );
         assertTrue(
             voteCollection.isTrustedSender(
@@ -138,14 +119,28 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             "governor address not trusted sender"
         );
         assertEq(
-            address(voteCollection.wormholeRelayer()),
+            address(voteCollection.wormhole()),
             address(wormholeRelayerAdapter),
-            "relayer address"
+            "wormhole address"
+        );
+    }
+
+    function testVotingPowerAggregatorSetup() public view {
+        assertEq(
+            address(votingPowerAggregator.xWell()),
+            address(xwell),
+            "xWell address"
+        );
+        // NOTE: well and distributor removed as voting sources per governance changes
+        // Most users have migrated to xWell, and distributor tokens have mostly vested
+        assertTrue(
+            votingPowerAggregator.isSnapshotSource(address(stkWellMoonbeam)),
+            "stkWellMoonbeam not in snapshot sources"
         );
     }
 
     function testInitLogicFails() public {
-        MockMultichainGovernor.InitializeData memory initData;
+        MultichainGovernorV2.InitializeData memory initData;
         WormholeTrustedSender.TrustedSender[]
             memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
@@ -153,7 +148,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         vm.expectRevert("Initializable: contract is already initialized");
 
-        MockMultichainGovernor(payable(governorLogic)).initialize(
+        MultichainGovernorV2(payable(governorLogic)).initialize(
             initData,
             trustedSenders,
             new bytes[](0)
@@ -180,33 +175,28 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     /// GOVERNOR
 
-    function testSetNewStkWellNonGovernorFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
-        governor.setNewStakedWell(address(0), true);
-    }
-
     function testUpdateApprovedCalldataNonGovernorFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
+        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
         governor.updateApprovedCalldata("", true);
     }
 
     function testUpdateApprovedCalldataAlreadyWhitelistedFails() public {
         testUpdateApprovedCalldataGovernorSucceeds();
         vm.prank(address(governor));
-        vm.expectRevert("MultichainGovernor: calldata already approved");
+        vm.expectRevert(IMultichainGovernorV2.CalldataAlreadyApproved.selector);
         governor.updateApprovedCalldata("", true);
     }
 
     function testRemoveNonApprovedCalldataWhitelistedFails() public {
         testUpdateApprovedCalldataGovernorSucceeds();
         vm.prank(address(governor));
-        vm.expectRevert("MultichainGovernor: calldata not approved");
+        vm.expectRevert(IMultichainGovernorV2.CalldataNotApproved.selector);
         governor.updateApprovedCalldata(hex"00eeff", false);
     }
 
     function testUpdateApprovedCalldataNonWhitelistedFails() public {
         vm.prank(address(governor));
-        vm.expectRevert("MultichainGovernor: calldata not approved");
+        vm.expectRevert(IMultichainGovernorV2.CalldataNotApproved.selector);
         governor.updateApprovedCalldata("", false);
     }
 
@@ -215,7 +205,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
             );
-        vm.expectRevert("MultichainGovernor: only governor");
+        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
         governor.removeExternalChainConfigs(_trustedSenders);
     }
 
@@ -224,7 +214,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
             );
-        vm.expectRevert("MultichainGovernor: only governor");
+        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
         governor.addExternalChainConfigs(_trustedSenders);
     }
 
@@ -236,84 +226,71 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].chainId = 1;
         _trustedSenders[0].addr = address(0);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(WormholeBridgeBase.InvalidAddress.selector)
-        );
+        vm.expectRevert(WormholeBridgeBase.InvalidAddress.selector);
         vm.prank(address(governor));
         governor.addExternalChainConfigs(_trustedSenders);
     }
 
     function testUpdateProposalThresholdNonGovernorFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
+        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
         governor.updateProposalThreshold(1000);
     }
 
     function testUpdateProposalThresholdTooLowFails() public {
-        vm.expectRevert("MultichainGovernor: proposal threshold out of bounds");
+        vm.expectRevert(
+            IMultichainGovernorV2.ProposalThresholdOutOfBounds.selector
+        );
         vm.prank(address(governor));
         governor.updateProposalThreshold(Constants.MIN_PROPOSAL_THRESHOLD - 1);
     }
 
     function testUpdateProposalThresholdTooHighFails() public {
-        vm.expectRevert("MultichainGovernor: proposal threshold out of bounds");
+        vm.expectRevert(
+            IMultichainGovernorV2.ProposalThresholdOutOfBounds.selector
+        );
         vm.prank(address(governor));
         governor.updateProposalThreshold(Constants.MAX_PROPOSAL_THRESHOLD + 1);
     }
 
-    function testUpdateMaxUserLiveProposalsNonGovernorFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
-        governor.updateMaxUserLiveProposals(1000);
-    }
-
-    function testUpdateMaxUserLiveProposalsZeroFails() public {
-        vm.expectRevert("MultichainGovernor: invalid max user live proposals");
-        vm.prank(address(governor));
-        governor.updateMaxUserLiveProposals(0);
-    }
-
-    function testUpdateMaxUserLiveProposalsTooHighFails() public {
-        vm.expectRevert("MultichainGovernor: invalid max user live proposals");
-        vm.prank(address(governor));
-        governor.updateMaxUserLiveProposals(
-            Constants.MAX_USER_PROPOSAL_COUNT + 1
-        );
-    }
+    // V2: maxUserLiveProposals is now a constant, so setter tests are removed
 
     function testUpdateQuorumNonGovernorFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
+        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
         governor.updateQuorum(1000);
     }
 
     function testUpdateQuorumTooHighFails() public {
-        vm.expectRevert("MultichainGovernor: invalid quorum");
+        vm.expectRevert(IMultichainGovernorV2.InvalidQuorum.selector);
         vm.prank(address(governor));
         governor.updateQuorum(Constants.MAX_QUORUM + 1);
     }
 
     function testUpdateVotingPeriodNonGovernorFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
+        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
         governor.updateVotingPeriod(1000);
     }
 
     function testUpdateVotingPeriodTooLowFails() public {
-        vm.expectRevert("MultichainGovernor: voting period out of bounds");
+        vm.expectRevert(IMultichainGovernorV2.VotingPeriodOutOfBounds.selector);
         vm.prank(address(governor));
         governor.updateVotingPeriod(Constants.MIN_VOTING_PERIOD - 1);
     }
 
     function testUpdateVotingPeriodTooHighFails() public {
-        vm.expectRevert("MultichainGovernor: voting period out of bounds");
+        vm.expectRevert(IMultichainGovernorV2.VotingPeriodOutOfBounds.selector);
         vm.prank(address(governor));
         governor.updateVotingPeriod(Constants.MAX_VOTING_PERIOD + 1);
     }
 
     function testUpdateCrossChainVoteCollectionPeriodNonGovernorFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
+        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
         governor.updateCrossChainVoteCollectionPeriod(1000);
     }
 
     function testUpdateCrossChainVoteCollectionPeriodTooLowFails() public {
-        vm.expectRevert("MultichainGovernor: invalid vote collection period");
+        vm.expectRevert(
+            IMultichainGovernorV2.InvalidVoteCollectionPeriod.selector
+        );
         vm.prank(address(governor));
 
         governor.updateCrossChainVoteCollectionPeriod(
@@ -322,7 +299,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testUpdateCrossChainVoteCollectionPeriodTooHighFails() public {
-        vm.expectRevert("MultichainGovernor: invalid vote collection period");
+        vm.expectRevert(
+            IMultichainGovernorV2.InvalidVoteCollectionPeriod.selector
+        );
         vm.prank(address(governor));
 
         governor.updateCrossChainVoteCollectionPeriod(
@@ -331,51 +310,37 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testSetBreakGlassGuardianNonGovernorFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
+        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
         governor.setBreakGlassGuardian(address(this));
     }
 
     function testGrantPauseGuardianFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
+        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
         governor.grantPauseGuardian(address(this));
-    }
-
-    function testSetGasLimitNonGovernorFails() public {
-        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
-        vm.prank(address(1));
-        vm.expectRevert("MultichainGovernor: only governor");
-        governor.setGasLimit(gasLimit);
-    }
-
-    function testSetGasLimitTooLow() public {
-        uint96 gasLimit = Constants.MIN_GAS_LIMIT - 1;
-        vm.expectRevert("MultichainGovernor: gas limit too low");
-        vm.prank(address(governor));
-        governor.setGasLimit(gasLimit);
     }
 
     /// BREAK GLASS GUARDIAN
 
     function testExecuteBreakGlassNonBreakGlassGuardianFails() public {
-        vm.expectRevert("MultichainGovernor: only break glass guardian");
+        vm.expectRevert(IMultichainGovernorV2.OnlyBreakGlassGuardian.selector);
         governor.executeBreakGlass(new address[](0), new bytes[](0));
     }
 
     function testExecuteBreakGlassEmptyArray() public {
         vm.prank(governor.breakGlassGuardian());
-        vm.expectRevert("MultichainGovernor: empty array");
+        vm.expectRevert(IMultichainGovernorV2.EmptyArray.selector);
         governor.executeBreakGlass(new address[](0), new bytes[](0));
     }
 
     function testExecuteBreakGlassDifferentLengths() public {
         vm.prank(governor.breakGlassGuardian());
-        vm.expectRevert("MultichainGovernor: arity mismatch");
+        vm.expectRevert(IMultichainGovernorV2.ArityMismatch.selector);
         governor.executeBreakGlass(new address[](1), new bytes[](0));
     }
 
     function testExecuteBreakGlassNonWhitelistedFails() public {
         vm.prank(governor.breakGlassGuardian());
-        vm.expectRevert("MultichainGovernor: calldata not whitelisted");
+        vm.expectRevert(IMultichainGovernorV2.CalldataNotWhitelisted.selector);
         governor.executeBreakGlass(new address[](1), new bytes[](1));
     }
 
@@ -400,7 +365,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         calldatas[0] = setBreakGlassCalldata;
 
         vm.prank(governor.breakGlassGuardian());
-        vm.expectRevert("MultichainGovernor: break glass guardian not null");
+        vm.expectRevert(
+            IMultichainGovernorV2.BreakGlassGuardianNotNull.selector
+        );
         governor.executeBreakGlass(targets, calldatas);
     }
 
@@ -431,11 +398,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     /// PAUSE GUARDIAN
     function testPauseNonPauseGuardianFails() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ConfigurablePauseGuardian.OnlyPauseGuardian.selector
-            )
-        );
+        vm.expectRevert(ConfigurablePauseGuardian.OnlyPauseGuardian.selector);
         vm.prank(address(1));
         governor.pause();
     }
@@ -461,49 +424,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             governor.whitelistedCalldatas(""),
             "calldata not whitelisted"
         );
-    }
-
-    function testSetNewStakedWellGovernorSucceeds() public {
-        address newStakedWell = address(1);
-        assertTrue(governor.useTimestamps(), "timestamps not in use initially");
-
-        vm.prank(address(governor));
-        governor.setNewStakedWell(newStakedWell, true);
-
-        assertEq(
-            address(governor.stkWell()),
-            newStakedWell,
-            "new stkwell not set"
-        );
-        assertTrue(governor.useTimestamps(), "timestamps not in use");
-    }
-
-    function testSetNewStakedWellBaseWellGovernorSucceeds() public {
-        // Since stkWellMoonbeam is a V2 contract using timestamps, useTimestamps should already be true
-        assertTrue(governor.useTimestamps(), "timestamps not in use initially");
-
-        uint256 startingVotes = governor.getVotes(
-            address(this),
-            block.timestamp - 1,
-            block.number - 1
-        );
-        address newStakedWell = address(stkWellBase);
-
-        vm.prank(address(governor));
-        governor.setNewStakedWell(newStakedWell, true);
-
-        uint256 endingVotes = governor.getVotes(
-            address(this),
-            block.timestamp - 1,
-            block.number - 1
-        );
-        assertEq(endingVotes, startingVotes, "votes incorrect");
-        assertEq(
-            address(governor.stkWell()),
-            newStakedWell,
-            "new stkwell not set"
-        );
-        assertTrue(governor.useTimestamps(), "timestamps not in use");
     }
 
     function testRemoveExternalChainConfigsGovernorSucceeds() public {
@@ -532,9 +452,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].addr = address(this);
 
         vm.prank(address(governor));
-        vm.expectRevert(
-            abi.encodeWithSelector(WormholeBridgeBase.ChainNotAdded.selector)
-        );
+        vm.expectRevert(WormholeBridgeBase.ChainNotAdded.selector);
         governor.removeExternalChainConfigs(_trustedSenders);
     }
 
@@ -568,11 +486,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             memory _trustedSenders = testaddExternalChainConfigsGovernorSucceeds();
 
         vm.prank(address(governor));
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                WormholeBridgeBase.ChainAlreadyAdded.selector
-            )
-        );
+        vm.expectRevert(WormholeBridgeBase.ChainAlreadyAdded.selector);
         governor.addExternalChainConfigs(_trustedSenders);
     }
 
@@ -589,18 +503,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function testUpdateMaxUserLiveProposalsGovernorSucceeds() public {
-        uint256 newMaxUserLiveProposals = 4;
-
-        vm.prank(address(governor));
-        governor.updateMaxUserLiveProposals(newMaxUserLiveProposals);
-
-        assertEq(
-            governor.maxUserLiveProposals(),
-            newMaxUserLiveProposals,
-            "maxUserLiveProposals not updated"
-        );
-    }
+    // V2: maxUserLiveProposals is now a constant - removed setter test
 
     function testUpdateQuorumGovernorSucceeds() public {
         uint256 newQuorum = 400_000_000 * 1e18;
@@ -668,13 +571,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function testSetGasLimitGovernorSucceeds() public {
-        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
-        vm.prank(address(governor));
-        governor.setGasLimit(gasLimit);
-        assertEq(governor.gasLimit(), gasLimit, "incorrect gas limit");
-    }
-
     /// PAUSE GUARDIAN
     function testPausePauseGuardianSucceeds() public {
         vm.warp(block.timestamp + 1);
@@ -692,7 +588,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
         string
-            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+            memory descriptionUri = "ipfs://QmProposalMIPM00UpdateProposalThreshold";
 
         targets[0] = address(governor);
         values[0] = 0;
@@ -708,7 +604,8 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             targets,
             values,
             calldatas,
-            description
+            descriptionUri,
+            true // V2: finalize parameter
         );
 
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
@@ -731,7 +628,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
         string
-            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+            memory descriptionUri = "ipfs://QmProposalMIPM00UpdateProposalThreshold";
 
         targets[0] = address(governor);
         values[0] = 0;
@@ -747,7 +644,8 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             targets,
             values,
             calldatas,
-            description
+            descriptionUri,
+            true // V2: finalize parameter
         );
 
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
@@ -767,7 +665,8 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             new address[](0),
             new uint256[](0),
             new bytes[](0),
-            ""
+            "",
+            true // V2: finalize parameter
         );
     }
 
@@ -798,73 +697,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         assertTrue(success, "eth transfer failed");
     }
 
-    function testRecoverETHNonGovernorFails() public {
-        address payable recipient = payable(address(0x123));
-
-        vm.expectRevert("MultichainGovernor: only governor");
-        governor.recoverETH(recipient);
-    }
-
-    function testRecoverETHGovernorSucceeds() public {
-        uint256 sendAmount = 5 ether;
-        address payable recipient = payable(address(0x456));
-
-        // Send ETH to governor
-        vm.deal(address(this), sendAmount);
-        (bool success, ) = address(governor).call{value: sendAmount}("");
-        assertTrue(success, "eth transfer to governor failed");
-
-        assertEq(
-            address(governor).balance,
-            sendAmount,
-            "governor did not receive eth"
-        );
-
-        uint256 recipientBalanceBefore = recipient.balance;
-
-        // Recover ETH as governor
-        vm.prank(address(governor));
-        governor.recoverETH(recipient);
-
-        assertEq(
-            address(governor).balance,
-            0,
-            "governor should have zero balance after recovery"
-        );
-        assertEq(
-            recipient.balance,
-            recipientBalanceBefore + sendAmount,
-            "recipient did not receive recovered eth"
-        );
-    }
-
-    function testRecoverETHWithZeroBalance() public {
-        address payable recipient = payable(address(0x789));
-
-        assertEq(
-            address(governor).balance,
-            0,
-            "governor should start with zero balance"
-        );
-
-        uint256 recipientBalanceBefore = recipient.balance;
-
-        // Recover ETH when balance is zero
-        vm.prank(address(governor));
-        governor.recoverETH(recipient);
-
-        assertEq(
-            address(governor).balance,
-            0,
-            "governor should still have zero balance"
-        );
-        assertEq(
-            recipient.balance,
-            recipientBalanceBefore,
-            "recipient balance should not change"
-        );
-    }
-
     // VIEW FUNCTIONS
 
     function testVoteCollectorIsTrustedSender() public {
@@ -872,6 +704,223 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         assertTrue(
             governor.isTrustedSender(1, address(this)),
             "vote collector not trusted"
+        );
+    }
+
+    /// PROPOSAL ID UNIQUENESS TESTS
+
+    function testProposalIdsAreUniqueAndMonotonic() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory descriptionUri = "ipfs://QmProposal";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+
+        // Create multiple proposals and verify IDs are unique and increasing
+        uint256[] memory proposalIds = new uint256[](5);
+
+        for (uint256 i = 0; i < 5; i++) {
+            vm.deal(address(this), bridgeCost);
+            proposalIds[i] = governor.propose{value: bridgeCost}(
+                targets,
+                values,
+                calldatas,
+                descriptionUri,
+                true
+            );
+
+            // Verify ID is greater than all previous IDs
+            for (uint256 j = 0; j < i; j++) {
+                assertTrue(
+                    proposalIds[i] > proposalIds[j],
+                    "proposal IDs should be monotonically increasing"
+                );
+            }
+
+            // Cancel proposal to free up slot (max 3 live proposals per user)
+            if (i < 4) {
+                governor.cancel(proposalIds[i]);
+            }
+        }
+
+        // Verify sequential IDs (no gaps)
+        for (uint256 i = 1; i < 5; i++) {
+            assertEq(
+                proposalIds[i],
+                proposalIds[i - 1] + 1,
+                "proposal IDs should be sequential"
+            );
+        }
+    }
+
+    function testProposalIdsDontReuseAfterRemoval() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory descriptionUri = "ipfs://QmProposal";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+
+        // Create first proposal
+        vm.deal(address(this), bridgeCost);
+        uint256 proposalId1 = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            descriptionUri,
+            true
+        );
+
+        // Cancel it (removes from live proposals)
+        governor.cancel(proposalId1);
+
+        // Create another proposal
+        vm.deal(address(this), bridgeCost);
+        uint256 proposalId2 = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            descriptionUri,
+            true
+        );
+
+        // Verify new proposal has a different, higher ID
+        assertTrue(
+            proposalId2 > proposalId1,
+            "new proposal should have higher ID than cancelled proposal"
+        );
+        assertEq(
+            proposalId2,
+            proposalId1 + 1,
+            "proposal IDs should still be sequential"
+        );
+    }
+
+    function testFuzzProposalIdsAlwaysUnique(uint8 numProposals) public {
+        // Bound to reasonable number to avoid gas issues
+        vm.assume(numProposals > 0 && numProposals <= 20);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory descriptionUri = "ipfs://QmProposal";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        uint256[] memory proposalIds = new uint256[](numProposals);
+        uint256 lastId = 0;
+
+        for (uint256 i = 0; i < numProposals; i++) {
+            vm.deal(address(this), bridgeCost);
+            proposalIds[i] = governor.propose{value: bridgeCost}(
+                targets,
+                values,
+                calldatas,
+                descriptionUri,
+                true
+            );
+
+            // Verify this ID is greater than the last
+            assertTrue(
+                proposalIds[i] > lastId,
+                "proposal IDs must be strictly increasing"
+            );
+            lastId = proposalIds[i];
+
+            // Check against all previous IDs for uniqueness
+            for (uint256 j = 0; j < i; j++) {
+                assertTrue(
+                    proposalIds[i] != proposalIds[j],
+                    "proposal IDs must be unique"
+                );
+            }
+
+            // Cancel proposal to free up slot (max 3 live proposals per user)
+            if (i < numProposals - 1) {
+                governor.cancel(proposalIds[i]);
+            }
+        }
+    }
+
+    function testProposalCountNeverDecreases() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory descriptionUri = "ipfs://QmProposal";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        uint256 initialCount = governor.proposalCount();
+
+        // Create proposal
+        vm.deal(address(this), bridgeCost);
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            descriptionUri,
+            true
+        );
+
+        uint256 countAfterPropose = governor.proposalCount();
+        assertEq(
+            countAfterPropose,
+            initialCount + 1,
+            "proposalCount should increment by 1"
+        );
+
+        // Cancel proposal (removes from live proposals but shouldn't affect counter)
+        governor.cancel(proposalId);
+
+        uint256 countAfterCancel = governor.proposalCount();
+        assertEq(
+            countAfterCancel,
+            countAfterPropose,
+            "proposalCount should not decrease after cancel"
+        );
+
+        // Create another proposal
+        vm.deal(address(this), bridgeCost);
+        governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            descriptionUri,
+            true
+        );
+
+        uint256 finalCount = governor.proposalCount();
+        assertEq(
+            finalCount,
+            countAfterCancel + 1,
+            "proposalCount should continue incrementing"
         );
     }
 
