@@ -253,6 +253,17 @@ contract WormholeRelayerAdapter {
             "WormholeRelayerAdapter: publishMessage revert"
         );
 
+        /// Decode target chain from the payload envelope to support per-chain reverts.
+        /// The payload is abi.encode(targetChain, targetAddress, innerPayload).
+        (uint16 targetChain, , ) = abi.decode(
+            payload,
+            (uint16, address, bytes)
+        );
+        require(
+            !shouldRevertAtChain[targetChain],
+            "WormholeRelayerAdapter: publishMessage revert for chain"
+        );
+
         lastPublishedPayload = payload;
         lastPublisher = msg.sender;
         lastPublishNonce = ++nonce;

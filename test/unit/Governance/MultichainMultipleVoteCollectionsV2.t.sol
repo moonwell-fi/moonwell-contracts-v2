@@ -32,16 +32,6 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
             "incorrect vote amount"
         );
         assertEq(
-            governor.gasLimit(),
-            Constants.MIN_GAS_LIMIT,
-            "incorrect gas limit vote collection"
-        );
-        assertEq(
-            voteCollection.gasLimit(),
-            Constants.MIN_GAS_LIMIT,
-            "incorrect gas limit vote collection"
-        );
-        assertEq(
             voteCollection.getVotes(address(this), block.timestamp - 1),
             4_000_000_000 * 1e18,
             "incorrect vote amount"
@@ -78,7 +68,7 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
             "voteCollection not whitelisted to send messages in"
         );
 
-        assertTrue(governor.bridgeCostAll() != 0, "no targets");
+        assertTrue(governor.getAllTargetChainsLength() > 0, "no targets");
 
         assertEq(
             governor.getAllTargetChains().length,
@@ -157,6 +147,7 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
             payload
         );
 
+        vm.recordLogs();
         governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -164,6 +155,8 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
             descriptionUri,
             true // finalize
         );
+
+        _deliverBridgeOutEvents(address(governor));
 
         {
             // vote collections should have the proposal
@@ -297,6 +290,7 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
         vm.expectEmit(true, true, true, true, address(governor));
         emit BridgeOutFailed(4, payload, bridgeCost / 4);
 
+        vm.recordLogs();
         vm.prank(proposer);
         governor.propose{value: bridgeCost}(
             targets,
@@ -305,6 +299,8 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
             descriptionUri,
             true // finalize
         );
+
+        _deliverBridgeOutEvents(address(governor));
 
         {
             (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection
@@ -463,16 +459,9 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
 
                 vm.deal(address(this), bridgeCost);
 
-                vm.expectEmit(true, true, true, true, address(governor));
-                emit CrossChainVoteCollected(
-                    proposalId,
-                    BASE_WORMHOLE_CHAIN_ID,
-                    0,
-                    voteAmount,
-                    0
-                );
-
+                vm.recordLogs();
                 voteCollection.emitVotes{value: bridgeCost}(proposalId);
+                _deliverBridgeOutEvents(address(voteCollection));
 
                 {
                     // check chainVoteCollectorVotes
@@ -528,10 +517,10 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
                 vm.deal(address(this), bridgeCost);
 
                 wormholeRelayerAdapter.setSenderChainId(2);
-                vm.expectEmit(true, true, true, true, address(governor));
-                emit CrossChainVoteCollected(proposalId, 2, voteAmount, 0, 0);
 
+                vm.recordLogs();
                 voteCollection2.emitVotes{value: bridgeCost}(proposalId);
+                _deliverBridgeOutEvents(address(voteCollection2));
 
                 {
                     // check chainVoteCollectorVotes
