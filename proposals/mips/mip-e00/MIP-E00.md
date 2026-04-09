@@ -15,7 +15,7 @@ contract platform.
 | WETH   | 80%               | 10%            | 50,000      | 35,000     |
 | USDC   | 85%               | 10%            | 100,000,000 | 80,000,000 |
 | USDT   | 80%               | 10%            | 50,000,000  | 40,000,000 |
-| cbBTC  | 75%               | 15%            | 1,000       | 500        |
+| WBTC   | 75%               | 15%            | 1,000       | 500        |
 | weETH  | 75%               | 25%            | 20,000      | 5,000      |
 | wstETH | 75%               | 25%            | 20,000      | 5,000      |
 
@@ -30,9 +30,7 @@ contract platform.
 - **WETH**: Chainlink ETH/USD
 - **USDC**: Chainlink USDC/USD
 - **USDT**: Chainlink USDT/USD
-- **cbBTC**: Chainlink BTC/USD (assumes 1:1 BTC peg; no on-chain cbBTC/BTC feed
-  available on Ethereum mainnet. Depeg risk bounded by 75% CF and 500 borrow
-  cap)
+- **WBTC**: Chainlink BTC/USD
 - **weETH**: Composite Oracle (ETH/USD × weETH/ETH)
 - **wstETH**: Composite Oracle (ETH/USD × wstETH/ETH via Compound feed)
 

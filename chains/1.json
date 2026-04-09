@@ -20,8 +20,8 @@
         "isContract": true
     },
     {
-        "addr": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
-        "name": "cbBTC",
+        "addr": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+        "name": "WBTC",
         "isContract": true
     },
     {

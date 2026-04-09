@@ -76,7 +76,7 @@ contract mipe00 is HybridProposalV2, Configs {
         vm.selectFork(ETHEREUM_FORK_ID);
     }
 
-    /// @notice the deployer should have WETH, USDC, USDT, cbBTC, weETH, wstETH to be able to deploy on Ethereum.
+    /// @notice the deployer should have WETH, USDC, USDT, WBTC, weETH, wstETH to be able to deploy on Ethereum.
     /// This allows the deployer to be able to initialize the markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {
         /// ------- MultichainGovernorV2 (deployed by initProposal via MIP-X41) -------
