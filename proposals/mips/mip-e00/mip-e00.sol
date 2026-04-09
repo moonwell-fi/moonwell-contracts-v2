@@ -31,11 +31,11 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ChainIds, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {mipx41} from "@proposals/mips/mip-x41/mip-x41.sol";
 
-contract mipx53 is HybridProposalV2, Configs {
+contract mipe00 is HybridProposalV2, Configs {
     using Address for address;
     using ChainIds for uint256;
 
-    string public constant override name = "MIP-X53";
+    string public constant override name = "MIP-E00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
@@ -52,7 +52,7 @@ contract mipx53 is HybridProposalV2, Configs {
                 string(
                     abi.encodePacked(
                         vm.projectRoot(),
-                        "/proposals/mips/mip-x53/mTokens.json"
+                        "/proposals/mips/mip-e00/mTokens.json"
                     )
                 )
             )
@@ -66,7 +66,7 @@ contract mipx53 is HybridProposalV2, Configs {
         return ETHEREUM_FORK_ID;
     }
 
-    /// @notice Run MIP-X41 to deploy MultichainGovernorV2 before MIP-X53 deployment
+    /// @notice Run MIP-X41 to deploy MultichainGovernorV2 before MIP-E00 deployment
     function initProposal(Addresses addresses) public override {
         /// Deploy MultichainGovernorV2 via MIP-X41
         mipx41 x41 = new mipx41();
@@ -79,7 +79,7 @@ contract mipx53 is HybridProposalV2, Configs {
         x41.deploy(addresses, deployerAddress);
         x41.afterDeploy(addresses, deployerAddress);
 
-        /// Switch back to Ethereum fork for MIP-X53 deployment
+        /// Switch back to Ethereum fork for MIP-E00 deployment
         vm.selectFork(ETHEREUM_FORK_ID);
     }
 
@@ -88,13 +88,13 @@ contract mipx53 is HybridProposalV2, Configs {
     function deploy(Addresses addresses, address deployer) public override {
         /// ------- MultichainGovernorV2 (deployed by initProposal via MIP-X41) -------
         /// The MultichainGovernorV2 is deployed in initProposal() which runs MIP-X41.
-        /// MIP-X53 uses the existing governor for all protocol contracts.
+        /// MIP-E00 uses the existing governor for all protocol contracts.
         localInit(addresses);
 
         /// Verify MultichainGovernorV2 was deployed by initProposal
         require(
             addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY"),
-            "MIP-X53: MultichainGovernorV2 not deployed. initProposal should have deployed it."
+            "MIP-E00: MultichainGovernorV2 not deployed. initProposal should have deployed it."
         );
 
         deployAndMint(addresses);
@@ -171,7 +171,7 @@ contract mipx53 is HybridProposalV2, Configs {
             addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
 
-        _setMTokenConfiguration("proposals/mips/mip-x53/mTokens.json");
+        _setMTokenConfiguration("proposals/mips/mip-e00/mTokens.json");
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         uint256 cTokenConfigsLength = cTokenConfigs.length;
@@ -401,7 +401,7 @@ contract mipx53 is HybridProposalV2, Configs {
     }
 
     function build(Addresses addresses) public override {
-        _setMTokenConfiguration("proposals/mips/mip-x53/mTokens.json");
+        _setMTokenConfiguration("proposals/mips/mip-e00/mTokens.json");
 
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
