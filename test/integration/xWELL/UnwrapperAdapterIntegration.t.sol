@@ -143,11 +143,6 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
             address(wormholeAdapter.executor()) != address(0),
             "Moonbeam: executor not set after V5"
         );
-        assertEq(
-            wormholeAdapter.wormholeChainId(),
-            uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
-            "Moonbeam: wormholeChainId mismatch"
-        );
         /// Moonbeam has no on-chain quoter
         assertEq(
             address(wormholeAdapter.executorQuoterRouter()),

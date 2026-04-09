@@ -173,8 +173,7 @@ contract BaseTest is xWELLDeploy, Test {
         wormholeBridgeAdapterProxy.initializeV5(
             address(mockExecutorQuoterRouter), /// executor (off-chain quote)
             address(mockExecutorQuoterRouter), /// executorQuoterRouter (on-chain quote)
-            address(0), /// quoter address (not needed for mock)
-            chainId
+            address(mockExecutorQuoterRouter) /// quoter address
         );
 
         sigUtils = new SigUtils(xwellProxy.DOMAIN_SEPARATOR());

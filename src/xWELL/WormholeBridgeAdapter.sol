@@ -32,6 +32,9 @@ contract WormholeBridgeAdapter is
     ///                on Base/Optimism this means L2 safe head finality.
     uint8 public constant CONSISTENCY_LEVEL = 1;
 
+    /// @notice Wormhole ChainId for Moonbeam, where quoter and quoter router are not available
+    uint16 internal constant MOONBEAM_WORMHOLE_CHAIN_ID = 16;
+
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
     /// ------------------ SINGLE STORAGE SLOT ------------------
@@ -71,7 +74,7 @@ contract WormholeBridgeAdapter is
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
 
-    /// @notice Wormhole core bridge for on-chain VAA verification
+    /// @notice Wormhole core bridge for onchain VAA verification
     IWormhole public wormhole;
 
     /// @notice tracks processed VAA hashes to prevent replay
@@ -89,9 +92,6 @@ contract WormholeBridgeAdapter is
 
     /// @notice address of the quoter used for pricing execution
     address public quoterAddress;
-
-    /// @notice this chain's wormhole chain ID, used for encoding execution requests
-    uint16 public wormholeChainId;
 
     /// @notice Wormhole Executor for off-chain quote flow
     IExecutor public executor;
@@ -184,26 +184,32 @@ contract WormholeBridgeAdapter is
 
     /// @notice V5 upgrade: migrate to Wormhole Executor framework
     /// @param _executorAddress Executor address for off-chain quote flow
-    /// @param _executorQuoterRouterAddress Executor Quoter Router for on-chain quoting (address(0) if not available)
-    /// @param _quoterAddr on-chain quoter address for pricing execution (address(0) if not available)
-    /// @param _wormholeChainId this chain's Wormhole chain ID
+    /// @param _executorQuoterRouterAddress Executor Quoter Router for onchain quoting (address(0) on Moonbeam)
+    /// @param _quoterAddr onchain quoter address for pricing execution (address(0) on Moonbeam)
     function initializeV5(
         address _executorAddress,
         address _executorQuoterRouterAddress,
-        address _quoterAddr,
-        uint16 _wormholeChainId
+        address _quoterAddr
     ) external reinitializer(5) {
         require(
-            _executorAddress != address(0),
-            "WormholeBridge: zero executor"
+            _executorAddress != address(0) && address(wormhole) != address(0),
+            "WormholeBridge: zero address"
         );
+
+        /// Moonbeam has no onchain quoter; all other chains must set both
+        if (wormhole.chainId() != MOONBEAM_WORMHOLE_CHAIN_ID) {
+            require(
+                _executorQuoterRouterAddress != address(0) &&
+                    _quoterAddr != address(0),
+                "WormholeBridge: zero quoter address"
+            );
+        }
 
         executor = IExecutor(_executorAddress);
         executorQuoterRouter = IExecutorQuoterRouter(
             _executorQuoterRouterAddress
         );
         quoterAddress = _quoterAddr;
-        wormholeChainId = _wormholeChainId;
     }
 
     /// --------------------------------------------------------
@@ -276,7 +282,7 @@ contract WormholeBridgeAdapter is
             0
         );
         bytes memory requestBytes = RequestLib.encodeVaaMultiSigRequest(
-            wormholeChainId,
+            wormhole.chainId(),
             toUniversalAddress(address(this)),
             0
         );
@@ -345,7 +351,7 @@ contract WormholeBridgeAdapter is
 
         /// Step 2: Request execution via Executor with off-chain signed quote
         bytes memory requestBytes = RequestLib.encodeVaaMultiSigRequest(
-            wormholeChainId,
+            wormhole.chainId(),
             toUniversalAddress(address(this)),
             sequence
         );
@@ -369,7 +375,7 @@ contract WormholeBridgeAdapter is
 
     /// @notice Bridge Out Funds to an external chain using the Executor framework.
     /// Burns xERC20 tokens, publishes a message via Wormhole Core Bridge, then
-    /// requests execution via the ExecutorQuoterRouter (on-chain quoting).
+    /// requests execution via the ExecutorQuoterRouter (onchain quoting).
     /// @param user to send funds from, should be msg.sender in all cases
     /// @param targetChain Destination chain id
     /// @param amount Amount of xERC20 to bridge out
@@ -412,7 +418,7 @@ contract WormholeBridgeAdapter is
 
         /// Request execution via Executor
         bytes memory requestBytes = RequestLib.encodeVaaMultiSigRequest(
-            wormholeChainId,
+            wormhole.chainId(),
             toUniversalAddress(address(this)),
             sequence
         );
@@ -425,7 +431,7 @@ contract WormholeBridgeAdapter is
         executorQuoterRouter.requestExecution{value: cost - messageFee}(
             targetChainId,
             peerAddr,
-            tx.origin,
+            msg.sender,
             quoterAddress,
             requestBytes,
             relayInstructions

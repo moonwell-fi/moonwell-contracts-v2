@@ -295,12 +295,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
 
     function testInitializeV5CannotBeCalledAgain() public {
         vm.expectRevert("Initializable: contract is already initialized");
-        adapter.initializeV5(
-            address(1),
-            address(2),
-            address(3),
-            currentWormholeChainId
-        );
+        adapter.initializeV5(address(1), address(2), address(3));
     }
 
     // ---------------------------------------------------------------

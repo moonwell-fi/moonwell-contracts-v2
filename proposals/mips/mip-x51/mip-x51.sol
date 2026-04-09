@@ -114,11 +114,10 @@ contract mipx51 is HybridProposal {
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress("WORMHOLE_UNWRAPPER_ADAPTER_IMPL_V5"),
                 abi.encodeWithSignature(
-                    "initializeV5(address,address,address,uint16)",
+                    "initializeV5(address,address,address)",
                     addresses.getAddress("WORMHOLE_EXECUTOR"),
                     address(0), // no on-chain quoter on Moonbeam
-                    address(0), // no quoter on Moonbeam
-                    MOONBEAM_WORMHOLE_CHAIN_ID
+                    address(0) // no quoter on Moonbeam
                 )
             ),
             "Upgrade WormholeUnwrapperAdapter on Moonbeam to V5 (Executor)"
@@ -126,7 +125,7 @@ contract mipx51 is HybridProposal {
 
         /// Re-set the lockbox after upgrading to V5.
         /// The V5 storage variables (executorQuoterRouter, quoterAddress,
-        /// wormholeChainId, executor) shift the child's lockbox slot, so
+        /// executor) shift the child's lockbox slot, so
         /// it reads as zero after the upgrade and needs to be re-initialized.
         _pushAction(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
@@ -149,11 +148,10 @@ contract mipx51 is HybridProposal {
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"),
                 abi.encodeWithSignature(
-                    "initializeV5(address,address,address,uint16)",
+                    "initializeV5(address,address,address)",
                     addresses.getAddress("WORMHOLE_EXECUTOR"),
                     addresses.getAddress("WORMHOLE_QUOTER_ROUTER"),
-                    addresses.getAddress("WORMHOLE_QUOTER"),
-                    BASE_WORMHOLE_CHAIN_ID
+                    addresses.getAddress("WORMHOLE_QUOTER")
                 )
             ),
             "Upgrade WormholeBridgeAdapter on Base to V5 (Executor)"
@@ -171,11 +169,10 @@ contract mipx51 is HybridProposal {
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"),
                 abi.encodeWithSignature(
-                    "initializeV5(address,address,address,uint16)",
+                    "initializeV5(address,address,address)",
                     addresses.getAddress("WORMHOLE_EXECUTOR"),
                     addresses.getAddress("WORMHOLE_QUOTER_ROUTER"),
-                    addresses.getAddress("WORMHOLE_QUOTER"),
-                    OPTIMISM_WORMHOLE_CHAIN_ID
+                    addresses.getAddress("WORMHOLE_QUOTER")
                 )
             ),
             "Upgrade WormholeBridgeAdapter on Optimism to V5 (Executor)"
@@ -186,15 +183,15 @@ contract mipx51 is HybridProposal {
 
     function validate(Addresses addresses, address) public override {
         vm.selectFork(primaryForkId());
-        _validateAdapter(addresses, "Moonbeam", MOONBEAM_WORMHOLE_CHAIN_ID);
+        _validateAdapter(addresses, "Moonbeam");
         _validateMoonbeamUnwrapper(addresses);
 
         vm.selectFork(BASE_FORK_ID);
-        _validateAdapter(addresses, "Base", BASE_WORMHOLE_CHAIN_ID);
+        _validateAdapter(addresses, "Base");
         _validateQuoterSet(addresses, "Base");
 
         vm.selectFork(OPTIMISM_FORK_ID);
-        _validateAdapter(addresses, "Optimism", OPTIMISM_WORMHOLE_CHAIN_ID);
+        _validateAdapter(addresses, "Optimism");
         _validateQuoterSet(addresses, "Optimism");
 
         vm.selectFork(primaryForkId());
@@ -203,8 +200,7 @@ contract mipx51 is HybridProposal {
     /// @notice Validate adapter state common to all chains
     function _validateAdapter(
         Addresses addresses,
-        string memory chainName,
-        uint16 expectedWormholeChainId
+        string memory chainName
     ) internal {
         address proxy = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
         address expectedImpl;
@@ -263,15 +259,9 @@ contract mipx51 is HybridProposal {
             addresses.getAddress("WORMHOLE_EXECUTOR"),
             string.concat(chainName, ": executor address mismatch")
         );
-        assertEq(
-            adapter.wormholeChainId(),
-            expectedWormholeChainId,
-            string.concat(chainName, ": wormholeChainId mismatch")
-        );
-
         /// initializeV5 cannot be called again
         vm.expectRevert("Initializable: contract is already initialized");
-        adapter.initializeV5(address(1), address(2), address(3), 0);
+        adapter.initializeV5(address(1), address(2), address(3));
     }
 
     /// @notice Validate Moonbeam-specific unwrapper state

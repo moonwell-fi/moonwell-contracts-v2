@@ -73,11 +73,10 @@ contract UpgradeWormholeBridgeAdapterEthereum is Script {
             ITransparentUpgradeableProxy(adapterProxy),
             newImpl,
             abi.encodeWithSignature(
-                "initializeV5(address,address,address,uint16)",
+                "initializeV5(address,address,address)",
                 addresses.getAddress("WORMHOLE_EXECUTOR"),
                 addresses.getAddress("WORMHOLE_QUOTER_ROUTER"),
-                addresses.getAddress("WORMHOLE_QUOTER"),
-                ETHEREUM_WORMHOLE_CHAIN_ID
+                addresses.getAddress("WORMHOLE_QUOTER")
             )
         );
 
@@ -138,11 +137,6 @@ contract UpgradeWormholeBridgeAdapterEthereum is Script {
                 addresses.getAddress("WORMHOLE_QUOTER_ROUTER"),
             "executorQuoterRouter not set correctly"
         );
-        require(
-            adapter.wormholeChainId() == ETHEREUM_WORMHOLE_CHAIN_ID,
-            "wormholeChainId not set correctly"
-        );
-
         // 4. Verify storage preservation
         require(
             adapter.owner() == expectedOwner,

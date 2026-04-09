@@ -59,8 +59,6 @@ contract xWellIntegrationTest is Test {
 
         WormholeBridgeAdapter newImpl = new WormholeBridgeAdapter();
 
-        uint16 wormholeChainId = block.chainid.toWormholeChainId();
-
         /// Try to get executor addresses — they may or may not be in chain config
         address executorAddr;
         address quoterRouterAddr;
@@ -72,10 +70,14 @@ contract xWellIntegrationTest is Test {
         }
         try addresses.getAddress("WORMHOLE_QUOTER_ROUTER") returns (address a) {
             quoterRouterAddr = a;
-        } catch {}
+        } catch {
+            quoterRouterAddr = address(new MockExecutorQuoterRouter());
+        }
         try addresses.getAddress("WORMHOLE_QUOTER") returns (address a) {
             quoterAddr = a;
-        } catch {}
+        } catch {
+            quoterAddr = address(new MockExecutorQuoterRouter());
+        }
 
         address proxyAdminOwner = ProxyAdmin(proxyAdmin).owner();
         vm.prank(proxyAdminOwner);
@@ -83,11 +85,10 @@ contract xWellIntegrationTest is Test {
             ITransparentUpgradeableProxy(proxy),
             address(newImpl),
             abi.encodeWithSignature(
-                "initializeV5(address,address,address,uint16)",
+                "initializeV5(address,address,address)",
                 executorAddr,
                 quoterRouterAddr,
-                quoterAddr,
-                wormholeChainId
+                quoterAddr
             )
         );
     }
@@ -145,11 +146,6 @@ contract xWellIntegrationTest is Test {
         assertTrue(
             address(wormholeAdapter.executor()) != address(0),
             "executor not set after V5"
-        );
-        assertEq(
-            wormholeAdapter.wormholeChainId(),
-            block.chainid.toWormholeChainId(),
-            "wormholeChainId mismatch"
         );
     }
 

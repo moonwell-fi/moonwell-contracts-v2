@@ -113,11 +113,6 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             address(mockExecutorQuoterRouter),
             "invalid executor quoter router"
         );
-        assertEq(
-            wormholeBridgeAdapterProxy.wormholeChainId(),
-            chainId,
-            "invalid wormhole chain id"
-        );
         assertTrue(
             wormholeBridgeAdapterProxy.isTrustedSender(
                 chainId,
@@ -168,9 +163,107 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.initializeV5(
             address(mockExecutorQuoterRouter),
             address(mockExecutorQuoterRouter),
-            address(0),
-            chainId
+            address(0)
         );
+    }
+
+    function testInitializeV5FailsZeroExecutor() public {
+        /// deploy a fresh proxy so initializeV5 hasn't been called yet
+        ProxyAdmin freshAdmin = new ProxyAdmin();
+        WormholeBridgeAdapter freshProxy = WormholeBridgeAdapter(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(wormholeBridgeAdapter),
+                    address(freshAdmin),
+                    ""
+                )
+            )
+        );
+
+        /// initialize V3 first to set wormhole
+        freshProxy.initializeV3(address(mockCoreBridge));
+
+        vm.expectRevert("WormholeBridge: zero address");
+        freshProxy.initializeV5(address(0), address(1), address(1));
+    }
+
+    function testInitializeV5FailsZeroQuoterRouter() public {
+        ProxyAdmin freshAdmin = new ProxyAdmin();
+        WormholeBridgeAdapter freshProxy = WormholeBridgeAdapter(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(wormholeBridgeAdapter),
+                    address(freshAdmin),
+                    ""
+                )
+            )
+        );
+
+        freshProxy.initializeV3(address(mockCoreBridge));
+
+        vm.expectRevert("WormholeBridge: zero quoter address");
+        freshProxy.initializeV5(address(1), address(0), address(1));
+    }
+
+    function testInitializeV5FailsZeroQuoterAddr() public {
+        ProxyAdmin freshAdmin = new ProxyAdmin();
+        WormholeBridgeAdapter freshProxy = WormholeBridgeAdapter(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(wormholeBridgeAdapter),
+                    address(freshAdmin),
+                    ""
+                )
+            )
+        );
+
+        freshProxy.initializeV3(address(mockCoreBridge));
+
+        vm.expectRevert("WormholeBridge: zero quoter address");
+        freshProxy.initializeV5(address(1), address(1), address(0));
+    }
+
+    function testInitializeV5MoonbeamAllowsZeroQuoter() public {
+        /// Moonbeam (wormhole chain ID 16) has no on-chain quoter
+        MockCoreBridgeForAdapter moonbeamBridge = new MockCoreBridgeForAdapter();
+        moonbeamBridge.setChainId(16);
+
+        ProxyAdmin freshAdmin = new ProxyAdmin();
+        WormholeBridgeAdapter freshProxy = WormholeBridgeAdapter(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(wormholeBridgeAdapter),
+                    address(freshAdmin),
+                    ""
+                )
+            )
+        );
+
+        freshProxy.initializeV3(address(moonbeamBridge));
+        freshProxy.initializeV5(address(1), address(0), address(0));
+
+        assertEq(
+            address(freshProxy.executor()),
+            address(1),
+            "executor should be set"
+        );
+    }
+
+    function testInitializeV5FailsWormholeNotSet() public {
+        /// deploy a fresh proxy without calling initializeV3
+        ProxyAdmin freshAdmin = new ProxyAdmin();
+        WormholeBridgeAdapter freshProxy = WormholeBridgeAdapter(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(wormholeBridgeAdapter),
+                    address(freshAdmin),
+                    ""
+                )
+            )
+        );
+
+        vm.expectRevert("WormholeBridge: zero address");
+        freshProxy.initializeV5(address(1), address(1), address(1));
     }
 
     /// --------------------------------------------------------
