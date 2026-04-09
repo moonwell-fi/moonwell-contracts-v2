@@ -29,7 +29,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ChainIds, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID} from "@utils/ChainIds.sol";
-import {mipx41} from "@proposals/mips/mip-x41/mip-x41.sol";
+import {mipx52} from "@proposals/mips/mip-x52/mip-x52.sol";
 
 contract mipe00 is HybridProposalV2, Configs {
     using Address for address;
@@ -66,18 +66,18 @@ contract mipe00 is HybridProposalV2, Configs {
         return ETHEREUM_FORK_ID;
     }
 
-    /// @notice Run MIP-X41 to deploy MultichainGovernorV2 before MIP-E00 deployment
+    /// @notice Run MIP-X52 to deploy MultichainGovernorV2 before MIP-E00 deployment
     function initProposal(Addresses addresses) public override {
-        /// Deploy MultichainGovernorV2 via MIP-X41
-        mipx41 x41 = new mipx41();
+        /// Deploy MultichainGovernorV2 via MIP-X52
+        mipx52 x52 = new mipx52();
 
         /// Get deployer address
         (, address deployerAddress, ) = vm.readCallers();
 
-        /// Run x41 deploy and afterDeploy to set up MultichainGovernorV2
+        /// Run x52 deploy and afterDeploy to set up MultichainGovernorV2
         /// Note: These functions switch between forks internally
-        x41.deploy(addresses, deployerAddress);
-        x41.afterDeploy(addresses, deployerAddress);
+        x52.deploy(addresses, deployerAddress);
+        x52.afterDeploy(addresses, deployerAddress);
 
         /// Switch back to Ethereum fork for MIP-E00 deployment
         vm.selectFork(ETHEREUM_FORK_ID);
