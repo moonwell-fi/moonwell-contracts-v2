@@ -187,6 +187,16 @@ contract VotingPowerAggregatorUnitTest is Test {
         votingPowerAggregator.addSnapshotSource(address(source1));
     }
 
+    function testAddXWellAsSnapshotSourceFails() public {
+        vm.expectRevert(IVotingPowerAggregator.InvalidSource.selector);
+        votingPowerAggregator.addSnapshotSource(address(xwell));
+    }
+
+    function testAddZeroAddressAsSnapshotSourceFails() public {
+        vm.expectRevert(IVotingPowerAggregator.InvalidSource.selector);
+        votingPowerAggregator.addSnapshotSource(address(0));
+    }
+
     /// ========================================================================
     /// Snapshot Source Management Tests - Remove
     /// ========================================================================

@@ -197,16 +197,16 @@ contract BridgeValidationHookUnitTest is Test {
         console.log("This is CORRECT for left-padded ABI encoding");
     }
 
-    /// @notice Test zero bridge cost validation
-    function testZeroBridgeCostValidation() public {
+    /// @notice Test zero bridge cost allows only value=0
+    function testZeroBridgeCostAllowsZeroValue() public {
         // Create a mock router that returns zero bridge cost
         MockZeroCostRouter mockRouter = new MockZeroCostRouter();
 
-        // Create proposal action with the mock router
+        // value=0 should pass when bridgeCost is 0
         ProposalAction[] memory actions = new ProposalAction[](1);
         actions[0] = ProposalAction({
             target: address(mockRouter),
-            value: 1 ether,
+            value: 0,
             data: abi.encodeWithSignature(
                 "bridgeToRecipient(address,uint256,uint16)",
                 address(0x123),
@@ -217,10 +217,30 @@ contract BridgeValidationHookUnitTest is Test {
             actionType: ActionType.Moonbeam
         });
 
-        // Should revert with zero bridge cost error
-        vm.expectRevert(
-            "BridgeValidationHook: bridge cost must be greater than zero"
-        );
+        // Should pass — 0 is within [0*4, 0*10] = [0, 0]
+        hook.verifyBridgeActions(actions);
+    }
+
+    /// @notice Test zero bridge cost rejects non-zero value
+    function testZeroBridgeCostRejectsNonZeroValue() public {
+        MockZeroCostRouter mockRouter = new MockZeroCostRouter();
+
+        ProposalAction[] memory actions = new ProposalAction[](1);
+        actions[0] = ProposalAction({
+            target: address(mockRouter),
+            value: 1,
+            data: abi.encodeWithSignature(
+                "bridgeToRecipient(address,uint256,uint16)",
+                address(0x123),
+                1000 * 1e18,
+                uint16(30)
+            ),
+            description: "Test bridge with zero cost router and non-zero value",
+            actionType: ActionType.Moonbeam
+        });
+
+        // Should revert — 1 > 0*10 = 0
+        vm.expectRevert();
         hook.verifyBridgeActions(actions);
     }
 

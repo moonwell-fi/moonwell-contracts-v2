@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, ETHEREUM_FORK_ID} from "@utils/ChainIds.sol";
 import {String} from "@utils/String.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
@@ -63,11 +63,17 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             HybridProposal proposal = HybridProposal(address(proposals[i]));
 
             //  only run tests against a base proposal
-            if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
+            if (
+                uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID ||
+                uint256(proposal.primaryForkId()) == ETHEREUM_FORK_ID
+            ) {
                 return;
             }
 
             addresses.removeAllRestrictions();
+            // Run beforeSimulationHook to set up pre-conditions
+            // (e.g. multisig approvals, mock relayers for cross-chain bridging)
+            proposal.beforeSimulationHook(addresses);
             // At this point the primaryForkId should not be moonbeam
             vm.selectFork(uint256(proposal.primaryForkId()));
             proposal.build(addresses);
@@ -123,10 +129,8 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                     1
             );
 
-            /// increments each time the Multichain Governor publishes a message
-            uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
-                address(governor)
-            );
+            /// @dev nextSequence removed — was unused and IWormhole.nextSequence
+            ///      is not view-compatible with the on-chain Wormhole core
 
             bytes memory temporalGovExecDataBase;
             if (proposal.getActionsByType(ActionType.Base).length != 0) {
@@ -145,8 +149,19 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                     );
             }
 
+            // Calculate total ETH value needed for Moonbeam actions
+            uint256 executeValue = 0;
+            {
+                ProposalAction[] memory moonbeamActions = proposal
+                    .getActionsByType(ActionType.Moonbeam);
+                for (uint256 k = 0; k < moonbeamActions.length; k++) {
+                    executeValue += moonbeamActions[k].value;
+                }
+            }
+            vm.deal(address(this), executeValue);
+
             vm.recordLogs();
-            governor.execute(proposalId);
+            governor.execute{value: executeValue}(proposalId);
             Vm.Log[] memory logs = vm.getRecordedLogs();
 
             bytes32 sig = keccak256(
@@ -232,8 +247,11 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
         for (uint256 j = 0; j < proposals.length; j++) {
             HybridProposal proposal = HybridProposal(address(proposals[j]));
 
-            // Only run tests against non-moonbeam proposals
-            if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
+            // Only run tests against non-moonbeam, non-ethereum proposals
+            if (
+                uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID ||
+                uint256(proposal.primaryForkId()) == ETHEREUM_FORK_ID
+            ) {
                 return;
             }
 

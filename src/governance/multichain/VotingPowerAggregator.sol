@@ -32,13 +32,26 @@ contract VotingPowerAggregator is
         _transferOwnership(_owner);
     }
 
+    /// @dev this function is needed for Ethereum deployment where the MultichainGovernorV2 (and this contract) must be
+    /// deployed before xWell is deployed.
+    function setXWell(address _xWell) external onlyOwner {
+        xWell = xWELL(_xWell);
+    }
+
+    /// @notice adds a snapshot source to the aggregator
+    /// @param source the address of the snapshot source to add
     function addSnapshotSource(address source) external onlyOwner {
+        if (source == address(xWell) || source == address(0)) {
+            revert InvalidSource();
+        }
         if (!_snapshotSources.add(source)) {
             revert EnumerableSetError();
         }
         emit SnapshotSourceAdded(source);
     }
 
+    /// @notice removes a snapshot source from the aggregator
+    /// @param source the address of the snapshot source to remove
     function removeSnapshotSource(address source) external onlyOwner {
         if (!_snapshotSources.remove(source)) {
             revert EnumerableSetError();
@@ -46,6 +59,8 @@ contract VotingPowerAggregator is
         emit SnapshotSourceRemoved(source);
     }
 
+    /// @notice checks if a snapshot source is in the aggregator
+    /// @param source the address of the snapshot source to check
     function isSnapshotSource(address source) external view returns (bool) {
         return _snapshotSources.contains(source);
     }
@@ -95,10 +110,15 @@ contract VotingPowerAggregator is
         return totalVotes;
     }
 
+    /// @notice returns the custom votes for an address
+    /// @param account the address of the account to check
     function _getCustomVotes(address account) private view returns (uint256) {
         return xWell.getVotes(account);
     }
 
+    /// @notice returns the custom past votes for an address
+    /// @param account the address of the account to check
+    /// @param timestamp the timestamp to check the votes at
     function _getCustomPastVotes(
         address account,
         uint256 timestamp

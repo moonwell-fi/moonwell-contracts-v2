@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Vm} from "@forge-std/Vm.sol";
+import {console} from "@forge-std/console.sol";
 
 // Fork Ids
 uint256 constant MOONBEAM_FORK_ID = 0;
@@ -145,10 +146,6 @@ library ChainIds {
             chainId == ETHEREUM_CHAIN_ID || chainId == ETHEREUM_SEPOLIA_CHAIN_ID
         ) {
             return ETHEREUM_FORK_ID;
-        } else if (
-            chainId == ETHEREUM_CHAIN_ID || chainId == ETHEREUM_SEPOLIA_CHAIN_ID
-        ) {
-            return ETHEREUM_FORK_ID;
         } else {
             revert("ChainIds: invalid chain id");
         }
@@ -156,42 +153,44 @@ library ChainIds {
 
     function checkForks(uint256 forkId) internal {
         require(forkId <= ETHEREUM_FORK_ID, "ChainIds: invalid fork id");
-        require(forkId <= ETHEREUM_FORK_ID, "ChainIds: invalid fork id");
 
         bool isMainnet = block.chainid == MOONBEAM_CHAIN_ID ||
             block.chainid == BASE_CHAIN_ID ||
             block.chainid == OPTIMISM_CHAIN_ID ||
             block.chainid == ETHEREUM_CHAIN_ID;
-        block.chainid == OPTIMISM_CHAIN_ID ||
-            block.chainid == ETHEREUM_CHAIN_ID;
 
         if (isMainnet) {
             vmInternal.selectFork(MOONBEAM_FORK_ID);
-
             require(
                 block.chainid == MOONBEAM_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: moonbeam fork has wrong chain id, expected 1284, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(BASE_FORK_ID);
-
             require(
                 block.chainid == BASE_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: base fork has wrong chain id, expected 8453, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(OPTIMISM_FORK_ID);
-
             require(
                 block.chainid == OPTIMISM_CHAIN_ID,
-                "ChainIds: invalid chain id"
-            );
-
-            vmInternal.selectFork(ETHEREUM_FORK_ID);
-
-            require(
-                block.chainid == ETHEREUM_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: optimism fork has wrong chain id, expected 10, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(ETHEREUM_FORK_ID);
@@ -202,31 +201,36 @@ library ChainIds {
             );
         } else {
             vmInternal.selectFork(MOONBEAM_FORK_ID);
-
             require(
                 block.chainid == MOONBASE_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: moonbase fork has wrong chain id, expected 1287, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(BASE_FORK_ID);
-
             require(
                 block.chainid == BASE_SEPOLIA_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: base sepolia fork has wrong chain id, expected 84532, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(OPTIMISM_FORK_ID);
-
             require(
                 block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID,
-                "ChainIds: invalid chain id"
-            );
-
-            vmInternal.selectFork(ETHEREUM_FORK_ID);
-
-            require(
-                block.chainid == ETHEREUM_SEPOLIA_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                string(
+                    abi.encodePacked(
+                        "ChainIds: optimism sepolia fork has wrong chain id, expected 11155420, got ",
+                        vmInternal.toString(block.chainid)
+                    )
+                )
             );
 
             vmInternal.selectFork(ETHEREUM_FORK_ID);
@@ -249,11 +253,15 @@ library ChainIds {
         );
 
         if (!success || !successSwitchFork) {
+            console.log("Creating fork: moonbeam (fork id 0)...");
             vmInternal.createFork("moonbeam");
+            console.log("Creating fork: base (fork id 1)...");
             vmInternal.createFork("base");
+            console.log("Creating fork: optimism (fork id 2)...");
             vmInternal.createFork("optimism");
+            console.log("Creating fork: ethereum (fork id 3)...");
             vmInternal.createFork("ethereum");
-            vmInternal.createFork("ethereum");
+            console.log("All forks created successfully");
         }
 
         vmInternal.selectFork(selectFork);
@@ -276,12 +284,6 @@ library ChainIds {
             return BASE_WORMHOLE_SEPOLIA_CHAIN_ID;
         } else if (chainId == OPTIMISM_SEPOLIA_CHAIN_ID) {
             return OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID;
-        } else if (chainId == ETHEREUM_CHAIN_ID) {
-            return ETHEREUM_WORMHOLE_CHAIN_ID;
-        } else if (chainId == ETHEREUM_SEPOLIA_CHAIN_ID) {
-            return ETHEREUM_WORMHOLE_SEPOLIA_CHAIN_ID;
-        } else if (chainId == ETHEREUM_CHAIN_ID) {
-            return ETHEREUM_WORMHOLE_CHAIN_ID;
         } else if (chainId == ETHEREUM_SEPOLIA_CHAIN_ID) {
             return ETHEREUM_WORMHOLE_SEPOLIA_CHAIN_ID;
         } else {
@@ -296,14 +298,12 @@ library ChainIds {
             chainId == BASE_CHAIN_ID ||
             chainId == OPTIMISM_CHAIN_ID ||
             chainId == MOONBEAM_CHAIN_ID ||
-            chainId == MOONBEAM_CHAIN_ID ||
             chainId == ETHEREUM_CHAIN_ID
         ) {
             return MOONBEAM_WORMHOLE_CHAIN_ID;
         } else if (
             chainId == BASE_SEPOLIA_CHAIN_ID ||
             chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
-            chainId == MOONBASE_CHAIN_ID ||
             chainId == MOONBASE_CHAIN_ID ||
             chainId == ETHEREUM_SEPOLIA_CHAIN_ID
         ) {
@@ -320,14 +320,12 @@ library ChainIds {
             chainId == MOONBEAM_CHAIN_ID ||
             chainId == BASE_CHAIN_ID ||
             chainId == OPTIMISM_CHAIN_ID ||
-            chainId == OPTIMISM_CHAIN_ID ||
             chainId == ETHEREUM_CHAIN_ID
         ) {
             return BASE_WORMHOLE_CHAIN_ID;
         } else if (
             chainId == MOONBASE_CHAIN_ID ||
             chainId == BASE_SEPOLIA_CHAIN_ID ||
-            chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
             chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
             chainId == ETHEREUM_SEPOLIA_CHAIN_ID
         ) {
@@ -376,12 +374,6 @@ library ChainIds {
             return BASE_SEPOLIA_CHAIN_ID;
         } else if (wormholeChainId == OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID) {
             return OPTIMISM_SEPOLIA_CHAIN_ID;
-        } else if (wormholeChainId == ETHEREUM_WORMHOLE_CHAIN_ID) {
-            return ETHEREUM_CHAIN_ID;
-        } else if (wormholeChainId == ETHEREUM_WORMHOLE_SEPOLIA_CHAIN_ID) {
-            return ETHEREUM_SEPOLIA_CHAIN_ID;
-        } else if (wormholeChainId == ETHEREUM_WORMHOLE_CHAIN_ID) {
-            return ETHEREUM_CHAIN_ID;
         } else if (wormholeChainId == ETHEREUM_WORMHOLE_SEPOLIA_CHAIN_ID) {
             return ETHEREUM_SEPOLIA_CHAIN_ID;
         } else {
@@ -398,8 +390,6 @@ library ChainIds {
             return "Base";
         } else if (forkId == OPTIMISM_FORK_ID) {
             return "Optimism";
-        } else if (forkId == ETHEREUM_FORK_ID) {
-            return "Ethereum";
         } else if (forkId == ETHEREUM_FORK_ID) {
             return "Ethereum";
         } else {
@@ -424,8 +414,6 @@ library ChainIds {
             return "Base Sepolia";
         } else if (chainId == OPTIMISM_SEPOLIA_CHAIN_ID) {
             return "Optimism Sepolia";
-        } else if (chainId == ETHEREUM_CHAIN_ID) {
-            return "Ethereum";
         } else if (chainId == ETHEREUM_SEPOLIA_CHAIN_ID) {
             return "Ethereum Sepolia";
         } else {

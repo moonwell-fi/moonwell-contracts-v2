@@ -8,6 +8,7 @@ import "@protocol/utils/ChainIds.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -161,7 +162,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
     function afterDeploy(Addresses addresses, address) public override {
         buildCalldata(addresses);
 
-        MultichainGovernor governor = MultichainGovernor(
+        MockMultichainGovernor governor = MockMultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
 
@@ -179,7 +180,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         trustedSenders[0].addr = multichainVoteCollection;
         trustedSenders[0].chainId = block.chainid.toBaseWormholeChainId(); /// base wormhole chain id
 
-        MultichainGovernor.InitializeData memory initData;
+        MockMultichainGovernor.InitializeData memory initData;
 
         initData.well = addresses.getAddress("GOVTOKEN");
         initData.xWell = addresses.getAddress("xWELL_PROXY");
@@ -211,7 +212,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
     }
 
     function validate(Addresses addresses, address) public view override {
-        MultichainGovernor governor = MultichainGovernor(
+        MockMultichainGovernor governor = MockMultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
 

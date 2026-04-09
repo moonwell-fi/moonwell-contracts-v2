@@ -59,9 +59,9 @@ contract MultichainMultipleVoteCollectionsUnitTestV2 is MultichainBaseTestV2 {
         );
 
         assertEq(
-            address(governor.wormholeRelayer()),
+            address(governor.wormhole()),
             address(wormholeRelayerAdapter),
-            "incorrect wormhole relayer"
+            "incorrect wormhole"
         );
         assertTrue(
             voteCollection.isTrustedSender(

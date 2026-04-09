@@ -39,11 +39,6 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
     }
 
     function testGovernorSetup() public view {
-        assertEq(
-            governor.gasLimit(),
-            Constants.MIN_GAS_LIMIT,
-            "incorrect gas limit vote collection"
-        );
         assertEq(governor.proposalCount(), 0, "proposalCount");
         assertEq(
             governor.breakGlassGuardian(),
@@ -98,14 +93,10 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
         );
         assertEq(
             governor.bridgeCost(MOONBASE_WORMHOLE_CHAIN_ID),
-            0.1 ether,
+            0,
             "bridgecost incorrect"
         );
-        assertEq(
-            governor.bridgeCostAll(),
-            0.1 ether,
-            "bridgecostall incorrect"
-        );
+        assertEq(governor.bridgeCostAll(), 0, "bridgecostall incorrect");
     }
 
     function testVoteCollectionSetup() public view {
@@ -128,9 +119,9 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
             "governor address not trusted sender"
         );
         assertEq(
-            address(voteCollection.wormholeRelayer()),
+            address(voteCollection.wormhole()),
             address(wormholeRelayerAdapter),
-            "relayer address"
+            "wormhole address"
         );
     }
 
@@ -326,20 +317,6 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
     function testGrantPauseGuardianFails() public {
         vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
         governor.grantPauseGuardian(address(this));
-    }
-
-    function testSetGasLimitNonGovernorFails() public {
-        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
-        vm.prank(address(1));
-        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
-        governor.setGasLimit(gasLimit);
-    }
-
-    function testSetGasLimitTooLow() public {
-        uint96 gasLimit = Constants.MIN_GAS_LIMIT - 1;
-        vm.expectRevert(IMultichainGovernorV2.GasLimitTooLow.selector);
-        vm.prank(address(governor));
-        governor.setGasLimit(gasLimit);
     }
 
     /// BREAK GLASS GUARDIAN
@@ -594,13 +571,6 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
         );
     }
 
-    function testSetGasLimitGovernorSucceeds() public {
-        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
-        vm.prank(address(governor));
-        governor.setGasLimit(gasLimit);
-        assertEq(governor.gasLimit(), gasLimit, "incorrect gas limit");
-    }
-
     /// PAUSE GUARDIAN
     function testPausePauseGuardianSucceeds() public {
         vm.warp(block.timestamp + 1);
@@ -734,6 +704,223 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
         assertTrue(
             governor.isTrustedSender(1, address(this)),
             "vote collector not trusted"
+        );
+    }
+
+    /// PROPOSAL ID UNIQUENESS TESTS
+
+    function testProposalIdsAreUniqueAndMonotonic() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory descriptionUri = "ipfs://QmProposal";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+
+        // Create multiple proposals and verify IDs are unique and increasing
+        uint256[] memory proposalIds = new uint256[](5);
+
+        for (uint256 i = 0; i < 5; i++) {
+            vm.deal(address(this), bridgeCost);
+            proposalIds[i] = governor.propose{value: bridgeCost}(
+                targets,
+                values,
+                calldatas,
+                descriptionUri,
+                true
+            );
+
+            // Verify ID is greater than all previous IDs
+            for (uint256 j = 0; j < i; j++) {
+                assertTrue(
+                    proposalIds[i] > proposalIds[j],
+                    "proposal IDs should be monotonically increasing"
+                );
+            }
+
+            // Cancel proposal to free up slot (max 3 live proposals per user)
+            if (i < 4) {
+                governor.cancel(proposalIds[i]);
+            }
+        }
+
+        // Verify sequential IDs (no gaps)
+        for (uint256 i = 1; i < 5; i++) {
+            assertEq(
+                proposalIds[i],
+                proposalIds[i - 1] + 1,
+                "proposal IDs should be sequential"
+            );
+        }
+    }
+
+    function testProposalIdsDontReuseAfterRemoval() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory descriptionUri = "ipfs://QmProposal";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+
+        // Create first proposal
+        vm.deal(address(this), bridgeCost);
+        uint256 proposalId1 = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            descriptionUri,
+            true
+        );
+
+        // Cancel it (removes from live proposals)
+        governor.cancel(proposalId1);
+
+        // Create another proposal
+        vm.deal(address(this), bridgeCost);
+        uint256 proposalId2 = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            descriptionUri,
+            true
+        );
+
+        // Verify new proposal has a different, higher ID
+        assertTrue(
+            proposalId2 > proposalId1,
+            "new proposal should have higher ID than cancelled proposal"
+        );
+        assertEq(
+            proposalId2,
+            proposalId1 + 1,
+            "proposal IDs should still be sequential"
+        );
+    }
+
+    function testFuzzProposalIdsAlwaysUnique(uint8 numProposals) public {
+        // Bound to reasonable number to avoid gas issues
+        vm.assume(numProposals > 0 && numProposals <= 20);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory descriptionUri = "ipfs://QmProposal";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        uint256[] memory proposalIds = new uint256[](numProposals);
+        uint256 lastId = 0;
+
+        for (uint256 i = 0; i < numProposals; i++) {
+            vm.deal(address(this), bridgeCost);
+            proposalIds[i] = governor.propose{value: bridgeCost}(
+                targets,
+                values,
+                calldatas,
+                descriptionUri,
+                true
+            );
+
+            // Verify this ID is greater than the last
+            assertTrue(
+                proposalIds[i] > lastId,
+                "proposal IDs must be strictly increasing"
+            );
+            lastId = proposalIds[i];
+
+            // Check against all previous IDs for uniqueness
+            for (uint256 j = 0; j < i; j++) {
+                assertTrue(
+                    proposalIds[i] != proposalIds[j],
+                    "proposal IDs must be unique"
+                );
+            }
+
+            // Cancel proposal to free up slot (max 3 live proposals per user)
+            if (i < numProposals - 1) {
+                governor.cancel(proposalIds[i]);
+            }
+        }
+    }
+
+    function testProposalCountNeverDecreases() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory descriptionUri = "ipfs://QmProposal";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        uint256 initialCount = governor.proposalCount();
+
+        // Create proposal
+        vm.deal(address(this), bridgeCost);
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            descriptionUri,
+            true
+        );
+
+        uint256 countAfterPropose = governor.proposalCount();
+        assertEq(
+            countAfterPropose,
+            initialCount + 1,
+            "proposalCount should increment by 1"
+        );
+
+        // Cancel proposal (removes from live proposals but shouldn't affect counter)
+        governor.cancel(proposalId);
+
+        uint256 countAfterCancel = governor.proposalCount();
+        assertEq(
+            countAfterCancel,
+            countAfterPropose,
+            "proposalCount should not decrease after cancel"
+        );
+
+        // Create another proposal
+        vm.deal(address(this), bridgeCost);
+        governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            descriptionUri,
+            true
+        );
+
+        uint256 finalCount = governor.proposalCount();
+        assertEq(
+            finalCount,
+            countAfterCancel + 1,
+            "proposalCount should continue incrementing"
         );
     }
 

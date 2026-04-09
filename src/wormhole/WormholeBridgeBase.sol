@@ -1,15 +1,26 @@
 pragma solidity 0.8.19;
 
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
-import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 
 /// @notice Wormhole Bridge Base Contract
 /// Useful or when you want to send to and receive from the same addresses
 /// on many different chains
-abstract contract WormholeBridgeBase is IWormholeReceiver {
+abstract contract WormholeBridgeBase {
     using EnumerableSet for EnumerableSet.UintSet;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------- CONSTANTS ------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice Wormhole consistency level for publishMessage.
+    /// 1 = finalized: on Ethereum this means L1 finality (~15 min);
+    ///                on Base/Optimism this means L2 safe head finality.
+    uint8 public constant CONSISTENCY_LEVEL = 1;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -18,15 +29,11 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// ---------------------------------------------------------
 
     error InvalidAddress();
-    error InvalidValue();
     error AlreadyInitialized();
     error ChainAlreadyAdded();
     error ChainNotAdded();
     error InsufficientBridgeFee();
     error RefundFailed();
-    error Unauthorized();
-    error MessageAlreadyProcessed();
-    error OnlyRelayer();
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -41,6 +48,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     uint96 public gasLimit;
 
     /// @notice address of the wormhole relayer cannot be changed by owner
+    /// @dev DEPRECATED
     /// because the relayer contract is a proxy and should never change its address
     IWormholeRelayer public wormholeRelayer;
 
@@ -51,6 +59,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// ---------------------------------------------------------
 
     /// @notice nonces that have already been processed
+    /// @dev DEPRECATED — used by the old Wormhole standard relayer path.
+    ///      Superseded by processedVAAHashes in leaf contracts. Retained
+    ///      to preserve storage layout for upgradeable proxies.
     mapping(bytes32 nonce => bool processed) public processedNonces;
 
     /// @notice chain id of the target chain to address for bridging
@@ -221,30 +232,12 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         return _targetChains.length();
     }
 
-    /// @notice Estimate bridge cost to bridge out to a destination chain
-    /// @dev this function returns 0 if the quote fails.
-    /// in all other cases, the value returned should be non zero.
-    /// @param dstWormholeChainId Destination chain id
-    function bridgeCost(
-        uint16 dstWormholeChainId
-    ) public view returns (uint256 gasCost) {
-        try
-            wormholeRelayer.quoteEVMDeliveryPrice(
-                dstWormholeChainId,
-                0,
-                gasLimit
-            )
-        returns (uint256 cost, uint256) {
-            gasCost = cost;
-        } catch {
-            /// this is a bad situation, but we still want to allow the bridge out
-            /// so fail silently and set gasCost to 0.
-            /// Would like to emit an event here, but that would be a side affect
-            /// to the logs and cause this function to be non view.
-            /// the bridge out will most likely fail from this point out, however,
-            /// the proposal on Moonbeam will still be created.
-            gasCost = 0;
-        }
+    /// @notice Estimate bridge cost to bridge out to a destination chain.
+    ///         Returns the Wormhole core messageFee (currently 0 on all chains).
+    ///         The deprecated relayer quoter is no longer called since we use
+    ///         direct publishMessage via Wormhole core.
+    function bridgeCost(uint16) public view returns (uint256) {
+        return _wormhole().messageFee();
     }
 
     /// @notice Estimate bridge cost to bridge out to all chains
@@ -304,13 +297,14 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             uint256 cost = bridgeCost(targetChain);
 
             try
-                wormholeRelayer.sendPayloadToEvm{value: cost}(
-                    targetChain,
-                    targetAddress[targetChain],
-                    payload,
-                    /// no receiver value allowed, only message passing
+                _wormhole().publishMessage{value: cost}(
                     0,
-                    gasLimit
+                    abi.encode(
+                        targetChain,
+                        targetAddress[targetChain],
+                        payload
+                    ),
+                    CONSISTENCY_LEVEL
                 )
             {
                 totalRefundAmount -= cost;
@@ -338,35 +332,35 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         }
     }
 
-    /// @notice callable only by the wormhole relayer
-    /// @param payload the payload of the message, contains the to and amount
-    /// additional vaas, unused parameter
-    /// @param senderAddress the address of the sender on the source chain, bytes32 encoded
-    /// @param sourceChain the chain id of the source chain
-    /// @param nonce the unique message ID
-    function receiveWormholeMessages(
-        bytes memory payload,
-        bytes[] memory, // additionalVaas
-        bytes32 senderAddress,
-        uint16 sourceChain,
-        bytes32 nonce
-    ) external payable override {
-        if (msg.value != 0) {
-            revert InvalidValue();
-        }
-        if (msg.sender != address(wormholeRelayer)) {
-            revert OnlyRelayer();
-        }
-        if (!isTrustedSender(sourceChain, senderAddress)) {
-            revert Unauthorized();
-        }
-        if (processedNonces[nonce]) {
-            revert MessageAlreadyProcessed();
-        }
+    /// @notice Process a guardian-signed VAA to complete a payload transfer.
+    ///         Callable by anyone (permissionless). The VAA must be signed by
+    ///         the Wormhole guardian quorum. The emitter must be a trusted sender
+    /// @param signedVAA The full guardian-signed VAA bytes
+    function processVAA(bytes calldata signedVAA) external {
+        (IWormhole.VM memory vm, bool valid, string memory reason) = _wormhole()
+            .parseAndVerifyVM(signedVAA);
 
-        processedNonces[nonce] = true;
+        require(valid, reason);
+        require(
+            isTrustedSender(vm.emitterChainId, vm.emitterAddress),
+            "untrusted emitter"
+        );
 
-        _bridgeIn(sourceChain, payload);
+        require(!_isVAAHashProcessed(vm.hash), "VAA already processed");
+        _setVAAHashProcessed(vm.hash);
+
+        /// Parse the target
+        (uint16 targetChain, address targetContract, bytes memory payload) = abi
+            .decode(vm.payload, (uint16, address, bytes));
+
+        /// Validate we are the target
+        require(
+            targetChain == _wormhole().chainId() &&
+                targetContract == address(this),
+            "invalid target"
+        );
+
+        _bridgeIn(vm.emitterChainId, payload);
     }
 
     /// @notice converts a bytes32 to address,
@@ -393,4 +387,16 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         uint16 sourceChain,
         bytes memory payload
     ) internal virtual;
+
+    /// @notice return the wormhole core contract
+    function _wormhole() internal view virtual returns (IWormhole);
+
+    /// @notice check if a VAA hash has already been processed (replay protection).
+    ///         Storage lives in the leaf contract to avoid shifting existing slots.
+    function _isVAAHashProcessed(
+        bytes32 hash
+    ) internal view virtual returns (bool);
+
+    /// @notice mark a VAA hash as processed.
+    function _setVAAHashProcessed(bytes32 hash) internal virtual;
 }

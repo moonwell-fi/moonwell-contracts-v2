@@ -24,7 +24,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
      forge script script/DeployXWell.s.sol:DeployXWell -vvvv --rpc-url chainAlias
 
  to run:
-    forge script script/DeployXWell.s.sol:DeployXWell -vvvv \ 
+    forge script script/DeployXWell.s.sol:DeployXWell -vvvv \
     --rpc-url chainAlias --broadcast --etherscan-api-key chainAlias --verify
 
 */
@@ -55,7 +55,9 @@ contract DeployXWell is Script, xWELLDeploy, Networks {
             vm.startBroadcast();
 
             address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
-            address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+            address pauseGuardian = addresses.getAddress(
+                "PAUSE_GUARDIAN_DEPRECATED"
+            );
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
             address relayer = addresses.getAddress(
                 "WORMHOLE_BRIDGE_RELAYER_PROXY"
@@ -220,7 +222,9 @@ contract DeployXWell is Script, xWELLDeploy, Networks {
             address wormholeAdapter = addresses.getAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY"
             );
-            address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+            address pauseGuardian = addresses.getAddress(
+                "PAUSE_GUARDIAN_DEPRECATED"
+            );
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
             address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 

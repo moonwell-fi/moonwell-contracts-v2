@@ -17,7 +17,6 @@ interface IMultichainGovernorV2 {
     error InvalidProposalState(ProposalState current, ProposalState required);
     error EmptyDescriptionUri();
     error TooManyLiveProposals();
-    error ProposalAlreadyExists();
     error ProposalAlreadyFinalized();
     error OnlyProposer();
     error ProposalExpired();
@@ -25,7 +24,6 @@ interface IMultichainGovernorV2 {
     error InvalidVoteValue();
     error AlreadyVoted();
     error NoVotingPower();
-    error GasLimitTooLow();
     error ArityMismatch();
     error EmptyArray();
     error CalldataNotWhitelisted();
@@ -82,7 +80,7 @@ interface IMultichainGovernorV2 {
         address[] targets,
         bytes[] calldatas
     );
-    event QuroumVotesChanged(uint256 oldValue, uint256 newValue);
+    event QuorumVotesChanged(uint256 oldValue, uint256 newValue);
     event ProposalThresholdChanged(uint256 oldValue, uint256 newValue);
     event VotingPeriodChanged(uint256 oldValue, uint256 newValue);
     event BreakGlassGuardianChanged(address oldValue, address newValue);
@@ -328,11 +326,6 @@ interface IMultichainGovernorV2 {
         address[] calldata targets,
         bytes[] calldata calldatas
     ) external;
-
-    /// @notice set a gas limit for the relayer on the external chain
-    /// should only be called if there is a change in gas prices on the external chain
-    /// @param newGasLimit new gas limit to set
-    function setGasLimit(uint96 newGasLimit) external;
 
     /// @notice grant new pause guardian
     /// @dev can only be called when unpaused, otherwise the

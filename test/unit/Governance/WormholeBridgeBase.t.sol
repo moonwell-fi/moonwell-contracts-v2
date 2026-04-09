@@ -121,106 +121,28 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    /// receiveWormholeMessages failure tests
-    /// value
-    function testReceiveWormholeMessageFailsWithValue() public {
-        vm.deal(address(this), 100);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(WormholeBridgeBase.InvalidValue.selector)
-        );
-        voteCollection.receiveWormholeMessages{value: 100}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-
-        vm.expectRevert(
-            abi.encodeWithSelector(WormholeBridgeBase.InvalidValue.selector)
-        );
-        governor.receiveWormholeMessages{value: 100}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    /// not relayer address
-    function testReceiveWormholeMessageFailsNotRelayer() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(WormholeBridgeBase.OnlyRelayer.selector)
-        );
-        voteCollection.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-
-        vm.expectRevert(
-            abi.encodeWithSelector(WormholeBridgeBase.OnlyRelayer.selector)
-        );
-        governor.receiveWormholeMessages{value: 0}(
-            "",
-            new bytes[](0),
-            address(this).toBytes(),
-            BASE_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    function testAlreadyProcessedMessageReplayFails() public {
-        uint256 proposalId = testReceiveWormholeMessageSucceeds();
-
-        bytes memory payloadVoteCollection = abi.encode(proposalId, 0, 0, 0, 0);
-
-        vm.startPrank(address(governor.wormholeRelayer()));
-
-        vm.expectRevert("MultichainVoteCollection: proposal already exists");
-        voteCollection.receiveWormholeMessages{value: 0}(
-            payloadVoteCollection,
-            new bytes[](0), /// field unchecked in contract
-            address(governor).toBytes(),
-            MOONBEAM_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-
-        bytes memory payloadGovernor = abi.encode(proposalId, 0, 0, 0);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                WormholeBridgeBase.MessageAlreadyProcessed.selector
-            )
-        );
-        governor.receiveWormholeMessages{value: 0}(
-            payloadGovernor,
-            new bytes[](0), /// field unchecked in contract
-            address(voteCollection).toBytes(),
-            BASE_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
-        );
-    }
-
-    function testReceiveWormholeMessageSucceeds()
-        public
-        returns (uint256 proposalId)
-    {
+    /// processVAA delivers votes to governor via the mock adapter
+    function testProcessVAASucceeds() public returns (uint256 proposalId) {
         proposalId = _createProposal();
-        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
 
         vm.warp(block.timestamp + governor.votingPeriod() + 1);
 
-        vm.prank(address(governor.wormholeRelayer()));
-        governor.receiveWormholeMessages{value: 0}(
+        /// Configure the mock: emitter is voteCollection on Base chain
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+
+        bytes memory innerPayload = abi.encode(proposalId, 0, 0, 0);
+        bytes memory payload = abi.encode(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
+            innerPayload
+        );
+
+        /// Deliver via processVAA path — emitter is voteCollection from Base
+        wormholeRelayerAdapter.deliverBridgeOut(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(governor),
             payload,
-            new bytes[](0), /// field unchecked in contract
-            address(voteCollection).toBytes(),
-            BASE_WORMHOLE_CHAIN_ID,
-            bytes32(type(uint256).max)
+            address(voteCollection)
         );
     }
 

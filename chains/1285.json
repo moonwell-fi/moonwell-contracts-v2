@@ -40,18 +40,53 @@
         "isContract": true
     },
     {
-        "addr": "0x2a55ba986a8c6EE17979f6233985414A865a280f",
+        "addr": "0xc2dA00D538237822e3c7dcb95114FA1474e4c884",
         "name": "MOONWELL_VIEWS_IMPLEMENTATION",
         "isContract": true
     },
     {
-        "addr": "0x6658ed2f38E4e76BA8F3cb88061372bFdA2821A0",
+        "addr": "0x1a05D666294ad867287fA8AefcCEb89Bd9AeE115",
         "name": "MOONWELL_VIEWS_PROXY_ADMIN",
         "isContract": true
     },
     {
-        "addr": "0xb4104C02BBf4E9be85AAa41a62974E4e28D59A33",
+        "addr": "0x6F0cC02e5a7640B28F538fcc06bCA3BdFA57d1BB",
         "name": "MOONWELL_VIEWS_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x98878B06940aE243284CA214f92Bb71a2b032B8A",
+        "name": "WMOVR",
+        "isContract": true
+    },
+    {
+        "addr": "0xE3F5a90F9cb311505cd691a46596599aA1A0AD7D",
+        "name": "USDC",
+        "isContract": true
+    },
+    {
+        "addr": "0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080",
+        "name": "xcKSM",
+        "isContract": true
+    },
+    {
+        "addr": "0x1A93B23281CC1CDE4C4741353F3064709A16197d",
+        "name": "FRAX",
+        "isContract": true
+    },
+    {
+        "addr": "0xe537f70a8b62204832B8Ba91940B77d3f79AEb81",
+        "name": "WMOVR_USDC_PAIR",
+        "isContract": true
+    },
+    {
+        "addr": "0xea3d1E9e69ADDFA1ee5BBb89778Decd862F1F7C5",
+        "name": "xcKSM_WMOVR_PAIR",
+        "isContract": true
+    },
+    {
+        "addr": "0x2cc54b4A3878e36E1C754871438113C1117a3ad7",
+        "name": "FRAX_WMOVR_PAIR",
         "isContract": true
     }
 ]

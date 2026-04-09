@@ -66,6 +66,15 @@ contract xWELL is
         _transferOwnership(tokenOwner); /// directly set the new owner without waiting for pending owner to accept
     }
 
+    /// @notice needed on Ethereum as the owner was previously set as the proxy admin
+    function initializeV2(address newOwner) external reinitializer(2) {
+        require(
+            newOwner != address(0),
+            "xWELL: new owner cannot be zero address"
+        );
+        _transferOwnership(newOwner);
+    }
+
     /// --------------------------------------------------------
     /// --------------------------------------------------------
     /// -------------------- clock override --------------------

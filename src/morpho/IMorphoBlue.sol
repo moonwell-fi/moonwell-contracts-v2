@@ -61,4 +61,22 @@ interface IMorphoBlue {
         uint256 repaidShares,
         bytes memory data
     ) external returns (uint256, uint256);
+
+    /// @notice Supplies assets or shares on behalf of onBehalf, optionally calling back the caller's onMorphoSupply
+    /// function with the given data.
+    /// @dev Either assets or shares should be zero.
+    /// @param marketParams The market to supply assets to.
+    /// @param assets The amount of assets to supply.
+    /// @param shares The amount of shares to mint.
+    /// @param onBehalf The address that will own the increased supply position.
+    /// @param data Arbitrary data to pass to the onMorphoSupply callback. Pass empty data if not needed.
+    /// @return assetsSupplied The amount of assets supplied.
+    /// @return sharesSupplied The amount of shares minted.
+    function supply(
+        MarketParams memory marketParams,
+        uint256 assets,
+        uint256 shares,
+        address onBehalf,
+        bytes memory data
+    ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
 }

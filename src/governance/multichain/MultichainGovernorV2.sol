@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichainGovernorV2.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
@@ -138,8 +139,8 @@ contract MultichainGovernorV2 is
         address pauseGuardian;
         /// break glass guardian address
         address breakGlassGuardian;
-        /// wormhole relayer
-        address wormholeRelayer;
+        /// wormhole core bridge
+        address wormholeCore;
     }
 
     /// @notice initialize the governor contract
@@ -171,18 +172,13 @@ contract MultichainGovernorV2 is
         /// set the pause guardian
         _grantGuardian(initData.pauseGuardian);
 
-        _setWormholeRelayer(address(initData.wormholeRelayer));
+        wormhole = IWormhole(initData.wormholeCore);
 
         /// sets vote collection contracts
         _addTargetAddresses(trustedSenders);
 
-        _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
-
-        // TODO: startingProposalCount might not be necessary: ask luke
         proposalCount = uint256(initData.startingProposalCount);
-
-        // TODO: what's a reasonable count?
-        _maxUserProposalCount = 2;
+        _maxUserProposalCount = 3;
         _executionWindow = 7 days;
 
         unchecked {
@@ -490,13 +486,8 @@ contract MultichainGovernorV2 is
             descriptionUri
         );
 
-        /// post proposal checks
-        if (!_userLiveProposals[msg.sender].add(proposalId)) {
-            revert ProposalAlreadyExists();
-        }
-        if (!_liveProposals.add(proposalId)) {
-            revert ProposalAlreadyExists();
-        }
+        _userLiveProposals[msg.sender].add(proposalId);
+        _liveProposals.add(proposalId);
 
         if (finalize) {
             _finalizeProposal(proposalId, newProposal);
@@ -522,7 +513,7 @@ contract MultichainGovernorV2 is
         bool finalize
     ) external payable override whenNotPaused {
         Proposal storage proposal = proposals[proposalId];
-        // TODO: make sure there is no state where a proposal is executed but not finalized
+
         if (proposal.finalized) {
             revert ProposalAlreadyFinalized();
         }
@@ -551,7 +542,6 @@ contract MultichainGovernorV2 is
     /// @notice execute a proposal
     /// can only be called if the proposal is in the succeeded state
     /// can only be called when the contract is not paused
-    /// the sum of the values must be equal to the msg.value
     /// the native token balance of this contract will remain unchanged before and after a proposal is executed
     /// @param proposalId the id of the proposal to execute
     function execute(
@@ -594,9 +584,7 @@ contract MultichainGovernorV2 is
     ///  - permissionless cancel, user voting power currently drops below threshold
     /// and
     /// proposal is in one of the following states:
-    /// - succeeded
     /// - active
-    /// - cross chain vote collection period
     /// - init
     /// Edge Case:
     ///   If proposal threshold is increased in an active governance proposal, and a user has proposed
@@ -755,17 +743,6 @@ contract MultichainGovernorV2 is
         address newGuardian
     ) external override onlyGovernor {
         _setBreakGlassGuardian(newGuardian);
-    }
-
-    /// @notice set a gas limit for the relayer on the external chain
-    /// should only be called if there is a change in gas prices on the external chain
-    /// @param newGasLimit new gas limit to set
-    function setGasLimit(uint96 newGasLimit) external onlyGovernor {
-        if (newGasLimit < Constants.MIN_GAS_LIMIT) {
-            revert GasLimitTooLow();
-        }
-
-        _setGasLimit(newGasLimit);
     }
 
     /// @notice grant new pause guardian
@@ -945,7 +922,7 @@ contract MultichainGovernorV2 is
         uint256 _oldValue = quorum;
         quorum = _quorum;
 
-        emit QuroumVotesChanged(_oldValue, _quorum);
+        emit QuorumVotesChanged(_oldValue, _quorum);
     }
 
     /// @dev lower and upper bounds are enforced to prevent a proposal from
@@ -1245,6 +1222,35 @@ contract MultichainGovernorV2 is
                 revert(0, 4)
             }
         }
+    }
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// ------------------- V2 STORAGE (WORMHOLE) --------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
+    /// @notice the wormhole core bridge contract
+    IWormhole public wormhole;
+
+    /// @notice VAA hashes that have already been processed (replay protection)
+    mapping(bytes32 => bool) internal processedVAAHashes;
+
+    /// @notice return the wormhole core contract
+    function _wormhole() internal view override returns (IWormhole) {
+        return wormhole;
+    }
+
+    /// @notice check if a VAA hash has already been processed
+    function _isVAAHashProcessed(
+        bytes32 hash
+    ) internal view override returns (bool) {
+        return processedVAAHashes[hash];
+    }
+
+    /// @notice mark a VAA hash as processed
+    function _setVAAHashProcessed(bytes32 hash) internal override {
+        processedVAAHashes[hash] = true;
     }
 
     /// @notice payable fallback function to receive funds specifically

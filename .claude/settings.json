@@ -1,0 +1,35 @@
+{
+    "hooks": {
+        "PostToolUse": [
+            {
+                "matcher": "EditTool",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "if echo \"$CC_EDIT_FILE_PATH\" | grep -q '\\.sol$'; then forge build 2>&1 | tail -5; elif echo \"$CC_EDIT_FILE_PATH\" | grep -q '\\.ts$'; then npx tsc --noEmit 2>&1 | tail -10; fi"
+                    }
+                ]
+            },
+            {
+                "matcher": "WriteTool",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "if echo \"$CC_WRITE_FILE_PATH\" | grep -q '\\.sol$'; then forge build 2>&1 | tail -5; elif echo \"$CC_WRITE_FILE_PATH\" | grep -q '\\.ts$'; then npx tsc --noEmit 2>&1 | tail -10; fi"
+                    }
+                ]
+            }
+        ],
+        "PreToolUse": [
+            {
+                "matcher": "BashTool",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "if echo \"$CC_BASH_COMMAND\" | grep -qE 'git (commit|push)'; then echo \"Current branch: $(git branch --show-current)\"; fi"
+                    }
+                ]
+            }
+        ]
+    }
+}

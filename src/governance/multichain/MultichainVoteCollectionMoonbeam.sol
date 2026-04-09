@@ -5,6 +5,7 @@ import {IMultichainVoteCollection} from "@protocol/governance/multichain/IMultic
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {IVotingPowerAggregator} from "@protocol/governance/multichain/IVotingPowerAggregator.sol";
 
@@ -38,13 +39,13 @@ contract MultichainVoteCollectionMoonbeam is
     /// @notice initialize the contract
     /// @param _votingPowerAggregator address of the voting power aggregator
     /// @param _ethereumGovernor address of the new governor to add
-    /// @param _wormholeRelayer address of the wormhole relayer
+    /// @param _wormholeCore address of the wormhole core bridge
     /// @param _ethereumWormholeChainId wormhole chain id of the new governor to add
     /// @param _owner address of the contract
     function initialize(
         address _votingPowerAggregator,
         address _ethereumGovernor,
-        address _wormholeRelayer,
+        address _wormholeCore,
         uint16 _ethereumWormholeChainId,
         address _owner
     ) external initializer {
@@ -52,9 +53,7 @@ contract MultichainVoteCollectionMoonbeam is
 
         _addTargetAddress(_ethereumWormholeChainId, _ethereumGovernor);
 
-        _setWormholeRelayer(_wormholeRelayer);
-
-        _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
+        wormhole = IWormhole(_wormholeCore);
 
         __Ownable_init();
         _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
@@ -338,21 +337,37 @@ contract MultichainVoteCollectionMoonbeam is
         );
     }
 
+    /// @notice deprecated — gas limit is no longer used with publishMessage
+    function setGasLimit(uint96) external view onlyOwner {
+        revert("deprecated");
+    }
+
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
-    //// ----------------- ADMIN ONLY ----------------- ////
+    //// ------------- WORMHOLE OVERRIDES ------------- ////
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
 
-    /// @notice set a gas limit for the relayer on the external chain
-    /// should only be called if there is a change in gas prices on the external chain
-    /// @param newGasLimit new gas limit to set
-    function setGasLimit(uint96 newGasLimit) external onlyOwner {
-        require(
-            newGasLimit >= Constants.MIN_GAS_LIMIT,
-            "MultichainVoteCollectionV2: gas limit too low"
-        );
+    /// @notice the wormhole core bridge contract
+    IWormhole public wormhole;
 
-        _setGasLimit(newGasLimit);
+    /// @notice VAA hashes that have already been processed (replay protection)
+    mapping(bytes32 => bool) public processedVAAHashes;
+
+    /// @notice return the wormhole core contract
+    function _wormhole() internal view override returns (IWormhole) {
+        return wormhole;
+    }
+
+    /// @notice check if a VAA hash has already been processed
+    function _isVAAHashProcessed(
+        bytes32 hash
+    ) internal view override returns (bool) {
+        return processedVAAHashes[hash];
+    }
+
+    /// @notice mark a VAA hash as processed
+    function _setVAAHashProcessed(bytes32 hash) internal override {
+        processedVAAHashes[hash] = true;
     }
 }

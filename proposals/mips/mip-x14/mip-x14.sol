@@ -202,7 +202,8 @@ contract mipx14 is HybridProposal {
         vm.selectFork(OPTIMISM_FORK_ID);
         for (uint i = 0; i < _oracleConfigs[OPTIMISM_CHAIN_ID].length; i++) {
             string memory wrapperName = _getWrapperName(
-                _oracleConfigs[OPTIMISM_CHAIN_ID][i].oracleName
+                _oracleConfigs[OPTIMISM_CHAIN_ID][i].oracleName,
+                OPTIMISM_CHAIN_ID
             );
             _pushAction(
                 addresses.getAddress("CHAINLINK_ORACLE"),
@@ -228,7 +229,8 @@ contract mipx14 is HybridProposal {
         vm.selectFork(BASE_FORK_ID);
         for (uint i = 0; i < _oracleConfigs[BASE_CHAIN_ID].length; i++) {
             string memory wrapperName = _getWrapperName(
-                _oracleConfigs[BASE_CHAIN_ID][i].oracleName
+                _oracleConfigs[BASE_CHAIN_ID][i].oracleName,
+                BASE_CHAIN_ID
             );
             _pushAction(
                 addresses.getAddress("CHAINLINK_ORACLE"),
@@ -250,17 +252,28 @@ contract mipx14 is HybridProposal {
     }
 
     /// @dev Returns the wrapper name for an oracle, using deprecated wrappers where necessary
-    /// to match the on-chain calldata that was submitted
+    /// to match the on-chain calldata that was submitted.
+    /// Most OEV wrappers used by this proposal have since been rotated and the originals
+    /// renamed with _DEPRECATED suffix.
     function _getWrapperName(
-        string memory oracleName
+        string memory oracleName,
+        uint256 chainId
     ) internal pure returns (string memory) {
-        // ETH wrapper was deprecated after this proposal was submitted on-chain
-        if (
-            keccak256(bytes(oracleName)) ==
-            keccak256(bytes("CHAINLINK_ETH_USD"))
-        ) {
-            return "CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED";
+        bytes32 h = keccak256(bytes(oracleName));
+
+        // Base (8453): all wrappers deprecated
+        if (chainId == BASE_CHAIN_ID) {
+            return string.concat(oracleName, "_OEV_WRAPPER_DEPRECATED");
         }
+
+        // Optimism (10): all except WELL deprecated
+        if (chainId == OPTIMISM_CHAIN_ID) {
+            if (h == keccak256(bytes("CHAINLINK_WELL_USD"))) {
+                return string.concat(oracleName, "_OEV_WRAPPER");
+            }
+            return string.concat(oracleName, "_OEV_WRAPPER_DEPRECATED");
+        }
+
         return string.concat(oracleName, "_OEV_WRAPPER");
     }
 

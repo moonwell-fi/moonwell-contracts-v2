@@ -16,6 +16,7 @@ import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
+import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
 contract MockTimelock {
@@ -43,9 +44,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testGovernorSetup() public view {
-        assertFalse(
+        assertTrue(
             governor.useTimestamps(),
-            "useTimestamps should start off false after initialization"
+            "useTimestamps should be true since stkWellMoonbeam uses timestamps"
         );
         assertEq(
             governor.gasLimit(),
@@ -117,14 +118,10 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
         assertEq(
             governor.bridgeCost(MOONBASE_WORMHOLE_CHAIN_ID),
-            0.1 ether,
-            "bridgecost incorrect"
+            0,
+            "bridgecost should equal messageFee (0)"
         );
-        assertEq(
-            governor.bridgeCostAll(),
-            0.1 ether,
-            "bridgecostall incorrect"
-        );
+        assertEq(governor.bridgeCostAll(), 0, "bridgecostall should equal 0");
     }
 
     function testVoteCollectionSetup() public view {
@@ -148,7 +145,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testInitLogicFails() public {
-        MultichainGovernor.InitializeData memory initData;
+        MockMultichainGovernor.InitializeData memory initData;
         WormholeTrustedSender.TrustedSender[]
             memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
@@ -156,7 +153,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         vm.expectRevert("Initializable: contract is already initialized");
 
-        MultichainGovernor(payable(governorLogic)).initialize(
+        MockMultichainGovernor(payable(governorLogic)).initialize(
             initData,
             trustedSenders,
             new bytes[](0)
@@ -468,7 +465,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     function testSetNewStakedWellGovernorSucceeds() public {
         address newStakedWell = address(1);
-        assertFalse(governor.useTimestamps(), "timestamps incorrectly in use");
+        assertTrue(governor.useTimestamps(), "timestamps not in use initially");
 
         vm.prank(address(governor));
         governor.setNewStakedWell(newStakedWell, true);
@@ -482,13 +479,15 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testSetNewStakedWellBaseWellGovernorSucceeds() public {
+        // Since stkWellMoonbeam is a V2 contract using timestamps, useTimestamps should already be true
+        assertTrue(governor.useTimestamps(), "timestamps not in use initially");
+
         uint256 startingVotes = governor.getVotes(
             address(this),
             block.timestamp - 1,
             block.number - 1
         );
         address newStakedWell = address(stkWellBase);
-        assertFalse(governor.useTimestamps(), "timestamps incorrectly in use");
 
         vm.prank(address(governor));
         governor.setNewStakedWell(newStakedWell, true);

@@ -12,6 +12,7 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {BridgeOutHelper} from "@test/helper/BridgeOutHelper.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
@@ -175,7 +176,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         proxyAdmin = address(new ProxyAdmin());
         {
-            /// deploy staked well with Block numbers instead of timestamps
+            /// deploy staked well with timestamps (V2 upgrade)
             /// to mock the system on moonbeam
             (address stkWellProxy, ) = deployStakedWellMock(
                 address(xwellProxy),
@@ -189,11 +190,19 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
                 proxyAdmin // proxyAdmin
             );
             stkWellMoonbeam = IStakedWell(stkWellProxy);
+
+            // Call initializeV2 to set up timestamp-based snapshot logic
+            // Must be called from a non-admin address
+            vm.prank(address(1));
+            (bool success, ) = stkWellProxy.call(
+                abi.encodeWithSignature("initializeV2()")
+            );
+            require(success, "initializeV2 failed");
         }
 
         {
             /// deploy staked well with Block timestamps
-            /// to mock the system on moonbeam
+            /// to mock the system on base
             (address stkWellProxy, ) = deployStakedWell(
                 address(xwellProxy),
                 address(xwellProxy),
@@ -209,7 +218,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             stkWellBase = IStakedWell(stkWellProxy);
         }
 
-        MultichainGovernor.InitializeData memory initData;
+        MockMultichainGovernor.InitializeData memory initData;
 
         initData.proposalThreshold = proposalThreshold;
         initData.votingPeriodSeconds = votingPeriodSeconds;
@@ -249,6 +258,12 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         );
 
         wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+        wormholeRelayerAdapter.setMockChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+
+        /// Initialize V2 on governor and voteCollection to set wormhole core
+        /// to the mock adapter. This enables processVAA and publishMessage.
+        governor.initializeV2(address(wormholeRelayerAdapter));
+        voteCollection.initializeV2(address(wormholeRelayerAdapter));
 
         xwell.addBridge(
             MintLimits.RateLimitMidPointInfo({
@@ -274,6 +289,10 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
+
+        // Enable timestamp mode since stkWellMoonbeam is a V2 contract using timestamps
+        vm.prank(address(governor));
+        governor.setNewStakedWell(address(stkWellMoonbeam), true);
     }
 
     function _createProposalUpdateThreshold(
@@ -296,6 +315,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         uint256 bridgeCost = governor.bridgeCostAll();
 
         vm.deal(creator, bridgeCost);
+        vm.recordLogs();
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -313,7 +333,20 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         assertEq(proposalId, endProposalCount, "proposal id incorrect");
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
 
+        /// publishMessage does not auto-deliver; parse BridgeOutSuccess events
+        /// and manually relay each to the target via processVAA
+        _deliverBridgeOutEvents(address(governor));
+
         return proposalId;
+    }
+
+    /// @notice Convenience wrapper around BridgeOutHelper.deliverBridgeOutEvents
+    function _deliverBridgeOutEvents(address emitter) internal {
+        BridgeOutHelper.deliverBridgeOutEvents(
+            vm,
+            wormholeRelayerAdapter,
+            emitter
+        );
     }
 
     // helper functions

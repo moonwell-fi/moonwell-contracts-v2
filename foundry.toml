@@ -24,7 +24,7 @@ sparse_mode = true # compiles files that match filter criteria
 #        # Enables the new ABI optimiser.
 
 [profile.default.optimizer_details.yul_details]
-stack_allocation = true   # Improves allocation of stack slots for variables.
+# stack_allocation = true   # Improves allocation of stack slots for variables.
 
 [profile.debug]
 # Make things chattier when debugging in case of test failures, giving us more
@@ -50,9 +50,9 @@ opSepolia = { endpoint= "${OP_SEPOLIA_RPC_URL}", retries = 2, retry_backoff = 10
 
 # comment out the following lines so that CI passes fast and doesn't throw errors related to connecting to CI
 [etherscan]
-#optimism = { key = "${OPTIMISM_API_KEY}", url= "https://api-optimistic.etherscan.io/api" }
+#optimism = { key = "${BASESCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=10" }
 #moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
-#moonbeam = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
+#moonbeam = { key = "${BASESCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=1284" }
 #moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
 #goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
 #sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }

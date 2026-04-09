@@ -17,6 +17,7 @@ import {MockMultichainGovernorV2} from "@test/mock/MockMultichainGovernorV2.sol"
 import {MockVotingPowerAggregator} from "@test/mock/MockVotingPowerAggregator.sol";
 import {MultichainVoteCollectionV2} from "@protocol/governance/multichain/MultichainVoteCollectionV2.sol";
 import {MultichainVoteCollectionMoonbeam} from "@protocol/governance/multichain/MultichainVoteCollectionMoonbeam.sol";
+import {BridgeOutHelper} from "@test/helper/BridgeOutHelper.sol";
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernorV2, MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
@@ -258,7 +259,7 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
         initData.pauseDuration = pauseDuration;
         initData.pauseGuardian = pauseGuardian;
         initData.breakGlassGuardian = breakGlassGuardian;
-        initData.wormholeRelayer = address(wormholeRelayerAdapter);
+        initData.wormholeCore = address(wormholeRelayerAdapter);
         initData.startingProposalCount = 0;
 
         governorLogic = new MockMultichainGovernorV2();
@@ -368,6 +369,7 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
         uint256 bridgeCost = governor.bridgeCostAll();
 
         vm.deal(creator, bridgeCost);
+        vm.recordLogs();
         vm.prank(creator);
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
@@ -386,6 +388,10 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
         );
         assertEq(proposalId, endProposalCount, "proposal id incorrect");
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        /// publishMessage does not auto-deliver; parse BridgeOutSuccess events
+        /// and manually relay each to the target via processVAA
+        _deliverBridgeOutEvents(address(governor));
 
         return proposalId;
     }
@@ -444,6 +450,15 @@ contract MultichainBaseTestV2 is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         /// include user before snapshot timestamp
         vm.warp(block.timestamp + 1);
+    }
+
+    /// @notice Convenience wrapper: parse BridgeOutSuccess events and deliver via processVAA
+    function _deliverBridgeOutEvents(address emitter) internal {
+        BridgeOutHelper.deliverBridgeOutEvents(
+            vm,
+            wormholeRelayerAdapter,
+            emitter
+        );
     }
 
     function _assertGovernanceBalance() internal view {

@@ -7,11 +7,12 @@ env:
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
   PRIMARY_FORK_ID: 2
+  ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
 
 jobs:
   live-system-integration-tests:
     name: Live System Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -35,7 +36,7 @@ jobs:
 
   xwell-integration-tests:
     name: xWell Integration Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -57,7 +58,7 @@ jobs:
 
   chainlink-oev-wrapper:
     name: Chainlink OEV Wrapper Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

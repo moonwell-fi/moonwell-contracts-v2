@@ -4,11 +4,11 @@ on: [pull_request]
 
 env:
   FOUNDRY_PROFILE: ci
- 
+
 jobs:
   unit-tests:
     name: Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout code
@@ -36,4 +36,3 @@ jobs:
            timeout_minutes: 20
            max_attempts: 3
            command: time forge test --match-path test/unit/MultiRewards.t.sol -vvv
-

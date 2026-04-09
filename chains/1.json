@@ -2,7 +2,7 @@
     {
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
         "isContract": true,
-        "name": "WORMHOLE_RELAYER"
+        "name": "WORMHOLE_BRIDGE_RELAYER_PROXY"
     },
     {
         "addr": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
@@ -35,9 +35,9 @@
         "isContract": true
     },
     {
-        "addr": "0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B",
-        "name": "WORMHOLE_CORE",
-        "isContract": true
+        "addr": "0x98f3c9e6E3fACe36bAAd05FE09d375Ef1464288B",
+        "isContract": true,
+        "name": "WORMHOLE_CORE"
     },
     {
         "addr": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
@@ -105,11 +105,6 @@
         "isContract": true
     },
     {
-        "addr": "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
-        "name": "PAUSE_GUARDIAN",
-        "isContract": false
-    },
-    {
         "addr": "0x446342AF4F3bCD374276891C6bb3411bf2F8779E",
         "name": "SECURITY_COUNCIL",
         "isContract": false
@@ -123,5 +118,85 @@
         "addr": "0x6b175474e89094c44da98b954eedeac495271d0f",
         "name": "DAI",
         "isContract": true
+    },
+    {
+        "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
+        "isContract": true,
+        "name": "PAUSE_GUARDIAN"
+    },
+    {
+        "addr": "0x7F566868659b683a3Bb06fb6747053Fc06243ceE",
+        "isContract": true,
+        "name": "PROXY_ADMIN"
+    },
+    {
+        "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
+        "isContract": true,
+        "name": "xWELL_LOGIC_DEPRECATED"
+    },
+    {
+        "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "isContract": true,
+        "name": "xWELL_PROXY"
+    },
+    {
+        "addr": "0xEF68C8f8BDeEF8e938F519ee818DeC80e320CE6b",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC_DEPRECATED"
+    },
+    {
+        "addr": "0x734AbBCe07679C9A6B4Fe3bC16325e028fA6DbB7",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+    },
+    {
+        "addr": "0x437113e54E5E6dfbe9741d699b312eea110d04d5",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_IMPL"
+    },
+    {
+        "addr": "0x98E708bbce1f158C1bde25f206afA7562fd0157f",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_CONTROLLER"
+    },
+    {
+        "addr": "0xAbd65097F869f36f56Be9eC60DfB4A441a00c47C",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_PROXY"
+    },
+    {
+        "addr": "0x701551a3cd30A29cCC012e8f160fB2Cac9b0f5Af",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL"
+    },
+    {
+        "addr": "0xb3a9E0DCf37658a48aa9f018C44f90378ddD4357",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_PROXY"
+    },
+    {
+        "addr": "0xb84543e036054E2cD5394A9D99fa701Eef666df4",
+        "isContract": true,
+        "name": "xWELL_LOGIC"
+    },
+    {
+        "addr": "0xf81094eedd37DA759E837D727D940f14b18b6c76",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
+    },
+    {
+        "addr": "0xdDbf679d6332d9E5b409865b9671d1927255B52A",
+        "isContract": false,
+        "name": "MOONWELL_DEPLOYER"
+    },
+    {
+        "addr": "0x2dc66C40bb15F0470e40508B43cD64D0b4F57180",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V2"
+    },
+    {
+        "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
+        "isContract": true,
+        "name": "BREAK_GLASS_GUARDIAN"
     }
 ]

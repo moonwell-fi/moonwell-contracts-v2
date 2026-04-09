@@ -58,16 +58,17 @@ contract PostProposalCheck is LiveProposalCheck {
         // execute proposals that are in the vote or vote collection period
         executeLiveProposals(addresses, governor);
 
+        // update proposalStartTime to account for time warps during live
+        // proposal execution. Contracts like the safety module store
+        // lastUpdateTimestamp, so we cannot warp backward past that point.
+        proposalStartTime = block.timestamp;
+
         // execute proposals that are queued in the temporal governor but not executed yet
         executeTemporalGovernorQueuedProposals(addresses, governor);
 
         // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
             .getAllProposalsInDevelopment();
-
-        if (devProposals.length == 0) {
-            return;
-        }
 
         // execute in the inverse order so that the lowest id is executed first
         for (uint256 i = devProposals.length; i > 0; i--) {
@@ -81,18 +82,37 @@ contract PostProposalCheck is LiveProposalCheck {
             proposals.push(proposal);
         }
 
-        if (vm.activeFork() != MOONBEAM_FORK_ID) {
-            vm.selectFork(MOONBEAM_FORK_ID);
+        // Sync all fork timestamps to the maximum observed across all forks.
+        // Proposal execution may warp some forks forward (e.g. Base during
+        // executeLiveProposals) and then backward (e.g. Base during
+        // executeTemporalGovernorQueuedProposals processing older proposals).
+        // This leaves stored contract timestamps (MRD globalTimestamps,
+        // MToken accrualBlockTimestamp) ahead of block.timestamp, causing
+        // subtraction underflow errors in subsequent test interactions.
+        {
+            uint256 maxTime = proposalStartTime;
+            for (uint256 i = MOONBEAM_FORK_ID; i <= ETHEREUM_FORK_ID; i++) {
+                vm.selectFork(i);
+                if (block.timestamp > maxTime) {
+                    maxTime = block.timestamp;
+                }
+            }
+            for (uint256 i = MOONBEAM_FORK_ID; i <= ETHEREUM_FORK_ID; i++) {
+                vm.selectFork(i);
+                if (block.timestamp < maxTime) {
+                    vm.warp(maxTime);
+                }
+            }
+            proposalStartTime = maxTime;
         }
 
-        // revert back to proposalStartTime
-        vm.warp(proposalStartTime);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         addresses.removeAllRestrictions();
 
         vm.setEnv("PRIMARY_FORK_ID", vm.toString(primaryForkBefore));
 
-        // revert back to proposalStartTime
+        // set proposalStartTime on the active (Moonbeam) fork
         vm.warp(proposalStartTime);
     }
 }

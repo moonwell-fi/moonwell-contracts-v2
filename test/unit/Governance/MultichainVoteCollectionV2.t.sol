@@ -39,16 +39,6 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
             "incorrect vote amount"
         );
         assertEq(
-            governor.gasLimit(),
-            Constants.MIN_GAS_LIMIT,
-            "incorrect gas limit vote collection"
-        );
-        assertEq(
-            voteCollection.gasLimit(),
-            Constants.MIN_GAS_LIMIT,
-            "incorrect gas limit vote collection"
-        );
-        assertEq(
             voteCollection.getVotes(address(this), block.timestamp - 1),
             4_000_000_000 * 1e18,
             "incorrect vote amount"
@@ -66,9 +56,9 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
         );
 
         assertEq(
-            address(governor.wormholeRelayer()),
+            address(governor.wormhole()),
             address(wormholeRelayerAdapter),
-            "incorrect wormhole relayer"
+            "incorrect wormhole"
         );
         assertTrue(
             voteCollection.isTrustedSender(
@@ -85,7 +75,12 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
             "voteCollection not whitelisted to send messages in"
         );
 
-        assertTrue(governor.bridgeCostAll() != 0, "no targets");
+        assertEq(
+            governor.bridgeCostAll(),
+            0,
+            "bridgeCostAll should be 0 (messageFee)"
+        );
+        assertTrue(governor.getAllTargetChainsLength() > 0, "no targets");
 
         assertEq(
             governor.getAllTargetChains().length,
@@ -118,6 +113,7 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
+        vm.recordLogs();
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -135,6 +131,8 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
         );
         assertEq(proposalId, endProposalCount, "proposal id incorrect");
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        _deliverBridgeOutEvents(address(governor));
 
         {
             IMultichainGovernorV2.ProposalInformation
@@ -1148,7 +1146,9 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
 
             vm.deal(address(this), bridgeCost);
 
+            vm.recordLogs();
             voteCollection.emitVotes{value: bridgeCost}(proposalId);
+            _deliverBridgeOutEvents(address(voteCollection));
         }
 
         IMultichainGovernorV2.ProposalInformation
@@ -1182,19 +1182,19 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
 
     function testEmitVotesRefundFails() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
-        uint256 bridgeCost = voteCollection.bridgeCost(
-            MOONBEAM_WORMHOLE_CHAIN_ID
-        );
         (, , uint256 endTimestamp, , , , , ) = voteCollection
             .proposalInformation(proposalId);
         vm.warp(endTimestamp + 1);
 
-        vm.deal(address(this), bridgeCost * 2);
+        /// Send excess ETH so the refund path is triggered
+        uint256 excessValue = 1 ether;
+        vm.deal(address(this), excessValue);
 
+        _receivingFunds = false;
         vm.expectRevert(
             abi.encodeWithSelector(WormholeBridgeBase.RefundFailed.selector)
         );
-        voteCollection.emitVotes{value: bridgeCost * 2}(proposalId);
+        voteCollection.emitVotes{value: excessValue}(proposalId);
     }
 
     function testEmitVotesRefundSucceeds() public {
@@ -1245,9 +1245,10 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
         _assertGovernanceBalance();
     }
 
-    function testEmitVotesProposalEndTimeHasPassedBridgeOutIncorrectAmount()
-        public
-    {
+    /// @notice With bridgeCost returning 0 (messageFee), underpaying is
+    ///         impossible. Instead test that excess ETH triggers a refund
+    ///         failure when the caller cannot receive funds.
+    function testEmitVotesExcessValueRefundFails() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
         (, , uint256 endTimestamp, , , , , ) = voteCollection
@@ -1256,16 +1257,14 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
         // test at the last timestamp of vote period
         vm.warp(endTimestamp + 1);
 
-        uint256 cost = voteCollection.bridgeCost(MOONBEAM_WORMHOLE_CHAIN_ID) -
-            1;
-        vm.deal(address(this), cost);
+        uint256 excessValue = 1 ether;
+        vm.deal(address(this), excessValue);
 
+        _receivingFunds = false;
         vm.expectRevert(
-            abi.encodeWithSelector(
-                WormholeBridgeBase.InsufficientBridgeFee.selector
-            )
+            abi.encodeWithSelector(WormholeBridgeBase.RefundFailed.selector)
         );
-        voteCollection.emitVotes{value: cost}(proposalId);
+        voteCollection.emitVotes{value: excessValue}(proposalId);
 
         _assertGovernanceBalance();
     }
@@ -1290,22 +1289,9 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
 
     /// Only Owner
 
-    function testSetGasLimitOwnerSucceeds() public {
+    function testSetGasLimitDeprecated() public {
         uint96 gasLimit = Constants.MIN_GAS_LIMIT;
-        voteCollection.setGasLimit(gasLimit);
-        assertEq(voteCollection.gasLimit(), gasLimit, "incorrect gas limit");
-    }
-
-    function testSetGasLimitTooLow() public {
-        uint96 gasLimit = Constants.MIN_GAS_LIMIT - 1;
-        vm.expectRevert("MultichainVoteCollectionV2: gas limit too low");
-        voteCollection.setGasLimit(gasLimit);
-    }
-
-    function testSetGasLimitNonOwnerFails() public {
-        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
-        vm.prank(address(1));
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("deprecated");
         voteCollection.setGasLimit(gasLimit);
     }
 
@@ -1330,171 +1316,169 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
     // bridge in
 
     function testBridgeInWrongSourceChain() public {
-        bytes memory payload = abi.encode(0, 0, 0, 0, 0);
-        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        bytes memory innerPayload = abi.encode(0, 0, 0, 0, 0);
+        // Set sender chain to a chain that voteCollection does NOT trust
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
-        vm.deal(address(governor), gasCost);
-        vm.prank(address(governor));
-        vm.expectRevert(
-            abi.encodeWithSelector(WormholeBridgeBase.Unauthorized.selector)
-        );
-        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            MOONBEAM_WORMHOLE_CHAIN_ID, // pass moonbeam as the target chain so that relayer adapter do the flip
+        vm.expectRevert("untrusted emitter");
+        wormholeRelayerAdapter.deliverBridgeOut(
+            BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
-            payload,
-            0,
-            0
+            abi.encode(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection),
+                innerPayload
+            ),
+            address(governor)
         );
     }
 
     function testBridgeInWrongPayloadLength() public {
-        bytes memory payload = abi.encode(0, 0, 0, 0);
-        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        bytes memory innerPayload = abi.encode(0, 0, 0, 0);
 
-        vm.deal(address(governor), gasCost);
-        vm.prank(address(governor));
         vm.expectRevert("MultichainVoteCollectionV2: invalid payload length");
-        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
+        wormholeRelayerAdapter.deliverBridgeOut(
             BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
-            payload,
-            0,
-            0
+            abi.encode(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection),
+                innerPayload
+            ),
+            address(governor)
         );
     }
 
     function testBridgeInProposalAlreadyExist() public {
         uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
-        bytes memory payload = abi.encode(proposalId, 0, 0, 0, 0);
-        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        bytes memory innerPayload = abi.encode(proposalId, 0, 0, 0, 0);
 
-        vm.deal(address(governor), gasCost);
-        vm.prank(address(governor));
         vm.expectRevert("MultichainVoteCollectionV2: proposal already exists");
-        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
+        wormholeRelayerAdapter.deliverBridgeOut(
             BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
-            payload,
-            0,
-            0
+            abi.encode(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection),
+                innerPayload
+            ),
+            address(governor)
         );
     }
 
     function testBridgeInVotingSnapshotTimeGreaterThanStartTime() public {
         vm.warp(1);
 
-        bytes memory payload = abi.encode(0, 4, 3, 3, 4);
-        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        bytes memory innerPayload = abi.encode(0, 4, 3, 3, 4);
 
-        vm.deal(address(governor), gasCost);
-        vm.prank(address(governor));
         vm.expectRevert(
             "MultichainVoteCollectionV2: snapshot time must be before start time"
         );
-        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            30,
+        wormholeRelayerAdapter.deliverBridgeOut(
+            BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
-            payload,
-            0,
-            0
+            abi.encode(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection),
+                innerPayload
+            ),
+            address(governor)
         );
     }
 
     function testBridgeInVotingSnapshotTimeEqStartTime() public {
         vm.warp(1);
 
-        bytes memory payload = abi.encode(0, 4, 4, 3, 4);
-        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        bytes memory innerPayload = abi.encode(0, 4, 4, 3, 4);
 
-        vm.deal(address(governor), gasCost);
-        vm.prank(address(governor));
         vm.expectRevert(
             "MultichainVoteCollectionV2: snapshot time must be before start time"
         );
-        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            30,
+        wormholeRelayerAdapter.deliverBridgeOut(
+            BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
-            payload,
-            0,
-            0
+            abi.encode(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection),
+                innerPayload
+            ),
+            address(governor)
         );
     }
 
     function testBridgeInVotingStartTimeGreaterThanVoteEndTime() public {
         vm.warp(1);
-        bytes memory payload = abi.encode(0, 2, 3, 2, 0);
-        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        bytes memory innerPayload = abi.encode(0, 2, 3, 2, 0);
 
-        vm.deal(address(governor), gasCost);
-        vm.prank(address(governor));
         vm.expectRevert(
             "MultichainVoteCollectionV2: start time must be before end time"
         );
-        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            30,
+        wormholeRelayerAdapter.deliverBridgeOut(
+            BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
-            payload,
-            0,
-            0
+            abi.encode(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection),
+                innerPayload
+            ),
+            address(governor)
         );
     }
 
     function testBridgeInVoteCollectionEndLtThanVoteEndTime() public {
         vm.warp(1);
-        bytes memory payload = abi.encode(0, 2, 3, 4, 0);
-        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        bytes memory innerPayload = abi.encode(0, 2, 3, 4, 0);
 
-        vm.deal(address(governor), gasCost);
-        vm.prank(address(governor));
         vm.expectRevert(
             "MultichainVoteCollectionV2: end time must be before vote collection end"
         );
-        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            30,
+        wormholeRelayerAdapter.deliverBridgeOut(
+            BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
-            payload,
-            0,
-            0
+            abi.encode(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection),
+                innerPayload
+            ),
+            address(governor)
         );
     }
 
     function testBridgeInVotingStartTimeEqVoteEndTime() public {
         vm.warp(1);
-        bytes memory payload = abi.encode(0, 1, 2, 2, 0);
-        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        bytes memory innerPayload = abi.encode(0, 1, 2, 2, 0);
 
-        vm.deal(address(governor), gasCost);
-        vm.prank(address(governor));
         vm.expectRevert(
             "MultichainVoteCollectionV2: start time must be before end time"
         );
-
-        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            30,
+        wormholeRelayerAdapter.deliverBridgeOut(
+            BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
-            payload,
-            0,
-            0
+            abi.encode(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection),
+                innerPayload
+            ),
+            address(governor)
         );
     }
 
     function testBridgeInVotingEndTimeLessThanTimestamp() public {
-        bytes memory payload = abi.encode(0, 0, 1, 2, 0);
-        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        bytes memory innerPayload = abi.encode(0, 0, 1, 2, 0);
 
-        vm.deal(address(governor), gasCost);
-        vm.prank(address(governor));
         vm.expectRevert(
             "MultichainVoteCollectionV2: end time must be in the future"
         );
-        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            30,
+        wormholeRelayerAdapter.deliverBridgeOut(
+            BASE_WORMHOLE_CHAIN_ID,
             address(voteCollection),
-            payload,
-            0,
-            0
+            abi.encode(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection),
+                innerPayload
+            ),
+            address(governor)
         );
     }
 
@@ -1503,22 +1487,22 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
         uint256 proposalId = testEmitVotesToGovernorSucceeded();
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
-        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
-        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        bytes memory innerPayload = abi.encode(proposalId, 0, 0, 0);
 
-        vm.deal(address(voteCollection), gasCost);
-        vm.prank(address(voteCollection));
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMultichainGovernorV2.VoteAlreadyCollected.selector
             )
         );
-        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
+        wormholeRelayerAdapter.deliverBridgeOut(
             MOONBEAM_WORMHOLE_CHAIN_ID,
             address(governor),
-            payload,
-            0,
-            0
+            abi.encode(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                address(governor),
+                innerPayload
+            ),
+            address(voteCollection)
         );
     }
 
