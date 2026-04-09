@@ -24,6 +24,9 @@ contract WstETHExchangeRateAdapter is AggregatorV3Interface {
     /// @notice Thrown when stEthPerToken returns 0
     error InvalidExchangeRate();
 
+    /// @notice Thrown when stEthPerToken exceeds int256 max
+    error ExchangeRateOverflow();
+
     constructor(address _wstETH) {
         wstETH = IWstETH(_wstETH);
     }
@@ -60,7 +63,11 @@ contract WstETHExchangeRateAdapter is AggregatorV3Interface {
     {
         uint256 rate = wstETH.stEthPerToken();
         if (rate == 0) revert InvalidExchangeRate();
+        if (rate > uint256(type(int256).max)) revert ExchangeRateOverflow();
 
+        /// @dev updatedAt uses block.timestamp because stEthPerToken has no
+        /// built-in staleness signal. Consumers needing staleness detection
+        /// should monitor the underlying Lido oracle update frequency.
         return (
             1, // roundId
             int256(rate), // answer (18 decimals)

@@ -48,14 +48,7 @@ contract mipe00 is HybridProposalV2, Configs {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile(
-                string(
-                    abi.encodePacked(
-                        vm.projectRoot(),
-                        "/proposals/mips/mip-e00/mTokens.json"
-                    )
-                )
-            )
+            vm.readFile("./proposals/mips/mip-e00/MIP-E00.md")
         );
         _setProposalDescription(proposalDescription);
 

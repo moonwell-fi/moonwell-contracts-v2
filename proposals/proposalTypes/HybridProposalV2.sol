@@ -116,8 +116,19 @@ abstract contract HybridProposalV2 is
         string memory description
     ) internal {
         uint256 fork = vm.activeFork();
-        require(fork <= 3, "Invalid active fork");
-        _pushAction(target, 0, data, description, ActionType(fork));
+        _pushAction(target, 0, data, description, _forkIdToActionType(fork));
+    }
+
+    /// @notice maps a fork ID to the corresponding ActionType
+    /// @dev explicit mapping avoids reliance on enum ordinal == fork ID
+    function _forkIdToActionType(
+        uint256 forkId
+    ) internal pure returns (ActionType) {
+        if (forkId == MOONBEAM_FORK_ID) return ActionType.Moonbeam;
+        if (forkId == BASE_FORK_ID) return ActionType.Base;
+        if (forkId == OPTIMISM_FORK_ID) return ActionType.Optimism;
+        if (forkId == ETHEREUM_FORK_ID) return ActionType.Ethereum;
+        revert("HybridProposalV2: invalid fork id");
     }
 
     /// @notice push an action to the Hybrid proposal
