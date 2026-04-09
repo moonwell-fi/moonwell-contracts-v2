@@ -30,7 +30,9 @@ contract platform.
 - **WETH**: Chainlink ETH/USD
 - **USDC**: Chainlink USDC/USD
 - **USDT**: Chainlink USDT/USD
-- **cbBTC**: Chainlink BTC/USD
+- **cbBTC**: Chainlink BTC/USD (assumes 1:1 BTC peg; no on-chain cbBTC/BTC feed
+  available on Ethereum mainnet. Depeg risk bounded by 75% CF and 500 borrow
+  cap)
 - **weETH**: Composite Oracle (ETH/USD × weETH/ETH)
 - **wstETH**: Composite Oracle (ETH/USD × wstETH/ETH via Compound feed)
 

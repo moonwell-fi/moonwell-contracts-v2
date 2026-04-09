@@ -988,7 +988,7 @@ abstract contract HybridProposalV2 is
     ) public returns (bytes memory payload) {
         uint256 forkId = chainId.toForkId();
         ProposalAction[] memory proposalActions = actions.filter(
-            ActionType(forkId)
+            _forkIdToActionType(forkId)
         );
 
         require(
