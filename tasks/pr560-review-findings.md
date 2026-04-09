@@ -1,48 +1,12 @@
 # PR #560 Review Findings — `[WIP] mainnet deployment proposal`
 
 **Branch:** `deploy/mainnet` -> `feat/multichain-gov-refactor` **Review Date:**
-2026-04-09 **Reviewers:** Code Reviewer Agent, Security Auditor Agent
+2026-04-09 (round 1), 2026-04-09 (round 2) **Reviewers:** Code Reviewer Agent,
+Security Auditor Agent
 
 ---
 
 ## Critical Findings
-
-### C-1: MultichainGovernorV2 proxy deployed uninitialized — front-run window
-
-- **File:** `proposals/mips/mip-x41/mip-x41.sol:1364-1378` (deploy),
-  `:1717-1804` (afterDeploy)
-- **Issue:** `deploy()` creates `TransparentUpgradeableProxy` with empty `""`
-  init data. `afterDeploy()` calls `initialize()` in a **separate transaction**.
-  An attacker can front-run to initialize with malicious params (their own
-  pauseGuardian, breakGlassGuardian, trusted senders, votingPower contract).
-- **Fix:** Encode the `initialize()` call directly as the `data` parameter in
-  the `TransparentUpgradeableProxy` constructor to make deployment atomic.
-- [ ] Fixed
-
-### C-2: Moonbeam TemporalGovernor behind proxy is broken
-
-- **File:** `proposals/mips/mip-x41/mip-x41.sol:1447-1471`
-- **Issue:** `TemporalGovernor` is NOT an upgradeable contract. It sets
-  `trustedSenders`, `wormholeBridge`, `proposalDelay`,
-  `permissionlessUnpauseTime`, and `owner` in its **constructor** — these
-  populate the **implementation's** storage, not the proxy's. The proxy will
-  have zero trusted senders and incorrect ownership, bricking Moonbeam
-  governance entirely.
-- **Note:** On Base, `TemporalGovernor` was deployed WITHOUT a proxy — that is
-  the correct pattern.
-- **Fix:** Either deploy without proxy (matching Base pattern) or redesign as
-  upgradeable with a proper `initialize()`.
-- [ ] Fixed
-
-### C-3: Missing addresses in `chains/1.json` — PAUSE_GUARDIAN_MULTISIG and BREAK_GLASS_GUARDIAN
-
-- **File:** `chains/1.json`, referenced from `mip-x41.sol:1734-1738`
-- **Issue:** `afterDeploy` on Ethereum calls
-  `addresses.getAddress("PAUSE_GUARDIAN_MULTISIG")` and
-  `addresses.getAddress("BREAK_GLASS_GUARDIAN")`, but neither exists for chain
-  ID 1. Only `PAUSE_GUARDIAN` exists. Runtime revert during deployment.
-- **Fix:** Add both addresses to `chains/1.json` for Ethereum.
-- [ ] Fixed
 
 ### C-4: `toForkId()` not updated for Ethereum chain ID
 
@@ -58,54 +22,48 @@
 
 ## High Findings
 
-### H-1: Wrong proxy admin for VotingPowerAggregator on Base/Optimism
-
-- **File:** `proposals/mips/mip-x41/mip-x41.sol:1586, 1647`
-- **Issue:** Uses `MRD_PROXY_ADMIN` (Multi Reward Distributor's proxy admin)
-  marked `// TODO: correct?`. This means the MRD admin can upgrade governance
-  voting power contracts — violates principle of least privilege.
-- **Fix:** Use the correct dedicated `PROXY_ADMIN` for VotingPowerAggregator.
-- [ ] Fixed
-
-### H-2: Whitelisted calldatas left empty (active TODO)
-
-- **File:** `proposals/mips/mip-x41/mip-x41.sol:1793`
-- **Issue:** `// TODO: determine whitelisted calldatas` — governor initializes
-  with zero emergency functions. No break-glass operations available at launch.
-- **Fix:** Determine and configure all required whitelisted calldatas before
-  deployment.
-- [ ] Fixed
-
-### H-3: Single-step ownership transfer of 75 Moonbeam contracts to potentially broken proxy
-
-- **File:** `proposals/mips/mip-x41/mip-x41.sol:1961-1989`
-- **Issue:** `transferOwnership(temporalGovernor)` is a single-step transfer (no
-  `acceptOwnership` confirmation). Combined with C-2, ownership is transferred
-  to a non-functional contract, permanently locking Moonbeam governance.
-- **Fix:** Verify TemporalGovernor is functional before transfers. Consider
-  `Ownable2Step` or making ownership transfer a separate proposal.
-- [ ] Fixed
-
-### H-4: No storage layout validation for MultichainGovernor upgrade on Moonbeam
-
-- **File:** `proposals/mips/mip-x41/mip-x41.sol:1819-1821`, `foundry.toml`
-- **Issue:** `build_info = true` and `extra_output = ["storageLayout"]` are
-  disabled. No storage layout check before upgrading the MultichainGovernor.
-  Could silently corrupt governance state.
-- **Fix:** Enable storage layout output and run OpenZeppelin Upgrades storage
-  layout validation.
-- [ ] Fixed
-
-### H-5: WstETHExchangeRateAdapter — no staleness check + unchecked int256 cast
+### H-5: WstETHExchangeRateAdapter — staleness limitation
 
 - **File:** `src/oracles/WstETHExchangeRateAdapter.sol:98-119`
-- **Issues:**
-  - `updatedAt = block.timestamp` is fabricated — if wstETH contract is
-    paused/exploited, price appears fresh when stale.
-  - `int256(rate)` cast is unchecked — overflow at `type(int256).max` would
-    return negative, bricking the price feed.
-- **Fix:** Add `require(rate <= uint256(type(int256).max))` and document
-  staleness limitations.
+- **Issue:** `updatedAt = block.timestamp` is fabricated — if wstETH contract is
+  paused/exploited, price appears fresh when stale. int256 overflow guard was
+  added (round 1), but staleness remains an inherent limitation.
+- **Fix:** Consider monitoring Lido oracle update frequency externally, or
+  adding a `maxStaleness` parameter. At minimum, document the limitation in risk
+  params.
+- [x] int256 overflow guard fixed
+- [ ] Staleness monitoring/documentation
+
+### H-NEW-1: `PAUSE_GUARDIAN == BREAK_GLASS_GUARDIAN` on Ethereum
+
+- **File:** `chains/1.json`
+- **Issue:** Both resolve to `0x5B710010586C1b728B047c3E42473c700eeA4026`. Using
+  break glass permanently disables the pause guardian (burns to `address(0)`).
+  Collapses two distinct security roles into one key.
+- **Fix:** Assign `BREAK_GLASS_GUARDIAN` a distinct multisig (e.g.,
+  `SECURITY_COUNCIL` at `0x446342AF4F3bCD374276891C6bb3411bf2F8779E` is already
+  in `chains/1.json`).
+- [ ] Fixed
+
+### H-NEW-2: `mip-e00.initProposal()` re-runs `x52.afterDeploy()` unconditionally
+
+- **File:** `proposals/mips/mip-e00/mip-e00.sol:62-76`
+- **Issue:** If x52 is already deployed and initialized on mainnet, calling
+  `initialize()` again reverts with "Initializable: contract is already
+  initialized". Breaks simulation/dry-run of mip-e00 against a post-x52 fork.
+- **Fix:** Add idempotency guard — skip `x52.afterDeploy()` if governor is
+  already initialized.
+- [ ] Fixed
+
+### H-NEW-3: Initial mint token balances unverified
+
+- **File:** `proposals/mips/mip-e00/mip-e00.sol:826-855`
+- **Issue:** `build()` pushes `approve`+`mint` actions on behalf of the governor
+  proxy for WETH, USDC, USDT, cbBTC, weETH, wstETH. No on-chain check that the
+  governor actually holds these tokens before execution.
+- **Fix:** Add `validate()` check for
+  `governor.balanceOf(underlying) >= initialMintAmount` per market, or document
+  funding requirement in deployment runbook.
 - [ ] Fixed
 
 ---
@@ -114,39 +72,22 @@
 
 ### M-1: `_pushAction` fork ID inference is fragile
 
-- **File:** `proposals/proposalTypes/HybridProposalV2.sol:3084-3087`
-- **Issue:** `require(fork <= 3)` + `ActionType(fork)` relies on fork creation
-  order exactly matching the `ActionType` enum (Moonbeam=0, Base=1, Optimism=2,
-  Ethereum=3). If forks are created in a different order, actions are silently
-  mislabeled.
-- **Fix:** Use an explicit mapping from fork ID to ActionType.
-- [ ] Fixed
+- **File:** `proposals/proposalTypes/HybridProposalV2.sol`
+- **Issue:** Fixed in `_pushAction` (now uses `_forkIdToActionType()`), but
+  `getTemporalGovPayloadByChain()` still uses raw `ActionType(forkId)` cast.
+  Same ordinal coupling — fix was applied inconsistently.
+- **Fix:** Replace `ActionType(forkId)` with `_forkIdToActionType(forkId)` in
+  `getTemporalGovPayloadByChain()`.
+- [x] `_pushAction` fixed
+- [ ] `getTemporalGovPayloadByChain` still uses raw cast
 
 ### M-2: Wrong proposalType in mips.json for mip-e00
 
-- **File:** `proposals/mips/mips.json`
-- **Issue:** `mip-e00` inherits `HybridProposalV2` but is registered as
-  `"proposalType": "HybridProposal"`.
-- **Fix:** Change to `"HybridProposalV2"` or verify tooling treats them
-  equivalently.
-- [ ] Fixed
+- [x] Fixed — changed to `"HybridProposalV2"`
 
 ### M-3: mip-e00 reads mTokens.json as proposal description
 
-- **File:** `proposals/mips/mip-e00/mip-e00.sol:434-448`
-- **Issue:** Proposal description is set to raw JSON content of `mTokens.json`
-  instead of a human-readable description file.
-- **Fix:** Read `MIP-E00.md` or a proper description file instead.
-- [ ] Fixed
-
-### M-4: No validation that old Moonbeam governor is decommissioned
-
-- **File:** `proposals/mips/mip-x41/mip-x41.sol` — `validate()` section
-- **Issue:** Old Moonbeam MultichainGovernor remains deployed and upgraded.
-  Could still be used as a fallback governance path if someone with sufficient
-  WELL votes proposes through it.
-- **Fix:** Add validation that old governor cannot initiate new proposals.
-- [ ] Fixed
+- [x] Fixed — now reads `MIP-E00.md`
 
 ### M-5: foundry.toml production settings
 
@@ -154,6 +95,23 @@
 - **Issue:** `revert_strings = "debug"` increases bytecode size/gas.
   `sparse_mode = true` may skip security-relevant compilations.
 - **Fix:** Disable both for production builds.
+- [ ] Fixed
+
+### M-NEW-2: cbBTC priced at BTC/USD directly — assumes 1:1 peg
+
+- **File:** `proposals/mips/mip-e00/mTokens.json`, `chains/1.json`
+- **Issue:** cbBTC (Coinbase Wrapped Bitcoin) uses `CHAINLINK_BTC_USD` directly.
+  No cbBTC/BTC rate applied. Depeg event enables under-collateralized borrowing.
+  Bounded by 75% CF and 500 borrow cap.
+- **Fix:** Document the peg assumption explicitly. Consider a capped oracle.
+- [ ] Acknowledged / Fixed
+
+### M-NEW-3: `checkEthereumActions` lacks Wormhole Core exclusion
+
+- **File:** `proposals/utils/ProposalChecker.sol:114-138`
+- **Issue:** Unlike the Moonbeam checker, doesn't prevent proposals from
+  accidentally calling `WORMHOLE_CORE` as an Ethereum action target.
+- **Fix:** Add check that no target equals `WORMHOLE_CORE` on Ethereum.
 - [ ] Fixed
 
 ---
@@ -166,14 +124,13 @@
       `WstETHExchangeRateAdapter.sol` (always returns latest)
 - [ ] Duplicate oracle address entries in `chains/1.json` (e.g.
       `CHAINLINK_ETH_USD` / `ETH_ORACLE`)
-- [ ] `tasks/test-coverage-audit.md` committed to repo (should be in project
-      management tooling)
 - [ ] Missing SPDX license in
       `test/integration/oracle/WstETHExchangeRateAdapterIntegration.t.sol`
-- [ ] Hardcoded `nonce = 2` in `mip-e00.sol:446` without coordination
-- [ ] Missing `x41.md` description file (referenced at `mip-x41.sol:1293` but
-      not in diff)
+- [ ] Hardcoded `nonce = 2` in `mip-e00.sol` without documentation
 - [ ] `PAUSE_GUARDIAN` resolution in `mip-e00.sol:543-544` missing explicit
       chain context qualifier
-- [ ] MIP-E00 mToken market init requires governor to hold real token balances
-      on mainnet
+- [ ] Stale "MIP-X41" comments in `mip-e00.sol` (lines 25, 82, 83, 478, 638) —
+      should reference MIP-X52
+- [ ] No test coverage for `executeBreakGlass` functionality
+- [ ] `tasks/test-coverage-audit.md` committed to repo (should be in project
+      management tooling)
