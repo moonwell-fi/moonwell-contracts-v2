@@ -35,6 +35,11 @@
         "isContract": true
     },
     {
+        "addr": "0x852deD011285fe67063a08005c71a85690503Cee",
+        "name": "LIDO_ACCOUNTING_ORACLE",
+        "isContract": true
+    },
+    {
         "addr": "0x98f3c9e6E3fACe36bAAd05FE09d375Ef1464288B",
         "isContract": true,
         "name": "WORMHOLE_CORE"

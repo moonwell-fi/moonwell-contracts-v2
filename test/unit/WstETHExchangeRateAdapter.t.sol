@@ -2,7 +2,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {IWstETH, WstETHExchangeRateAdapter} from "@protocol/oracles/WstETHExchangeRateAdapter.sol";
+import {IWstETH, ILidoAccountingOracle, WstETHExchangeRateAdapter} from "@protocol/oracles/WstETHExchangeRateAdapter.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 
@@ -23,16 +23,52 @@ contract MockWstETH is IWstETH {
     }
 }
 
+/// @notice Mock Lido AccountingOracle for unit testing
+contract MockLidoAccountingOracle is ILidoAccountingOracle {
+    uint256 public slot;
+
+    constructor(uint256 _slot) {
+        slot = _slot;
+    }
+
+    function getLastProcessingRefSlot()
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return slot;
+    }
+
+    function setSlot(uint256 _slot) external {
+        slot = _slot;
+    }
+}
+
 contract WstETHExchangeRateAdapterUnitTest is Test {
     WstETHExchangeRateAdapter public adapter;
     MockWstETH public mockWstETH;
+    MockLidoAccountingOracle public mockOracle;
 
     /// ~1.19 stETH per wstETH (realistic rate)
     uint256 constant MOCK_RATE = 1.19e18;
 
+    /// Beacon Chain constants
+    uint256 constant BEACON_GENESIS_TIMESTAMP = 1606824023;
+    uint256 constant SECONDS_PER_SLOT = 12;
+
+    /// A realistic slot number (~April 2025)
+    uint256 constant MOCK_SLOT = 10_000_000;
+    uint256 constant MOCK_TIMESTAMP =
+        BEACON_GENESIS_TIMESTAMP + (MOCK_SLOT * SECONDS_PER_SLOT);
+
     function setUp() public {
         mockWstETH = new MockWstETH(MOCK_RATE);
-        adapter = new WstETHExchangeRateAdapter(address(mockWstETH));
+        mockOracle = new MockLidoAccountingOracle(MOCK_SLOT);
+        adapter = new WstETHExchangeRateAdapter(
+            address(mockWstETH),
+            address(mockOracle)
+        );
     }
 
     function testDecimals() public view {
@@ -55,6 +91,10 @@ contract WstETHExchangeRateAdapterUnitTest is Test {
         assertEq(address(adapter.wstETH()), address(mockWstETH));
     }
 
+    function testLidoOracleAddress() public view {
+        assertEq(address(adapter.lidoOracle()), address(mockOracle));
+    }
+
     function testLatestRoundData() public view {
         (
             uint80 roundId,
@@ -66,9 +106,20 @@ contract WstETHExchangeRateAdapterUnitTest is Test {
 
         assertEq(roundId, 1);
         assertEq(answer, int256(MOCK_RATE));
-        assertEq(startedAt, block.timestamp);
-        assertEq(updatedAt, block.timestamp);
+        assertEq(startedAt, MOCK_TIMESTAMP);
+        assertEq(updatedAt, MOCK_TIMESTAMP);
         assertEq(answeredInRound, 1);
+    }
+
+    function testUpdatedAtReflectsOracleSlot() public {
+        uint256 newSlot = 11_000_000;
+        mockOracle.setSlot(newSlot);
+
+        (, , , uint256 updatedAt, ) = adapter.latestRoundData();
+        assertEq(
+            updatedAt,
+            BEACON_GENESIS_TIMESTAMP + (newSlot * SECONDS_PER_SLOT)
+        );
     }
 
     function testLatestRoundDataPositiveAnswer() public view {
@@ -97,8 +148,8 @@ contract WstETHExchangeRateAdapterUnitTest is Test {
 
         assertEq(roundId, 1);
         assertEq(answer, int256(MOCK_RATE));
-        assertEq(startedAt, block.timestamp);
-        assertEq(updatedAt, block.timestamp);
+        assertEq(startedAt, MOCK_TIMESTAMP);
+        assertEq(updatedAt, MOCK_TIMESTAMP);
         assertEq(answeredInRound, 1);
     }
 
@@ -108,7 +159,19 @@ contract WstETHExchangeRateAdapterUnitTest is Test {
         adapter.latestRoundData();
     }
 
+    function testRevertsWhenExchangeRateOverflows() public {
+        mockWstETH.setRate(uint256(type(int256).max) + 1);
+        vm.expectRevert(
+            WstETHExchangeRateAdapter.ExchangeRateOverflow.selector
+        );
+        adapter.latestRoundData();
+    }
+
     function testWorksWithChainlinkCompositeOracle() public {
+        /// Warp to a realistic timestamp so MockChainlinkOracle (which uses
+        /// block.timestamp) returns a timestamp comparable to the adapter's
+        vm.warp(MOCK_TIMESTAMP + 100);
+
         /// ETH/USD = $2500
         MockChainlinkOracle ethUsd = new MockChainlinkOracle(2500e8, 8);
         /// stETH/ETH = 0.9998
@@ -129,6 +192,9 @@ contract WstETHExchangeRateAdapterUnitTest is Test {
         ) = compositeOracle.latestRoundData();
 
         assertTrue(answer > 0, "Composite price should be positive");
+        /// ChainlinkCompositeOracle always returns block.timestamp as updatedAt,
+        /// not the underlying feeds' timestamps. The adapter's real updatedAt is
+        /// only visible when calling the adapter directly.
         assertEq(updatedAt, block.timestamp);
         assertEq(roundId, 0);
         assertEq(answeredInRound, 0);

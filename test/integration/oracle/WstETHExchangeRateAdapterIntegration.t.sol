@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
@@ -11,13 +12,19 @@ contract WstETHExchangeRateAdapterIntegrationTest is Test {
 
     /// Ethereum mainnet addresses
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address public constant LIDO_ACCOUNTING_ORACLE =
+        0x852deD011285fe67063a08005c71a85690503Cee;
     address public constant CHAINLINK_ETH_USD =
         0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     address public constant CHAINLINK_STETH_ETH =
         0x86392dC19c0b719886221c78AB11eb8Cf5c52812;
 
+    /// Beacon Chain constants
+    uint256 constant BEACON_GENESIS_TIMESTAMP = 1606824023;
+    uint256 constant SECONDS_PER_SLOT = 12;
+
     function setUp() public {
-        adapter = new WstETHExchangeRateAdapter(WSTETH);
+        adapter = new WstETHExchangeRateAdapter(WSTETH, LIDO_ACCOUNTING_ORACLE);
     }
 
     function testAdapterReturnsValidExchangeRate() public view {
@@ -32,8 +39,17 @@ contract WstETHExchangeRateAdapterIntegrationTest is Test {
         assertTrue(answer > 0, "Exchange rate should be positive");
         assertEq(roundId, 1);
         assertEq(answeredInRound, 1);
-        assertEq(startedAt, block.timestamp);
-        assertEq(updatedAt, block.timestamp);
+        /// updatedAt should be a real timestamp derived from Lido oracle,
+        /// not block.timestamp — it should be in the past
+        assertTrue(
+            updatedAt <= block.timestamp,
+            "updatedAt should not be in the future"
+        );
+        assertTrue(
+            updatedAt > block.timestamp - 2 days,
+            "updatedAt should be within the last 2 days"
+        );
+        assertEq(startedAt, updatedAt);
     }
 
     function testExchangeRateInExpectedRange() public view {
@@ -55,6 +71,14 @@ contract WstETHExchangeRateAdapterIntegrationTest is Test {
         assertEq(adapter.decimals(), 18);
     }
 
+    function testLidoOracleAddress() public view {
+        assertEq(
+            address(adapter.lidoOracle()),
+            LIDO_ACCOUNTING_ORACLE,
+            "Lido oracle address should match"
+        );
+    }
+
     function testThreeFeedCompositeOracle() public {
         /// Deploy 3-feed composite: ETH/USD × stETH/ETH × wstETH/stETH(adapter)
         ChainlinkCompositeOracle compositeOracle = new ChainlinkCompositeOracle(
@@ -67,6 +91,7 @@ contract WstETHExchangeRateAdapterIntegrationTest is Test {
             .latestRoundData();
 
         assertTrue(answer > 0, "wstETH/USD price should be positive");
+        /// ChainlinkCompositeOracle always returns block.timestamp as updatedAt
         assertEq(updatedAt, block.timestamp);
 
         /// wstETH/USD should be roughly ETH price * 1.19

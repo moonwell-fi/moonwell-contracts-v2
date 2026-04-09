@@ -9,6 +9,12 @@ interface IWstETH {
     function stEthPerToken() external view returns (uint256);
 }
 
+/// @notice Interface for the Lido AccountingOracle to get the last report slot
+interface ILidoAccountingOracle {
+    /// @notice Returns the reference slot of the last processed oracle report
+    function getLastProcessingRefSlot() external view returns (uint256);
+}
+
 /// @notice Adapter that wraps the wstETH canonical exchange rate (stEthPerToken)
 /// into a Chainlink AggregatorV3Interface. This allows the ChainlinkCompositeOracle
 /// to use the on-chain wstETH/stETH rate as a third feed in the 3-oracle composition:
@@ -17,9 +23,21 @@ interface IWstETH {
 /// On L2s (Base, Optimism), Chainlink provides a native wstETH/stETH feed.
 /// On Ethereum mainnet, no such feed exists, so this adapter reads the canonical
 /// rate directly from the wstETH contract.
+///
+/// Staleness detection uses the Lido AccountingOracle's last processed report slot
+/// to derive a real `updatedAt` timestamp, rather than fabricating block.timestamp.
 contract WstETHExchangeRateAdapter is AggregatorV3Interface {
     /// @notice The wstETH contract address
     IWstETH public immutable wstETH;
+
+    /// @notice The Lido AccountingOracle contract
+    ILidoAccountingOracle public immutable lidoOracle;
+
+    /// @notice Ethereum Beacon Chain genesis timestamp (Dec 1, 2020 12:00:23 UTC)
+    uint256 internal constant BEACON_GENESIS_TIMESTAMP = 1606824023;
+
+    /// @notice Beacon Chain slot duration in seconds
+    uint256 internal constant SECONDS_PER_SLOT = 12;
 
     /// @notice Thrown when stEthPerToken returns 0
     error InvalidExchangeRate();
@@ -27,8 +45,9 @@ contract WstETHExchangeRateAdapter is AggregatorV3Interface {
     /// @notice Thrown when stEthPerToken exceeds int256 max
     error ExchangeRateOverflow();
 
-    constructor(address _wstETH) {
+    constructor(address _wstETH, address _lidoOracle) {
         wstETH = IWstETH(_wstETH);
+        lidoOracle = ILidoAccountingOracle(_lidoOracle);
     }
 
     /// @notice Returns 18, matching the wstETH exchange rate decimals
@@ -48,7 +67,9 @@ contract WstETHExchangeRateAdapter is AggregatorV3Interface {
 
     /// @notice Returns the latest wstETH/stETH exchange rate
     /// @dev roundId and answeredInRound are both set to 1 to satisfy
-    /// ChainlinkCompositeOracle's validation: answeredInRound == roundId
+    /// ChainlinkCompositeOracle's validation: answeredInRound == roundId.
+    /// updatedAt is derived from the Lido AccountingOracle's last processed
+    /// report slot, providing real staleness information.
     function latestRoundData()
         external
         view
@@ -65,14 +86,13 @@ contract WstETHExchangeRateAdapter is AggregatorV3Interface {
         if (rate == 0) revert InvalidExchangeRate();
         if (rate > uint256(type(int256).max)) revert ExchangeRateOverflow();
 
-        /// @dev updatedAt uses block.timestamp because stEthPerToken has no
-        /// built-in staleness signal. Consumers needing staleness detection
-        /// should monitor the underlying Lido oracle update frequency.
+        uint256 lastReportTimestamp = _getLastReportTimestamp();
+
         return (
             1, // roundId
             int256(rate), // answer (18 decimals)
-            block.timestamp, // startedAt
-            block.timestamp, // updatedAt
+            lastReportTimestamp, // startedAt
+            lastReportTimestamp, // updatedAt
             1 // answeredInRound == roundId
         );
     }
@@ -98,5 +118,12 @@ contract WstETHExchangeRateAdapter is AggregatorV3Interface {
     /// @notice Returns 1 (single perpetual round)
     function latestRound() external pure override returns (uint256) {
         return 1;
+    }
+
+    /// @notice Derives a Unix timestamp from the Lido AccountingOracle's last
+    /// processed report slot using the Beacon Chain slot-to-timestamp formula
+    function _getLastReportTimestamp() internal view returns (uint256) {
+        uint256 refSlot = lidoOracle.getLastProcessingRefSlot();
+        return BEACON_GENESIS_TIMESTAMP + (refSlot * SECONDS_PER_SLOT);
     }
 }

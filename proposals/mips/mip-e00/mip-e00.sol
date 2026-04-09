@@ -111,7 +111,8 @@ contract mipe00 is HybridProposalV2, Configs {
             /// wstETH/USD composite oracle = ETH/USD × stETH/ETH × wstETH/stETH
             /// Uses our adapter wrapping wstETH.stEthPerToken() for the canonical exchange rate
             WstETHExchangeRateAdapter wstEthAdapter = new WstETHExchangeRateAdapter(
-                    addresses.getAddress("wstETH")
+                    addresses.getAddress("wstETH"),
+                    addresses.getAddress("LIDO_ACCOUNTING_ORACLE")
                 );
             addresses.addAddress(
                 "WSTETH_EXCHANGE_RATE_ADAPTER",
