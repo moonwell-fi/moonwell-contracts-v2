@@ -101,6 +101,12 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             }
 
             vm.selectFork(chainId.toForkId());
+
+            // skip chains that don't have PROPOSAL_VIEW deployed yet
+            if (!addresses.isAddressSet("PROPOSAL_VIEW")) {
+                continue;
+            }
+
             ProposalView proposalView = ProposalView(
                 addresses.getAddress("PROPOSAL_VIEW")
             );
