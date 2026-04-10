@@ -7,6 +7,7 @@ import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openze
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
+import {ProposalView} from "@protocol/views/ProposalView.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
@@ -261,6 +262,23 @@ contract mipx52 is HybridProposal {
             vm.stopBroadcast();
 
             addresses.addAddress("TEMPORAL_GOVERNOR", temporalGovernor);
+        }
+
+        // Deploy ProposalView on Moonbeam (references TemporalGovernor)
+        if (!addresses.isAddressSet("PROPOSAL_VIEW", block.chainid)) {
+            address temporalGovernor = addresses.getAddress(
+                "TEMPORAL_GOVERNOR"
+            );
+
+            vm.startBroadcast();
+
+            address proposalView = address(
+                new ProposalView(ITemporalGovernor(temporalGovernor))
+            );
+
+            vm.stopBroadcast();
+
+            addresses.addAddress("PROPOSAL_VIEW", proposalView);
         }
 
         // Deploy VotingPowerAggregator on Moonbeam
@@ -1651,6 +1669,19 @@ contract mipx52 is HybridProposal {
                 ethereumGovernorV2
             ),
             "Ethereum MultichainGovernorV2 not trusted sender on Moonbeam TemporalGovernor"
+        );
+
+        // 5.6. Validate ProposalView is deployed and references TemporalGovernor
+        address proposalView = addresses.getAddress("PROPOSAL_VIEW");
+        assertGt(
+            proposalView.code.length,
+            0,
+            "ProposalView not deployed on Moonbeam"
+        );
+        assertEq(
+            address(ProposalView(proposalView).temporalGovernor()),
+            temporalGovernor,
+            "ProposalView does not reference correct TemporalGovernor"
         );
 
         // 6. Validate MultichainGovernor was upgraded to v1.1 (with recoverETH)
