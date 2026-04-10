@@ -157,7 +157,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
 
     /// no cross chain actions to run, so remove all code from this function
     /// @dev do not use MIP as a base to fork off of, it will not work
-    function run(Addresses, address) public override {}
+    function simulate(Addresses, address) public override {}
 
     function teardown(Addresses addresses, address) public pure override {}
 

@@ -456,7 +456,7 @@ abstract contract BaseTestProposal is Configs, HybridProposal {
         );
     }
 
-    function run(Addresses, address) public pure override {}
+    function simulate(Addresses, address) public pure override {}
 
     function validate(Addresses, address) public pure override {}
 }

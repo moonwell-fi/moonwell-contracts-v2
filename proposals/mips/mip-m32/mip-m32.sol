@@ -40,7 +40,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
         // we must run first mip-m30 to set the pending admin of MOONWELL_mWBTC to the Multichain Governor
         IProposal mip30 = IProposal(address(new mipm30()));
         mip30.build(addresses);
-        mip30.run(addresses, caller);
+        mip30.simulate(addresses, caller);
     }
 
     /// run this action through the Artemis Governor
@@ -75,7 +75,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
         );
     }
 
-    function run(Addresses addresses, address) public override {
+    function simulate(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
         require(
             actions.proposalActionTypeCount(ActionType.Base) == 0,
