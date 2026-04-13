@@ -99,7 +99,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
         if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
 
         if (DO_BUILD) build(addresses);
-        if (DO_RUN) run(addresses, deployerAddress);
+        if (DO_RUN) simulate(addresses, deployerAddress);
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_VALIDATE) {
             validate(addresses, deployerAddress);

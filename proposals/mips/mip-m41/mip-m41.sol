@@ -117,7 +117,7 @@ contract mipm41 is HybridProposal, ParameterValidation {
         );
     }
 
-    function run(
+    function simulate(
         Addresses addresses,
         address
     ) public override mockHook(addresses) {

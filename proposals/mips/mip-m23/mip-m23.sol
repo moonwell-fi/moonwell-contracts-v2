@@ -377,7 +377,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         vm.selectFork(primaryForkId());
     }
 
-    function run(Addresses addresses, address) public override {
+    function simulate(Addresses addresses, address) public override {
         vm.selectFork(BASE_FORK_ID);
         _runExtChain(addresses, actions.filter(ActionType.Base));
 

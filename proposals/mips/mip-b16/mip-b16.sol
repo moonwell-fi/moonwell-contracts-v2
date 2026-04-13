@@ -85,7 +85,7 @@ contract mipb16 is
         );
     }
 
-    function run(Addresses addresses, address) public override {
+    function simulate(Addresses addresses, address) public override {
         /// safety check to ensure no moonbeam actions are run
         require(
             actions.proposalActionTypeCount(ActionType.Base) == 2,
