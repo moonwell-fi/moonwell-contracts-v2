@@ -32,15 +32,6 @@ contract VotingPowerAggregator is
         _transferOwnership(_owner);
     }
 
-    /// @dev this function is needed for Ethereum deployment where the MultichainGovernorV2 (and this contract) must be
-    /// deployed before xWell is deployed.
-    function setXWell(address _xWell) external onlyOwner {
-        if (_xWell == address(0)) {
-            revert ZeroAddress();
-        }
-        xWell = xWELL(_xWell);
-    }
-
     /// @notice adds a snapshot source to the aggregator
     /// @param source the address of the snapshot source to add
     function addSnapshotSource(address source) external onlyOwner {

@@ -134,11 +134,6 @@ contract VotingPowerAggregatorUnitTest is Test {
     /// Snapshot Source Management Tests - Add
     /// ========================================================================
 
-    function testSetXWellZeroAddressFails() public {
-        vm.expectRevert(IVotingPowerAggregator.ZeroAddress.selector);
-        votingPowerAggregator.setXWell(address(0));
-    }
-
     function testAddSnapshotSourceAsOwnerSucceeds() public {
         assertFalse(
             votingPowerAggregator.isSnapshotSource(address(source1)),

@@ -33,7 +33,7 @@ import {ChainIds} from "@utils/ChainIds.sol";
 ///
 ///         POST-DEPLOYMENT CONFIGURATION (by deployer):
 ///         4. Initialize MultichainGovernorV2 on Ethereum with proposal count from Moonbeam + 1
-///         5. Configure Ethereum VotingPowerAggregator (setXWell, addSnapshotSource, transfer ownership to governor)
+///         5. Configure Ethereum VotingPowerAggregator (addSnapshotSource, transfer ownership to governor)
 ///
 ///         MOONBEAM ACTIONS (executed by old MultichainGovernor):
 ///         6. Upgrade Moonbeam MultichainGovernor to v1.1 (adds recoverETH function)
@@ -604,15 +604,14 @@ contract mipx52 is HybridProposal {
         address ethereumVotingPower = addresses.getAddress(
             "VOTING_POWER_AGGREGATOR"
         );
-        address ethereumXWell = addresses.getAddress("xWELL_PROXY");
         address ethereumStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
 
         VotingPowerAggregator votingPower = VotingPowerAggregator(
             ethereumVotingPower
         );
 
-        // Set xWell as voting source
-        votingPower.setXWell(ethereumXWell);
+        // xWell is already set during initialize() in deploy(); only snapshot
+        // sources and ownership remain to be configured here.
 
         // Add stkWell as snapshot source
         votingPower.addSnapshotSource(ethereumStkWell);
@@ -1248,7 +1247,7 @@ contract mipx52 is HybridProposal {
     }
 
     function build(Addresses addresses) public override {
-        // NOTE: Ethereum VotingPowerAggregator configuration (setXWell, addSnapshotSource) is handled
+        // NOTE: Ethereum VotingPowerAggregator configuration (addSnapshotSource) is handled
         // in afterDeploy() by the deployer before transferring ownership to MultichainGovernorV2.
         // This proposal (mip-x52) is executed by the old Moonbeam MultichainGovernor, so it cannot
         // execute actions on the Ethereum MultichainGovernorV2 which doesn't have any proposals yet.
