@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 interface IVotingPowerAggregator {
     error EnumerableSetError();
     error InvalidSource();
+    error ZeroAddress();
 
     event SnapshotSourceAdded(address source);
     event SnapshotSourceRemoved(address source);

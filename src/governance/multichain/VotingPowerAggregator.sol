@@ -35,6 +35,9 @@ contract VotingPowerAggregator is
     /// @dev this function is needed for Ethereum deployment where the MultichainGovernorV2 (and this contract) must be
     /// deployed before xWell is deployed.
     function setXWell(address _xWell) external onlyOwner {
+        if (_xWell == address(0)) {
+            revert ZeroAddress();
+        }
         xWell = xWELL(_xWell);
     }
 
