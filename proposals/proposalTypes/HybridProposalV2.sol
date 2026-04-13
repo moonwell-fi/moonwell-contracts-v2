@@ -669,7 +669,15 @@ abstract contract HybridProposalV2 is
             ).call{value: cost, gas: 52_000_000}(proposeCalldata);
             data = returndata;
 
-            require(success, "propose multichain governor v2 failed");
+            if (!success) {
+                if (returndata.length > 0) {
+                    assembly {
+                        let returndata_size := mload(returndata)
+                        revert(add(32, returndata), returndata_size)
+                    }
+                }
+                revert("propose multichain governor v2 failed");
+            }
 
             require(
                 gasStart - gasleft() <= 60_000_000,
