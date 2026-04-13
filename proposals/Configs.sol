@@ -76,6 +76,15 @@ abstract contract Configs is Test {
     }
 
     function _setMTokenConfiguration(string memory mTokenPath) internal {
+        /// idempotent: if configs were already loaded for this chain, skip.
+        /// Without this guard, calling _setMTokenConfiguration in both deploy()
+        /// and build() pushes duplicate entries, leading to duplicate proposal
+        /// actions (e.g. minting twice on the same mToken which depletes the
+        /// proposer's underlying balance).
+        if (cTokenConfigurations[block.chainid].length != 0) {
+            return;
+        }
+
         string memory fileContents = vm.readFile(mTokenPath);
         bytes memory rawJson = vm.parseJson(fileContents);
 
