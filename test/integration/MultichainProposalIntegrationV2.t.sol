@@ -22,6 +22,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_FORK_ID, ETHEREUM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBEAM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {EthereumPostDeploymentActions} from "@protocol/xWELL/EthereumPostDeploymentActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {BridgeOutHelper} from "@test/helper/BridgeOutHelper.sol";
 import {MockMultichainGovernorV2} from "@test/mock/MockMultichainGovernorV2.sol";
 import {MockMultichainVoteCollectionV2} from "@test/mock/MockMultichainVoteCollectionV2.sol";
 
@@ -237,67 +238,46 @@ contract MultichainProposalIntegrationV2 is
     }
 
     /// @notice Setup wormhole relayer mock for cross-chain message bridging in tests
-    /// @dev This replaces the real wormhole relayer with a mock that works in forge tests
+    /// @dev This replaces the real wormhole core bridge with a mock that works in forge tests
     function _setupWormholeRelayerMock() internal {
-        // Create mock wormhole relayer adapter with default pricing (0.1 ether per chain)
+        // Create mock wormhole adapter (serves as both relayer and core bridge mock)
         wormholeRelayerAdapter = new WormholeRelayerAdapter(
             new uint16[](0),
             new uint256[](0)
         );
         vm.makePersistent(address(wormholeRelayerAdapter));
-        vm.label(address(wormholeRelayerAdapter), "MockWormholeRelayer");
+        vm.label(address(wormholeRelayerAdapter), "MockWormholeCore");
 
         // Configure mock for multichain tests
         wormholeRelayerAdapter.setIsMultichainTest(true);
         wormholeRelayerAdapter.setSenderChainId(ETHEREUM_WORMHOLE_CHAIN_ID);
 
-        // Replace wormhole relayer in MultichainGovernorV2 on Ethereum
+        bytes32 mockAddr = bytes32(
+            uint256(uint160(address(wormholeRelayerAdapter)))
+        );
+
+        // Replace wormhole core in MultichainGovernorV2 on Ethereum (slot 123)
         vm.selectFork(ETHEREUM_FORK_ID);
+        vm.store(address(governorV2), bytes32(uint256(123)), mockAddr);
 
-        // MultichainGovernorV2 storage layout (from forge inspect):
-        //   Slot 102: pauseGuardian (address, 20 bytes) + gasLimit (uint96, 12 bytes) packed
-        //   Slot 103: wormholeRelayer (address, 20 bytes)
-        // We only need to overwrite slot 103 (wormholeRelayer), leaving slot 102 (gasLimit) untouched.
-        vm.store(
-            address(governorV2),
-            bytes32(uint256(103)),
-            bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
-        );
-
-        // Replace wormhole relayer in Base VoteCollection
-        // For VoteCollections, gasLimit (uint96) + wormholeRelayer (address) are packed in slot 0
+        // Replace wormhole core in Base VoteCollection (slot 160)
         vm.selectFork(BASE_FORK_ID);
-        uint256 gasLimit = baseVoteCollection.gasLimit();
-        bytes32 encodedData = bytes32(
-            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
-                uint256(gasLimit)
-        );
-        vm.store(address(baseVoteCollection), bytes32(uint256(0)), encodedData);
+        vm.store(address(baseVoteCollection), bytes32(uint256(160)), mockAddr);
 
-        // Replace wormhole relayer in Optimism VoteCollection
+        // Replace wormhole core in Optimism VoteCollection (slot 160)
         vm.selectFork(OPTIMISM_FORK_ID);
-        gasLimit = optimismVoteCollection.gasLimit();
-        encodedData = bytes32(
-            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
-                uint256(gasLimit)
-        );
         vm.store(
             address(optimismVoteCollection),
-            bytes32(uint256(0)),
-            encodedData
+            bytes32(uint256(160)),
+            mockAddr
         );
 
-        // Replace wormhole relayer in Moonbeam VoteCollection
+        // Replace wormhole core in Moonbeam VoteCollection (slot 158)
         vm.selectFork(MOONBEAM_FORK_ID);
-        gasLimit = moonbeamVoteCollection.gasLimit();
-        encodedData = bytes32(
-            (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
-                uint256(gasLimit)
-        );
         vm.store(
             address(moonbeamVoteCollection),
-            bytes32(uint256(0)),
-            encodedData
+            bytes32(uint256(158)),
+            mockAddr
         );
     }
 
@@ -632,24 +612,27 @@ contract MultichainProposalIntegrationV2 is
             "stkWELL should be a snapshot source on Moonbeam"
         );
 
-        // Verify wormhole relayer mock is properly configured (bridge cost > 0)
+        // Verify wormhole core mock is properly configured (bridgeCost = messageFee = 0)
         vm.selectFork(BASE_FORK_ID);
-        uint256 baseBridgeCost = baseVoteCollection.bridgeCost(
-            ETHEREUM_WORMHOLE_CHAIN_ID
+        assertEq(
+            baseVoteCollection.bridgeCost(ETHEREUM_WORMHOLE_CHAIN_ID),
+            0,
+            "Base bridge cost should be 0 (messageFee)"
         );
-        assertGt(baseBridgeCost, 0, "Base bridge cost should be > 0");
 
         vm.selectFork(OPTIMISM_FORK_ID);
-        uint256 optimismBridgeCost = optimismVoteCollection.bridgeCost(
-            ETHEREUM_WORMHOLE_CHAIN_ID
+        assertEq(
+            optimismVoteCollection.bridgeCost(ETHEREUM_WORMHOLE_CHAIN_ID),
+            0,
+            "Optimism bridge cost should be 0 (messageFee)"
         );
-        assertGt(optimismBridgeCost, 0, "Optimism bridge cost should be > 0");
 
         vm.selectFork(MOONBEAM_FORK_ID);
-        uint256 moonbeamBridgeCost = moonbeamVoteCollection.bridgeCost(
-            ETHEREUM_WORMHOLE_CHAIN_ID
+        assertEq(
+            moonbeamVoteCollection.bridgeCost(ETHEREUM_WORMHOLE_CHAIN_ID),
+            0,
+            "Moonbeam bridge cost should be 0 (messageFee)"
         );
-        assertGt(moonbeamBridgeCost, 0, "Moonbeam bridge cost should be > 0");
     }
 
     function testCreateSimpleProposal() public {
@@ -2013,10 +1996,9 @@ contract MultichainProposalIntegrationV2 is
             true
         );
 
-        // Now rebroadcast should work (though it will fail due to mock wormhole)
-        // In a real environment with proper wormhole setup, this would succeed
-        vm.expectRevert(); // Will revert due to mock wormhole, but that's expected
-        governorV2.rebroadcastProposal{value: 0}(proposalId);
+        // Rebroadcast should succeed now that proposal is active
+        // With publishMessage (bridgeCost = 0), no value needed
+        governorV2.rebroadcastProposal(proposalId);
     }
 
     function testLiveProposalsView() public {
@@ -2620,13 +2602,19 @@ contract MultichainProposalIntegrationV2 is
         // Change senderChainId to Base (votes are coming FROM Base)
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
-        // Emit votes from Base → auto-delivers to governor on Ethereum
+        // Emit votes from Base → deliver to governor on Ethereum via processVAA
         uint256 emitCost = baseVoteCollection.bridgeCost(
             ETHEREUM_WORMHOLE_CHAIN_ID
         );
         vm.deal(baseVoter, emitCost);
+        vm.recordLogs();
         vm.prank(baseVoter);
         baseVoteCollection.emitVotes{value: emitCost}(proposalId);
+        BridgeOutHelper.deliverBridgeOutEvents(
+            vm,
+            wormholeRelayerAdapter,
+            address(baseVoteCollection)
+        );
 
         // Restore senderChainId to Ethereum for future operations
         wormholeRelayerAdapter.setSenderChainId(ETHEREUM_WORMHOLE_CHAIN_ID);
@@ -2891,6 +2879,7 @@ contract MultichainProposalIntegrationV2 is
         calldatas[0] = callData;
 
         uint256 bridgeCost = governorV2.bridgeCostAll();
+        vm.recordLogs();
         vm.prank(proposer);
         proposalId = governorV2.propose{value: bridgeCost}(
             targets,
@@ -2898,6 +2887,12 @@ contract MultichainProposalIntegrationV2 is
             calldatas,
             description,
             true
+        );
+
+        BridgeOutHelper.deliverBridgeOutEvents(
+            vm,
+            wormholeRelayerAdapter,
+            address(governorV2)
         );
     }
 

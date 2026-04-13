@@ -152,7 +152,10 @@ contract MultichainGovernorV2 is
         WormholeTrustedSender.TrustedSender[] memory trustedSenders,
         bytes[] calldata calldatas
     ) external initializer {
-        if (initData.votingPower == address(0)) {
+        if (
+            initData.votingPower == address(0) ||
+            initData.wormholeCore == address(0)
+        ) {
             revert ZeroAddress();
         }
         votingPower = IVotingPowerAggregator(initData.votingPower);
@@ -342,6 +345,14 @@ contract MultichainGovernorV2 is
         }
 
         return totalLiveProposals;
+    }
+
+    /// @notice returns whether the given calldata is whitelisted
+    /// @param data the calldata to check
+    function isWhitelistedCalldata(
+        bytes calldata data
+    ) external view override returns (bool) {
+        return _whitelistedCalldatas[data];
     }
 
     /// @notice returns whether or not a given propsal is active

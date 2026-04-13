@@ -13,6 +13,8 @@ import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 import {MultichainBaseTestV2} from "@test/helper/MultichainBaseTestV2.t.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {MockMultichainGovernorV2} from "@test/mock/MockMultichainGovernorV2.sol";
 
 contract MockTimelock {
     function transferOwnership(address) external pure returns (bool) {
@@ -153,6 +155,182 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
             trustedSenders,
             new bytes[](0)
         );
+    }
+
+    /// @notice build a well-formed InitializeData matching the base test setup
+    function _buildInitData()
+        internal
+        view
+        returns (MultichainGovernorV2.InitializeData memory initData)
+    {
+        initData.votingPower = address(votingPowerAggregator);
+        initData.proposalThreshold = proposalThreshold;
+        initData.votingPeriodSeconds = votingPeriodSeconds;
+        initData
+            .crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
+        initData.quorum = quorum;
+        initData.pauseDuration = pauseDuration;
+        initData.pauseGuardian = pauseGuardian;
+        initData.breakGlassGuardian = breakGlassGuardian;
+        initData.wormholeCore = address(wormholeRelayerAdapter);
+        initData.startingProposalCount = 0;
+    }
+
+    /// @notice deploy a fresh governor proxy initialized with the given data
+    /// @dev caller must deploy the logic contract first and pass in its address so that
+    /// vm.expectRevert can be applied to just the proxy construction (which is the call
+    /// that invokes initialize via delegatecall)
+    function _deployGovernorProxy(
+        address logic,
+        MultichainGovernorV2.InitializeData memory initData,
+        WormholeTrustedSender.TrustedSender[] memory trustedSenders,
+        bytes[] memory calldatas
+    ) internal returns (MultichainGovernorV2) {
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+            logic,
+            proxyAdmin,
+            abi.encodeWithSignature(
+                "initialize((address,uint256,uint256,uint256,uint256,uint128,uint128,address,address,address),(uint16,address)[],bytes[])",
+                initData,
+                trustedSenders,
+                calldatas
+            )
+        );
+
+        return MultichainGovernorV2(payable(address(proxy)));
+    }
+
+    function testInitializeRevertsZeroVotingPower() public {
+        MultichainGovernorV2.InitializeData memory initData = _buildInitData();
+        initData.votingPower = address(0);
+
+        WormholeTrustedSender.TrustedSender[]
+            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                0
+            );
+
+        address logic = address(new MockMultichainGovernorV2());
+        vm.expectRevert(IMultichainGovernorV2.ZeroAddress.selector);
+        _deployGovernorProxy(logic, initData, trustedSenders, new bytes[](0));
+    }
+
+    function testInitializeRevertsZeroWormholeCore() public {
+        MultichainGovernorV2.InitializeData memory initData = _buildInitData();
+        initData.wormholeCore = address(0);
+
+        WormholeTrustedSender.TrustedSender[]
+            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                0
+            );
+
+        address logic = address(new MockMultichainGovernorV2());
+        vm.expectRevert(IMultichainGovernorV2.ZeroAddress.selector);
+        _deployGovernorProxy(logic, initData, trustedSenders, new bytes[](0));
+    }
+
+    function testInitializeRevertsBothZero() public {
+        MultichainGovernorV2.InitializeData memory initData = _buildInitData();
+        initData.votingPower = address(0);
+        initData.wormholeCore = address(0);
+
+        WormholeTrustedSender.TrustedSender[]
+            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                0
+            );
+
+        address logic = address(new MockMultichainGovernorV2());
+        vm.expectRevert(IMultichainGovernorV2.ZeroAddress.selector);
+        _deployGovernorProxy(logic, initData, trustedSenders, new bytes[](0));
+    }
+
+    function testInitializeSucceedsSetsState() public {
+        MultichainGovernorV2.InitializeData memory initData = _buildInitData();
+
+        WormholeTrustedSender.TrustedSender[]
+            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                1
+            );
+        trustedSenders[0].chainId = BASE_WORMHOLE_CHAIN_ID;
+        trustedSenders[0].addr = address(0xBEEF);
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature("foo(uint256)", uint256(42));
+
+        MultichainGovernorV2 freshGovernor = _deployGovernorProxy(
+            address(new MockMultichainGovernorV2()),
+            initData,
+            trustedSenders,
+            calldatas
+        );
+
+        assertEq(
+            address(freshGovernor.votingPower()),
+            address(votingPowerAggregator),
+            "votingPower"
+        );
+        assertEq(
+            freshGovernor.proposalThreshold(),
+            proposalThreshold,
+            "proposalThreshold"
+        );
+        assertEq(
+            freshGovernor.votingPeriod(),
+            votingPeriodSeconds,
+            "votingPeriod"
+        );
+        assertEq(
+            freshGovernor.crossChainVoteCollectionPeriod(),
+            crossChainVoteCollectionPeriod,
+            "crossChainVoteCollectionPeriod"
+        );
+        assertEq(freshGovernor.quorum(), quorum, "quorum");
+        assertEq(freshGovernor.pauseDuration(), pauseDuration, "pauseDuration");
+        assertEq(freshGovernor.pauseGuardian(), pauseGuardian, "pauseGuardian");
+        assertEq(
+            freshGovernor.breakGlassGuardian(),
+            breakGlassGuardian,
+            "breakGlassGuardian"
+        );
+        assertEq(
+            address(freshGovernor.wormhole()),
+            address(wormholeRelayerAdapter),
+            "wormhole core"
+        );
+        assertEq(freshGovernor.proposalCount(), 0, "proposalCount");
+        assertEq(
+            freshGovernor.targetAddress(BASE_WORMHOLE_CHAIN_ID),
+            address(0xBEEF),
+            "trusted sender target address"
+        );
+        assertTrue(
+            freshGovernor.isTrustedSender(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(0xBEEF)
+            ),
+            "trusted sender not registered"
+        );
+        assertEq(
+            freshGovernor.getAllTargetChains().length,
+            1,
+            "target chains length"
+        );
+
+        /// confirm the calldata was approved by trying to re-approve it
+        /// (only the governor can call this; expect CalldataAlreadyApproved)
+        vm.prank(address(freshGovernor));
+        vm.expectRevert(IMultichainGovernorV2.CalldataAlreadyApproved.selector);
+        freshGovernor.updateApprovedCalldata(calldatas[0], true);
+    }
+
+    function testInitializeCannotBeCalledTwice() public {
+        MultichainGovernorV2.InitializeData memory initData = _buildInitData();
+        WormholeTrustedSender.TrustedSender[]
+            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                0
+            );
+
+        vm.expectRevert("Initializable: contract is already initialized");
+        governor.initialize(initData, trustedSenders, new bytes[](0));
     }
 
     function testDeployxWell() public {

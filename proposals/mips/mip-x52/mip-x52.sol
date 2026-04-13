@@ -7,6 +7,7 @@ import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openze
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
+import {ProposalView} from "@protocol/views/ProposalView.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
@@ -32,7 +33,7 @@ import {ChainIds} from "@utils/ChainIds.sol";
 ///
 ///         POST-DEPLOYMENT CONFIGURATION (by deployer):
 ///         4. Initialize MultichainGovernorV2 on Ethereum with proposal count from Moonbeam + 1
-///         5. Configure Ethereum VotingPowerAggregator (setXWell, addSnapshotSource, transfer ownership to governor)
+///         5. Configure Ethereum VotingPowerAggregator (addSnapshotSource, transfer ownership to governor)
 ///
 ///         MOONBEAM ACTIONS (executed by old MultichainGovernor):
 ///         6. Upgrade Moonbeam MultichainGovernor to v1.1 (adds recoverETH function)
@@ -261,6 +262,23 @@ contract mipx52 is HybridProposal {
             vm.stopBroadcast();
 
             addresses.addAddress("TEMPORAL_GOVERNOR", temporalGovernor);
+        }
+
+        // Deploy ProposalView on Moonbeam (references TemporalGovernor)
+        if (!addresses.isAddressSet("PROPOSAL_VIEW", block.chainid)) {
+            address temporalGovernor = addresses.getAddress(
+                "TEMPORAL_GOVERNOR"
+            );
+
+            vm.startBroadcast();
+
+            address proposalView = address(
+                new ProposalView(ITemporalGovernor(temporalGovernor))
+            );
+
+            vm.stopBroadcast();
+
+            addresses.addAddress("PROPOSAL_VIEW", proposalView);
         }
 
         // Deploy VotingPowerAggregator on Moonbeam
@@ -586,15 +604,14 @@ contract mipx52 is HybridProposal {
         address ethereumVotingPower = addresses.getAddress(
             "VOTING_POWER_AGGREGATOR"
         );
-        address ethereumXWell = addresses.getAddress("xWELL_PROXY");
         address ethereumStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
 
         VotingPowerAggregator votingPower = VotingPowerAggregator(
             ethereumVotingPower
         );
 
-        // Set xWell as voting source
-        votingPower.setXWell(ethereumXWell);
+        // xWell is already set during initialize() in deploy(); only snapshot
+        // sources and ownership remain to be configured here.
 
         // Add stkWell as snapshot source
         votingPower.addSnapshotSource(ethereumStkWell);
@@ -740,7 +757,7 @@ contract mipx52 is HybridProposal {
                     values,
                     innerCalldatas
                 ),
-                200
+                1 // finalized
             );
     }
 
@@ -1230,7 +1247,7 @@ contract mipx52 is HybridProposal {
     }
 
     function build(Addresses addresses) public override {
-        // NOTE: Ethereum VotingPowerAggregator configuration (setXWell, addSnapshotSource) is handled
+        // NOTE: Ethereum VotingPowerAggregator configuration (addSnapshotSource) is handled
         // in afterDeploy() by the deployer before transferring ownership to MultichainGovernorV2.
         // This proposal (mip-x52) is executed by the old Moonbeam MultichainGovernor, so it cannot
         // execute actions on the Ethereum MultichainGovernorV2 which doesn't have any proposals yet.
@@ -1548,6 +1565,22 @@ contract mipx52 is HybridProposal {
             "wormhole not set correctly on MultichainGovernorV2"
         );
 
+        // 8b. Validate all 8 break-glass whitelisted calldatas were stored correctly.
+        // These encode publishMessage / admin-transfer payloads used for emergency
+        // rollback — any ABI/chainId/target mismatch would make break glass inoperable.
+        bytes[] memory expectedCalldatas = _buildBreakGlassCalldatas(addresses);
+        // _buildBreakGlassCalldatas switches forks; re-select Ethereum where the governor lives
+        vm.selectFork(ETHEREUM_FORK_ID);
+        for (uint256 i = 0; i < expectedCalldatas.length; i++) {
+            assertTrue(
+                governor.isWhitelistedCalldata(expectedCalldatas[i]),
+                string.concat(
+                    "break glass calldata not whitelisted at index ",
+                    vm.toString(i)
+                )
+            );
+        }
+
         // 9. Validate Ethereum VotingPowerAggregator state (configured in afterDeploy)
         VotingPowerAggregator ethAggregator = VotingPowerAggregator(
             ethereumVotingPower
@@ -1651,6 +1684,19 @@ contract mipx52 is HybridProposal {
                 ethereumGovernorV2
             ),
             "Ethereum MultichainGovernorV2 not trusted sender on Moonbeam TemporalGovernor"
+        );
+
+        // 5.6. Validate ProposalView is deployed and references TemporalGovernor
+        address proposalView = addresses.getAddress("PROPOSAL_VIEW");
+        assertGt(
+            proposalView.code.length,
+            0,
+            "ProposalView not deployed on Moonbeam"
+        );
+        assertEq(
+            address(ProposalView(proposalView).temporalGovernor()),
+            temporalGovernor,
+            "ProposalView does not reference correct TemporalGovernor"
         );
 
         // 6. Validate MultichainGovernor was upgraded to v1.1 (with recoverETH)

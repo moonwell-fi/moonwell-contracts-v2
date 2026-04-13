@@ -45,7 +45,7 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
         );
     }
 
-    function run(Addresses addresses, address) public override {
+    function simulate(Addresses addresses, address) public override {
         /// @dev enable debugging
         setDebug(true);
 

@@ -48,7 +48,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         );
     }
 
-    function run(Addresses addresses, address) public override {
+    function simulate(Addresses addresses, address) public override {
         vm.selectFork(BASE_FORK_ID);
         _runExtChain(addresses, actions.filter(ActionType.Base));
 

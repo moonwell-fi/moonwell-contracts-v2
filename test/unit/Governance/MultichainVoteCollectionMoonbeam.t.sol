@@ -59,16 +59,6 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
             "incorrect vote amount"
         );
         assertEq(
-            governor.gasLimit(),
-            Constants.MIN_GAS_LIMIT,
-            "incorrect gas limit vote collection"
-        );
-        assertEq(
-            voteCollectionMoonbeam.gasLimit(),
-            Constants.MIN_GAS_LIMIT,
-            "incorrect gas limit vote collection"
-        );
-        assertEq(
             voteCollectionMoonbeam.getVotes(address(this), block.timestamp - 1),
             4_000_000_000 * 1e18,
             "incorrect vote amount"
@@ -86,9 +76,9 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
         );
 
         assertEq(
-            address(governor.wormholeRelayer()),
+            address(governor.wormhole()),
             address(wormholeRelayerAdapter),
-            "incorrect wormhole relayer"
+            "incorrect wormhole"
         );
         assertTrue(
             voteCollectionMoonbeam.isTrustedSender(
@@ -98,7 +88,7 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
             "governor not whitelisted to send messages in"
         );
 
-        assertTrue(governor.bridgeCostAll() != 0, "no targets");
+        assertTrue(governor.getAllTargetChainsLength() > 0, "no targets");
 
         assertEq(
             governor.getAllTargetChains().length,
@@ -135,6 +125,7 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
+        vm.recordLogs();
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -152,6 +143,8 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
         );
         assertEq(proposalId, endProposalCount, "proposal id incorrect");
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        _deliverBridgeOutEvents(address(governor));
 
         {
             IMultichainGovernorV2.ProposalInformation
@@ -307,29 +300,9 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
         _receivingFunds = false;
     }
 
-    function testSetGasLimitSucceeds() public {
-        uint96 newGasLimit = Constants.MIN_GAS_LIMIT + 100_000;
-        voteCollectionMoonbeam.setGasLimit(newGasLimit);
-
-        assertEq(
-            voteCollectionMoonbeam.gasLimit(),
-            newGasLimit,
-            "gas limit not updated"
-        );
-    }
-
-    function testSetGasLimitFailsIfTooLow() public {
-        uint96 newGasLimit = Constants.MIN_GAS_LIMIT - 1;
-
-        vm.expectRevert("MultichainVoteCollectionV2: gas limit too low");
-        voteCollectionMoonbeam.setGasLimit(newGasLimit);
-    }
-
-    function testSetGasLimitFailsIfNotOwner() public {
-        uint96 newGasLimit = Constants.MIN_GAS_LIMIT + 100_000;
-
-        vm.prank(address(0xdead));
-        vm.expectRevert();
+    function testSetGasLimitDeprecated() public {
+        uint96 newGasLimit = Constants.MIN_GAS_LIMIT;
+        vm.expectRevert("deprecated");
         voteCollectionMoonbeam.setGasLimit(newGasLimit);
     }
 

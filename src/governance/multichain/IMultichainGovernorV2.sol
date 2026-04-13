@@ -235,6 +235,13 @@ interface IMultichainGovernorV2 {
     /// @dev Returns the quorum for a proposal to pass
     function quorum() external view returns (uint256);
 
+    /// @notice returns whether the given calldata is whitelisted for the
+    /// break glass guardian to execute via executeBreakGlass
+    /// @param data the calldata to check
+    function isWhitelistedCalldata(
+        bytes calldata data
+    ) external view returns (bool);
+
     /// ---------------------------------------------- ////
     /// ---------------------------------------------- ////
     /// ------------- Permisslionless ---------------- ////
