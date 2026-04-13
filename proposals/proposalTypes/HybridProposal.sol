@@ -471,7 +471,7 @@ abstract contract HybridProposal is
 
     function teardown(Addresses, address) public virtual override {}
 
-    function run(
+    function simulate(
         Addresses addresses,
         address
     ) public virtual override mockHook(addresses) {

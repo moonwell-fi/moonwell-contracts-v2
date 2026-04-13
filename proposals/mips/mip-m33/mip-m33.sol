@@ -46,7 +46,7 @@ contract mipm33 is HybridProposal, ParameterValidation {
         );
     }
 
-    function run(Addresses addresses, address) public override {
+    function simulate(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
         require(
             actions.proposalActionTypeCount(ActionType.Base) == 0,
