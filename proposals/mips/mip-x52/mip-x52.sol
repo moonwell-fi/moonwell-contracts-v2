@@ -758,7 +758,7 @@ contract mipx52 is HybridProposal {
                     values,
                     innerCalldatas
                 ),
-                200
+                1 // finalized
             );
     }
 

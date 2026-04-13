@@ -152,7 +152,10 @@ contract MultichainGovernorV2 is
         WormholeTrustedSender.TrustedSender[] memory trustedSenders,
         bytes[] calldata calldatas
     ) external initializer {
-        if (initData.votingPower == address(0)) {
+        if (
+            initData.votingPower == address(0) ||
+            initData.wormholeCore == address(0)
+        ) {
             revert ZeroAddress();
         }
         votingPower = IVotingPowerAggregator(initData.votingPower);
