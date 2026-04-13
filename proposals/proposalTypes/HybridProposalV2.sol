@@ -634,6 +634,11 @@ abstract contract HybridProposalV2 is
             vm.selectFork(ETHEREUM_FORK_ID);
 
             vm.roll(block.number + 1);
+            /// VotingPowerAggregator uses timestamp-based voting — advance
+            /// timestamp by 1 so the delegate checkpoint from a few statements
+            /// above is visible to governor.propose() (which queries past
+            /// voting power at block.timestamp - 1).
+            vm.warp(block.timestamp + 1);
 
             /// triple check the values
             for (uint256 i = 0; i < targets.length; i++) {
