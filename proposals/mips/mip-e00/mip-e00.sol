@@ -61,6 +61,15 @@ contract mipe00 is HybridProposalV2, Configs {
 
     /// @notice Run MIP-X52 to deploy MultichainGovernorV2 before MIP-E00 deployment
     function initProposal(Addresses addresses) public override {
+        /// Skip if MIP-X52 has already been executed (e.g. in integration tests
+        /// where mip-x52 runs as its own dev proposal before mip-e00). Re-running
+        /// x52.afterDeploy would attempt to re-initialize the MultichainGovernorV2
+        /// proxy and revert with "Initializable: contract is already initialized".
+        if (addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
+            vm.selectFork(ETHEREUM_FORK_ID);
+            return;
+        }
+
         /// Deploy MultichainGovernorV2 via MIP-X52
         mipx52 x52 = new mipx52();
 
