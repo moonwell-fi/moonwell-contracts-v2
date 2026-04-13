@@ -314,6 +314,10 @@ contract MultichainProposalTestV2 is PostProposalCheck {
 
     function testCreateSimpleProposal() public {
         vm.selectFork(ETHEREUM_FORK_ID);
+
+        /// proposalId for the next propose() = current proposalCount + 1
+        uint256 expectedProposalId = governorV2.proposalCount() + 1;
+
         vm.startPrank(PROPOSER);
 
         address[] memory targets = new address[](1);
@@ -329,7 +333,7 @@ contract MultichainProposalTestV2 is PostProposalCheck {
 
         vm.expectEmit(true, true, false, true);
         emit ProposalCreated(
-            1,
+            expectedProposalId,
             PROPOSER,
             targets,
             values,
@@ -349,7 +353,7 @@ contract MultichainProposalTestV2 is PostProposalCheck {
 
         vm.stopPrank();
 
-        assertEq(proposalId, 1);
+        assertEq(proposalId, expectedProposalId);
         assertEq(
             uint8(governorV2.state(proposalId)),
             uint8(IMultichainGovernorV2.ProposalState.Active)
@@ -362,6 +366,9 @@ contract MultichainProposalTestV2 is PostProposalCheck {
 
     function testMultiStepProposalCreation() public {
         vm.selectFork(ETHEREUM_FORK_ID);
+
+        uint256 expectedProposalId = governorV2.proposalCount() + 1;
+
         vm.startPrank(PROPOSER);
 
         // Step 1: Initialize proposal without finalizing
@@ -377,7 +384,7 @@ contract MultichainProposalTestV2 is PostProposalCheck {
         string memory description = "Multi-step Proposal";
 
         vm.expectEmit(true, true, false, true);
-        emit ProposalInitialized(PROPOSER, 1, description);
+        emit ProposalInitialized(PROPOSER, expectedProposalId, description);
 
         uint256 proposalId = governorV2.propose(
             targets1,
@@ -1513,53 +1520,37 @@ contract MultichainProposalTestV2 is PostProposalCheck {
 
     function testMaxUserProposalCount() public {
         vm.selectFork(ETHEREUM_FORK_ID);
-        // This test verifies the max live proposals per user
-        // For now, max is 2 proposals per user in Init/Active state
+        // Max is 3 live proposals per user in Init/Active state. Create 3,
+        // then expect the 4th to revert with TooManyLiveProposals.
 
         vm.startPrank(PROPOSER);
 
-        // Create first proposal
-        address[] memory targets1 = new address[](1);
-        targets1[0] = address(0x1111);
-        uint256[] memory values1 = new uint256[](1);
-        values1[0] = 0;
-        bytes[] memory calldatas1 = new bytes[](1);
-        calldatas1[0] = abi.encodeWithSignature("function1()");
+        for (uint256 i = 0; i < 3; i++) {
+            address[] memory t = new address[](1);
+            t[0] = address(uint160(0x1111 + i));
+            uint256[] memory v = new uint256[](1);
+            v[0] = 0;
+            bytes[] memory c = new bytes[](1);
+            c[0] = abi.encodeWithSignature("function1()");
+            governorV2.propose(
+                t,
+                v,
+                c,
+                string(abi.encodePacked("Proposal ", vm.toString(i + 1))),
+                true
+            );
+        }
 
-        uint256 proposalId1 = governorV2.propose(
-            targets1,
-            values1,
-            calldatas1,
-            "Proposal 1",
-            true
-        );
-
-        // Create second proposal
-        address[] memory targets2 = new address[](1);
-        targets2[0] = address(0x2222);
-        uint256[] memory values2 = new uint256[](1);
-        values2[0] = 0;
-        bytes[] memory calldatas2 = new bytes[](1);
-        calldatas2[0] = abi.encodeWithSignature("function2()");
-
-        uint256 proposalId2 = governorV2.propose(
-            targets2,
-            values2,
-            calldatas2,
-            "Proposal 2",
-            true
-        );
-
-        // Try to create third proposal - should fail
-        address[] memory targets3 = new address[](1);
-        targets3[0] = address(0x3333);
-        uint256[] memory values3 = new uint256[](1);
-        values3[0] = 0;
-        bytes[] memory calldatas3 = new bytes[](1);
-        calldatas3[0] = abi.encodeWithSignature("function3()");
+        // Fourth proposal must revert
+        address[] memory targetsX = new address[](1);
+        targetsX[0] = address(0x9999);
+        uint256[] memory valuesX = new uint256[](1);
+        valuesX[0] = 0;
+        bytes[] memory calldatasX = new bytes[](1);
+        calldatasX[0] = abi.encodeWithSignature("function1()");
 
         vm.expectRevert(IMultichainGovernorV2.TooManyLiveProposals.selector);
-        governorV2.propose(targets3, values3, calldatas3, "Proposal 3", true);
+        governorV2.propose(targetsX, valuesX, calldatasX, "Proposal 4", true);
 
         vm.stopPrank();
     }
@@ -1621,10 +1612,12 @@ contract MultichainProposalTestV2 is PostProposalCheck {
             true
         );
 
-        // Now rebroadcast should work (though it will fail due to mock wormhole)
-        // In a real environment with proper wormhole setup, this would succeed
-        vm.expectRevert(); // Will revert due to mock wormhole, but that's expected
-        governorV2.rebroadcastProposal{value: 0}(proposalId);
+        // In Active state rebroadcast is allowed; pay the bridge cost so the
+        // call doesn't revert with InsufficientValue.
+        uint256 cost = governorV2.bridgeCostAll();
+        vm.deal(PROPOSER, cost);
+        vm.prank(PROPOSER);
+        governorV2.rebroadcastProposal{value: cost}(proposalId);
     }
 
     function testLiveProposalsView() public {
