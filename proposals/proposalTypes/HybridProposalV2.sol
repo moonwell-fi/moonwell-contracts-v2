@@ -612,7 +612,18 @@ abstract contract HybridProposalV2 is
             addresses.removeRestriction();
 
             vm.selectFork(MOONBEAM_FORK_ID);
-            checkBaseOptimismActions(actions.filter(ActionType.Moonbeam));
+            {
+                ProposalAction[] memory moonbeamActions = actions.filter(
+                    ActionType.Moonbeam
+                );
+                address[] memory moonbeamTargets = new address[](
+                    moonbeamActions.length
+                );
+                for (uint256 i = 0; i < moonbeamActions.length; i++) {
+                    moonbeamTargets[i] = moonbeamActions[i].target;
+                }
+                checkMoonbeamActions(moonbeamTargets);
+            }
 
             vm.selectFork(BASE_FORK_ID);
             checkBaseOptimismActions(actions.filter(ActionType.Base));
