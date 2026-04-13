@@ -1566,6 +1566,22 @@ contract mipx52 is HybridProposal {
             "wormhole not set correctly on MultichainGovernorV2"
         );
 
+        // 8b. Validate all 8 break-glass whitelisted calldatas were stored correctly.
+        // These encode publishMessage / admin-transfer payloads used for emergency
+        // rollback — any ABI/chainId/target mismatch would make break glass inoperable.
+        bytes[] memory expectedCalldatas = _buildBreakGlassCalldatas(addresses);
+        // _buildBreakGlassCalldatas switches forks; re-select Ethereum where the governor lives
+        vm.selectFork(ETHEREUM_FORK_ID);
+        for (uint256 i = 0; i < expectedCalldatas.length; i++) {
+            assertTrue(
+                governor.isWhitelistedCalldata(expectedCalldatas[i]),
+                string.concat(
+                    "break glass calldata not whitelisted at index ",
+                    vm.toString(i)
+                )
+            );
+        }
+
         // 9. Validate Ethereum VotingPowerAggregator state (configured in afterDeploy)
         VotingPowerAggregator ethAggregator = VotingPowerAggregator(
             ethereumVotingPower

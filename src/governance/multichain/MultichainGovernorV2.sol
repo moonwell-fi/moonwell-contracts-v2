@@ -347,6 +347,14 @@ contract MultichainGovernorV2 is
         return totalLiveProposals;
     }
 
+    /// @notice returns whether the given calldata is whitelisted
+    /// @param data the calldata to check
+    function isWhitelistedCalldata(
+        bytes calldata data
+    ) external view override returns (bool) {
+        return _whitelistedCalldatas[data];
+    }
+
     /// @notice returns whether or not a given propsal is active
     /// @param proposalId the id of the proposal to check
     function proposalActive(uint256 proposalId) public view returns (bool) {
