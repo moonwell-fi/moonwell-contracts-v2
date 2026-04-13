@@ -763,45 +763,10 @@ abstract contract HybridProposalV2 is
 
             // Execute the proposal
             vm.prank(caller);
-            (bool execSuccess, bytes memory execReturn) = address(governor)
-                .call{value: actions.sumEthereumValue(), gas: 52_000_000}(
-                abi.encodeWithSignature("execute(uint256)", proposalId)
-            );
-            if (!execSuccess) {
-                /// On failure, replay each proposal action individually
-                /// pranked as the governor so that the failing action's
-                /// revert data is surfaced instead of the generic
-                /// ExecuteCallFailed() selector.
-                ProposalAction[] memory ethActions = actions.filter(
-                    ActionType.Ethereum
-                );
-                for (uint256 ai = 0; ai < ethActions.length; ai++) {
-                    vm.prank(address(governor));
-                    (bool s, bytes memory rd) = ethActions[ai].target.call{
-                        value: ethActions[ai].value
-                    }(ethActions[ai].data);
-                    if (!s) {
-                        console.log(
-                            "mip-e00 execute failed at Ethereum action index",
-                            ai
-                        );
-                        console.log("  target:", ethActions[ai].target);
-                        console.logBytes(ethActions[ai].data);
-                        if (rd.length > 0) {
-                            assembly {
-                                revert(add(32, rd), mload(rd))
-                            }
-                        }
-                        revert("action reverted with empty returndata");
-                    }
-                }
-                if (execReturn.length > 0) {
-                    assembly {
-                        revert(add(32, execReturn), mload(execReturn))
-                    }
-                }
-                revert("execute failed but per-action replay succeeded");
-            }
+            governor.execute{
+                value: actions.sumEthereumValue(),
+                gas: 52_000_000
+            }(proposalId);
 
             require(
                 gasStart - gasleft() <= 60_000_000,
