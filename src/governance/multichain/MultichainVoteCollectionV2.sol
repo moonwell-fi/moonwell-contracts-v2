@@ -53,7 +53,16 @@ contract MultichainVoteCollectionV2 is
     /// @notice mapping from proposalId to MultichainProposal
     mapping(uint256 proposalId => MultichainProposal) public proposals;
 
+    /// @notice Wormhole core bridge for on-chain VAA verification
+    /// @dev must remain at this slot to match V1 storage layout (slot 159)
+    IWormhole public wormhole;
+
+    /// @notice VAA hashes that have already been processed (replay protection)
+    /// @dev must remain at this slot to match V1 storage layout (slot 160)
+    mapping(bytes32 => bool) public processedVAAHashes;
+
     /// @notice reference to the voting power aggregator
+    /// @dev new V2 slot (161), set by initializeV3
     IVotingPowerAggregator public votingPower;
 
     /// @notice disable the initializer to stop governance hijacking and avoid selfdestruct attacks.
@@ -411,12 +420,6 @@ contract MultichainVoteCollectionV2 is
     //// ------------- WORMHOLE OVERRIDES ------------- ////
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
-
-    /// @notice the wormhole core bridge contract
-    IWormhole public wormhole;
-
-    /// @notice VAA hashes that have already been processed (replay protection)
-    mapping(bytes32 => bool) public processedVAAHashes;
 
     /// @notice return the wormhole core contract
     function _wormhole() internal view override returns (IWormhole) {

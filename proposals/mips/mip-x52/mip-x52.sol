@@ -1808,6 +1808,13 @@ contract mipx52 is HybridProposal {
             "VotingPowerAggregator not set on Base VoteCollection"
         );
 
+        // 4a. Validate wormhole is set on Base VoteCollection (storage slot preserved from V1)
+        assertNotEq(
+            address(baseVoteCollection.wormhole()),
+            address(0),
+            "wormhole not set on Base VoteCollection after upgrade"
+        );
+
         // 5. Validate Ethereum MultichainGovernorV2 is trusted sender on Base VoteCollection
         assertTrue(
             baseVoteCollection.isTrustedSender(
@@ -1935,6 +1942,13 @@ contract mipx52 is HybridProposal {
             address(optimismVoteCollection.votingPower()),
             optimismVotingPower,
             "VotingPowerAggregator not set on Optimism VoteCollection"
+        );
+
+        // 4a. Validate wormhole is set on Optimism VoteCollection (storage slot preserved from V1)
+        assertNotEq(
+            address(optimismVoteCollection.wormhole()),
+            address(0),
+            "wormhole not set on Optimism VoteCollection after upgrade"
         );
 
         // 5. Validate Ethereum MultichainGovernorV2 is trusted sender on Optimism VoteCollection
