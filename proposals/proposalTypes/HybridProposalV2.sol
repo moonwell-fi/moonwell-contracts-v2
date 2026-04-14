@@ -48,8 +48,8 @@ abstract contract HybridProposalV2 is
     /// @notice nonce for wormhole, unused by Temporal Governor
     uint32 public nonce = uint32(vm.envOr("NONCE", uint256(0)));
 
-    /// @notice instant finality https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
-    uint8 public constant consistencyLevel = 200;
+    /// @notice finalized finality https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
+    uint8 public constant consistencyLevel = 1;
 
     /// @notice Verify all proposal actions before execution
     /// @dev Calls both market creation and bridge validation hooks
@@ -606,7 +606,7 @@ abstract contract HybridProposalV2 is
                 bytes[] memory payloads
             ) = getTargetsPayloadsValues(addresses);
 
-            checkEthereumActions(targets);
+            checkEthereumActions(addresses, targets);
 
             /// remove the restrictions
             addresses.removeRestriction();

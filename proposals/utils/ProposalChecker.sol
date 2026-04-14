@@ -110,12 +110,25 @@ abstract contract ProposalChecker {
 
     /// @notice should only be run while on the Ethereum fork
     /// @dev checks that the Ethereum actions do not include any wormhole core addresses
+    /// @param addresses the addresses contract
     /// @param targets the list of targets for the Ethereum actions
-    function checkEthereumActions(address[] memory targets) public view {
+    function checkEthereumActions(
+        Addresses addresses,
+        address[] memory targets
+    ) public view {
         require(
             ETHEREUM_CHAIN_ID == block.chainid ||
                 ETHEREUM_SEPOLIA_CHAIN_ID == block.chainid,
             "cannot run Ethereum checks on non-Ethereum network"
+        );
+
+        address wormholeCoreEthereum = addresses.getAddress(
+            "WORMHOLE_CORE",
+            ETHEREUM_CHAIN_ID
+        );
+        address wormholeCoreSepolia = addresses.getAddress(
+            "WORMHOLE_CORE",
+            ETHEREUM_SEPOLIA_CHAIN_ID
         );
 
         for (uint256 i = 0; i < targets.length; i++) {
@@ -128,6 +141,17 @@ abstract contract ProposalChecker {
                         targets[i].toString()
                     )
                 )
+            );
+
+            /// require all targets are not wormhole core as this is generated
+            /// by the HybridProposalV2 contract
+            require(
+                targets[i] != wormholeCoreEthereum,
+                "Wormhole Core Ethereum address should not be in the list of targets"
+            );
+            require(
+                targets[i] != wormholeCoreSepolia,
+                "Wormhole Core Sepolia address should not be in the list of targets"
             );
         }
     }

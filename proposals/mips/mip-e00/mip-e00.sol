@@ -22,7 +22,7 @@ import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {WstETHExchangeRateAdapter} from "@protocol/oracles/WstETHExchangeRateAdapter.sol";
-/// MultichainGovernorV2 is deployed by initProposal() via MIP-X41 on Ethereum as the governance hub
+/// MultichainGovernorV2 is deployed by initProposal() via MIP-X52 on Ethereum as the governance hub
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -88,8 +88,8 @@ contract mipe00 is HybridProposalV2, Configs {
     /// @notice the deployer should have WETH, USDC, USDT, WBTC, weETH, wstETH to be able to deploy on Ethereum.
     /// This allows the deployer to be able to initialize the markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {
-        /// ------- MultichainGovernorV2 (deployed by initProposal via MIP-X41) -------
-        /// The MultichainGovernorV2 is deployed in initProposal() which runs MIP-X41.
+        /// ------- MultichainGovernorV2 (deployed by initProposal via MIP-X52) -------
+        /// The MultichainGovernorV2 is deployed in initProposal() which runs MIP-X52.
         /// MIP-E00 uses the existing governor for all protocol contracts.
         localInit(addresses);
 
@@ -485,7 +485,7 @@ contract mipe00 is HybridProposalV2, Configs {
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
-        /// MultichainGovernorV2 is deployed by initProposal via MIP-X41 - just get the address
+        /// MultichainGovernorV2 is deployed by initProposal via MIP-X52 - just get the address
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY");
 
         {
@@ -645,7 +645,7 @@ contract mipe00 is HybridProposalV2, Configs {
             );
         }
 
-        /// MultichainGovernorV2 specific validations are handled by MIP-X41
+        /// MultichainGovernorV2 specific validations are handled by MIP-X52
 
         {
             Comptroller comptroller = Comptroller(
