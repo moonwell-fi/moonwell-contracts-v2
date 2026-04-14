@@ -260,15 +260,15 @@ contract MultichainProposalIntegrationV2 is
         vm.selectFork(ETHEREUM_FORK_ID);
         vm.store(address(governorV2), bytes32(uint256(123)), mockAddr);
 
-        // Replace wormhole core in Base VoteCollection (slot 160)
+        // Replace wormhole core in Base VoteCollection (slot 159)
         vm.selectFork(BASE_FORK_ID);
-        vm.store(address(baseVoteCollection), bytes32(uint256(160)), mockAddr);
+        vm.store(address(baseVoteCollection), bytes32(uint256(159)), mockAddr);
 
-        // Replace wormhole core in Optimism VoteCollection (slot 160)
+        // Replace wormhole core in Optimism VoteCollection (slot 159)
         vm.selectFork(OPTIMISM_FORK_ID);
         vm.store(
             address(optimismVoteCollection),
-            bytes32(uint256(160)),
+            bytes32(uint256(159)),
             mockAddr
         );
 
