@@ -122,13 +122,9 @@ abstract contract ProposalChecker {
             "cannot run Ethereum checks on non-Ethereum network"
         );
 
-        address wormholeCoreEthereum = addresses.getAddress(
+        address wormholeCore = addresses.getAddress(
             "WORMHOLE_CORE",
-            ETHEREUM_CHAIN_ID
-        );
-        address wormholeCoreSepolia = addresses.getAddress(
-            "WORMHOLE_CORE",
-            ETHEREUM_SEPOLIA_CHAIN_ID
+            block.chainid
         );
 
         for (uint256 i = 0; i < targets.length; i++) {
@@ -146,12 +142,8 @@ abstract contract ProposalChecker {
             /// require all targets are not wormhole core as this is generated
             /// by the HybridProposalV2 contract
             require(
-                targets[i] != wormholeCoreEthereum,
-                "Wormhole Core Ethereum address should not be in the list of targets"
-            );
-            require(
-                targets[i] != wormholeCoreSepolia,
-                "Wormhole Core Sepolia address should not be in the list of targets"
+                targets[i] != wormholeCore,
+                "Wormhole Core address should not be in the list of targets"
             );
         }
     }
