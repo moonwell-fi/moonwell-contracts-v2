@@ -1,14 +1,17 @@
 # Moonwell Contracts V2
 
-Cross-chain lending/borrowing protocol deployed on Base, Optimism, Moonbeam, and Ethereum. Built with Foundry.
+Cross-chain lending/borrowing protocol deployed on Base, Optimism, Moonbeam, and
+Ethereum. Built with Foundry.
 
 ## Tech Stack
+
 - **Solidity** (Cancun EVM), **Foundry** (forge, cast, anvil)
 - Cross-chain messaging via **Wormhole**
 - Safe multisig integration for ops
 - OpenZeppelin for proxies, ERC20, utilities
 
 ## Project Structure
+
 ```
 src/                    # Protocol contracts
 ├── governance/         # MultichainGovernor, TemporalGovernor, Well token
@@ -36,6 +39,7 @@ script/                 # Deployment & utility scripts (~53)
 ```
 
 ## Common Commands
+
 - `forge build` — compile contracts
 - `forge test` — run all tests
 - `make test-unit` — unit tests only
@@ -46,23 +50,30 @@ script/                 # Deployment & utility scripts (~53)
 - `make base` / `make moonbeam-node` — local chain forks
 
 ## Proposal System
-Proposals follow a lifecycle: `deploy()` → `afterDeploy()` → `build()` → `simulate()` → `validate()`
+
+Proposals follow a lifecycle: `deploy()` → `afterDeploy()` → `build()` →
+`simulate()` → `validate()`
 
 **Naming convention:**
+
 - `mip-b##` — Base chain
 - `mip-x##` — Ethereum/cross-chain
 - `mip-m##` — Moonbeam
 - `mip-o##` — Optimism
 
 **Creating a new proposal:**
+
 1. Set `id: 0` in `proposals/mips/mips.json` for new entries
 2. Create folder in `proposals/mips/mip-{chain}{number}/`
-3. Add `.sh` (env vars: JSON_PATH, DESCRIPTION_PATH, PRIMARY_FORK_ID), `.json`, `.md`
+3. Add `.sh` (env vars: JSON_PATH, DESCRIPTION_PATH, PRIMARY_FORK_ID), `.json`,
+   `.md`
 4. Use existing templates from `proposals/templates/` when applicable
 
-**Templates available:** MarketAdd (v1/v2/v3), MarketUpdate, RewardsDistribution, ProtocolDeployment
+**Templates available:** MarketAdd (v1/v2/v3), MarketUpdate,
+RewardsDistribution, ProtocolDeployment
 
 ## Key Conventions
+
 - Addresses managed centrally in `proposals/Addresses.sol` + `chains/*.json`
 - Tests use `*.t.sol` suffix, inherit from `Test` or `PostProposalCheck`
 - RPC endpoints configured in `foundry.toml` for all supported chains
@@ -70,7 +81,9 @@ Proposals follow a lifecycle: `deploy()` → `afterDeploy()` → `build()` → `
 - Optimizer runs: 1
 
 ## Guardrails
+
 - Always set `id: 0` in mips.json when creating new proposals
-- Scan ALL related contracts before concluding something is unused — cross-chain dependencies are easy to miss
+- Scan ALL related contracts before concluding something is unused — cross-chain
+  dependencies are easy to miss
 - Check chain-specific configs in `chains/` when working with deployments
 - Run `forge test` before committing contract changes
