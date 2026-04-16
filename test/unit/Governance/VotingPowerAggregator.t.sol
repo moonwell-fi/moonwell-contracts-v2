@@ -472,10 +472,30 @@ contract VotingPowerAggregatorUnitTest is Test {
     function testOwnerCanTransferOwnership() public {
         votingPowerAggregator.transferOwnership(user1);
 
+        /// 2-step: owner unchanged until user1 accepts
+        assertEq(
+            votingPowerAggregator.owner(),
+            owner,
+            "owner should be unchanged before acceptance"
+        );
+        assertEq(
+            votingPowerAggregator.pendingOwner(),
+            user1,
+            "pendingOwner should be user1"
+        );
+
+        vm.prank(user1);
+        votingPowerAggregator.acceptOwnership();
+
         assertEq(
             votingPowerAggregator.owner(),
             user1,
-            "ownership should be transferred to user1"
+            "ownership should be transferred to user1 after acceptance"
+        );
+        assertEq(
+            votingPowerAggregator.pendingOwner(),
+            address(0),
+            "pendingOwner cleared after acceptance"
         );
     }
 
@@ -486,8 +506,10 @@ contract VotingPowerAggregatorUnitTest is Test {
     }
 
     function testNewOwnerCanManageSources() public {
-        // Transfer ownership
+        // Transfer ownership (2-step: pending until accepted)
         votingPowerAggregator.transferOwnership(user1);
+        vm.prank(user1);
+        votingPowerAggregator.acceptOwnership();
 
         // New owner should be able to add sources
         vm.prank(user1);
@@ -509,11 +531,31 @@ contract VotingPowerAggregatorUnitTest is Test {
     }
 
     function testOldOwnerCannotManageSourcesAfterTransfer() public {
+        // Complete 2-step transfer so old owner loses control
         votingPowerAggregator.transferOwnership(user1);
+        vm.prank(user1);
+        votingPowerAggregator.acceptOwnership();
 
         // Old owner should not be able to add sources
         vm.expectRevert("Ownable: caller is not the owner");
         votingPowerAggregator.addSnapshotSource(address(source1));
+    }
+
+    function testPendingOwnerCannotManageBeforeAcceptance() public {
+        votingPowerAggregator.transferOwnership(user1);
+
+        /// until user1 calls acceptOwnership, owner-only functions revert
+        vm.prank(user1);
+        vm.expectRevert("Ownable: caller is not the owner");
+        votingPowerAggregator.addSnapshotSource(address(source1));
+    }
+
+    function testNonPendingCannotAccept() public {
+        votingPowerAggregator.transferOwnership(user1);
+
+        vm.prank(nonOwner);
+        vm.expectRevert("Ownable2Step: caller is not the new owner");
+        votingPowerAggregator.acceptOwnership();
     }
 
     function testRenounceOwnership() public {

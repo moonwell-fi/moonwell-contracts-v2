@@ -861,6 +861,36 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         governor.cancel(proposalId);
     }
 
+    /// @notice Phantom proposals (IDs <= startingProposalCount with no proposer)
+    /// must not be cancellable — otherwise anyone could emit spurious
+    /// ProposalCanceled events for IDs that were never actually proposed.
+    function testCancelRevertsOnPhantomProposalId() public {
+        /// simulate migration: bump proposalCount to create phantom IDs 1..100
+        /// by writing directly to storage slot 108 (see forge inspect)
+        uint256 phantomCount = 100;
+        vm.store(
+            address(governor),
+            bytes32(uint256(108)),
+            bytes32(phantomCount)
+        );
+        assertEq(
+            governor.proposalCount(),
+            phantomCount,
+            "proposalCount not bumped"
+        );
+
+        /// cancel on any phantom id — proposer is address(0), guard fires
+        vm.expectRevert(IMultichainGovernorV2.InvalidProposalId.selector);
+        governor.cancel(1);
+
+        vm.expectRevert(IMultichainGovernorV2.InvalidProposalId.selector);
+        governor.cancel(phantomCount);
+
+        /// boundary: id just past proposalCount is rejected by state() first
+        vm.expectRevert(IMultichainGovernorV2.InvalidProposalId.selector);
+        governor.cancel(phantomCount + 1);
+    }
+
     function testCancelSucceedsWhenProposerVotesEqualThreshold() public {
         // Setup: Create a user with exactly proposalThreshold voting power
         address proposer = address(0x456);
@@ -1289,6 +1319,53 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
     function testStateInvalidProposalId() public {
         vm.expectRevert(IMultichainGovernorV2.InvalidProposalId.selector);
         governor.state(999);
+    }
+
+    /// @notice A Succeeded proposal past its executionWindow can never be
+    /// executed. _syncTotalLiveProposals must evict it from _liveProposals and
+    /// _userLiveProposals so storage / pause iteration doesn't grow unbounded.
+    function testSyncRemovesExpiredSucceededProposal() public {
+        /// create and pass a proposal so it reaches Succeeded
+        uint256 proposalId = testVotingValidProposalIdSucceeds();
+
+        _warpPastProposalEnd(proposalId);
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Succeeded),
+            "proposal should be Succeeded"
+        );
+
+        address proposer = governor
+            .proposalInformationStruct(proposalId)
+            .proposer;
+        assertEq(
+            governor.getUserLiveProposalCount(proposer),
+            1,
+            "proposer should have 1 live proposal in raw set"
+        );
+
+        /// warp past the 7-day execution window → proposal is dead state
+        vm.warp(block.timestamp + EXECUTION_WINDOW + 1);
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Succeeded),
+            "state still Succeeded since no Expired state exists"
+        );
+        vm.expectRevert(IMultichainGovernorV2.ProposalExpired.selector);
+        governor.execute(proposalId);
+
+        /// any path that triggers _syncTotalLiveProposals must drop it.
+        /// Creating a new proposal calls sync at the top of propose(), which
+        /// should remove proposal 1 before adding proposal 2.
+        _createProposal();
+
+        /// with the fix: raw set = {proposal 2} → count 1
+        /// without the fix: raw set = {proposal 1, proposal 2} → count 2
+        assertEq(
+            governor.getUserLiveProposalCount(proposer),
+            1,
+            "expired Succeeded proposal 1 must be dropped; only proposal 2 should remain"
+        );
     }
 
     /// ========================================================================

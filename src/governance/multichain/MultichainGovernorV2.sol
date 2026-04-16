@@ -184,6 +184,13 @@ contract MultichainGovernorV2 is
         _maxUserProposalCount = 3;
         _executionWindow = 7 days;
 
+        /// defensive: if a future author raises _maxUserProposalCount above
+        /// Constants.MAX_USER_PROPOSAL_COUNT, initialization reverts
+        require(
+            _maxUserProposalCount <= Constants.MAX_USER_PROPOSAL_COUNT,
+            "MultichainGovernorV2: max user proposal count too high"
+        );
+
         unchecked {
             for (uint256 i = 0; i < calldatas.length; i++) {
                 _updateApprovedCalldata(calldatas[i], true);
@@ -329,7 +336,7 @@ contract MultichainGovernorV2 is
     /// If failed it is not considered counted as a live proposal as it can never be executed
     /// If executed it is not considered counted as a live proposal as it can never be executed again
     /// @param user The address of the user to check
-    /// this number should never be greater than the constant MAX_USER_LIVE_PROPOSALS
+    /// this number should never be greater than the constant MAX_USER_PROPOSAL_COUNT
     function currentUserLiveProposals(
         address user
     ) public view returns (uint256) {
@@ -601,6 +608,13 @@ contract MultichainGovernorV2 is
     ///   If proposal threshold is increased in an active governance proposal, and a user has proposed
     /// when they met the old proposal threshold, but not the new one, then anyone can cancel their proposal.
     function cancel(uint256 proposalId) external override {
+        /// reject phantom proposalIds in 1..startingProposalCount where
+        /// proposer defaults to address(0) — otherwise anyone could emit
+        /// spurious ProposalCanceled events for those IDs
+        if (proposals[proposalId].proposer == address(0)) {
+            revert InvalidProposalId();
+        }
+
         if (
             msg.sender != proposals[proposalId].proposer &&
             votingPower.getCurrentVotes(proposals[proposalId].proposer) >
@@ -828,6 +842,7 @@ contract MultichainGovernorV2 is
             ///
             ///         Cancellation
             ///
+            /// if proposal is in the Init state it will be cancelled
             /// if proposal is in the active state, it could be Succeeded once xchain vote collection period ends
             /// if proposal is in the active state it will be cancelled
             /// if proposal is in the CrossChainVoteCollection state it will be cancelled
@@ -984,17 +999,26 @@ contract MultichainGovernorV2 is
     /// if the proposal is Defeated, Canceled, or Executed state,
     /// remove it from the _liveProposals and _userLiveProposals
     /// sets to remove unused values from storage and decrease
-    /// loop length in getter functions.
+    /// loop length in getter functions. Also removes Succeeded
+    /// proposals whose _executionWindow has lapsed — they can
+    /// no longer be executed and are dead state.
     function _syncTotalLiveProposals() private {
         uint256[] memory allProposals = _liveProposals.values();
 
         unchecked {
             for (uint256 i = 0; i < allProposals.length; i++) {
                 ProposalState proposalsState = state(allProposals[i]);
+                bool succeededExpired = proposalsState ==
+                    ProposalState.Succeeded &&
+                    block.timestamp >
+                    proposals[allProposals[i]]
+                        .crossChainVoteCollectionEndTimestamp +
+                        _executionWindow;
                 if (
                     proposalsState == ProposalState.Defeated ||
                     proposalsState == ProposalState.Canceled ||
-                    proposalsState == ProposalState.Executed
+                    proposalsState == ProposalState.Executed ||
+                    succeededExpired
                 ) {
                     /// remove proposal from user before removing from the global set
                     /// this ensures that the user can sync their live proposals and propose

@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {SnapshotInterface} from "./SnapshotInterface.sol";
@@ -10,7 +10,7 @@ import {IVotingPowerAggregator} from "./IVotingPowerAggregator.sol";
 
 contract VotingPowerAggregator is
     Initializable,
-    OwnableUpgradeable,
+    Ownable2StepUpgradeable,
     IVotingPowerAggregator
 {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -26,7 +26,7 @@ contract VotingPowerAggregator is
     }
 
     function initialize(address _owner, address _xWell) external initializer {
-        __Ownable_init();
+        __Ownable2Step_init();
         xWell = xWELL(_xWell);
 
         _transferOwnership(_owner);
