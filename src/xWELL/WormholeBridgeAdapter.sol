@@ -334,12 +334,7 @@ contract WormholeBridgeAdapter is
         /// user must burn xERC20 tokens first
         _burnTokens(user, amount);
 
-        bytes memory payload = abi.encode(
-            to,
-            amount,
-            targetChainId,
-            targetAddress[targetChainId]
-        );
+        bytes memory payload = abi.encode(to, amount, targetChainId);
 
         /// Step 1: Publish message via Core Bridge
         uint256 messageFee = wormhole.messageFee();
@@ -401,12 +396,7 @@ contract WormholeBridgeAdapter is
         /// user must burn xERC20 tokens first
         _burnTokens(user, amount);
 
-        bytes memory payload = abi.encode(
-            to,
-            amount,
-            targetChainId,
-            targetAddress[targetChainId]
-        );
+        bytes memory payload = abi.encode(to, amount, targetChainId);
 
         /// Publish message via Core Bridge
         uint256 messageFee = wormhole.messageFee();
@@ -471,20 +461,14 @@ contract WormholeBridgeAdapter is
         );
 
         /// Parse the payload and do the corresponding actions!
-        (
-            address to,
-            uint256 amount,
-            uint16 targetChainId,
-            address targetAddr
-        ) = abi.decode(vm.payload, (address, uint256, uint16, address));
+        (address to, uint256 amount, uint16 targetChainId) = abi.decode(
+            vm.payload,
+            (address, uint256, uint16)
+        );
 
         require(
             targetChainId == wormhole.chainId(),
             "WormholeBridge: invalid target chain"
-        );
-        require(
-            targetAddr == address(this),
-            "WormholeBridge: invalid target address"
         );
 
         /// mint tokens and emit events

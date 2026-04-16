@@ -129,8 +129,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         bytes memory payload = abi.encode(
             recipient,
             mintAmount,
-            currentWormholeChainId,
-            address(adapter)
+            currentWormholeChainId
         );
         bytes32 emitterAddress = address(adapter).toBytes();
 
@@ -166,12 +165,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(
-                recipient,
-                mintAmount,
-                currentWormholeChainId,
-                address(adapter)
-            )
+            abi.encode(recipient, mintAmount, currentWormholeChainId)
         );
 
         bytes memory encodedVaa = abi.encode("replay-test-vaa");
@@ -193,12 +187,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(0xDEAD).toBytes(),
             "",
-            abi.encode(
-                recipient,
-                uint256(1000e18),
-                currentWormholeChainId,
-                address(adapter)
-            )
+            abi.encode(recipient, uint256(1000e18), currentWormholeChainId)
         );
 
         vm.expectRevert("WormholeBridge: sender not trusted");
@@ -218,12 +207,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(
-                recipient,
-                excessAmount,
-                currentWormholeChainId,
-                address(adapter)
-            )
+            abi.encode(recipient, excessAmount, currentWormholeChainId)
         );
 
         vm.expectRevert("RateLimited: rate limit hit");
@@ -370,12 +354,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
                 sourceWormholeChainId,
                 emitterAddr,
                 "",
-                abi.encode(
-                    user,
-                    bridgeAmount,
-                    currentWormholeChainId,
-                    address(adapter)
-                )
+                abi.encode(user, bridgeAmount, currentWormholeChainId)
             );
             adapter.executeVAAv1(abi.encode("mint-for-bridge-out"));
         }
@@ -439,12 +418,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         _etchMockOnCurrentFork(
             destAdapter,
             currentWormholeChainId,
-            abi.encode(
-                user,
-                bridgeAmount,
-                destWormholeChainId,
-                address(destAdapter)
-            )
+            abi.encode(user, bridgeAmount, destWormholeChainId)
         );
 
         if (block.chainid == MOONBEAM_CHAIN_ID) {

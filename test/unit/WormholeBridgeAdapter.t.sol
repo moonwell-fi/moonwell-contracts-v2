@@ -81,12 +81,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         bytes32 emitterAddr = bytes32(
             uint256(uint160(address(wormholeBridgeAdapterProxy)))
         );
-        bytes memory payload = abi.encode(
-            to,
-            amount,
-            chainId,
-            address(wormholeBridgeAdapterProxy)
-        );
+        bytes memory payload = abi.encode(to, amount, chainId);
         bytes memory encodedVaa = _setupVaa(
             chainId,
             emitterAddr,
@@ -442,12 +437,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
 
     function testExecuteVAAv1FailsUntrustedSender() public {
         bytes32 untrustedEmitter = bytes32(uint256(uint160(address(0xdead))));
-        bytes memory payload = abi.encode(
-            to,
-            amount,
-            chainId,
-            address(wormholeBridgeAdapterProxy)
-        );
+        bytes memory payload = abi.encode(to, amount, chainId);
         bytes memory encodedVaa = _setupVaa(
             chainId,
             untrustedEmitter,
@@ -465,12 +455,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         bytes32 emitterAddr = bytes32(
             uint256(uint160(address(wormholeBridgeAdapterProxy)))
         );
-        bytes memory payload = abi.encode(
-            to,
-            amount,
-            chainId,
-            address(wormholeBridgeAdapterProxy)
-        );
+        bytes memory payload = abi.encode(to, amount, chainId);
         bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 0, payload);
 
         vm.expectRevert();
@@ -488,12 +473,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         bytes32 emitterAddr = bytes32(
             uint256(uint160(address(wormholeBridgeAdapterProxy)))
         );
-        bytes memory payload = abi.encode(
-            to,
-            amount,
-            chainId,
-            address(wormholeBridgeAdapterProxy)
-        );
+        bytes memory payload = abi.encode(to, amount, chainId);
         bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 0, payload);
 
         vm.expectEmit(
@@ -528,12 +508,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         bytes32 emitterAddr = bytes32(
             uint256(uint160(address(wormholeBridgeAdapterProxy)))
         );
-        bytes memory payload = abi.encode(
-            to,
-            amount,
-            chainId,
-            address(wormholeBridgeAdapterProxy)
-        );
+        bytes memory payload = abi.encode(to, amount, chainId);
         bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 1, payload);
 
         vm.expectRevert("RateLimited: rate limit hit");
@@ -564,26 +539,10 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         bytes32 emitterAddr = bytes32(
             uint256(uint160(address(wormholeBridgeAdapterProxy)))
         );
-        bytes memory payload = abi.encode(
-            to,
-            amount,
-            wrongChainId,
-            address(wormholeBridgeAdapterProxy)
-        );
+        bytes memory payload = abi.encode(to, amount, wrongChainId);
         bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 0, payload);
 
         vm.expectRevert("WormholeBridge: invalid target chain");
-        wormholeBridgeAdapterProxy.executeVAAv1(encodedVaa);
-    }
-
-    function testExecuteVAAv1RevertsWrongTargetAddress() public {
-        bytes32 emitterAddr = bytes32(
-            uint256(uint160(address(wormholeBridgeAdapterProxy)))
-        );
-        bytes memory payload = abi.encode(to, amount, chainId, address(0xdead));
-        bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 0, payload);
-
-        vm.expectRevert("WormholeBridge: invalid target address");
         wormholeBridgeAdapterProxy.executeVAAv1(encodedVaa);
     }
 
@@ -593,12 +552,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         bytes32 emitterAddr = bytes32(
             uint256(uint160(address(wormholeBridgeAdapterProxy)))
         );
-        bytes memory payload = abi.encode(
-            to,
-            amount,
-            chainId,
-            address(wormholeBridgeAdapterProxy)
-        );
+        bytes memory payload = abi.encode(to, amount, chainId);
         bytes memory encodedVaa = _setupVaa(chainId, emitterAddr, 0, payload);
 
         /// Compute the hash that MockCoreBridgeForAdapter will return
