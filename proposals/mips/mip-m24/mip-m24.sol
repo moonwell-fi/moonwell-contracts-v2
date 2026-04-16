@@ -184,7 +184,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         );
     }
 
-    function run(Addresses addresses, address) public override {
+    function simulate(Addresses addresses, address) public override {
         vm.selectFork(primaryForkId());
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
