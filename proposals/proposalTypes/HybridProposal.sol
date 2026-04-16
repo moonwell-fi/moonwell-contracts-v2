@@ -111,7 +111,7 @@ abstract contract HybridProposal is
         string memory description
     ) internal {
         uint256 fork = vm.activeFork();
-        require(fork <= 2, "Invalid active fork");
+        require(fork <= ETHEREUM_FORK_ID, "Invalid active fork");
         _pushAction(target, 0, data, description, ActionType(fork));
     }
 
