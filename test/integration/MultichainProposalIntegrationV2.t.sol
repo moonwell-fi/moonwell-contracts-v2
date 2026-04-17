@@ -205,24 +205,29 @@ contract MultichainProposalIntegrationV2 is
             "WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
 
-        // Check if temporalGovernor is the pending owner
-        try this._getPendingOwner(bridgeAdapter) returns (
-            address pendingOwner
-        ) {
-            if (pendingOwner == temporalGovernor) {
-                vm.prank(temporalGovernor);
-                (bool success, ) = bridgeAdapter.call(
+        _acceptIfPending(bridgeAdapter, temporalGovernor);
+
+        // VotingPowerAggregator on Moonbeam uses Ownable2Step. mip-x52 proposal
+        // set pendingOwner=TemporalGovernor; simulate the first Ethereum
+        // follow-up proposal relaying a Wormhole message → TemporalGovernor
+        // calling acceptOwnership().
+        _acceptIfPending(address(moonbeamVotingPower), temporalGovernor);
+    }
+
+    /// @notice If pendingOwner on the target is `expected`, prank as `expected`
+    ///         and call acceptOwnership(). Silently skips contracts that don't
+    ///         expose pendingOwner()/acceptOwnership().
+    function _acceptIfPending(address target, address expected) internal {
+        try this._getPendingOwner(target) returns (address pendingOwner) {
+            if (pendingOwner == expected) {
+                vm.prank(expected);
+                (bool success, ) = target.call(
                     abi.encodeWithSignature("acceptOwnership()")
                 );
-
-                assertEq(
-                    success,
-                    true,
-                    "Failed to accepted ownership of WORMHOLE_BRIDGE_ADAPTER_PROXY"
-                );
+                assertEq(success, true, "acceptOwnership() failed");
             }
         } catch {
-            // Contract doesn't have pendingOwner() or acceptOwnership(), skip
+            // not 2-step or call failed; skip
         }
     }
 
@@ -315,6 +320,13 @@ contract MultichainProposalIntegrationV2 is
         vm.startPrank(address(governorV2));
         acceptOwnershipXWell(xWellProxy);
         acceptOwnershipBridgeAdapter(bridgeAdapterProxy);
+
+        /// VotingPowerAggregator uses Ownable2Step; mip-x52 afterDeploy only
+        /// set pendingOwner=governorV2. Simulate the first Ethereum follow-up
+        /// proposal action: governor accepts.
+        if (ethereumVotingPower.pendingOwner() == address(governorV2)) {
+            ethereumVotingPower.acceptOwnership();
+        }
         vm.stopPrank();
 
         // 4. Set emissions manager on stkWELL
@@ -2779,11 +2791,26 @@ contract MultichainProposalIntegrationV2 is
         vm.prank(bgGuardian);
         governorV2.executeBreakGlass(targets, calldatas);
 
-        // Verify ownership was transferred
+        // VotingPowerAggregator uses Ownable2Step: break glass sets pendingOwner,
+        // owner remains governor until pauseGuardian calls acceptOwnership
+        assertEq(
+            ethereumVotingPower.pendingOwner(),
+            pauseGuardian,
+            "VotingPowerAggregator pendingOwner should be PAUSE_GUARDIAN after break glass"
+        );
+        assertEq(
+            ethereumVotingPower.owner(),
+            address(governorV2),
+            "VotingPowerAggregator owner unchanged until acceptOwnership"
+        );
+
+        // Pause guardian accepts to complete the transfer
+        vm.prank(pauseGuardian);
+        ethereumVotingPower.acceptOwnership();
         assertEq(
             ethereumVotingPower.owner(),
             pauseGuardian,
-            "VotingPowerAggregator owner should be PAUSE_GUARDIAN after break glass"
+            "VotingPowerAggregator owner should be PAUSE_GUARDIAN after acceptance"
         );
 
         // Verify break glass guardian is now address(0) (one-time use)
@@ -2826,18 +2853,16 @@ contract MultichainProposalIntegrationV2 is
         vm.prank(bgGuardian);
         governorV2.executeBreakGlass(targets, calldatas);
 
-        // xWELL uses 2-step ownership, so check pendingOwner
+        // Both use 2-step ownership, so check pendingOwner
         assertEq(
             ethereumXWell.pendingOwner(),
             pauseGuardian,
             "xWELL pendingOwner should be PAUSE_GUARDIAN"
         );
-
-        // VotingPowerAggregator uses direct transfer
         assertEq(
-            ethereumVotingPower.owner(),
+            ethereumVotingPower.pendingOwner(),
             pauseGuardian,
-            "VotingPowerAggregator owner should be PAUSE_GUARDIAN"
+            "VotingPowerAggregator pendingOwner should be PAUSE_GUARDIAN"
         );
     }
 
