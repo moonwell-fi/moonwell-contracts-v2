@@ -833,5 +833,10 @@
         "addr": "0x2dc66C40bb15F0470e40508B43cD64D0b4F57180",
         "isContract": true,
         "name": "VOTE_COLLECTION_IMPL_V3"
+    },
+    {
+        "addr": "0xa8A334ffaba129C07Df4740001ceE7c0D838ddB9",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"
     }
 ]

@@ -12,6 +12,11 @@ rpc_storage_caching = { chains = "all", endpoints = "all" }
 ignored_warnings_from = ["src/MErc20Delegator.sol", "src/tokensale/TokenSaleDistributorProxy.sol"]
 gas_limit = "18446744073709551615" # u64::MAX
 block_gas_limit = "18446744073709551615"
+# Disable foundry 1.5+ check that reverts on ADDRESS opcode in the script
+# contract's own bytecode. Proposals legitimately deploy and reference an
+# ephemeral Addresses registry from the script via `new Addresses()` and
+# `vm.makePersistent(address(addresses))`, which trips the check.
+script_execution_protection = false
 # revert_strings = "debug"
 # sparse_mode = true # compiles files that match filter criteria
 
@@ -46,12 +51,12 @@ opSepolia = { endpoint= "${OP_SEPOLIA_RPC_URL}", retries = 2, retry_backoff = 10
 
 # comment out the following lines so that CI passes fast and doesn't throw errors related to connecting to CI
 [etherscan]
-#optimism = { key = "${BASESCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=10" }
+optimism = { key = "${BASESCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=10" }
 #moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
-#moonbeam = { key = "${BASESCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=1284" }
+moonbeam = { key = "${BASESCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=1284" }
 #moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
 #goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
 #sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
-#base = { key = "${BASESCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=8453" }
+base = { key = "${BASESCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=8453" }
 #baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
 #opSepolia = { key = "${OPSCAN_API_KEY}", url= "https://api.optimistic.etherscan.io/api" }
