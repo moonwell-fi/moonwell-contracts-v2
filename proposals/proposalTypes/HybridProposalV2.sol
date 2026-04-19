@@ -606,7 +606,18 @@ abstract contract HybridProposalV2 is
                 bytes[] memory payloads
             ) = getTargetsPayloadsValues(addresses);
 
-            checkEthereumActions(addresses, targets);
+            {
+                ProposalAction[] memory ethereumActions = actions.filter(
+                    ActionType.Ethereum
+                );
+                address[] memory ethereumTargets = new address[](
+                    ethereumActions.length
+                );
+                for (uint256 i = 0; i < ethereumActions.length; i++) {
+                    ethereumTargets[i] = ethereumActions[i].target;
+                }
+                checkEthereumActions(addresses, ethereumTargets);
+            }
 
             /// remove the restrictions
             addresses.removeRestriction();
