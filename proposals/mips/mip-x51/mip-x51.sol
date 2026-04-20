@@ -108,41 +108,16 @@ contract mipx51 is RewardsDistributionTemplate {
         );
     }
 
-    /// @dev snapshot borrower debt before repayment so validate() can diff,
-    ///      and ensure each market holds enough underlying for _reduceReserves
-    ///      to succeed in the forked simulation. The rewards template mocks
-    ///      MOONWELL_VIRTUAL's balance to a fixed ~14,916 VIRTUAL which is
-    ///      below the repay amount; we top up every affected market here.
+    /// @dev snapshot borrower debt before repayment so validate() can diff.
     function beforeSimulationHook(Addresses addresses) public override {
         super.beforeSimulationHook(addresses);
 
         vm.selectFork(BASE_FORK_ID);
 
-        _ensureMarketBalance(addresses, "MOONWELL_VIRTUAL", VIRTUAL_AMOUNT);
-        _ensureMarketBalance(addresses, "MOONWELL_cbXRP", CBXRP_AMOUNT);
-        _ensureMarketBalance(addresses, "MOONWELL_USDC", USDC_AMOUNT);
-        _ensureMarketBalance(addresses, "MOONWELL_cbETH", CBETH_AMOUNT);
-
         _snapshotBorrow(addresses, "MOONWELL_VIRTUAL", VIRTUAL_BORROWER);
         _snapshotBorrow(addresses, "MOONWELL_cbXRP", CBXRP_USDC_BORROWER);
         _snapshotBorrow(addresses, "MOONWELL_USDC", CBXRP_USDC_BORROWER);
         _snapshotBorrow(addresses, "MOONWELL_cbETH", CBETH_BORROWER);
-    }
-
-    /// @dev deal the market enough underlying so _reduceReserves(amount) can
-    ///      doTransferOut to TEMPORAL_GOVERNOR. Adds to current balance rather
-    ///      than overwriting so real supply/borrow state remains intact.
-    function _ensureMarketBalance(
-        Addresses addresses,
-        string memory marketName,
-        uint256 amount
-    ) internal {
-        MErc20 market = MErc20(addresses.getAddress(marketName));
-        IERC20 underlying = IERC20(market.underlying());
-        uint256 current = underlying.balanceOf(address(market));
-        if (current < amount) {
-            deal(address(underlying), address(market), current + amount);
-        }
     }
 
     function _pushBadDebtRepay(

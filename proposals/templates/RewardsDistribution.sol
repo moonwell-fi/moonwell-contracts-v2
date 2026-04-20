@@ -379,15 +379,6 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
                     encodedData
                 );
 
-                if (chainId == BASE_CHAIN_ID) {
-                    // mock the MTOKEN_VIRTUAL balance
-                    deal(
-                        addresses.getAddress("VIRTUAL"),
-                        addresses.getAddress("MOONWELL_VIRTUAL"),
-                        14916685444629005000000
-                    );
-                }
-
                 if (chainId == OPTIMISM_CHAIN_ID) {
                     (
                         ,
