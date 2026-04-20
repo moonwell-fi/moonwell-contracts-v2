@@ -31,9 +31,15 @@ contract mipx51 is RewardsDistributionTemplate {
     uint256 internal constant USDC_AMOUNT = 81_844_160_000; // 81,844.16 * 1e6
     uint256 internal constant CBETH_AMOUNT = 59_145_900_000_000_000_000; // 59.1459 * 1e18
 
-    // Borrow balances captured before simulation so we can verify repayment effects.
-    mapping(address => mapping(address => uint256))
-        internal borrowBalanceBefore;
+    // Per-market state captured before simulation so validate() can diff.
+    struct MarketSnapshot {
+        uint256 totalReserves;
+        uint256 cash;
+        uint256 temporalGovUnderlyingBalance;
+        uint256 borrowBalance;
+    }
+    mapping(address => MarketSnapshot) internal snapshotBefore;
+    mapping(address => address) internal snapshotBorrower;
 
     function name() external pure override returns (string memory) {
         return "MIP-X51";
@@ -82,42 +88,23 @@ contract mipx51 is RewardsDistributionTemplate {
 
         vm.selectFork(BASE_FORK_ID);
 
-        _assertRepaid(
-            addresses,
-            "MOONWELL_VIRTUAL",
-            VIRTUAL_BORROWER,
-            VIRTUAL_AMOUNT
-        );
-        _assertRepaid(
-            addresses,
-            "MOONWELL_cbXRP",
-            CBXRP_USDC_BORROWER,
-            CBXRP_AMOUNT
-        );
-        _assertRepaid(
-            addresses,
-            "MOONWELL_USDC",
-            CBXRP_USDC_BORROWER,
-            USDC_AMOUNT
-        );
-        _assertRepaid(
-            addresses,
-            "MOONWELL_cbETH",
-            CBETH_BORROWER,
-            CBETH_AMOUNT
-        );
+        _assertRepayEffects(addresses, "MOONWELL_VIRTUAL", VIRTUAL_AMOUNT);
+        _assertRepayEffects(addresses, "MOONWELL_cbXRP", CBXRP_AMOUNT);
+        _assertRepayEffects(addresses, "MOONWELL_USDC", USDC_AMOUNT);
+        _assertRepayEffects(addresses, "MOONWELL_cbETH", CBETH_AMOUNT);
     }
 
-    /// @dev snapshot borrower debt before repayment so validate() can diff.
+    /// @dev snapshot per-market state before simulation so validate() can
+    ///      assert the 3-step reduce/approve/repay sequence took effect.
     function beforeSimulationHook(Addresses addresses) public override {
         super.beforeSimulationHook(addresses);
 
         vm.selectFork(BASE_FORK_ID);
 
-        _snapshotBorrow(addresses, "MOONWELL_VIRTUAL", VIRTUAL_BORROWER);
-        _snapshotBorrow(addresses, "MOONWELL_cbXRP", CBXRP_USDC_BORROWER);
-        _snapshotBorrow(addresses, "MOONWELL_USDC", CBXRP_USDC_BORROWER);
-        _snapshotBorrow(addresses, "MOONWELL_cbETH", CBETH_BORROWER);
+        _snapshot(addresses, "MOONWELL_VIRTUAL", VIRTUAL_BORROWER);
+        _snapshot(addresses, "MOONWELL_cbXRP", CBXRP_USDC_BORROWER);
+        _snapshot(addresses, "MOONWELL_USDC", CBXRP_USDC_BORROWER);
+        _snapshot(addresses, "MOONWELL_cbETH", CBETH_BORROWER);
     }
 
     function _pushBadDebtRepay(
@@ -182,29 +169,69 @@ contract mipx51 is RewardsDistributionTemplate {
         address borrower
     ) internal {
         MErc20 market = MErc20(addresses.getAddress(marketName));
-        borrowBalanceBefore[address(market)][borrower] = market
-            .borrowBalanceStored(borrower);
+        IERC20 underlying = IERC20(market.underlying());
+        address tempGov = addresses.getAddress("TEMPORAL_GOVERNOR");
+
+        snapshotBorrower[address(market)] = borrower;
+        snapshotBefore[address(market)] = MarketSnapshot({
+            totalReserves: market.totalReserves(),
+            cash: market.getCash(),
+            temporalGovUnderlyingBalance: underlying.balanceOf(tempGov),
+            borrowBalance: market.borrowBalanceStored(borrower)
+        });
     }
 
-    function _assertRepaid(
+    /// @dev Assert invariants of the reduce → approve → repay sequence:
+    ///        1. totalReserves decreased (reduce executed)
+    ///        2. borrower's borrow balance decreased (repay executed)
+    ///        3. residual allowance ≤ approved amount (nothing leaked)
+    ///        4. flow invariant:
+    ///               reserves_decrease ≈
+    ///                 borrow_decrease + tempGov_underlying_increase
+    ///           ±0.5% to absorb interest accrual across the
+    ///           vote/queue/execute time warp.
+    function _assertRepayEffects(
         Addresses addresses,
         string memory marketName,
-        address borrower,
-        uint256 /* amount */
+        uint256 amount
     ) internal {
         MErc20 market = MErc20(addresses.getAddress(marketName));
-        uint256 before = borrowBalanceBefore[address(market)][borrower];
-        uint256 current = market.borrowBalanceStored(borrower);
+        IERC20 underlying = IERC20(market.underlying());
+        address tempGov = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address borrower = snapshotBorrower[address(market)];
+        MarketSnapshot memory s = snapshotBefore[address(market)];
 
-        // Simulation warps forward across the cross-chain vote/queue/execute
-        // timeline, so borrow index accrues materially between the snapshot
-        // and validate(). Exact-amount checks are brittle. Assert the repay
-        // meaningfully reduced the post-accrual balance vs. the pre-proposal
-        // snapshot — a tighter oracle belongs in a dedicated invariant test.
         assertLt(
-            current,
-            before,
-            string.concat("Repay did not reduce borrow balance on ", marketName)
+            market.totalReserves(),
+            s.totalReserves,
+            string.concat("totalReserves did not decrease on ", marketName)
+        );
+
+        assertLt(
+            market.borrowBalanceStored(borrower),
+            s.borrowBalance,
+            string.concat("borrow balance did not decrease on ", marketName)
+        );
+
+        assertLe(
+            underlying.allowance(tempGov, address(market)),
+            amount,
+            string.concat("allowance exceeds approved amount on ", marketName)
+        );
+
+        uint256 reservesDown = s.totalReserves - market.totalReserves();
+        uint256 borrowDown = s.borrowBalance -
+            market.borrowBalanceStored(borrower);
+        uint256 tempGovUp = underlying.balanceOf(tempGov) -
+            s.temporalGovUnderlyingBalance;
+        assertApproxEqRel(
+            borrowDown + tempGovUp,
+            reservesDown,
+            0.005e18,
+            string.concat(
+                "reduce/repay flow invariant violated on ",
+                marketName
+            )
         );
     }
 }
