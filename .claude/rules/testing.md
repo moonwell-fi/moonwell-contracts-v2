@@ -10,3 +10,12 @@
   10=Optimism)
 - For proposal-specific tests, inherit from `PostProposalCheck`
 - CI profile: `FOUNDRY_PROFILE=ci forge test` (1000 fuzz runs)
+- Use `forge test --ffi` for any test that runs a proposal — they source `.sh`
+  files via `vm.ffi` (fails with `Permission denied` if the script lacks the
+  exec bit)
+- Make new proposal shell scripts executable in git:
+  `git update-index --chmod=+x proposals/mips/mip-xNN/xNN.sh`
+- Compiled artifacts live in `artifacts/foundry/` (not `out/`) — see
+  `foundry.toml`
+- `-vvvv` shows full traces including `console.log` from inside `setUp()`; `-vv`
+  often hides them on failures
