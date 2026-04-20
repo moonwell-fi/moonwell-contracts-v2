@@ -150,15 +150,22 @@ contract mipx51 is RewardsDistributionTemplate {
             ActionType.Base
         );
 
+        // Use type(uint256).max as the Compound sentinel so repayBorrowFresh
+        // clips the repay to the borrower's current accountBorrows. A
+        // hardcoded amount would revert via subUInt underflow inside
+        // repayBorrowFresh if a third party repays any portion of the bad
+        // debt before governance executes, which would then trip
+        // TemporalGovernor.executeProposal's require(success) and block the
+        // entire Base epoch execution.
         _pushAction(
             market,
             abi.encodeWithSignature(
                 "repayBorrowBehalf(address,uint256)",
                 borrower,
-                amount
+                type(uint256).max
             ),
             string.concat(
-                "Repay ",
+                "Repay up to ",
                 amountLabel,
                 " on behalf of ",
                 vm.toString(borrower),
