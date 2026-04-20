@@ -414,7 +414,36 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             encodedData
         );
 
-        vm.selectFork(BASE_FORK_ID);
+        // Pre-fund cross-chain xWELL recipients.
+        //
+        // V3+ WormholeBridgeAdapter uses wormhole.publishMessage + processVAA
+        // instead of the deprecated relayer's sendPayloadToEvm / receiveWormholeMessages
+        // path. The mock relayer wired above covers the legacy flow but the V3
+        // bridge-out burns xWELL on Moonbeam and relies on a signed VAA being
+        // processed on the destination chain — which never happens in a forked
+        // simulation. To keep rewards MIPs executable end-to-end, mint the
+        // bridged amount directly on each destination so the downstream
+        // transferFrom / merkle-campaign spend on TEMPORAL_GOVERNOR succeeds.
+        {
+            BridgeWell[] memory bridges = moonbeamActions.bridgeWells;
+            for (uint256 i = 0; i < bridges.length; i++) {
+                uint256 destChain = bridges[i].network;
+                if (destChain == MOONBEAM_CHAIN_ID) continue;
+
+                vm.selectFork(destChain.toForkId());
+
+                address xwell = addresses.getAddress("xWELL_PROXY");
+                address recipient = addresses.getAddress(
+                    bridges[i].target,
+                    destChain
+                );
+                deal(
+                    xwell,
+                    recipient,
+                    IERC20(xwell).balanceOf(recipient) + bridges[i].amount
+                );
+            }
+        }
 
         vm.selectFork(MOONBEAM_FORK_ID);
     }
