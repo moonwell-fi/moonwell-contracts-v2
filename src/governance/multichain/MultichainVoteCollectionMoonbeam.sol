@@ -337,11 +337,6 @@ contract MultichainVoteCollectionMoonbeam is
         );
     }
 
-    /// @notice deprecated — gas limit is no longer used with publishMessage
-    function setGasLimit(uint96) external view onlyOwner {
-        revert("deprecated");
-    }
-
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
     //// ------------- WORMHOLE OVERRIDES ------------- ////

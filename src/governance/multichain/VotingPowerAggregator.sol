@@ -27,6 +27,10 @@ contract VotingPowerAggregator is
 
     function initialize(address _owner, address _xWell) external initializer {
         __Ownable2Step_init();
+
+        if (_xWell == address(0)) {
+            revert ZeroAddress();
+        }
         xWell = xWELL(_xWell);
 
         _transferOwnership(_owner);

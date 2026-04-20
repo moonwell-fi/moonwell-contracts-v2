@@ -41,7 +41,6 @@ interface IMultichainGovernorV2 {
     error OnlyBreakGlassGuardian();
     error VotesBelowProposalThreshold();
     error ExecuteCallFailed();
-    error BreakGlassCallFailed();
     error CallToNonContract();
 
     /// --------------------------------------------------------- ///
@@ -73,7 +72,6 @@ interface IMultichainGovernorV2 {
         string descriptionUri
     );
     event ProposalCanceled(uint256 id);
-    event ProposalQueued(uint256 id, uint256 eta);
     event ProposalExecuted(uint256 id);
     event BreakGlassExecuted(
         address breakGlassGuardian,
@@ -84,7 +82,6 @@ interface IMultichainGovernorV2 {
     event ProposalThresholdChanged(uint256 oldValue, uint256 newValue);
     event VotingPeriodChanged(uint256 oldValue, uint256 newValue);
     event BreakGlassGuardianChanged(address oldValue, address newValue);
-    event GovernanceReturnAddressChanged(address oldValue, address newValue);
     event CrossChainVoteCollectionPeriodChanged(
         uint256 oldValue,
         uint256 newValue
@@ -129,8 +126,6 @@ interface IMultichainGovernorV2 {
         /// @notice The timestamp at which cross chain voting collection ends:
         /// votes must be registered prior to this time
         uint256 crossChainVoteCollectionEndTimestamp;
-        /// @notice The block at which voting snapshot is taken: holders must have delegated their votes prior to this block
-        uint256 startBlock;
         /// @notice Current number of votes in favor of this proposal
         uint256 forVotes;
         /// @notice Current number of votes in opposition to this proposal

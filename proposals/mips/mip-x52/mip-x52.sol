@@ -284,7 +284,6 @@ contract mipx52 is HybridProposal {
         // Deploy VotingPowerAggregator on Moonbeam
         if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR", block.chainid)) {
             address xWell = addresses.getAddress("xWELL_PROXY");
-            address stkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
             address moonbeamMultichainGovernor = addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY"
             );
@@ -384,7 +383,6 @@ contract mipx52 is HybridProposal {
         // Deploy VotingPowerAggregator on Base
         if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR", block.chainid)) {
             address xWell = addresses.getAddress("xWELL_PROXY");
-            address stkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
             address baseProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
             address temporalGovernor = addresses.getAddress(
                 "TEMPORAL_GOVERNOR"
@@ -439,7 +437,6 @@ contract mipx52 is HybridProposal {
         // Deploy VotingPowerAggregator on Optimism
         if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR", block.chainid)) {
             address xWell = addresses.getAddress("xWELL_PROXY");
-            address stkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
             address optimismProxyAdmin = addresses.getAddress(
                 "MRD_PROXY_ADMIN"
             );

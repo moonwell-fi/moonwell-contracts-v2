@@ -329,8 +329,11 @@ contract MultichainGovernorV2 is
     }
 
     /// @notice returns the number of live proposals a user has
-    /// a proposal is considered live if it is active or in
-    /// cross chain vote collection period
+    /// a proposal is considered live if it is in the Init (drafted but
+    /// not yet finalized), Active, or CrossChainVoteCollection state.
+    /// Init is counted so that drafted-but-unfinalized proposals still
+    /// consume a slot against MAX_USER_PROPOSAL_COUNT; otherwise a user
+    /// could accumulate unlimited Init proposals alongside the cap.
     /// If canceled it is not considered counted as a live proposal
     /// If succeeded it is not considered counted as a live proposal as it could be executed at any time
     /// If failed it is not considered counted as a live proposal as it can never be executed
@@ -345,7 +348,12 @@ contract MultichainGovernorV2 is
         uint256 totalLiveProposals = 0;
         unchecked {
             for (uint256 i = 0; i < userProposals.length; i++) {
-                if (proposalActive(userProposals[i])) {
+                ProposalState proposalsState = state(userProposals[i]);
+                if (
+                    proposalsState == ProposalState.Init ||
+                    proposalsState == ProposalState.Active ||
+                    proposalsState == ProposalState.CrossChainVoteCollection
+                ) {
                     totalLiveProposals++;
                 }
             }
@@ -434,7 +442,7 @@ contract MultichainGovernorV2 is
 
     /// ---------------------------------------------- ///
     /// ---------------------------------------------- ///
-    /// ------------- Permisslionless ---------------- ///
+    /// ------------- Permissionless ----------------- ///
     /// ---------------------------------------------- ///
     /// ---------------------------------------------- ///
 
@@ -560,7 +568,6 @@ contract MultichainGovernorV2 is
     /// @notice execute a proposal
     /// can only be called if the proposal is in the succeeded state
     /// can only be called when the contract is not paused
-    /// the native token balance of this contract will remain unchanged before and after a proposal is executed
     /// @param proposalId the id of the proposal to execute
     function execute(
         uint256 proposalId
@@ -795,8 +802,7 @@ contract MultichainGovernorV2 is
     ///    that the break glass guardian is address(0).
     ///    - reentrancy is allowed, but no advantage could be gained from it by a malicious break
     ///    glass guardian because at the end of the function, the break glass guardian must be
-    ///    address(0), so you're only constrained by whitelisted calldata and the gas limit for
-    ///    transactions which is 13m currently on Moonbeam.
+    ///    address(0), so you're only constrained by whitelisted calldata and the gas limit
     ///    - assumption that any executeBreakGlassGuardian calls will not require any msg.value
     /// @param targets the targets to call
     /// @param calldatas the calldatas to call

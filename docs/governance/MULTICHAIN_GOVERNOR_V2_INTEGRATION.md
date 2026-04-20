@@ -194,4 +194,4 @@ unchanged.
 - **Error toasts:** parse custom-error selectors. Common ones: `ZeroAddress()`,
   `OnlyGovernor()`, `OnlyBreakGlassGuardian()`, `CalldataAlreadyApproved()`,
   `CalldataNotApproved()`, `InvalidProposalState(...)`,
-  `BreakGlassGuardianNotNull()`, `BreakGlassCallFailed()`.
+  `BreakGlassGuardianNotNull()`.

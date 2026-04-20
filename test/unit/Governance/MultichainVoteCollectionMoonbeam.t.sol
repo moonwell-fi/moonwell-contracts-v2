@@ -300,12 +300,6 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
         _receivingFunds = false;
     }
 
-    function testSetGasLimitDeprecated() public {
-        uint96 newGasLimit = Constants.MIN_GAS_LIMIT;
-        vm.expectRevert("deprecated");
-        voteCollectionMoonbeam.setGasLimit(newGasLimit);
-    }
-
     /// Helper functions
 
     function _getVoteCollectionProposalInformation(
