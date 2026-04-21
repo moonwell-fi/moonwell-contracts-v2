@@ -20,23 +20,8 @@
         "isContract": true
     },
     {
-        "addr": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
-        "name": "WBTC",
-        "isContract": true
-    },
-    {
-        "addr": "0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
-        "name": "weETH",
-        "isContract": true
-    },
-    {
-        "addr": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
-        "name": "wstETH",
-        "isContract": true
-    },
-    {
-        "addr": "0x852deD011285fe67063a08005c71a85690503Cee",
-        "name": "LIDO_ACCOUNTING_ORACLE",
+        "addr": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+        "name": "cbBTC",
         "isContract": true
     },
     {
@@ -55,13 +40,13 @@
         "isContract": true
     },
     {
-        "addr": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
-        "name": "CHAINLINK_BTC_USD",
+        "addr": "0x2665701293fCbEB223D11A08D826563EDcCE423A",
+        "name": "CHAINLINK_CBBTC_USD",
         "isContract": true
     },
     {
-        "addr": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
-        "name": "BTC_ORACLE",
+        "addr": "0x2665701293fCbEB223D11A08D826563EDcCE423A",
+        "name": "CBBTC_ORACLE",
         "isContract": true
     },
     {
@@ -82,16 +67,6 @@
     {
         "addr": "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
         "name": "USDT_ORACLE",
-        "isContract": true
-    },
-    {
-        "addr": "0x86392dC19c0b719886221c78AB11eb8Cf5c52812",
-        "name": "CHAINLINK_STETH_ETH",
-        "isContract": true
-    },
-    {
-        "addr": "0x5c9C449BbC9a6075A2c061dF312a35fd1E05fF22",
-        "name": "CHAINLINK_WEETH_ETH",
         "isContract": true
     },
     {

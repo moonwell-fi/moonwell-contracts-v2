@@ -15,9 +15,7 @@ contract platform.
 | WETH   | 80%               | 10%            | 50,000      | 35,000     |
 | USDC   | 85%               | 10%            | 100,000,000 | 80,000,000 |
 | USDT   | 80%               | 10%            | 50,000,000  | 40,000,000 |
-| WBTC   | 75%               | 15%            | 1,000       | 500        |
-| weETH  | 75%               | 25%            | 20,000      | 5,000      |
-| wstETH | 75%               | 25%            | 20,000      | 5,000      |
+| cbBTC  | 75%               | 15%            | 1,000       | 500        |
 
 ### MetaMorpho Vaults
 
@@ -30,9 +28,7 @@ contract platform.
 - **WETH**: Chainlink ETH/USD
 - **USDC**: Chainlink USDC/USD
 - **USDT**: Chainlink USDT/USD
-- **WBTC**: Chainlink BTC/USD
-- **weETH**: Composite Oracle (ETH/USD × weETH/ETH)
-- **wstETH**: Composite Oracle (ETH/USD × wstETH/ETH via Compound feed)
+- **cbBTC**: Chainlink cbBTC/USD
 
 ### Governance
 
@@ -52,12 +48,11 @@ Ethereum deployment from the Moonwell governance hub on Moonbeam.
 2. Unitroller + Comptroller - Risk management
 3. MultiRewardDistributor - Reward distribution
 4. ChainlinkOracle - Price feed aggregator
-5. ChainlinkCompositeOracle - For LST exchange rates
-6. MErc20Delegate - mToken implementation
-7. MErc20Delegator - mToken proxy per market
-8. JumpRateModel - Interest rate models
-9. WETHRouter - ETH deposit convenience
-10. MetaMorpho Vaults - ERC4626 vaults
+5. MErc20Delegate - mToken implementation
+6. MErc20Delegator - mToken proxy per market
+7. JumpRateModel - Interest rate models
+8. WETHRouter - ETH deposit convenience
+9. MetaMorpho Vaults - ERC4626 vaults
 
 ## Security Considerations
 
