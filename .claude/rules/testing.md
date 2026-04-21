@@ -19,3 +19,6 @@
   `foundry.toml`
 - `-vvvv` shows full traces including `console.log` from inside `setUp()`; `-vv`
   often hides them on failures
+- After renaming a function/variable that only changes call sites in the same
+  file, run `forge build --force` before trusting `forge test` — incremental
+  builds can serve stale bytecode and mask compile errors that CI will catch
