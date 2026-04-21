@@ -73,7 +73,7 @@ Proposals follow a lifecycle: `deploy()` → `afterDeploy()` → `build()` →
 RewardsDistribution, ProtocolDeployment
 
 **Rewards automation:** monthly MIP JSON + MD come from
-`moonwell-reward-automation.moonwell.workers.dev/?type=json|markdown&timestamp=<unix>`.
+`https://moonwell-reward-automation.moonwell.workers.dev/?type=json|markdown&timestamp=<unix>`.
 Output can contain bugs (negative `withdrawWell` amounts, `nativeValue: 0`) —
 sanity-check before committing.
 
