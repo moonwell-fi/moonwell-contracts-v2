@@ -31,3 +31,14 @@
 - Before adding `deal(...)` in `beforeSimulationHook` or a proposal, compare
   against real on-chain state (`cast call <market> "totalReserves()(uint256)"` /
   `"getCash()(uint256)"`). Never let a mock reduce a mainnet balance
+- `repayBorrowBehalf(uint256.max)` clips to `accountBorrows` (sentinel at
+  `src/MToken.sol:1297`). Use it only for FULL repays where you've already
+  funded the market to cover the entire debt. For PARTIAL repays sized by
+  reserve availability (e.g. bad-debt recovery), use the literal amount — the
+  sentinel will clip to the full debt and then revert on insufficient allowance
+  in `doTransferIn`
+- Cross-chain xWELL bridging (`xWELLRouter.bridgeToRecipient`) on V3+
+  `WormholeBridgeAdapter` uses `publishMessage`/`processVAA`, not the deprecated
+  relayer path the template's `WormholeRelayerAdapter` mocks. Rewards MIPs that
+  bridge must pre-fund destination `TEMPORAL_GOVERNOR` balances in
+  `beforeSimulationHook` or bridged WELL never arrives in fork simulation

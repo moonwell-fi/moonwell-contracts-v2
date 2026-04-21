@@ -22,3 +22,14 @@
 - After renaming a function/variable that only changes call sites in the same
   file, run `forge build --force` before trusting `forge test` — incremental
   builds can serve stale bytecode and mask compile errors that CI will catch
+- In-proposal `validate()` invariants must only couple values that accrue under
+  the SAME protocol mechanism. `reservesDown` vs `borrowDown` + other terms
+  drift 1-7% across harnesses because `PostProposalCheck` consumers run
+  different numbers of vote/queue/execute warps. Prefer directional assertions
+  (`assertLt`) and `value ≈ target` checks over `valueA ≈ valueB` equalities
+- Prefer `assertEq(allowance, 0)` over `assertLe(allowance, amount)` after a
+  matched `approve(market, amount)` / `repayBorrowBehalf(…, amount)` pair — the
+  latter is trivially true even if the repay never executed
+- After accepting a GitHub-UI / Copilot "cleanup" commit (removes imports,
+  renames vars) — verify the file still compiles locally before pushing; the UI
+  doesn't see the full symbol graph
