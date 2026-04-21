@@ -284,7 +284,6 @@ contract mipx52 is HybridProposal {
         // Deploy VotingPowerAggregator on Moonbeam
         if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR", block.chainid)) {
             address xWell = addresses.getAddress("xWELL_PROXY");
-            address stkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
             address moonbeamMultichainGovernor = addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY"
             );
@@ -384,7 +383,6 @@ contract mipx52 is HybridProposal {
         // Deploy VotingPowerAggregator on Base
         if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR", block.chainid)) {
             address xWell = addresses.getAddress("xWELL_PROXY");
-            address stkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
             address baseProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
             address temporalGovernor = addresses.getAddress(
                 "TEMPORAL_GOVERNOR"
@@ -439,7 +437,6 @@ contract mipx52 is HybridProposal {
         // Deploy VotingPowerAggregator on Optimism
         if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR", block.chainid)) {
             address xWell = addresses.getAddress("xWELL_PROXY");
-            address stkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
             address optimismProxyAdmin = addresses.getAddress(
                 "MRD_PROXY_ADMIN"
             );
@@ -1582,13 +1579,15 @@ contract mipx52 is HybridProposal {
         }
 
         // 9. Validate Ethereum VotingPowerAggregator state (configured in afterDeploy)
+        // With Ownable2Step, afterDeploy only sets pendingOwner; the governor
+        // must acceptOwnership() in its first proposal to complete the transfer
         VotingPowerAggregator ethAggregator = VotingPowerAggregator(
             ethereumVotingPower
         );
         assertEq(
-            ethAggregator.owner(),
+            ethAggregator.pendingOwner(),
             governorV2Proxy,
-            "Ethereum VotingPowerAggregator owner not set to MultichainGovernorV2"
+            "Ethereum VotingPowerAggregator pendingOwner not set to MultichainGovernorV2"
         );
 
         assertEq(
@@ -1740,11 +1739,14 @@ contract mipx52 is HybridProposal {
             "Ownership transfer validation failed"
         );
 
-        // 10. Validate VotingPowerAggregator ownership transferred to TemporalGovernor
+        // 10. Validate VotingPowerAggregator pending ownership transferred to
+        // TemporalGovernor. With Ownable2Step, the Moonbeam governor's proposal
+        // sets pendingOwner only; TemporalGovernor must call acceptOwnership()
+        // in the first Ethereum MultichainGovernorV2 follow-up proposal.
         assertEq(
-            VotingPowerAggregator(moonbeamVotingPower).owner(),
+            VotingPowerAggregator(moonbeamVotingPower).pendingOwner(),
             temporalGovernor,
-            "Moonbeam VotingPowerAggregator ownership not transferred to TemporalGovernor"
+            "Moonbeam VotingPowerAggregator pendingOwner not set to TemporalGovernor"
         );
 
         // 11. Validate stkWell added as snapshot source on Moonbeam VotingPowerAggregator
@@ -1806,6 +1808,13 @@ contract mipx52 is HybridProposal {
             address(baseVoteCollection.votingPower()),
             baseVotingPower,
             "VotingPowerAggregator not set on Base VoteCollection"
+        );
+
+        // 4a. Validate wormhole is set on Base VoteCollection (storage slot preserved from V1)
+        assertNotEq(
+            address(baseVoteCollection.wormhole()),
+            address(0),
+            "wormhole not set on Base VoteCollection after upgrade"
         );
 
         // 5. Validate Ethereum MultichainGovernorV2 is trusted sender on Base VoteCollection
@@ -1935,6 +1944,13 @@ contract mipx52 is HybridProposal {
             address(optimismVoteCollection.votingPower()),
             optimismVotingPower,
             "VotingPowerAggregator not set on Optimism VoteCollection"
+        );
+
+        // 4a. Validate wormhole is set on Optimism VoteCollection (storage slot preserved from V1)
+        assertNotEq(
+            address(optimismVoteCollection.wormhole()),
+            address(0),
+            "wormhole not set on Optimism VoteCollection after upgrade"
         );
 
         // 5. Validate Ethereum MultichainGovernorV2 is trusted sender on Optimism VoteCollection

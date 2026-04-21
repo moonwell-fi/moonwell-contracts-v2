@@ -41,33 +41,22 @@ contract MultichainGovernanceFuzzingV2 is MultichainBaseTestV2 {
         uint256 totalXWellUsed = 0;
         address[] memory users = new address[](voters);
         for (uint256 i = 0; i < voters; i++) {
-            // random pick of token to delegate, can be well, xwell or stkwell
-            uint256 random = i % 3;
-            address tokenToVote;
+            // V2 voting sources are xWELL and stkWELL only — well/distributor
+            // were removed from the aggregator per governance changes.
+            address tokenToVote = i % 2 == 0
+                ? address(xwell)
+                : address(stkWellMoonbeam);
 
-            if (random == 0) {
-                tokenToVote = address(well);
-            } else if (random == 1) {
-                tokenToVote = address(xwell);
-            } else {
-                tokenToVote = address(stkWellMoonbeam);
+            // Both paths consume xWELL (stkWELL staking transfers from xWELL),
+            // so guard against supply exhaustion up front.
+            if (
+                totalXWellUsed >= availableXWellSupply ||
+                voteAmount > (availableXWellSupply - totalXWellUsed)
+            ) {
+                voters = uint8(i);
+                break;
             }
-
-            // Check if we have enough xWELL for xwell-based tokens
-            if (random != 0) {
-                // xwell or stkwell
-                // Check for sufficient xWELL without causing underflow
-                // Short-circuit evaluation: first check prevents underflow in second check
-                if (
-                    totalXWellUsed >= availableXWellSupply ||
-                    voteAmount > (availableXWellSupply - totalXWellUsed)
-                ) {
-                    // Not enough xWELL remaining, skip the rest
-                    voters = uint8(i);
-                    break;
-                }
-                totalXWellUsed += voteAmount;
-            }
+            totalXWellUsed += voteAmount;
 
             address user = address(uint160(i + 1));
 
@@ -148,25 +137,17 @@ contract MultichainGovernanceFuzzingV2 is MultichainBaseTestV2 {
         uint256[] memory voteAmounts = new uint256[](voters);
         uint256 totalVoteAmount = 0;
 
-        // Track xWELL and WELL usage separately since they both have limited supply
         uint256 totalXWellUsed = 0;
-        uint256 totalWellUsed = 0;
-        uint256 availableWellBalance = well.balanceOf(address(this));
 
         // Use conservative max to avoid running out
         uint256 maxVoteAmount = availableXWellSupply / 2;
 
         for (uint256 i = 0; i < voters; i++) {
-            // random pick of token to delegate
-            uint256 random = i % 3;
-            address tokenToVote = random == 0
-                ? address(well)
-                : random == 1
-                    ? address(xwell)
-                    : address(stkWellMoonbeam);
-
-            bool isXWellBased = random != 0; // xwell or stkwell
-            bool isWellBased = random == 0; // well or distributor
+            // V2 voting sources are xWELL and stkWELL only — well/distributor
+            // were removed from the aggregator per governance changes.
+            address tokenToVote = i % 2 == 0
+                ? address(xwell)
+                : address(stkWellMoonbeam);
 
             // Assigning a random vote amount for each user, ensuring it's at least 1e18
             uint256 voteAmount = (uint256(
@@ -176,32 +157,16 @@ contract MultichainGovernanceFuzzingV2 is MultichainBaseTestV2 {
             // Ensure minimum vote amount
             if (voteAmount < 1e18) voteAmount = 1e18;
 
-            // Ensure we don't exceed token supply
-            if (isXWellBased) {
-                // Check for sufficient xWELL without causing underflow
-                if (
-                    totalXWellUsed >= availableXWellSupply ||
-                    voteAmount > (availableXWellSupply - totalXWellUsed)
-                ) {
-                    // Not enough xWELL, skip this user
-                    voteAmounts[i] = 0;
-                    users[i] = address(uint160(i + 1));
-                    continue;
-                }
-                totalXWellUsed += voteAmount;
-            } else if (isWellBased) {
-                // Check for sufficient WELL
-                if (
-                    totalWellUsed >= availableWellBalance ||
-                    voteAmount > (availableWellBalance - totalWellUsed)
-                ) {
-                    // Not enough WELL, skip this user
-                    voteAmounts[i] = 0;
-                    users[i] = address(uint160(i + 1));
-                    continue;
-                }
-                totalWellUsed += voteAmount;
+            // Both xwell and stkWellMoonbeam (staked) consume xWELL supply
+            if (
+                totalXWellUsed >= availableXWellSupply ||
+                voteAmount > (availableXWellSupply - totalXWellUsed)
+            ) {
+                voteAmounts[i] = 0;
+                users[i] = address(uint160(i + 1));
+                continue;
             }
+            totalXWellUsed += voteAmount;
 
             voteAmounts[i] = voteAmount;
             totalVoteAmount += voteAmount;

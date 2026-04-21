@@ -222,7 +222,7 @@ contract MultichainVoteCollectionMoonbeam is
         emit VoteCast(msg.sender, proposalId, voteValue, userVotes);
     }
 
-    /// @notice Emits votes to be contabilized on Moonbeam Governor contract
+    /// @notice Emits votes to be tallied on the Ethereum MultichainGovernorV2
     /// @param proposalId the proposal id
     function emitVotes(uint256 proposalId) external payable override {
         /// Get the proposal
@@ -335,11 +335,6 @@ contract MultichainVoteCollectionMoonbeam is
             votingEndTime,
             crossChainVoteCollectionEndTimestamp
         );
-    }
-
-    /// @notice deprecated — gas limit is no longer used with publishMessage
-    function setGasLimit(uint96) external view onlyOwner {
-        revert("deprecated");
     }
 
     //// ---------------------------------------------- ////

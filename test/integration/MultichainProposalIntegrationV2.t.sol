@@ -33,6 +33,8 @@ contract MultichainProposalIntegrationV2 is
     PostProposalCheck,
     EthereumPostDeploymentActions
 {
+    using stdStorage for StdStorage;
+
     /// @notice MultichainGovernorV2 instance (deployed on Ethereum mainnet)
     MultichainGovernorV2 public governorV2;
 
@@ -205,24 +207,29 @@ contract MultichainProposalIntegrationV2 is
             "WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
 
-        // Check if temporalGovernor is the pending owner
-        try this._getPendingOwner(bridgeAdapter) returns (
-            address pendingOwner
-        ) {
-            if (pendingOwner == temporalGovernor) {
-                vm.prank(temporalGovernor);
-                (bool success, ) = bridgeAdapter.call(
+        _acceptIfPending(bridgeAdapter, temporalGovernor);
+
+        // VotingPowerAggregator on Moonbeam uses Ownable2Step. mip-x52 proposal
+        // set pendingOwner=TemporalGovernor; simulate the first Ethereum
+        // follow-up proposal relaying a Wormhole message → TemporalGovernor
+        // calling acceptOwnership().
+        _acceptIfPending(address(moonbeamVotingPower), temporalGovernor);
+    }
+
+    /// @notice If pendingOwner on the target is `expected`, prank as `expected`
+    ///         and call acceptOwnership(). Silently skips contracts that don't
+    ///         expose pendingOwner()/acceptOwnership().
+    function _acceptIfPending(address target, address expected) internal {
+        try this._getPendingOwner(target) returns (address pendingOwner) {
+            if (pendingOwner == expected) {
+                vm.prank(expected);
+                (bool success, ) = target.call(
                     abi.encodeWithSignature("acceptOwnership()")
                 );
-
-                assertEq(
-                    success,
-                    true,
-                    "Failed to accepted ownership of WORMHOLE_BRIDGE_ADAPTER_PROXY"
-                );
+                assertEq(success, true, "acceptOwnership() failed");
             }
         } catch {
-            // Contract doesn't have pendingOwner() or acceptOwnership(), skip
+            // not 2-step or call failed; skip
         }
     }
 
@@ -252,33 +259,46 @@ contract MultichainProposalIntegrationV2 is
         wormholeRelayerAdapter.setIsMultichainTest(true);
         wormholeRelayerAdapter.setSenderChainId(ETHEREUM_WORMHOLE_CHAIN_ID);
 
-        bytes32 mockAddr = bytes32(
-            uint256(uint160(address(wormholeRelayerAdapter)))
-        );
-
-        // Replace wormhole core in MultichainGovernorV2 on Ethereum (slot 123)
+        // Override the `wormhole` core address on each deployment via the
+        // `wormhole()` public getter — slot is derived through stdStorage so
+        // this helper keeps working if the storage layout changes.
         vm.selectFork(ETHEREUM_FORK_ID);
-        vm.store(address(governorV2), bytes32(uint256(123)), mockAddr);
+        _overrideWormholeCore(
+            address(governorV2),
+            address(wormholeRelayerAdapter)
+        );
 
-        // Replace wormhole core in Base VoteCollection (slot 160)
         vm.selectFork(BASE_FORK_ID);
-        vm.store(address(baseVoteCollection), bytes32(uint256(160)), mockAddr);
+        _overrideWormholeCore(
+            address(baseVoteCollection),
+            address(wormholeRelayerAdapter)
+        );
 
-        // Replace wormhole core in Optimism VoteCollection (slot 160)
         vm.selectFork(OPTIMISM_FORK_ID);
-        vm.store(
+        _overrideWormholeCore(
             address(optimismVoteCollection),
-            bytes32(uint256(160)),
-            mockAddr
+            address(wormholeRelayerAdapter)
         );
 
-        // Replace wormhole core in Moonbeam VoteCollection (slot 158)
         vm.selectFork(MOONBEAM_FORK_ID);
-        vm.store(
+        _overrideWormholeCore(
             address(moonbeamVoteCollection),
-            bytes32(uint256(158)),
-            mockAddr
+            address(wormholeRelayerAdapter)
         );
+    }
+
+    /// @notice Writes `newWormhole` into the `wormhole` slot of `target`.
+    /// @dev Uses stdStorage's `wormhole()` selector lookup so the fix survives
+    /// storage layout changes in MultichainGovernorV2 or vote collection contracts.
+    function _overrideWormholeCore(
+        address target,
+        address newWormhole
+    ) internal {
+        uint256 slot = stdstore
+            .target(target)
+            .sig(bytes4(keccak256("wormhole()")))
+            .find();
+        vm.store(target, bytes32(slot), bytes32(uint256(uint160(newWormhole))));
     }
 
     /// @notice Configure Ethereum xWELL ecosystem post-deployment
@@ -315,6 +335,13 @@ contract MultichainProposalIntegrationV2 is
         vm.startPrank(address(governorV2));
         acceptOwnershipXWell(xWellProxy);
         acceptOwnershipBridgeAdapter(bridgeAdapterProxy);
+
+        /// VotingPowerAggregator uses Ownable2Step; mip-x52 afterDeploy only
+        /// set pendingOwner=governorV2. Simulate the first Ethereum follow-up
+        /// proposal action: governor accepts.
+        if (ethereumVotingPower.pendingOwner() == address(governorV2)) {
+            ethereumVotingPower.acceptOwnership();
+        }
         vm.stopPrank();
 
         // 4. Set emissions manager on stkWELL
@@ -2779,11 +2806,26 @@ contract MultichainProposalIntegrationV2 is
         vm.prank(bgGuardian);
         governorV2.executeBreakGlass(targets, calldatas);
 
-        // Verify ownership was transferred
+        // VotingPowerAggregator uses Ownable2Step: break glass sets pendingOwner,
+        // owner remains governor until pauseGuardian calls acceptOwnership
+        assertEq(
+            ethereumVotingPower.pendingOwner(),
+            pauseGuardian,
+            "VotingPowerAggregator pendingOwner should be PAUSE_GUARDIAN after break glass"
+        );
+        assertEq(
+            ethereumVotingPower.owner(),
+            address(governorV2),
+            "VotingPowerAggregator owner unchanged until acceptOwnership"
+        );
+
+        // Pause guardian accepts to complete the transfer
+        vm.prank(pauseGuardian);
+        ethereumVotingPower.acceptOwnership();
         assertEq(
             ethereumVotingPower.owner(),
             pauseGuardian,
-            "VotingPowerAggregator owner should be PAUSE_GUARDIAN after break glass"
+            "VotingPowerAggregator owner should be PAUSE_GUARDIAN after acceptance"
         );
 
         // Verify break glass guardian is now address(0) (one-time use)
@@ -2826,18 +2868,16 @@ contract MultichainProposalIntegrationV2 is
         vm.prank(bgGuardian);
         governorV2.executeBreakGlass(targets, calldatas);
 
-        // xWELL uses 2-step ownership, so check pendingOwner
+        // Both use 2-step ownership, so check pendingOwner
         assertEq(
             ethereumXWell.pendingOwner(),
             pauseGuardian,
             "xWELL pendingOwner should be PAUSE_GUARDIAN"
         );
-
-        // VotingPowerAggregator uses direct transfer
         assertEq(
-            ethereumVotingPower.owner(),
+            ethereumVotingPower.pendingOwner(),
             pauseGuardian,
-            "VotingPowerAggregator owner should be PAUSE_GUARDIAN"
+            "VotingPowerAggregator pendingOwner should be PAUSE_GUARDIAN"
         );
     }
 
@@ -2856,6 +2896,96 @@ contract MultichainProposalIntegrationV2 is
 
         vm.prank(bgGuardian);
         vm.expectRevert(IMultichainGovernorV2.CalldataNotWhitelisted.selector);
+        governorV2.executeBreakGlass(targets, calldatas);
+    }
+
+    /// @notice Exhaustively verify every break-glass calldata that mip-x52 whitelists
+    /// is reachable via `isWhitelistedCalldata`. Prevents silent drift where a new
+    /// calldata is added to the proposal but not wired into the governor whitelist.
+    function testAllBreakGlassCalldatasAreWhitelisted() public {
+        vm.selectFork(ETHEREUM_FORK_ID);
+
+        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+
+        // Each calldata mirrors the set produced by mip-x52._buildBreakGlassCalldatas
+        // (publishMessage payloads are chain-specific and covered by the proposal
+        // validation; here we focus on the admin-transfer category).
+        bytes[] memory expected = new bytes[](5);
+        expected[0] = abi.encodeWithSignature(
+            "_setPendingAdmin(address)",
+            pauseGuardian
+        );
+        expected[1] = abi.encodeWithSignature(
+            "setAdmin(address)",
+            pauseGuardian
+        );
+        expected[2] = abi.encodeWithSignature(
+            "setEmissionsManager(address)",
+            pauseGuardian
+        );
+        expected[3] = abi.encodeWithSignature(
+            "changeAdmin(address)",
+            pauseGuardian
+        );
+        expected[4] = abi.encodeWithSignature(
+            "transferOwnership(address)",
+            pauseGuardian
+        );
+
+        for (uint256 i = 0; i < expected.length; i++) {
+            assertTrue(
+                governorV2.isWhitelistedCalldata(expected[i]),
+                "expected break-glass calldata should be whitelisted"
+            );
+        }
+    }
+
+    /// @notice Execute break glass with multiple whitelisted calldatas covering
+    /// different semantic categories (ownership transfer on multiple Ownable2Step
+    /// targets) and verify state changes on each. Complements the single-target
+    /// and dual-target tests above with a larger emergency-rollback scenario.
+    function testBreakGlassExecutesMultipleOwnabaleTargets() public {
+        vm.selectFork(ETHEREUM_FORK_ID);
+
+        address bgGuardian = governorV2.breakGlassGuardian();
+        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+
+        // xWELL and VotingPowerAggregator both owned by the governor and both
+        // use Ownable2Step → transferOwnership sets pendingOwner.
+        assertEq(ethereumXWell.owner(), address(governorV2));
+        assertEq(ethereumVotingPower.owner(), address(governorV2));
+
+        address[] memory targets = new address[](2);
+        targets[0] = address(ethereumXWell);
+        targets[1] = address(ethereumVotingPower);
+
+        bytes memory transferOwnershipCall = abi.encodeWithSignature(
+            "transferOwnership(address)",
+            pauseGuardian
+        );
+
+        bytes[] memory calldatas = new bytes[](2);
+        calldatas[0] = transferOwnershipCall;
+        calldatas[1] = transferOwnershipCall;
+
+        // Event emitted with full target/calldata arrays
+        vm.prank(bgGuardian);
+        governorV2.executeBreakGlass(targets, calldatas);
+
+        // pendingOwner set on both targets
+        assertEq(ethereumXWell.pendingOwner(), pauseGuardian);
+        assertEq(ethereumVotingPower.pendingOwner(), pauseGuardian);
+
+        // Guardian nullified after single use
+        assertEq(
+            governorV2.breakGlassGuardian(),
+            address(0),
+            "break glass guardian must be revoked after execution"
+        );
+
+        // Subsequent break-glass attempt must revert with OnlyBreakGlassGuardian
+        vm.prank(bgGuardian);
+        vm.expectRevert(IMultichainGovernorV2.OnlyBreakGlassGuardian.selector);
         governorV2.executeBreakGlass(targets, calldatas);
     }
 

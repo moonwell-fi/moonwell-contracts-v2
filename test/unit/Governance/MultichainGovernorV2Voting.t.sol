@@ -429,6 +429,14 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
             "proposal should not be active"
         );
 
+        // Init proposals still occupy a per-user slot so abandoned drafts
+        // cannot bypass MAX_USER_PROPOSAL_COUNT.
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            1,
+            "init proposal should count toward user limit"
+        );
+
         // Check proposal data was stored
         (address[] memory storedTargets, , ) = governor.getProposalData(
             proposalId
@@ -570,6 +578,177 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         vm.prank(address(0x123));
         vm.expectRevert(IMultichainGovernorV2.OnlyProposer.selector);
         governor.propose(proposalId, targets2, values2, calldatas2, false);
+    }
+
+    /// @notice Init-state proposals must count toward the per-user cap so a
+    /// user cannot accumulate unlimited unfinalized drafts alongside the
+    /// MAX_USER_PROPOSAL_COUNT active-proposal limit.
+    function testInitProposalsCountTowardUserLimit() public {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        for (uint256 i = 0; i < MAX_USER_PROPOSAL_COUNT; i++) {
+            uint256 bridgeCostLoop = governor.bridgeCostAll();
+            vm.deal(address(this), bridgeCostLoop);
+
+            governor.propose{value: bridgeCostLoop}(
+                targets,
+                values,
+                calldatas,
+                string(abi.encodePacked(DESCRIPTION_URI, vm.toString(i))),
+                false
+            );
+        }
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            MAX_USER_PROPOSAL_COUNT,
+            "init proposals should count toward limit"
+        );
+
+        uint256 bridgeCostFinal = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCostFinal);
+
+        // Attempt a 4th Init → must revert
+        vm.expectRevert(IMultichainGovernorV2.TooManyLiveProposals.selector);
+        governor.propose{value: bridgeCostFinal}(
+            targets,
+            values,
+            calldatas,
+            string(abi.encodePacked(DESCRIPTION_URI, "init-overflow")),
+            false
+        );
+
+        // Attempt a 4th finalized → must also revert
+        vm.expectRevert(IMultichainGovernorV2.TooManyLiveProposals.selector);
+        governor.propose{value: bridgeCostFinal}(
+            targets,
+            values,
+            calldatas,
+            string(abi.encodePacked(DESCRIPTION_URI, "active-overflow")),
+            true
+        );
+    }
+
+    /// @notice A mix of Init and finalized proposals counts correctly; the
+    /// limit fires regardless of the state blend within the user's bucket.
+    function testMixedInitAndActiveCountingHitsLimit() public {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        // One Init proposal
+        uint256 bridgeCostInit = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCostInit);
+        governor.propose{value: bridgeCostInit}(
+            targets,
+            values,
+            calldatas,
+            string(abi.encodePacked(DESCRIPTION_URI, "init")),
+            false
+        );
+
+        // Two Active proposals
+        for (uint256 i = 0; i < 2; i++) {
+            uint256 bridgeCostLoop = governor.bridgeCostAll();
+            vm.deal(address(this), bridgeCostLoop);
+            governor.propose{value: bridgeCostLoop}(
+                targets,
+                values,
+                calldatas,
+                string(
+                    abi.encodePacked(DESCRIPTION_URI, "active", vm.toString(i))
+                ),
+                true
+            );
+            vm.warp(block.timestamp + 2);
+        }
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            MAX_USER_PROPOSAL_COUNT,
+            "1 init + 2 active should reach cap"
+        );
+
+        uint256 bridgeCostFinal = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCostFinal);
+
+        vm.expectRevert(IMultichainGovernorV2.TooManyLiveProposals.selector);
+        governor.propose{value: bridgeCostFinal}(
+            targets,
+            values,
+            calldatas,
+            string(abi.encodePacked(DESCRIPTION_URI, "final-active")),
+            true
+        );
+
+        vm.expectRevert(IMultichainGovernorV2.TooManyLiveProposals.selector);
+        governor.propose{value: bridgeCostFinal}(
+            targets,
+            values,
+            calldatas,
+            string(abi.encodePacked(DESCRIPTION_URI, "final-init")),
+            false
+        );
+    }
+
+    /// @notice Cancelling an Init proposal frees a slot for new proposals.
+    function testCancelInitFreesSlot() public {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        uint256[] memory ids = new uint256[](MAX_USER_PROPOSAL_COUNT);
+        for (uint256 i = 0; i < MAX_USER_PROPOSAL_COUNT; i++) {
+            uint256 bridgeCostLoop = governor.bridgeCostAll();
+            vm.deal(address(this), bridgeCostLoop);
+            ids[i] = governor.propose{value: bridgeCostLoop}(
+                targets,
+                values,
+                calldatas,
+                string(abi.encodePacked(DESCRIPTION_URI, vm.toString(i))),
+                false
+            );
+        }
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            MAX_USER_PROPOSAL_COUNT,
+            "at cap after 3 init proposals"
+        );
+
+        governor.cancel(ids[0]);
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            MAX_USER_PROPOSAL_COUNT - 1,
+            "slot freed after cancel"
+        );
+
+        uint256 bridgeCostFinal = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCostFinal);
+
+        // 4th proposal now fits because one slot was freed
+        governor.propose{value: bridgeCostFinal}(
+            targets,
+            values,
+            calldatas,
+            string(abi.encodePacked(DESCRIPTION_URI, "replacement")),
+            false
+        );
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            MAX_USER_PROPOSAL_COUNT,
+            "back at cap after replacement"
+        );
     }
 
     /// ========================================================================
@@ -859,6 +1038,36 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
             )
         );
         governor.cancel(proposalId);
+    }
+
+    /// @notice Phantom proposals (IDs <= startingProposalCount with no proposer)
+    /// must not be cancellable — otherwise anyone could emit spurious
+    /// ProposalCanceled events for IDs that were never actually proposed.
+    function testCancelRevertsOnPhantomProposalId() public {
+        /// simulate migration: bump proposalCount to create phantom IDs 1..100
+        /// by writing directly to storage slot 108 (see forge inspect)
+        uint256 phantomCount = 100;
+        vm.store(
+            address(governor),
+            bytes32(uint256(108)),
+            bytes32(phantomCount)
+        );
+        assertEq(
+            governor.proposalCount(),
+            phantomCount,
+            "proposalCount not bumped"
+        );
+
+        /// cancel on any phantom id — proposer is address(0), guard fires
+        vm.expectRevert(IMultichainGovernorV2.InvalidProposalId.selector);
+        governor.cancel(1);
+
+        vm.expectRevert(IMultichainGovernorV2.InvalidProposalId.selector);
+        governor.cancel(phantomCount);
+
+        /// boundary: id just past proposalCount is rejected by state() first
+        vm.expectRevert(IMultichainGovernorV2.InvalidProposalId.selector);
+        governor.cancel(phantomCount + 1);
     }
 
     function testCancelSucceedsWhenProposerVotesEqualThreshold() public {
@@ -1289,6 +1498,53 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
     function testStateInvalidProposalId() public {
         vm.expectRevert(IMultichainGovernorV2.InvalidProposalId.selector);
         governor.state(999);
+    }
+
+    /// @notice A Succeeded proposal past its executionWindow can never be
+    /// executed. _syncTotalLiveProposals must evict it from _liveProposals and
+    /// _userLiveProposals so storage / pause iteration doesn't grow unbounded.
+    function testSyncRemovesExpiredSucceededProposal() public {
+        /// create and pass a proposal so it reaches Succeeded
+        uint256 proposalId = testVotingValidProposalIdSucceeds();
+
+        _warpPastProposalEnd(proposalId);
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Succeeded),
+            "proposal should be Succeeded"
+        );
+
+        address proposer = governor
+            .proposalInformationStruct(proposalId)
+            .proposer;
+        assertEq(
+            governor.getUserLiveProposalCount(proposer),
+            1,
+            "proposer should have 1 live proposal in raw set"
+        );
+
+        /// warp past the 7-day execution window → proposal is dead state
+        vm.warp(block.timestamp + EXECUTION_WINDOW + 1);
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Succeeded),
+            "state still Succeeded since no Expired state exists"
+        );
+        vm.expectRevert(IMultichainGovernorV2.ProposalExpired.selector);
+        governor.execute(proposalId);
+
+        /// any path that triggers _syncTotalLiveProposals must drop it.
+        /// Creating a new proposal calls sync at the top of propose(), which
+        /// should remove proposal 1 before adding proposal 2.
+        _createProposal();
+
+        /// with the fix: raw set = {proposal 2} → count 1
+        /// without the fix: raw set = {proposal 1, proposal 2} → count 2
+        assertEq(
+            governor.getUserLiveProposalCount(proposer),
+            1,
+            "expired Succeeded proposal 1 must be dropped; only proposal 2 should remain"
+        );
     }
 
     /// ========================================================================

@@ -119,7 +119,8 @@ ownership from the Moonbeam MultichainGovernor to the new system.
 - Configure break glass guardian with 8 whitelisted calldatas (3
   publishMessage + 5 admin functions)
 - Configure VotingPowerAggregator: `setXWell`, `addSnapshotSource(stkWELL)`,
-  transfer ownership to governor
+  transfer ownership to governor (Ownable2Step — only sets `pendingOwner`; see
+  Follow-Up Items)
 
 ### Proposal Actions (executed by old Moonbeam MultichainGovernor)
 
@@ -129,6 +130,8 @@ ownership from the Moonbeam MultichainGovernor to the new system.
 2. Call `recoverETH(WELL_FOUNDATION_MULTISIG)` to recover stuck ETH
 3. Add stkWELL as snapshot source on Moonbeam VotingPowerAggregator
 4. Transfer VotingPowerAggregator ownership to Moonbeam TemporalGovernor
+   (Ownable2Step — only sets `pendingOwner`; TemporalGovernor must
+   `acceptOwnership()` in the first Ethereum follow-up proposal)
 5. Transfer ownership of ~20+ contracts from MultichainGovernor to
    TemporalGovernor:
    - Ownable contracts → `transferOwnership(temporalGovernor)`
@@ -244,9 +247,16 @@ MultichainGovernorV2 calls `acceptOwnership()` on:
 - **xWELL** (Ownable2Step — pendingOwner is set by PostDeployEthereumXWell)
 - **WormholeBridgeAdapter** (Ownable2Step — pendingOwner is set by
   PostDeployEthereumXWell)
+- **VotingPowerAggregator (Ethereum)** (Ownable2Step — pendingOwner is set by
+  MIP-X52 `afterDeploy`)
 
 Until these calls are made, ownership transfer is incomplete (deployer is still
-current owner).
+current owner for xWELL/WormholeBridgeAdapter; Moonbeam governor still effective
+owner for the aggregator until acceptance).
+
+The same proposal should also relay a Wormhole message to Moonbeam
+TemporalGovernor to call `acceptOwnership()` on the **Moonbeam
+VotingPowerAggregator** (pendingOwner set during MIP-X52 Moonbeam execution).
 
 **Step 2 — addTrustedSenders on all chains:**
 
@@ -280,11 +290,21 @@ Ethereum governor → Moonbeam TemporalGovernor → `_acceptAdmin()`.
 execute via Wormhole from the Ethereum governor, which has no proposals yet
 during MIP-X52 execution.
 
-### 2. VotingPowerAggregator ownership on Ethereum
+### 2. VotingPowerAggregator ownership (Ethereum and Moonbeam)
 
-The VotingPowerAggregator uses Ownable (1-step transfer), and ownership is
-transferred to MultichainGovernorV2 in `afterDeploy`. This is already complete —
-no follow-up needed.
+The VotingPowerAggregator uses `Ownable2StepUpgradeable` (matching
+MultichainVoteCollectionV2) so misconfigured transfers are reversible. MIP-X52
+only sets `pendingOwner` on the Ethereum and Moonbeam aggregators; the first
+Ethereum follow-up proposal must:
+
+- Call `acceptOwnership()` on the Ethereum VotingPowerAggregator (direct
+  Ethereum action).
+- Relay a Wormhole message to Moonbeam TemporalGovernor to call
+  `acceptOwnership()` on the Moonbeam VotingPowerAggregator.
+
+Base and Optimism VotingPowerAggregators are initialized with TemporalGovernor
+as owner via `_transferOwnership` in the initializer, so they are already fully
+owned on-chain after MIP-X52 deployment — no follow-up needed for those chains.
 
 ---
 
