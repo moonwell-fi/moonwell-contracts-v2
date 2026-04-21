@@ -163,7 +163,7 @@ contract mipx51 is RewardsDistributionTemplate {
         );
     }
 
-    function _snapshotBorrow(
+    function _snapshot(
         Addresses addresses,
         string memory marketName,
         address borrower
