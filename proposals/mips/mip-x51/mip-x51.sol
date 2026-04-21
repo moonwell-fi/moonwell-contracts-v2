@@ -8,7 +8,6 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {RewardsDistributionTemplate} from "@proposals/templates/RewardsDistribution.sol";
-import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /// @title MIP-X51
 /// @notice Rewards distribution with additional bad-debt repayments on Base.
