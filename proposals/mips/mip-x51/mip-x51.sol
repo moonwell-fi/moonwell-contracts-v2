@@ -219,17 +219,25 @@ contract mipx51 is RewardsDistributionTemplate {
             string.concat("borrow balance did not decrease on ", marketName)
         );
 
-        assertLe(
+        // Literal-amount repay consumes the full allowance. If repay had
+        // clipped (only possible with the uint256.max sentinel, which we
+        // explicitly avoid — see _pushBadDebtRepay) the allowance would
+        // stay positive. Asserting == 0 is the tight success oracle.
+        assertEq(
             underlying.allowance(tempGov, address(market)),
-            amount,
-            string.concat("allowance exceeds approved amount on ", marketName)
+            0,
+            string.concat("allowance not fully consumed on ", marketName)
         );
 
+        // totalReserves only drifts from `amount` by the reserveFactor share
+        // of interest that accrues inside the reduce call itself. Empirically
+        // ≤0.5% on CI; 2% is a safe ceiling that still catches an accidental
+        // double-reduce or a cross-market mixup.
         uint256 reservesDown = s.totalReserves - market.totalReserves();
         assertApproxEqRel(
             reservesDown,
             amount,
-            0.15e18,
+            0.02e18,
             string.concat("reserves decrease far from target on ", marketName)
         );
     }
