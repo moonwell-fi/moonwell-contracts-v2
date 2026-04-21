@@ -42,3 +42,9 @@
   relayer path the template's `WormholeRelayerAdapter` mocks. Rewards MIPs that
   bridge must pre-fund destination `TEMPORAL_GOVERNOR` balances in
   `beforeSimulationHook` or bridged WELL never arrives in fork simulation
+- For rewards-distribution MIPs (template-only or subclass), run
+  `make audit-rewards PROPOSAL=mip-xNN` before opening the PR. This verifies
+  worker-generated numbers balance across chains (TG flow conservation, MRD
+  budget = Σ speeds × duration, safety-module budget = stkEPS × duration,
+  Moonbeam bridge fan-out, no negative amounts, 4-week epoch). Deterministic,
+  ~1s, no LLM. The same check runs in CI via `proposal-summary.yml`.
