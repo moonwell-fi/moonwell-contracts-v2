@@ -62,3 +62,10 @@ coverage:
 test-unit:
 	time forge test --match-contract UnitTest -vvv
 
+# Verify the numbers in a rewards-distribution MIP balance across chains.
+# Usage:
+#   make audit-rewards PROPOSAL=mip-x51
+#   make audit-rewards                   # auto-detect from git diff main
+audit-rewards:
+	@./script/rewards/check-rewards-math.sh $(PROPOSAL)
+

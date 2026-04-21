@@ -61,9 +61,11 @@ jobs:
         run: |
           MARKET_ADD_DIRS=""
           STANDARD_DIRS=""
+          REWARDS_DIST_DIRS=""
           for DIR in ${{ steps.detect.outputs.dirs }}; do
             IS_MARKET_ADD="false"
             HAS_CUSTOM_ACTIONS="false"
+            IS_REWARDS_DIST="false"
 
             # Check for market-add signals
             if [ -f "$DIR/MTokens.json" ]; then
@@ -77,6 +79,25 @@ jobs:
               done
             fi
 
+            # Check for rewards-distribution signals:
+            # (1) mips.json entry for this dir points at the RewardsDistribution template
+            BASENAME=$(basename "$DIR")
+            if [ -f "proposals/mips/mips.json" ] \
+               && jq -e --arg bn "$BASENAME" \
+                    '.[] | select((.envpath // "") | contains($bn)) | select(.path == "RewardsDistribution.sol/RewardsDistributionTemplate.json")' \
+                    proposals/mips/mips.json >/dev/null 2>&1; then
+              IS_REWARDS_DIST="true"
+            fi
+            # (2) any .sol in the dir inherits RewardsDistributionTemplate (subclasses)
+            if [ "$IS_REWARDS_DIST" != "true" ]; then
+              for SOL in "$DIR"/*.sol; do
+                if [ -f "$SOL" ] && grep -qE "is[[:space:]]+RewardsDistributionTemplate\b" "$SOL"; then
+                  IS_REWARDS_DIST="true"
+                  break
+                fi
+              done
+            fi
+
             # Check for custom actions beyond the template (has _pushAction in its own .sol)
             for SOL in "$DIR"/*.sol; do
               if [ -f "$SOL" ] && grep -q "_pushAction" "$SOL"; then
@@ -85,16 +106,41 @@ jobs:
               fi
             done
 
-            # A proposal can be BOTH market-add AND standard
-            if [ "$IS_MARKET_ADD" = "true" ]; then
-              MARKET_ADD_DIRS="$MARKET_ADD_DIRS $DIR"
-            fi
-            if [ "$HAS_CUSTOM_ACTIONS" = "true" ] || [ "$IS_MARKET_ADD" = "false" ]; then
-              STANDARD_DIRS="$STANDARD_DIRS $DIR"
+            # A proposal can be market-add AND standard; rewards-distribution is
+            # exclusive — it uses a dedicated audit template. Subclasses that add
+            # custom actions are still audited under the Rewards Distribution
+            # template (which covers subclass actions explicitly).
+            if [ "$IS_REWARDS_DIST" = "true" ]; then
+              REWARDS_DIST_DIRS="$REWARDS_DIST_DIRS $DIR"
+            else
+              if [ "$IS_MARKET_ADD" = "true" ]; then
+                MARKET_ADD_DIRS="$MARKET_ADD_DIRS $DIR"
+              fi
+              if [ "$HAS_CUSTOM_ACTIONS" = "true" ] || [ "$IS_MARKET_ADD" = "false" ]; then
+                STANDARD_DIRS="$STANDARD_DIRS $DIR"
+              fi
             fi
           done
           echo "market_add_dirs=$(echo $MARKET_ADD_DIRS | xargs)" >> "$GITHUB_OUTPUT"
           echo "standard_dirs=$(echo $STANDARD_DIRS | xargs)" >> "$GITHUB_OUTPUT"
+          echo "rewards_dist_dirs=$(echo $REWARDS_DIST_DIRS | xargs)" >> "$GITHUB_OUTPUT"
+
+      - name: Run deterministic rewards-distribution math check
+        if: steps.detect.outputs.skip != 'true' && steps.classify.outputs.rewards_dist_dirs != ''
+        run: |
+          set -euo pipefail
+          FAILED=0
+          for DIR in ${{ steps.classify.outputs.rewards_dist_dirs }}; do
+            echo "::group::Checking $DIR"
+            if ! ./script/rewards/check-rewards-math.sh "$DIR"; then
+              FAILED=$((FAILED + 1))
+            fi
+            echo "::endgroup::"
+          done
+          if [ "$FAILED" -ne 0 ]; then
+            echo "::error::$FAILED rewards-distribution proposal(s) failed math checks"
+            exit 1
+          fi
 
       - name: Generate proposal summary
         if: steps.check.outputs.exists != 'true' && steps.detect.outputs.skip != 'true'
@@ -116,10 +162,14 @@ jobs:
             Standard proposals (use the **Standard Audit** template below):
             ${{ steps.classify.outputs.standard_dirs }}
 
+            Rewards-distribution proposals (use the **Rewards Distribution Audit** template below):
+            ${{ steps.classify.outputs.rewards_dist_dirs }}
+
             The following test and source files were also changed in this PR:
             ${{ steps.detect.outputs.test_files }}
 
-            If a directory appears in BOTH lists, produce BOTH audit sections for it:
+            If a directory appears in BOTH the market-add AND standard lists, produce BOTH audit
+            sections for it:
             - The Market Add Audit covers parameter correctness (MTokens.json vs forum vs markdown).
             - The Standard Audit covers ONLY the custom actions added beyond the MarketAddV2 template.
               Skip any actions from the template's super.build() (supply/borrow caps, collateral factor,
@@ -127,6 +177,9 @@ jobs:
               by the parameter comparison. Focus only on actions in the proposal's own build() override
               (e.g., OEV wrapper deployment, fee redeemer whitelisting, custom contract calls).
               Similarly, for validate(), only audit assertions beyond super.validate().
+            Rewards-distribution proposals use ONLY the Rewards Distribution Audit template — do NOT
+            produce a Standard Audit for them even if their .sol file contains _pushAction, since the
+            Rewards Distribution Audit covers both template actions and any subclass additions.
             If a directory appears in only one list, use only that template.
 
             Write the full audit to a file called `pr_comment.md` using the Write tool.
@@ -403,6 +456,95 @@ jobs:
             - For oracle changes: read ChainlinkOracleConfigs.sol and the chain JSON files (chains/*.json) to understand the full oracle config
             - For comptroller changes: read the Comptroller source to understand what state getters exist
             - Use proposals/utils/ParameterValidation.sol as reference for standard validation patterns
+
+            ---
+
+            ## Rewards Distribution Audit Template
+
+            For each rewards-distribution proposal directory:
+
+            The deterministic numeric invariants (TG flow conservation, MRD budget = Σ speeds ×
+            duration, safety-module budget = stkEPS × duration, Moonbeam bridge fan-out,
+            positive-amount sanity, 4-week epoch duration) have ALREADY been verified by
+            `./script/rewards/check-rewards-math.sh` in an earlier CI step. The workflow will
+            have failed before reaching you if any of those failed, so you may assume they pass.
+
+            Your job is the narrative review that the deterministic script cannot do:
+
+            ### Phase 1 — Read Local Files
+
+            1. Read the rewards JSON (the `.json` file in the dir, or `MIP_REWARDS_PATH` from the
+               `.sh` script). Note the chain-keyed structure (1284 Moonbeam, 8453 Base, 10 Optimism).
+            2. Read the MIP markdown (.md). It has per-chain summary tables ("Total WELL to
+               distribute Markets (Config)", per-market APR changes, merkle campaign totals).
+            3. Read the `.sol` file. For template-only proposals (inherits `RewardsDistributionTemplate`
+               without overrides beyond `name`), the template handles everything. For SUBCLASSES
+               (e.g., a `build()` override that adds `_pushAction` calls beyond `super.build()`),
+               enumerate and audit those added actions with the same rigor as the Standard Audit.
+            4. Read the dir's `.sh` — confirm `MIP_REWARDS_PATH`, `DESCRIPTION_PATH`,
+               `PRIMARY_FORK_ID=0` are set and the paths exist.
+
+            ### Phase 2 — Narrative checks
+
+            Focus on what the math script cannot verify:
+
+            1. **MD ↔ JSON consistency (per-market).** For each market in the MD's per-chain
+               "### <token> (<mToken>)" tables, verify the `New Value` WELL Supply/Borrow APR
+               direction roughly matches the JSON's `setMRDSpeeds` change for that market
+               (e.g., a 100% APR increase in MD should correspond to ~2× speed in JSON).
+               Only flag divergences > 50% magnitude drift; smaller ones are price/supply-dependent.
+            2. **Recipient / chain-id mixups.** For each `transferFrom.to`, `bridgeToRecipient.target`,
+               `withdrawWell.to`: cross-check against `proposals/Addresses.sol` and `chains/*.json`.
+               A bridge to `TEMPORAL_GOVERNOR` on Base must point at Base's TemporalGovernor,
+               not Optimism's. A merkle campaign's `campaignData` encodes a target contract
+               address in its first 32 bytes — decode and verify it's a known vault/rewarder.
+            3. **Merkle campaign plausibility.** For each `merkleCampaigns[]` entry:
+               verify `campaignType`, `startTimestamp`, `duration` look reasonable (4-week
+               duration, startTimestamp within or shortly after the epoch). Flag any
+               startTimestamp far in the past (stale automation output).
+            4. **Subclass actions (if any).** Enumerate every `_pushAction` in the subclass's
+               `build()` override. For each:
+               - What contract does it target? (read the contract source)
+               - What state does it change?
+               - Is that state asserted in `validate()` (including the subclass's `validate()`
+                 override if present)?
+               - Are before/after snapshots captured in `beforeSimulationHook()` when needed?
+               Use the Standard Audit's "Onchain State Verification" rigor here.
+            5. **Worker output smell-test.** Flag any of: malformed MD tables (missing columns,
+               unparseable numbers), per-market APR changes > 500% (likely automation bug),
+               markets present in JSON but absent in MD (or vice versa), `nativeValue:0` on
+               `bridgeToRecipient` (informational — template pre-funds — but worth calling out).
+
+            ### Rewards Distribution Output Format
+
+            # [Proposal Name] — Rewards Distribution Audit
+
+            ## Summary
+            - Epoch: {startTimeStamp ISO → endTimeStamp ISO} ({duration in days})
+            - Chains covered: {list}
+            - Subclass actions (beyond template): {count, or "none — pure template proposal"}
+            - Merkle campaigns: {count × total WELL}
+            - Deterministic math checks: ✅ (verified in CI step above)
+
+            ## Recommendation
+            A 1-3 line verdict, matching urgency to severity:
+            - "Ready to execute — math passes, narrative review clean."
+            - "Fix before execution: {brief list from Narrative Gaps}."
+            - "Recommended: {mild issue}. Not blocking."
+
+            ## Narrative Gaps
+            ONLY list gaps that the deterministic math could NOT catch AND that could realistically
+            cause exploits, loss of funds, misrouted rewards, or bricked campaigns. For each real gap:
+            - **[Critical/High/Medium]**: One-sentence description + suggested fix.
+
+            If nothing: "No narrative issues — all recipients/chain-ids verified, MD matches JSON,
+            subclass actions (if any) are validated."
+
+            ## Subclass Actions (omit section if none)
+            Table of every action from the subclass's build() override:
+            | # | Target | Function | Validated in subclass validate() | Test Coverage |
+            |---|--------|----------|----------------------------------|---------------|
+            | 1 | `ContractName` | `functionName(args)` | ✅ | test/File.t.sol::testName |
 
       - name: Post comment
         if: steps.check.outputs.exists != 'true' && steps.detect.outputs.skip != 'true' && hashFiles('pr_comment.md') != ''
