@@ -55,7 +55,7 @@ borrower's collateral is worth more than the loan (enforced via Chainlink
 oracle + over-seizure), and the borrower gets access to USDC without selling
 their illiquid asset.
 
-A later phase (not covered here) extends this to _undercollateralized_
+A later phase (section 18) extends this to _undercollateralized_
 reputation-backed borrowing, using a credit bureau built in the `lunar-indexer`
 repo.
 
