@@ -1217,40 +1217,47 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         }
 
         AddRewardInfo memory stellaSwapReward = spec.addRewardInfo;
-        uint256 calculatedAmount = stellaSwapReward.amount;
-        // first approve
-        _pushAction(
-            addresses.getAddress("GOVTOKEN"),
-            abi.encodeWithSignature(
-                "approve(address,uint256)",
+        // Skip StellaSwap approve + addRewardInfo when the JSON carries an
+        // empty stub (amount == 0). Lets split MIPs (e.g. x51b) supply an
+        // empty Moonbeam section when all StellaSwap activity ships in the
+        // sibling MIP. Normal single-MIP months always have amount > 0 so
+        // behaviour is unchanged for them.
+        if (stellaSwapReward.amount > 0) {
+            uint256 calculatedAmount = stellaSwapReward.amount;
+            // first approve
+            _pushAction(
+                addresses.getAddress("GOVTOKEN"),
+                abi.encodeWithSignature(
+                    "approve(address,uint256)",
+                    addresses.getAddress(stellaSwapReward.target),
+                    calculatedAmount
+                ),
+                string.concat(
+                    "Approve StellaSwap spend ",
+                    vm.toString(calculatedAmount / 1e18),
+                    " WELL"
+                ),
+                ActionType.Moonbeam
+            );
+            _pushAction(
                 addresses.getAddress(stellaSwapReward.target),
-                calculatedAmount
-            ),
-            string.concat(
-                "Approve StellaSwap spend ",
-                vm.toString(calculatedAmount / 1e18),
-                " WELL"
-            ),
-            ActionType.Moonbeam
-        );
-        _pushAction(
-            addresses.getAddress(stellaSwapReward.target),
-            abi.encodeWithSignature(
-                "addRewardInfo(uint256,uint256,uint256)",
-                stellaSwapReward.pid,
-                stellaSwapReward.endTimestamp,
-                stellaSwapReward.rewardPerSec
-            ),
-            string.concat(
-                "Add reward info for pool ",
-                vm.toString(stellaSwapReward.pid),
-                " on StellaSwap.\nReward per second: ",
-                vm.toString(uint256(stellaSwapReward.rewardPerSec)),
-                "\nEnd timestamp: ",
-                vm.toString(stellaSwapReward.endTimestamp)
-            ),
-            ActionType.Moonbeam
-        );
+                abi.encodeWithSignature(
+                    "addRewardInfo(uint256,uint256,uint256)",
+                    stellaSwapReward.pid,
+                    stellaSwapReward.endTimestamp,
+                    stellaSwapReward.rewardPerSec
+                ),
+                string.concat(
+                    "Add reward info for pool ",
+                    vm.toString(stellaSwapReward.pid),
+                    " on StellaSwap.\nReward per second: ",
+                    vm.toString(uint256(stellaSwapReward.rewardPerSec)),
+                    "\nEnd timestamp: ",
+                    vm.toString(stellaSwapReward.endTimestamp)
+                ),
+                ActionType.Moonbeam
+            );
+        }
 
         if (spec.stkWellEmissionsPerSecond > 0) {
             address safetyModule = addresses.getAddress("STK_GOVTOKEN_PROXY");
@@ -1860,54 +1867,58 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             }
         }
 
-        // validate dex rewards
+        // validate dex rewards — skip when this MIP carries an empty
+        // StellaSwap stub (amount == 0 → no approve/addRewardInfo was
+        // emitted in build). Mirrors the build-side gate above.
         AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
-        address stellaSwapRewarder = addresses.getAddress(
-            "STELLASWAP_REWARDER"
-        );
-        IStellaSwapRewarder stellaSwap = IStellaSwapRewarder(
-            stellaSwapRewarder
-        );
-        // check allowance tolerating a dust wei amount
-        assertApproxEqAbs(
-            well.allowance(
-                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+        if (addRewardInfo.amount > 0) {
+            address stellaSwapRewarder = addresses.getAddress(
+                "STELLASWAP_REWARDER"
+            );
+            IStellaSwapRewarder stellaSwap = IStellaSwapRewarder(
                 stellaSwapRewarder
-            ),
-            0,
-            1e18,
-            string.concat(
-                "StellaSwap Rewarder should not have an open allowance after execution"
-            )
-        );
+            );
+            // check allowance tolerating a dust wei amount
+            assertApproxEqAbs(
+                well.allowance(
+                    addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+                    stellaSwapRewarder
+                ),
+                0,
+                1e18,
+                string.concat(
+                    "StellaSwap Rewarder should not have an open allowance after execution"
+                )
+            );
 
-        assertApproxEqAbs(
-            well.balanceOf(stellaSwapRewarder),
-            wellBalancesBefore[stellaSwapRewarder] + addRewardInfo.amount,
-            10e18,
-            string.concat(
-                "StellaSwap Rewarder should have received the correct amount of WELL"
-            )
-        );
+            assertApproxEqAbs(
+                well.balanceOf(stellaSwapRewarder),
+                wellBalancesBefore[stellaSwapRewarder] + addRewardInfo.amount,
+                10e18,
+                string.concat(
+                    "StellaSwap Rewarder should have received the correct amount of WELL"
+                )
+            );
 
-        uint256 blockTimestamp = block.timestamp;
+            uint256 blockTimestamp = block.timestamp;
 
-        // block.timestamp must be in the current reward period to the getter
-        // functions return the correct values
-        vm.warp(addRewardInfo.endTimestamp - 1);
-        assertEq(
-            stellaSwap.poolRewardsPerSec(addRewardInfo.pid),
-            addRewardInfo.rewardPerSec,
-            string.concat("Reward per second for StellaSwap is incorrect")
-        );
-        assertEq(
-            stellaSwap.currentEndTimestamp(addRewardInfo.pid),
-            addRewardInfo.endTimestamp,
-            string.concat("End timestamp for StellaSwap is incorrect")
-        );
+            // block.timestamp must be in the current reward period to the
+            // getter functions return the correct values
+            vm.warp(addRewardInfo.endTimestamp - 1);
+            assertEq(
+                stellaSwap.poolRewardsPerSec(addRewardInfo.pid),
+                addRewardInfo.rewardPerSec,
+                string.concat("Reward per second for StellaSwap is incorrect")
+            );
+            assertEq(
+                stellaSwap.currentEndTimestamp(addRewardInfo.pid),
+                addRewardInfo.endTimestamp,
+                string.concat("End timestamp for StellaSwap is incorrect")
+            );
 
-        // warp back to current block.timestamp
-        vm.warp(blockTimestamp);
+            // warp back to current block.timestamp
+            vm.warp(blockTimestamp);
+        }
     }
 
     function _validateExternalChainActions(
@@ -2083,19 +2094,25 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         }
 
         {
-            // validate emissions per second for the Safety Module
-            IStakedWell stkWell = IStakedWell(
-                addresses.getAddress("STK_GOVTOKEN_PROXY")
-            );
+            // validate emissions per second for the Safety Module — only
+            // when this MIP actually sets it. Matches the build-side gate
+            // `if (spec.stkWellEmissionsPerSecond > 0)` above. Lets split
+            // MIPs (e.g. x51b) ship an empty Optimism stub without asserting
+            // on-chain emissions equal zero.
+            if (spec.stkWellEmissionsPerSecond > 0) {
+                IStakedWell stkWell = IStakedWell(
+                    addresses.getAddress("STK_GOVTOKEN_PROXY")
+                );
 
-            (uint256 emissionsPerSecond, , ) = stkWell.assets(
-                addresses.getAddress("STK_GOVTOKEN_PROXY")
-            );
-            assertEq(
-                emissionsPerSecond,
-                spec.stkWellEmissionsPerSecond,
-                "Emissions per second for the Safety Module is incorrect"
-            );
+                (uint256 emissionsPerSecond, , ) = stkWell.assets(
+                    addresses.getAddress("STK_GOVTOKEN_PROXY")
+                );
+                assertEq(
+                    emissionsPerSecond,
+                    spec.stkWellEmissionsPerSecond,
+                    "Emissions per second for the Safety Module is incorrect"
+                );
+            }
         }
 
         {

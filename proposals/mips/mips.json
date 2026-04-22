@@ -14,6 +14,13 @@
         "proposalType": "HybridProposal"
     },
     {
+        "envpath": "proposals/mips/mip-x51c/x51c.sh",
+        "governor": "MultichainGovernor",
+        "id": 0,
+        "path": "mip-x51c.sol/mipx51c.json",
+        "proposalType": "HybridProposal"
+    },
+    {
         "envpath": "proposals/mips/mip-x50/x50.sh",
         "governor": "MultichainGovernor",
         "id": 154,

@@ -48,3 +48,20 @@
   budget = Σ speeds × duration, safety-module budget = stkEPS × duration,
   Moonbeam bridge fan-out, no negative amounts, 4-week epoch). Deterministic,
   ~1s, no LLM. The same check runs in CI via `proposal-summary.yml`.
+- Moonbeam enforces a per-transaction gas cap of **16,777,216 (2^24)**. A
+  `propose()` tx above that is silently dropped by every RPC frontend we've
+  tested (Goldsky returns a hash but never propagates; Alchemy and the public
+  Moonbeam RPC reject at submit with "exceeds transaction gas limit cap"). If
+  `cast estimate` on a rewards MIP's `propose()` returns > ~15M gas, split the
+  proposal along chain-destination lines (e.g. x51a = Moonbeam+Optimism, x51b =
+  Base rewards, x51c = Base bad-debt) and regenerate the `.json` for each half
+  from the worker output.
+- When splitting a rewards MIP, the Moonbeam `bridgeToRecipient` for each
+  destination must cover that split's **first** Base/Optimism TG outflow in
+  `_buildExternalChainActions` order — not the net TG balance. Build order is
+  fixed:
+  `transferFrom → setRewardSpeeds → withdrawWell → transferReserves → multiRewarder → merkleCampaigns`.
+  Because `transferFrom(TG→MRD)` runs before `withdrawWell` brings WELL back
+  into TG, a bridge sized only for the net balance will revert on the first
+  transfer with `ERC20: transfer amount exceeds balance`. Trace TG
+  inflow/outflow step-by-step when rebalancing bridge amounts across split MIPs.
