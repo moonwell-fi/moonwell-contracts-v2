@@ -14,19 +14,19 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 
-/// @title MIP-X51: Upgrade xWELL WormholeBridgeAdapter to Executor framework
+/// @title MIP-X52: Upgrade xWELL WormholeBridgeAdapter to Executor framework
 /// @notice Upgrades WormholeBridgeAdapter on Moonbeam, Base, and Optimism
 ///         to V5 with the Wormhole Executor framework, replacing processVAA
 ///         with executeVAAv1 and adding on-chain/off-chain quote support.
-contract mipx51 is HybridProposal {
+contract mipx52 is HybridProposal {
     using ProposalActions for *;
     using ChainIds for uint256;
 
-    string public constant override name = "MIP-X51";
+    string public constant override name = "MIP-X52";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-x51/x51.md")
+            vm.readFile("./proposals/mips/mip-x52/x52.md")
         );
         _setProposalDescription(proposalDescription);
     }
