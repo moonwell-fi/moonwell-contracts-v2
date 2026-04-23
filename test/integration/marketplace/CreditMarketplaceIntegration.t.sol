@@ -469,6 +469,8 @@ contract CreditMarketplaceIntegration is Test, Signers {
     /// verify the full lifecycle still settles. Fixed schedule: 4 weekly
     /// interest payments + trailing stub. Principal bounded well under
     /// offer.maxPrincipal = 500e6 and lender's Moonwell borrow capacity.
+    /// forge-config: default.fuzz.runs = 32
+    /// forge-config: ci.fuzz.runs = 256
     function testFuzz_fullLifecycle_varyPrincipal(
         uint256 principalSeed
     ) public {
@@ -537,6 +539,8 @@ contract CreditMarketplaceIntegration is Test, Signers {
     /// Exercises the trailing-stub accounting in _settle across a wide
     /// range of marketplace APRs (roughly 0.25% to 25% per installment
     /// against 400 USDC principal).
+    /// forge-config: default.fuzz.runs = 32
+    /// forge-config: ci.fuzz.runs = 256
     function testFuzz_fullLifecycle_varyInterest(uint256 seed) public {
         uint256 interestAmt = bound(seed, 1e6, 100e6);
 
@@ -583,6 +587,8 @@ contract CreditMarketplaceIntegration is Test, Signers {
     /// grows with delay, so this also stresses the settlement solvency
     /// check (`selfBal >= borrowBal`) across a realistic range of
     /// borrower behaviors.
+    /// forge-config: default.fuzz.runs = 32
+    /// forge-config: ci.fuzz.runs = 256
     function testFuzz_fullLifecycle_varyPaymentTiming(uint256 seed) public {
         // Stay 1s short of grace expiry on the tightest end.
         uint64 offset = uint64(bound(seed, 0, GRACE - 1));
@@ -650,6 +656,8 @@ contract CreditMarketplaceIntegration is Test, Signers {
     /// $440 floor for a $400 principal at 10% buffer, given BTC ~$100k).
     /// Verifies the §7.3 LTV check accepts all sufficiently-collateralized
     /// loans, not just the one we had in the smoke test.
+    /// forge-config: default.fuzz.runs = 32
+    /// forge-config: ci.fuzz.runs = 256
     function testFuzz_fullLifecycle_varyCollateral(uint256 seed) public {
         uint256 collateral = bound(seed, 1e6, 1e8); // 0.01 to 1.0 cbBTC
 
