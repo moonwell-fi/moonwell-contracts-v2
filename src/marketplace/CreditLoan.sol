@@ -21,6 +21,14 @@ interface IMoonwellComptroller {
 
 interface IMoonwellMToken {
     function borrow(uint256 borrowAmount) external returns (uint256);
+    function borrowBalanceCurrent(address account) external returns (uint256);
+    function borrowBalanceStored(
+        address account
+    ) external view returns (uint256);
+    function repayBorrowBehalf(
+        address borrower,
+        uint256 repayAmount
+    ) external returns (uint256);
 }
 
 contract CreditLoan is ICreditLoan, ReentrancyGuard {
@@ -39,6 +47,12 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     error PaymentNotYetMissed();
     error InvalidOraclePrice();
     error StaleOraclePrice();
+    error OnlyLender();
+    error LoanNotDefaulted();
+    error LoanNotClosed();
+    error InsufficientPrincipalForRepay(uint256 have, uint256 required);
+    error RepayFailed(uint256 errorCode);
+    error MoonwellBorrowOutstanding(uint256 balance);
 
     event LoanActivated(uint64 activatedAt);
     event InterestPaid(uint32 indexed cursor, uint256 amount);
@@ -49,6 +63,8 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         uint256 seizedCollateral
     );
     event LoanDefaulted(uint16 missedCount, uint64 at);
+    event DefaultSeized(uint256 amount);
+    event LenderReimbursed(uint256 mTokenAmount);
 
     address public lender;
     address public borrower;
@@ -179,7 +195,18 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
                 address(this),
                 amountDue
             );
-            totalPrincipalPaid += amountDue;
+            /// finalPaymentAmount is "principal + any trailing interest
+            /// stub" per §4.4. Route the stub into totalInterestPaid so
+            /// it joins the fee/lender distribution in _settle; otherwise
+            /// a schedule with uneven compounding would leave USDC
+            /// stranded in the clone.
+            uint256 trailingInterest = amountDue > principal
+                ? amountDue - principal
+                : 0;
+            totalPrincipalPaid += (amountDue - trailingInterest);
+            if (trailingInterest > 0) {
+                totalInterestPaid += trailingInterest;
+            }
             paymentCursor = cursor + 1;
             _settle();
         }
@@ -194,13 +221,52 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
             uint64(schedule.intervalSeconds);
     }
 
-    /// Internal settlement: repays Moonwell, returns mTokens to lender,
-    /// releases residual collateral to borrower, distributes the fee.
-    /// PR8 fills this in; for PR6 the principal-payment path reverts
-    /// so the borrower's final payment rolls back until settlement logic
-    /// is live. See spec §7.7.
-    function _settle() internal pure {
-        revert NotImplemented();
+    /// Happy-path settlement (§7.7): repay Moonwell in full, distribute
+    /// interest fee, return lender's mTokens, return residual collateral
+    /// to the borrower. `forceApprove(type(uint).max)` overwrites any
+    /// residual allowance from a prior partial repay; `type(uint).max` as
+    /// the repayAmount is Moonwell's full-repay sentinel
+    /// (src/MToken.sol:1297). Pre-flight balance check short-circuits
+    /// the `SafeERC20` revert path so a shortfall surfaces as the
+    /// specific `InsufficientPrincipalForRepay` error — lenders route
+    /// to the default-unwind path (§7.6) in that case.
+    function _settle() internal {
+        uint256 borrowBal = IMoonwellMToken(mToken).borrowBalanceCurrent(
+            address(this)
+        );
+        uint256 selfBal = IERC20(principalToken).balanceOf(address(this));
+        if (selfBal < borrowBal) {
+            revert InsufficientPrincipalForRepay(selfBal, borrowBal);
+        }
+        IERC20(principalToken).forceApprove(mToken, type(uint256).max);
+        uint256 err = IMoonwellMToken(mToken).repayBorrowBehalf(
+            address(this),
+            type(uint256).max
+        );
+        if (err != 0) revert RepayFailed(err);
+
+        uint256 fee = (totalInterestPaid * marketplaceFeeBps) / 10_000;
+        uint256 lenderInterest = totalInterestPaid - fee;
+
+        if (fee > 0) {
+            IERC20(principalToken).safeTransfer(feeRecipient, fee);
+        }
+        if (lenderInterest > 0) {
+            IERC20(principalToken).safeTransfer(lender, lenderInterest);
+        }
+
+        uint256 mBal = IERC20(mToken).balanceOf(address(this));
+        if (mBal > 0) {
+            IERC20(mToken).safeTransfer(lender, mBal);
+        }
+
+        uint256 remainingCol = collateralAmount - seizedCollateralAmount;
+        if (remainingCol > 0) {
+            IERC20(collateralToken).safeTransfer(borrower, remainingCol);
+        }
+
+        status = LoanStatus.Settled;
+        emit LoanSettled();
     }
 
     /// Anyone can trigger progressive clawback for a missed interest
@@ -276,16 +342,60 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         emit LoanDefaulted(missedCount, uint64(block.timestamp));
     }
 
-    function seizeAll() external pure override {
-        revert NotImplemented();
+    /// After acceleration, the lender claims all remaining collateral
+    /// without per-payment oracle math (§7.6). Status flips Closed; the
+    /// Moonwell borrow stays open until the lender unwinds via the
+    /// helpers below.
+    function seizeAll() external override nonReentrant {
+        if (status != LoanStatus.Defaulted) revert LoanNotDefaulted();
+        if (msg.sender != lender) revert OnlyLender();
+
+        uint256 remaining = collateralAmount - seizedCollateralAmount;
+        seizedCollateralAmount = collateralAmount;
+        status = LoanStatus.Closed;
+
+        if (remaining > 0) {
+            IERC20(collateralToken).safeTransfer(lender, remaining);
+        }
+        emit DefaultSeized(remaining);
     }
 
-    function repayLoanAfterDefault(uint256) external pure override {
-        revert NotImplemented();
+    /// Post-default unwind step 1: lender (or anyone on their behalf)
+    /// deposits principalToken into this contract and calls
+    /// `repayBorrowBehalf` to pay down the Moonwell borrow. Can be called
+    /// multiple times with partial amounts.
+    function repayLoanAfterDefault(
+        uint256 repayAmount
+    ) external override nonReentrant {
+        if (status != LoanStatus.Closed) revert LoanNotClosed();
+        IERC20(principalToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            repayAmount
+        );
+        IERC20(principalToken).forceApprove(mToken, repayAmount);
+        uint256 err = IMoonwellMToken(mToken).repayBorrowBehalf(
+            address(this),
+            repayAmount
+        );
+        if (err != 0) revert RepayFailed(err);
     }
 
-    function redeemAndReturn() external pure override {
-        revert NotImplemented();
+    /// Post-default unwind step 2: once the Moonwell borrow is zero, the
+    /// lender retrieves their mTokens (which include any supply yield
+    /// accrued during the loan).
+    function redeemAndReturn() external override nonReentrant {
+        if (status != LoanStatus.Closed) revert LoanNotClosed();
+        uint256 outstanding = IMoonwellMToken(mToken).borrowBalanceStored(
+            address(this)
+        );
+        if (outstanding != 0) revert MoonwellBorrowOutstanding(outstanding);
+
+        uint256 mBal = IERC20(mToken).balanceOf(address(this));
+        if (mBal > 0) {
+            IERC20(mToken).safeTransfer(lender, mBal);
+        }
+        emit LenderReimbursed(mBal);
     }
 
     function nextPaymentDueAt() external view override returns (uint64) {

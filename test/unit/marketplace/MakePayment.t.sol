@@ -175,28 +175,6 @@ contract MakePaymentTest is Fixture {
         assertEq(clone.totalInterestPaid(), 3 * INTEREST_AMT);
     }
 
-    function test_makePayment_finalPaymentRevertsNotImplementedInPR6() public {
-        // Walk through all interest payments first.
-        for (uint32 i = 0; i < NUM_INTEREST; i++) {
-            vm.warp(firstDueAt + uint64(i) * INTERVAL);
-            vm.prank(borrower);
-            clone.makePayment();
-        }
-        assertEq(clone.paymentCursor(), NUM_INTEREST);
-
-        // Now the principal-payment path — _settle is stubbed to revert.
-        vm.warp(principalDueAt);
-        vm.prank(borrower);
-        vm.expectRevert(CreditLoan.NotImplemented.selector);
-        clone.makePayment();
-
-        // The whole call rolled back, including the safeTransferFrom —
-        // borrower's USDC balance should be untouched by the failed
-        // final payment.
-        assertEq(clone.paymentCursor(), NUM_INTEREST);
-        assertEq(clone.totalPrincipalPaid(), 0);
-    }
-
     function test_makePayment_insufficientAllowanceReverts() public {
         // Revoke allowance.
         vm.prank(borrower);
