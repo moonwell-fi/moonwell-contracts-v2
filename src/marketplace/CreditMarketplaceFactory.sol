@@ -3,12 +3,14 @@ pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin-contracts/contracts/security/Pausable.sol";
+import {ECDSA} from "@openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
 import {ICreditMarketplaceFactory} from "@protocol/marketplace/ICreditMarketplaceFactory.sol";
 import {ICreditLoan} from "@protocol/marketplace/ICreditLoan.sol";
 import {CreditTypeHashes} from "@protocol/marketplace/CreditTypeHashes.sol";
-import {InitParams, Offer, Request, BackendTerms} from "@protocol/marketplace/CreditTypes.sol";
+import {EIP712Lib} from "@protocol/marketplace/EIP712Lib.sol";
+import {InitParams, Offer, Request, BackendTerms, OfferStatus, RequestStatus} from "@protocol/marketplace/CreditTypes.sol";
 
 interface IComptrollerProbe {
     function getAllMarkets() external view returns (address[] memory);
@@ -34,6 +36,16 @@ contract CreditMarketplaceFactory is
     error InvalidFeedDecimals();
     error NonceAlreadyUsed();
     error OnlyOwnerOrGuardian();
+    error OfferNotActive();
+    error RequestNotActive();
+    error OfferExpired();
+    error RequestExpired();
+    error InvalidSignature(address expected, address recovered);
+    error InvalidAprBounds();
+    error InvalidTermBounds();
+    error NotMTokenWhitelisted();
+    error NotCollateralWhitelisted();
+    error NotPrincipalTokenWhitelisted();
 
     event BackendSignerUpdated(
         address indexed previousSigner,
@@ -67,6 +79,28 @@ contract CreditMarketplaceFactory is
         address indexed previousGuardian,
         address indexed newGuardian
     );
+    event OfferPosted(
+        uint256 indexed offerId,
+        address indexed lender,
+        address indexed mToken,
+        uint256 mTokenAmount,
+        address principalToken,
+        uint256 maxPrincipal,
+        uint16 maxApr,
+        uint64 expiresAt
+    );
+    event OfferCanceled(uint256 indexed offerId);
+    event RequestPosted(
+        uint256 indexed requestId,
+        address indexed borrower,
+        address principalToken,
+        uint256 principal,
+        address indexed collateralToken,
+        uint256 collateralAmount,
+        uint16 maxApr,
+        uint64 expiresAt
+    );
+    event RequestCanceled(uint256 indexed requestId);
 
     /// Max age accepted from a Chainlink feed at whitelist time. Not the
     /// per-loan staleness budget — that's the governance-tunable
@@ -356,30 +390,158 @@ contract CreditMarketplaceFactory is
     }
 
     // ────────────────────────────────────────────────────────────────
-    // Stubs (PR3: CRUD, PR5: createLoan)
+    // Order book (§7.1, §7.2)
     // ────────────────────────────────────────────────────────────────
 
     function postOffer(
-        Offer calldata,
-        bytes calldata
-    ) external pure override returns (uint256) {
-        revert NotImplemented();
+        Offer calldata offer,
+        bytes calldata signature
+    ) external override whenNotPaused returns (uint256 offerId) {
+        if (offer.expiresAt <= block.timestamp) revert OfferExpired();
+        if (offer.maxApr < offer.minApr) revert InvalidAprBounds();
+        if (offer.maxTerm < offer.minTerm) revert InvalidTermBounds();
+        if (!isMTokenWhitelisted[offer.mToken]) {
+            revert NotMTokenWhitelisted();
+        }
+        if (!isPrincipalTokenWhitelisted[offer.principalToken]) {
+            revert NotPrincipalTokenWhitelisted();
+        }
+        for (uint256 i = 0; i < offer.acceptedCollateral.length; i++) {
+            if (!isCollateralWhitelisted[offer.acceptedCollateral[i]]) {
+                revert NotCollateralWhitelisted();
+            }
+        }
+
+        bytes32 digest = EIP712Lib.hash(
+            DOMAIN_SEPARATOR,
+            CreditTypeHashes.hashOffer(offer)
+        );
+        address recovered = ECDSA.recover(digest, signature);
+        if (recovered != offer.lender) {
+            revert InvalidSignature(offer.lender, recovered);
+        }
+
+        if (usedNonces[offer.lender][offer.nonce]) revert NonceAlreadyUsed();
+        /// Nonce is NOT consumed here — only at cancel or successful match
+        /// (§7.1). Lets a lender re-post a canceled offer under a new nonce.
+
+        offerId = nextOfferId++;
+        offers[offerId] = offer;
+        /// Override any caller-supplied status (e.g. a malicious `Canceled`)
+        /// so fresh posts are always Active.
+        offers[offerId].status = OfferStatus.Active;
+
+        emit OfferPosted(
+            offerId,
+            offer.lender,
+            offer.mToken,
+            offer.mTokenAmount,
+            offer.principalToken,
+            offer.maxPrincipal,
+            offer.maxApr,
+            offer.expiresAt
+        );
     }
 
     function postRequest(
-        Request calldata,
-        bytes calldata
-    ) external pure override returns (uint256) {
-        revert NotImplemented();
+        Request calldata request,
+        bytes calldata signature
+    ) external override whenNotPaused returns (uint256 requestId) {
+        if (request.expiresAt <= block.timestamp) revert RequestExpired();
+        if (request.maxTerm < request.minTerm) revert InvalidTermBounds();
+        if (!isPrincipalTokenWhitelisted[request.principalToken]) {
+            revert NotPrincipalTokenWhitelisted();
+        }
+        if (!isCollateralWhitelisted[request.collateralToken]) {
+            revert NotCollateralWhitelisted();
+        }
+
+        bytes32 digest = EIP712Lib.hash(
+            DOMAIN_SEPARATOR,
+            CreditTypeHashes.hashRequest(request)
+        );
+        address recovered = ECDSA.recover(digest, signature);
+        if (recovered != request.borrower) {
+            revert InvalidSignature(request.borrower, recovered);
+        }
+
+        if (usedNonces[request.borrower][request.nonce]) {
+            revert NonceAlreadyUsed();
+        }
+
+        requestId = nextRequestId++;
+        requests[requestId] = request;
+        requests[requestId].status = RequestStatus.Active;
+
+        emit RequestPosted(
+            requestId,
+            request.borrower,
+            request.principalToken,
+            request.principal,
+            request.collateralToken,
+            request.collateralAmount,
+            request.maxApr,
+            request.expiresAt
+        );
     }
 
-    function cancelOffer(uint256, bytes calldata) external pure override {
-        revert NotImplemented();
+    function cancelOffer(
+        uint256 offerId,
+        bytes calldata cancelSignature
+    ) external override {
+        Offer storage o = offers[offerId];
+        if (o.status != OfferStatus.Active) revert OfferNotActive();
+
+        bytes32 digest = EIP712Lib.hash(
+            DOMAIN_SEPARATOR,
+            CreditTypeHashes.hashOfferCancel(offerId, o.lender, o.nonce)
+        );
+        address recovered = ECDSA.recover(digest, cancelSignature);
+        if (recovered != o.lender) {
+            revert InvalidSignature(o.lender, recovered);
+        }
+
+        _consumeNonce(o.lender, o.nonce);
+        o.status = OfferStatus.Canceled;
+        emit OfferCanceled(offerId);
     }
 
-    function cancelRequest(uint256, bytes calldata) external pure override {
-        revert NotImplemented();
+    function cancelRequest(
+        uint256 requestId,
+        bytes calldata cancelSignature
+    ) external override {
+        Request storage r = requests[requestId];
+        if (r.status != RequestStatus.Active) revert RequestNotActive();
+
+        bytes32 digest = EIP712Lib.hash(
+            DOMAIN_SEPARATOR,
+            CreditTypeHashes.hashRequestCancel(requestId, r.borrower, r.nonce)
+        );
+        address recovered = ECDSA.recover(digest, cancelSignature);
+        if (recovered != r.borrower) {
+            revert InvalidSignature(r.borrower, recovered);
+        }
+
+        _consumeNonce(r.borrower, r.nonce);
+        r.status = RequestStatus.Canceled;
+        emit RequestCanceled(requestId);
     }
+
+    function getOffer(
+        uint256 offerId
+    ) external view override returns (Offer memory) {
+        return offers[offerId];
+    }
+
+    function getRequest(
+        uint256 requestId
+    ) external view override returns (Request memory) {
+        return requests[requestId];
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // Stubs (PR5: createLoan)
+    // ────────────────────────────────────────────────────────────────
 
     function createLoan(
         uint256,
@@ -389,16 +551,6 @@ contract CreditMarketplaceFactory is
         bytes calldata,
         bytes calldata
     ) external pure override returns (uint256, address) {
-        revert NotImplemented();
-    }
-
-    function getOffer(uint256) external pure override returns (Offer memory) {
-        revert NotImplemented();
-    }
-
-    function getRequest(
-        uint256
-    ) external pure override returns (Request memory) {
         revert NotImplemented();
     }
 

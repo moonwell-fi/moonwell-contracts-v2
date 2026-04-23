@@ -508,7 +508,7 @@ struct Offer {
   uint16 minBorrowerCreditTier; // lender's floor on counterparty tier (0 = anyone)
   uint64 expiresAt; // unix seconds; offer is auto-dead after this
   uint256 nonce; // lender-chosen unique value; prevents replay
-  OfferStatus status;
+  OfferStatus status; // NOT part of OFFER_TYPEHASH — stamped Active by the factory at post time
 }
 ```
 
@@ -528,7 +528,7 @@ struct Request {
   uint32 maxTerm;
   uint64 expiresAt;
   uint256 nonce;
-  RequestStatus status;
+  RequestStatus status; // NOT part of REQUEST_TYPEHASH — stamped Active at post
 }
 ```
 
@@ -2195,6 +2195,11 @@ for each clone:
 | Settle      | `test_settle_revertsOnInsufficientPrincipal`           | When shortage exceeds tolerance, settle reverts `InsufficientPrincipalForRepay` (not silent loss).                  |
 | Settle      | `test_settle_forceApproveOverwritesResidualAllowance`  | Pre-existing non-zero allowance to mToken doesn't break repay.                                                      |
 | Default     | `test_repayLoanAfterDefault_forceApproveResets`        | `repayLoanAfterDefault` works when mToken already has residual allowance from a prior partial repay.                |
+| Order book  | `test_postOffer_happy`                                 | Signed offer with valid bounds + whitelisted tokens stores as Active, emits `OfferPosted`, nonce stays unused.      |
+| Order book  | `test_postOffer_ignoresCallerSuppliedStatus`           | Factory overrides any caller-supplied `status` (e.g. `Canceled`) with `Active` so status can't be spoofed at post.  |
+| Order book  | `test_postOffer_nonceAlreadyUsedReverts`               | Re-posting under a nonce already burned (e.g. by `cancelOffer`) reverts `NonceAlreadyUsed`.                         |
+| Order book  | `test_cancelOffer_happy`                               | Lender-signed cancel flips status to Canceled, burns the nonce, emits `OfferCanceled`.                              |
+| Order book  | `test_cancelOffer_allowedWhenPaused`                   | Pause blocks origination but still lets users retract signed offers.                                                |
 
 ---
 

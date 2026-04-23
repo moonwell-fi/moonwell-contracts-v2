@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {InitParams, Offer, Request, BackendTerms} from "@protocol/marketplace/CreditTypes.sol";
+import {InitParams, BackendTerms} from "@protocol/marketplace/CreditTypes.sol";
 import {CreditLoan} from "@protocol/marketplace/CreditLoan.sol";
 import {CreditMarketplaceFactory} from "@protocol/marketplace/CreditMarketplaceFactory.sol";
 
@@ -100,32 +100,12 @@ contract SkeletonTest is Fixture {
         assertEq(fresh.factory(), rogue);
     }
 
-    function test_orderBookAndMatch_stillStubs() public {
-        Offer memory o;
-        Request memory r;
+    function test_matchFlow_stillStubs() public {
         BackendTerms memory t;
         bytes memory empty;
 
         vm.expectRevert(CreditMarketplaceFactory.NotImplemented.selector);
-        factory.postOffer(o, empty);
-
-        vm.expectRevert(CreditMarketplaceFactory.NotImplemented.selector);
-        factory.postRequest(r, empty);
-
-        vm.expectRevert(CreditMarketplaceFactory.NotImplemented.selector);
-        factory.cancelOffer(0, empty);
-
-        vm.expectRevert(CreditMarketplaceFactory.NotImplemented.selector);
-        factory.cancelRequest(0, empty);
-
-        vm.expectRevert(CreditMarketplaceFactory.NotImplemented.selector);
         factory.createLoan(0, 0, t, empty, empty, empty);
-
-        vm.expectRevert(CreditMarketplaceFactory.NotImplemented.selector);
-        factory.getOffer(0);
-
-        vm.expectRevert(CreditMarketplaceFactory.NotImplemented.selector);
-        factory.getRequest(0);
 
         vm.expectRevert(CreditMarketplaceFactory.NotImplemented.selector);
         factory.getLoan(0);

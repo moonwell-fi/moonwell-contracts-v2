@@ -5,14 +5,16 @@ import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol
 
 enum OfferStatus {
     Active,
+    Canceled,
     Consumed,
-    Canceled
+    Expired
 }
 
 enum RequestStatus {
     Active,
+    Canceled,
     Consumed,
-    Canceled
+    Expired
 }
 
 enum LoanStatus {
@@ -46,6 +48,10 @@ struct Offer {
     uint16 minBorrowerCreditTier;
     uint64 expiresAt;
     uint256 nonce;
+    /// Not part of OFFER_TYPEHASH — the lender signs the economic fields
+    /// above and the factory stamps status=Active at post time, overriding
+    /// whatever the caller passes.
+    OfferStatus status;
 }
 
 struct Request {
@@ -59,6 +65,8 @@ struct Request {
     uint32 maxTerm;
     uint64 expiresAt;
     uint256 nonce;
+    /// Same rule as Offer.status — not part of REQUEST_TYPEHASH.
+    RequestStatus status;
 }
 
 struct BackendTerms {
