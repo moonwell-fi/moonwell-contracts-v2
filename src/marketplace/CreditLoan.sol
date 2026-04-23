@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
 import {ICreditLoan} from "@protocol/marketplace/ICreditLoan.sol";
@@ -21,17 +22,22 @@ interface IMoonwellMToken {
     function borrow(uint256 borrowAmount) external returns (uint256);
 }
 
-contract CreditLoan is ICreditLoan {
+contract CreditLoan is ICreditLoan, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     error NotImplemented();
     error AlreadyInitialized();
     error OnlyFactory();
+    error OnlyBorrower();
     error LoanNotPending();
+    error LoanNotActive();
+    error PaymentGraceElapsed();
     error EnterMarketsFailed(uint256 errorCode);
     error BorrowFailed(uint256 errorCode);
 
     event LoanActivated(uint64 activatedAt);
+    event InterestPaid(uint32 indexed cursor, uint256 amount);
+    event LoanSettled();
 
     address public lender;
     address public borrower;
@@ -126,7 +132,63 @@ contract CreditLoan is ICreditLoan {
         emit LoanActivated(activatedAt);
     }
 
-    function makePayment() external pure override {
+    /// Borrower-only. Pays the next interest installment or the final
+    /// principal payment per §7.4. The caller must have approved
+    /// `principalToken` to this contract for the amount due.
+    function makePayment() external override nonReentrant {
+        if (status != LoanStatus.Active) revert LoanNotActive();
+        if (msg.sender != borrower) revert OnlyBorrower();
+
+        uint32 cursor = paymentCursor;
+        uint256 amountDue;
+
+        if (cursor < schedule.numInterestPayments) {
+            if (block.timestamp >= _interestDueAt(cursor) + gracePeriod) {
+                revert PaymentGraceElapsed();
+            }
+            amountDue = schedule.interestAmountPerPayment;
+            IERC20(principalToken).safeTransferFrom(
+                borrower,
+                address(this),
+                amountDue
+            );
+            totalInterestPaid += amountDue;
+            paymentCursor = cursor + 1;
+            /// Reset miss counter on any successful interest payment so a
+            /// prior clawback event doesn't count against a recovered loan.
+            missedCount = 0;
+            emit InterestPaid(cursor, amountDue);
+        } else {
+            if (block.timestamp >= schedule.principalDueAt + gracePeriod) {
+                revert PaymentGraceElapsed();
+            }
+            amountDue = schedule.finalPaymentAmount;
+            IERC20(principalToken).safeTransferFrom(
+                borrower,
+                address(this),
+                amountDue
+            );
+            totalPrincipalPaid += amountDue;
+            paymentCursor = cursor + 1;
+            _settle();
+        }
+    }
+
+    function _interestDueAt(uint32 cursor) internal view returns (uint64) {
+        /// cursor is zero-indexed: installment i is due at firstInterestDueAt
+        /// + i * intervalSeconds.
+        return
+            schedule.firstInterestDueAt +
+            uint64(cursor) *
+            uint64(schedule.intervalSeconds);
+    }
+
+    /// Internal settlement: repays Moonwell, returns mTokens to lender,
+    /// releases residual collateral to borrower, distributes the fee.
+    /// PR8 fills this in; for PR6 the principal-payment path reverts
+    /// so the borrower's final payment rolls back until settlement logic
+    /// is live. See spec §7.7.
+    function _settle() internal pure {
         revert NotImplemented();
     }
 
@@ -146,19 +208,43 @@ contract CreditLoan is ICreditLoan {
         revert NotImplemented();
     }
 
-    function nextPaymentDueAt() external pure override returns (uint64) {
-        revert NotImplemented();
+    function nextPaymentDueAt() external view override returns (uint64) {
+        if (status != LoanStatus.Active) return 0;
+        uint32 cursor = paymentCursor;
+        if (cursor < schedule.numInterestPayments) {
+            return _interestDueAt(cursor);
+        }
+        return schedule.principalDueAt;
     }
 
-    function remainingPayments() external pure override returns (uint32) {
-        revert NotImplemented();
+    function remainingPayments() external view override returns (uint32) {
+        if (status != LoanStatus.Active) return 0;
+        uint32 total = schedule.numInterestPayments + 1;
+        if (paymentCursor >= total) return 0;
+        return total - paymentCursor;
     }
 
-    function totalOwedNow() external pure override returns (uint256, uint256) {
-        revert NotImplemented();
+    function totalOwedNow()
+        external
+        view
+        override
+        returns (uint256 principalDue, uint256 interestDue)
+    {
+        if (status != LoanStatus.Active) return (0, 0);
+        uint32 cursor = paymentCursor;
+        uint32 n = schedule.numInterestPayments;
+        if (cursor < n) {
+            interestDue =
+                uint256(n - cursor) *
+                schedule.interestAmountPerPayment;
+            principalDue = schedule.finalPaymentAmount;
+        } else if (cursor == n) {
+            principalDue = schedule.finalPaymentAmount;
+        }
     }
 
-    function collateralRemaining() external pure override returns (uint256) {
-        revert NotImplemented();
+    function collateralRemaining() external view override returns (uint256) {
+        if (collateralAmount < seizedCollateralAmount) return 0;
+        return collateralAmount - seizedCollateralAmount;
     }
 }
