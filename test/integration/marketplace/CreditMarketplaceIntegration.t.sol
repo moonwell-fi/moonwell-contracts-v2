@@ -239,6 +239,7 @@ contract CreditMarketplaceIntegration is Test, Signers {
         bytes memory rSig = signRequest(r, borrowerKey, domain);
         bytes memory bSig = signBackendTerms(t, backendSignerKey, domain);
 
+        uint256 gasBefore = gasleft();
         (, loanAddr) = factory.createLoan(
             offerId,
             requestId,
@@ -247,6 +248,11 @@ contract CreditMarketplaceIntegration is Test, Signers {
             rSig,
             bSig
         );
+        uint256 gasUsed = gasBefore - gasleft();
+        /// Regression guardrail (§14.4): the real Moonwell path has
+        /// observed cost around 1.5M. 2M cap leaves slack for rewards
+        /// bookkeeping changes without hiding a real regression.
+        assertLt(gasUsed, 2_000_000, "createLoan real-gas regression");
     }
 
     function _runPaymentLoop(CreditLoan clone, uint64 firstDueAt) internal {

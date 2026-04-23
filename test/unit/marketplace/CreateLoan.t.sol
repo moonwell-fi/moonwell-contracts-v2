@@ -654,6 +654,28 @@ contract CreateLoanTest is Fixture {
         assertEq(localFactory.nextLoanId(), 2);
     }
 
+    /// Regression guardrail (§14.4). Cap is intentionally loose —
+    /// observed ~800-900k with mocked Moonwell; 1M leaves headroom for
+    /// small tweaks while catching a true blowup.
+    function test_gas_createLoan_mockCap() public {
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        uint256 before = gasleft();
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+        uint256 used = before - gasleft();
+
+        assertLt(used, 1_000_000, "createLoan mock-gas regression");
+    }
+
     function test_getLoan_defaultsZero() public view {
         assertEq(localFactory.getLoan(99), address(0));
     }
