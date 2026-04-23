@@ -107,5 +107,4 @@ struct InitParams {
     address backendSignerAtOrigination;
     uint32 stalenessWindow;
     address comptrollerAddr;
-    address factory;
 }

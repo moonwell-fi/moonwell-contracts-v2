@@ -46,6 +46,14 @@ contract CreditLoan is ICreditLoan {
         if (_initialized) revert AlreadyInitialized();
         _initialized = true;
 
+        /// Trust is anchored to the caller of initialize, not to a
+        /// user-supplied field. The factory deploys each clone via
+        /// Clones.clone and initializes it in the same call — msg.sender
+        /// is therefore the factory. If a different deployer ever
+        /// initialized a clone, they could not impersonate the factory
+        /// downstream (activate / seize logic keys off `factory`).
+        factory = msg.sender;
+
         lender = params.lender;
         borrower = params.borrower;
         mToken = params.mToken;
@@ -66,7 +74,6 @@ contract CreditLoan is ICreditLoan {
         backendSignerAtOrigination = params.backendSignerAtOrigination;
         stalenessWindow = params.stalenessWindow;
         comptrollerAddr = params.comptrollerAddr;
-        factory = params.factory;
 
         status = LoanStatus.Pending;
     }

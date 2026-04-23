@@ -112,7 +112,6 @@ contract AdminSettersTest is Fixture {
     function test_setCreditLoanImplementation_alreadyLockedReverts() public {
         CreditLoan fresh = new CreditLoan();
         InitParams memory sentinel;
-        sentinel.factory = address(factory);
         fresh.initialize(sentinel);
 
         vm.prank(temporalGovernor);
@@ -192,6 +191,7 @@ contract AdminSettersTest is Fixture {
 
     function test_whitelistCollateralToken_negativeAnswerReverts() public {
         address fakeFeed = makeAddr("fakeFeed");
+        _mockDecimals(fakeFeed, 8);
         vm.mockCall(
             fakeFeed,
             abi.encodeWithSelector(
@@ -214,8 +214,25 @@ contract AdminSettersTest is Fixture {
         );
     }
 
+    function test_whitelistCollateralToken_feedDecimalsTooHighReverts() public {
+        address fakeFeed = makeAddr("fakeFeed");
+        vm.mockCall(
+            fakeFeed,
+            abi.encodeWithSelector(AggregatorV3Interface.decimals.selector),
+            abi.encode(uint8(19))
+        );
+
+        vm.prank(temporalGovernor);
+        vm.expectRevert(CreditMarketplaceFactory.InvalidFeedDecimals.selector);
+        factory.whitelistCollateralToken(
+            cbbtc,
+            AggregatorV3Interface(fakeFeed)
+        );
+    }
+
     function test_whitelistCollateralToken_staleFeedReverts() public {
         address fakeFeed = makeAddr("fakeFeed");
+        _mockDecimals(fakeFeed, 8);
         uint256 old = block.timestamp - 2 days;
         vm.mockCall(
             fakeFeed,
@@ -302,6 +319,7 @@ contract AdminSettersTest is Fixture {
 
     function test_whitelistPrincipalToken_staleFeedReverts() public {
         address fakeFeed = makeAddr("fakeFeed");
+        _mockDecimals(fakeFeed, 8);
         vm.mockCall(
             fakeFeed,
             abi.encodeWithSelector(
@@ -510,5 +528,13 @@ contract AdminSettersTest is Fixture {
         assertFalse(factory.isNonceUsed(lender, 0));
         assertFalse(factory.isNonceUsed(borrower, 123));
         assertFalse(factory.isNonceUsed(backendSignerEOA, type(uint256).max));
+    }
+
+    function _mockDecimals(address feed, uint8 d) internal {
+        vm.mockCall(
+            feed,
+            abi.encodeWithSelector(AggregatorV3Interface.decimals.selector),
+            abi.encode(d)
+        );
     }
 }

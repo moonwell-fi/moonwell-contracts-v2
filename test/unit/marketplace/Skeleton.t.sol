@@ -70,6 +70,36 @@ contract SkeletonTest is Fixture {
         loanImpl.initialize(p);
     }
 
+    function test_creditLoanImpl_factorySetFromConstructorMsgSender()
+        public
+        view
+    {
+        /// The factory locked the impl via initialize(sentinel) during its
+        /// own constructor — so msg.sender from the impl's POV was the
+        /// factory contract itself. Post-fix (initialize binds
+        /// factory = msg.sender), loanImpl.factory() must equal the
+        /// factory's address.
+        assertEq(loanImpl.factory(), address(factory));
+    }
+
+    function test_creditLoan_initializeBindsFactoryToMsgSender() public {
+        /// A fresh clone-like contract initialized by an arbitrary caller
+        /// records that caller as `factory`. This is the core guarantee
+        /// that makes cross-tx front-running harmless: an attacker who
+        /// front-runs clone.initialize ends up with a clone whose factory
+        /// is the attacker, not the real factory — so downstream
+        /// factory-only hooks key off the wrong address and reject the
+        /// attacker's clone.
+        CreditLoan fresh = new CreditLoan();
+        address rogue = makeAddr("rogue");
+
+        InitParams memory p;
+        vm.prank(rogue);
+        fresh.initialize(p);
+
+        assertEq(fresh.factory(), rogue);
+    }
+
     function test_orderBookAndMatch_stillStubs() public {
         Offer memory o;
         Request memory r;

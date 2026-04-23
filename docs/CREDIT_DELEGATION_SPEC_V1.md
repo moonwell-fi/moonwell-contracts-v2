@@ -1016,13 +1016,11 @@ slots (which would be read by calls to the impl but do not affect clones).
 
 ```solidity
 // In the factory constructor, immediately after deploying or accepting the impl:
-CreditLoan(creditLoanImplementation).initialize({
-    lender: address(0xdead),
-    borrower: address(0xdead),
-    // ...all other fields with zero/sentinel values
-    initializer: address(this)  // only the factory can init, but we're doing it now
-});
+InitParams memory sentinel;                             // all fields default to 0
+CreditLoan(creditLoanImplementation).initialize(sentinel);
 // After this, `_initialized == true` on the impl, so it can never be re-initialized.
+// `factory` is bound to `msg.sender` (the factory contract) inside initialize;
+// see §12.6 for the trust model.
 ```
 
 This is identical to the technique OZ `Initializable` uses for UUPS proxies. We
@@ -1235,8 +1233,11 @@ Factory.createLoan(offerId, requestId, terms, offerSig, requestSig, backendSig):
     feeRecipient: terms.feeRecipient,
     backendSignerAtOrigination: backendSigner,
     stalenessWindow: stalenessWindow,
-    comptrollerAddr: comptroller,
-    factory: address(this)
+    comptrollerAddr: comptroller
+    // `factory` is NOT passed in InitParams — it is bound inside
+    // initialize() as `msg.sender`, which is this factory contract during
+    // this call. Prevents anyone from impersonating the factory by
+    // pre-initializing a freshly-cloned CreditLoan out-of-band (§12.6).
   })
 
   // ─── Move funds ───
@@ -1881,6 +1882,11 @@ only callable during `createLoan`.
 - At `whitelistCollateralToken` / `whitelistPrincipalToken` time, the setter
   does a live round-data probe so a misconfigured feed is caught at proposal
   execution rather than at first match.
+- The whitelist probe also rejects feeds with `decimals() > 18`
+  (`InvalidFeedDecimals`). `PriceLib.valueToUsd1e18` scales up via
+  `10 ** (18 - feedDecimals)`, which would underflow-revert on loan origination
+  if a >18-decimal feed ever slipped through. Chainlink on Base uses 8 or 18;
+  the check is defensive.
 
 ### 12.3 Backend key compromise
 
@@ -1912,16 +1918,28 @@ only callable during `createLoan`.
 
 ### 12.5 Clone init front-running
 
-`Clones.clone` + `initialize` is atomic within `createLoan`. After init,
-`_initialized` is true, so nobody can re-init.
+`Clones.clone` + `initialize` is atomic within `createLoan` — same tx, no
+external calls between them — so there is no cross-tx front-run window. But the
+clone contract defends in depth anyway: `initialize` binds
+`factory = msg.sender` rather than reading a caller-supplied field.
+
+If the `createLoan` flow ever split across multiple txs (or some future code
+path let a third party call `initialize` on a cloned-but-unset contract), the
+attacker's best outcome is a clone whose `factory` is the attacker's own
+address. That clone can never be registered in the real factory's `loans`
+mapping and can never pass factory-only hooks on the real factory — it is an
+orphan. After the first `initialize` call the `_initialized` flag prevents any
+re-init.
 
 ### 12.6 Implementation hijack
 
 The `CreditLoan` implementation itself must have `_initialized = true` from the
-very start. Factory constructor initializes it with sentinel values to set the
-flag. Without this, someone could call `initialize` on the impl address and
-hijack storage that affects... actually, nothing, because clones have their own
-storage via delegatecall. But it's still a clean-up that costs nothing.
+very start. Factory constructor initializes it with an all-zero sentinel
+`InitParams` to flip the flag; `factory` on the impl ends up as the factory
+contract address (because `msg.sender == factoryAddr` during the constructor
+call). Without this lock, someone could call `initialize` on the impl address
+and hijack storage that affects… actually, nothing, because clones have their
+own storage via delegatecall. But it's still a clean-up that costs nothing.
 
 ### 12.7 Per-loan isolation (the key structural property)
 

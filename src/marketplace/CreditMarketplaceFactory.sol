@@ -31,6 +31,7 @@ contract CreditMarketplaceFactory is
     error InvalidOverSeizureBps();
     error InvalidConsecutiveMisses();
     error InvalidMarketplaceFeeBps();
+    error InvalidFeedDecimals();
     error NonceAlreadyUsed();
     error OnlyOwnerOrGuardian();
 
@@ -156,7 +157,6 @@ contract CreditMarketplaceFactory is
         /// Lock the CreditLoan implementation so no one can call
         /// initialize on the impl directly. See spec §6.3.
         InitParams memory sentinel;
-        sentinel.factory = address(this);
         ICreditLoan(_creditLoanImplementation).initialize(sentinel);
 
         _transferOwnership(_temporalGovernor);
@@ -199,7 +199,6 @@ contract CreditMarketplaceFactory is
         if (newImpl.code.length == 0) revert InvalidImplementation();
 
         InitParams memory sentinel;
-        sentinel.factory = address(this);
         ICreditLoan(newImpl).initialize(sentinel);
 
         address previous = creditLoanImplementation;
@@ -342,6 +341,13 @@ contract CreditMarketplaceFactory is
     }
 
     function _probeFeed(AggregatorV3Interface feed) internal view {
+        /// PriceLib.valueToUsd1e18 scales via `10 ** (18 - feedDecimals)`,
+        /// which reverts on underflow. Catch that at whitelist time so a
+        /// misconfigured feed fails at the proposal instead of at first
+        /// match. Chainlink on Base uses 8 or 18, so this is purely
+        /// defensive.
+        if (feed.decimals() > 18) revert InvalidFeedDecimals();
+
         (, int256 answer, , uint256 updatedAt, ) = feed.latestRoundData();
         if (answer <= 0) revert InvalidOraclePrice();
         if (block.timestamp - updatedAt > FEED_LIVENESS_AT_WHITELIST) {
