@@ -335,4 +335,167 @@ contract CreditMarketplaceIntegration is Test, Signers {
         assertEq(IERC20(cbbtc).balanceOf(loanAddr), 0);
         assertEq(IERC20(usdc).balanceOf(loanAddr), 0, "clone fully drained");
     }
+
+    // ─── default + unwind integration ───────────────────────────────
+
+    /// Keeps the real Chainlink BTC/USD feed read-friendly even after
+    /// we've warped time past its actual last update. The feed itself
+    /// is real; we just re-stamp `updatedAt` to the current block so the
+    /// staleness check inside claimMissedPayment passes.
+    function _refreshOracle() internal {
+        (uint80 r, int256 a, uint256 s, , uint80 ar) = AggregatorV3Interface(
+            btcUsdFeed
+        ).latestRoundData();
+        vm.mockCall(
+            btcUsdFeed,
+            abi.encodeWithSelector(
+                AggregatorV3Interface.latestRoundData.selector
+            ),
+            abi.encode(r, a, s, block.timestamp, ar)
+        );
+    }
+
+    function test_fullLifecycle_defaultAndUnwind() public {
+        LifecycleContext memory ctx = LifecycleContext({
+            mTokenAmount: _lenderMTokenBalance(),
+            firstDueAt: uint64(block.timestamp + INTERVAL),
+            feeRecipientStart: IERC20(usdc).balanceOf(feeRecipient)
+        });
+        address loanAddr = _postAndMatch(ctx.mTokenAmount, ctx.firstDueAt);
+        CreditLoan clone = CreditLoan(loanAddr);
+
+        // Miss cursor 0 past grace → first clawback.
+        vm.warp(ctx.firstDueAt + GRACE + 1);
+        _refreshOracle();
+        clone.claimMissedPayment();
+        assertEq(clone.missedCount(), 1);
+        assertEq(clone.paymentCursor(), 1);
+        assertTrue(clone.status() == LoanStatus.Active);
+        uint256 seizedAfterOne = clone.seizedCollateralAmount();
+        assertGt(seizedAfterOne, 0, "first miss should have seized collateral");
+
+        // Miss cursor 1 past grace → second clawback trips the
+        // consecutive-misses threshold and accelerates into Defaulted.
+        vm.warp(ctx.firstDueAt + INTERVAL + GRACE + 1);
+        _refreshOracle();
+        clone.claimMissedPayment();
+        assertEq(clone.missedCount(), 2);
+        assertTrue(clone.status() == LoanStatus.Defaulted);
+
+        // Lender claims all remaining collateral post-default.
+        uint256 lenderCbbtcBefore = IERC20(cbbtc).balanceOf(lender);
+        uint256 remaining = COLLATERAL_AMOUNT - clone.seizedCollateralAmount();
+        vm.prank(lender);
+        clone.seizeAll();
+        assertTrue(clone.status() == LoanStatus.Closed);
+        assertEq(
+            IERC20(cbbtc).balanceOf(lender) - lenderCbbtcBefore,
+            remaining
+        );
+
+        // Lender unwinds the Moonwell borrow off-contract. In prod the
+        // lender would sell some of the seized collateral for USDC;
+        // here we just deal USDC to them. borrowBalanceCurrent hits
+        // real Moonwell, so this repay is genuine.
+        uint256 owed = clone.mToken() != address(0)
+            ? _currentBorrow(loanAddr)
+            : 0;
+        assertGt(owed, 0, "Moonwell borrow should still be open");
+        deal(usdc, lender, owed);
+        vm.startPrank(lender);
+        IERC20(usdc).approve(address(clone), owed);
+        clone.repayLoanAfterDefault(owed);
+        vm.stopPrank();
+        assertEq(_currentBorrow(loanAddr), 0);
+
+        // Lender redeems the mUSDC they pledged (plus any supply yield
+        // accrued during the loan).
+        uint256 lenderMBefore = IERC20(mUsdc).balanceOf(lender);
+        vm.prank(lender);
+        clone.redeemAndReturn();
+        assertGe(
+            IERC20(mUsdc).balanceOf(lender) - lenderMBefore,
+            ctx.mTokenAmount
+        );
+        assertEq(IERC20(mUsdc).balanceOf(loanAddr), 0);
+    }
+
+    function _currentBorrow(address loan) internal returns (uint256) {
+        // Non-static call because Moonwell's borrowBalanceCurrent
+        // accrues interest before returning.
+        (bool ok, bytes memory data) = mUsdc.call(
+            abi.encodeWithSignature("borrowBalanceCurrent(address)", loan)
+        );
+        require(ok, "borrowBalanceCurrent failed");
+        return abi.decode(data, (uint256));
+    }
+
+    // ─── fuzz: happy path over random loan sizes ────────────────────
+
+    function _postAndMatchWithPrincipal(
+        uint256 principal,
+        uint256 mTokenAmount,
+        uint64 firstDueAt
+    ) internal returns (address loanAddr) {
+        Offer memory o = _offer(1, mTokenAmount);
+        Request memory r = _request(2);
+        r.principal = principal;
+        BackendTerms memory t = _terms(3, mTokenAmount, firstDueAt);
+        t.principal = principal;
+        /// Final payment has to reflect the fuzzed principal or the
+        /// trailing-interest math drifts. Keep the $10 trailing stub.
+        t.schedule.finalPaymentAmount = principal + INTEREST_AMT;
+
+        bytes32 domain = factory.DOMAIN_SEPARATOR();
+        uint256 offerId = factory.postOffer(o, signOffer(o, lenderKey, domain));
+        uint256 requestId = factory.postRequest(
+            r,
+            signRequest(r, borrowerKey, domain)
+        );
+        bytes memory oSig = signOffer(o, lenderKey, domain);
+        bytes memory rSig = signRequest(r, borrowerKey, domain);
+        bytes memory bSig = signBackendTerms(t, backendSignerKey, domain);
+        (, loanAddr) = factory.createLoan(
+            offerId,
+            requestId,
+            t,
+            oSig,
+            rSig,
+            bSig
+        );
+    }
+
+    /// Fuzz the principal amount across the range the offer permits and
+    /// verify the full lifecycle still settles. Fixed schedule: 4 weekly
+    /// interest payments + trailing stub. Principal bounded well under
+    /// offer.maxPrincipal = 500e6 and lender's Moonwell borrow capacity.
+    function testFuzz_fullLifecycle_varyPrincipal(
+        uint256 principalSeed
+    ) public {
+        uint256 principal = bound(principalSeed, 50e6, 450e6);
+
+        uint256 mTokenAmount = _lenderMTokenBalance();
+        uint64 firstDueAt = uint64(block.timestamp + INTERVAL);
+
+        address loanAddr = _postAndMatchWithPrincipal(
+            principal,
+            mTokenAmount,
+            firstDueAt
+        );
+        CreditLoan clone = CreditLoan(loanAddr);
+        assertTrue(clone.status() == LoanStatus.Active);
+        assertEq(clone.principal(), principal);
+
+        // Fund the borrower generously and run the payment loop.
+        deal(usdc, borrower, principal * 3 + FINAL_AMT);
+        vm.prank(borrower);
+        IERC20(usdc).approve(loanAddr, type(uint256).max);
+
+        _runPaymentLoop(clone, firstDueAt);
+
+        assertTrue(clone.status() == LoanStatus.Settled);
+        assertEq(IERC20(cbbtc).balanceOf(borrower), COLLATERAL_AMOUNT);
+        assertGe(IERC20(mUsdc).balanceOf(lender), mTokenAmount);
+        assertEq(IERC20(usdc).balanceOf(loanAddr), 0);
+    }
 }
