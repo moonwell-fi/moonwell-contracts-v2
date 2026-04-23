@@ -1,0 +1,278 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity 0.8.19;
+
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
+
+import {CreditLoan} from "@protocol/marketplace/CreditLoan.sol";
+import {InitParams, LoanStatus, PaymentSchedule} from "@protocol/marketplace/CreditTypes.sol";
+
+import {Fixture} from "./Fixture.t.sol";
+
+/// Mutable-price Chainlink stub: tests can tweak `answer` and
+/// `updatedAt` between calls to simulate stale / invalid data.
+contract MutableFeed {
+    int256 public answer;
+    uint256 public updatedAt;
+    uint8 internal immutable _decimals;
+
+    constructor(int256 _answer, uint8 d) {
+        answer = _answer;
+        _decimals = d;
+        updatedAt = block.timestamp;
+    }
+
+    function decimals() external view returns (uint8) {
+        return _decimals;
+    }
+
+    function setAnswer(int256 _a) external {
+        answer = _a;
+    }
+
+    function setUpdatedAt(uint256 _u) external {
+        updatedAt = _u;
+    }
+
+    function latestRoundData()
+        external
+        view
+        returns (uint80, int256, uint256, uint256, uint80)
+    {
+        return (0, answer, 0, updatedAt, 0);
+    }
+}
+
+contract ClaimMissedPaymentTest is Fixture {
+    event CollateralSeized(
+        uint32 indexed cursor,
+        uint256 missedUsd,
+        uint256 seizedCollateral
+    );
+    event LoanDefaulted(uint16 missedCount, uint64 at);
+
+    bytes4 internal constant ENTER_MARKETS_SEL =
+        bytes4(keccak256("enterMarkets(address[])"));
+    bytes4 internal constant BORROW_SEL = bytes4(keccak256("borrow(uint256)"));
+
+    uint32 internal constant NUM_INTEREST = 4;
+    uint32 internal constant INTERVAL = 7 days;
+    uint256 internal constant PRINCIPAL = 400e6;
+    uint256 internal constant INTEREST_AMT = 10e6;
+    uint256 internal constant FINAL_AMT = PRINCIPAL + INTEREST_AMT;
+    uint32 internal constant GRACE = 1 days;
+    uint256 internal constant COLLATERAL_AMOUNT = 1e7; // 0.1 cbBTC
+    uint32 internal constant STALENESS = 3_600;
+
+    CreditLoan internal clone;
+    MutableFeed internal feed;
+    uint64 internal firstDueAt;
+
+    function setUp() public override {
+        super.setUp();
+        feed = new MutableFeed(1e13, 8); // cbBTC @ $100k
+        firstDueAt = uint64(block.timestamp + INTERVAL);
+
+        clone = new CreditLoan();
+        vm.prank(address(factory));
+        clone.initialize(_defaultParams(COLLATERAL_AMOUNT));
+
+        _mockMoonwellSuccess();
+
+        vm.prank(address(factory));
+        clone.activate();
+
+        // Seed the clone with the borrower's collateral (cbBTC). In the real
+        // createLoan flow the factory's safeTransferFrom moves this in; here
+        // we bypass the factory and set it directly.
+        deal(cbbtc, address(clone), COLLATERAL_AMOUNT);
+    }
+
+    function _defaultParams(
+        uint256 collateral
+    ) internal view returns (InitParams memory p) {
+        p.lender = lender;
+        p.borrower = borrower;
+        p.mToken = mUsdc;
+        p.mTokenAmount = 1_000e6;
+        p.principalToken = usdc;
+        p.principal = PRINCIPAL;
+        p.collateralToken = cbbtc;
+        p.collateralChainlinkFeed = AggregatorV3Interface(address(feed));
+        p.collateralAmount = collateral;
+        p.apr = 800;
+        p.term = 30 days;
+        p.schedule = PaymentSchedule({
+            numInterestPayments: NUM_INTEREST,
+            intervalSeconds: INTERVAL,
+            firstInterestDueAt: firstDueAt,
+            principalDueAt: firstDueAt + uint64(INTERVAL) * NUM_INTEREST,
+            interestAmountPerPayment: INTEREST_AMT,
+            finalPaymentAmount: FINAL_AMT
+        });
+        p.gracePeriod = GRACE;
+        p.overSeizureBps = 2_000;
+        p.consecutiveMissesForDefault = 2;
+        p.marketplaceFeeBps = 500;
+        p.feeRecipient = feeRecipient;
+        p.comptrollerAddr = unitroller;
+        p.stalenessWindow = STALENESS;
+    }
+
+    function _mockMoonwellSuccess() internal {
+        uint256[] memory errs = new uint256[](1);
+        vm.mockCall(
+            unitroller,
+            abi.encodeWithSelector(ENTER_MARKETS_SEL),
+            abi.encode(errs)
+        );
+        vm.mockCall(
+            mUsdc,
+            abi.encodeWithSelector(BORROW_SEL, PRINCIPAL),
+            abi.encode(uint256(0))
+        );
+        deal(usdc, address(clone), PRINCIPAL);
+    }
+
+    function _warpPastGrace(uint32 cursor) internal {
+        uint64 dueAt = firstDueAt + uint64(cursor) * INTERVAL;
+        vm.warp(dueAt + GRACE + 1);
+        feed.setUpdatedAt(block.timestamp); // keep feed fresh
+    }
+
+    // ─── tests ────────────────────────────────────────────────────────
+
+    function test_claimMissedPayment_happy() public {
+        _warpPastGrace(0);
+
+        // Expected seize: missed=$10 (10 USDC, 6 decimals), +20% = $12 USD.
+        // cbBTC at $100k → 12e18 * 1e8 / (1e13 * 1e10) = 12_000 units = 0.00012 cbBTC.
+        uint256 expectedSeize = 12_000;
+        uint256 lenderBefore = IERC20(cbbtc).balanceOf(lender);
+
+        vm.expectEmit(true, true, true, true, address(clone));
+        emit CollateralSeized(0, INTEREST_AMT, expectedSeize);
+
+        clone.claimMissedPayment();
+
+        assertEq(clone.paymentCursor(), 1);
+        assertEq(clone.missedCount(), 1);
+        assertEq(clone.seizedCollateralAmount(), expectedSeize);
+        assertEq(IERC20(cbbtc).balanceOf(lender) - lenderBefore, expectedSeize);
+        assertTrue(clone.status() == LoanStatus.Active);
+    }
+
+    function test_claimMissedPayment_anyoneCanCall() public {
+        _warpPastGrace(0);
+        address keeper = makeAddr("keeper");
+        vm.prank(keeper);
+        clone.claimMissedPayment();
+        assertEq(clone.missedCount(), 1);
+    }
+
+    function test_claimMissedPayment_beforeActiveReverts() public {
+        CreditLoan fresh = new CreditLoan();
+        vm.prank(address(factory));
+        fresh.initialize(_defaultParams(COLLATERAL_AMOUNT));
+        vm.expectRevert(CreditLoan.LoanNotActive.selector);
+        fresh.claimMissedPayment();
+    }
+
+    function test_claimMissedPayment_withinGraceReverts() public {
+        vm.warp(firstDueAt + GRACE - 1);
+        feed.setUpdatedAt(block.timestamp);
+
+        vm.expectRevert(CreditLoan.PaymentNotYetMissed.selector);
+        clone.claimMissedPayment();
+    }
+
+    function test_claimMissedPayment_pastInterestPhaseReverts() public {
+        // Walk cursor past the interest phase via sequential missed claims.
+        // 4 misses advance cursor from 0 → 4 == numInterestPayments.
+        // But we only want 2 consecutive misses to avoid triggering
+        // acceleration before reaching the guard, so bump the threshold.
+        CreditLoan fresh = new CreditLoan();
+        InitParams memory p = _defaultParams(COLLATERAL_AMOUNT);
+        p.consecutiveMissesForDefault = 10; // high enough to avoid default
+
+        vm.prank(address(factory));
+        fresh.initialize(p);
+        _mockMoonwellSuccess();
+        // re-deal usdc to the fresh clone (mock borrow stub)
+        deal(usdc, address(fresh), PRINCIPAL);
+        vm.prank(address(factory));
+        fresh.activate();
+        deal(cbbtc, address(fresh), COLLATERAL_AMOUNT);
+
+        for (uint32 i = 0; i < NUM_INTEREST; i++) {
+            vm.warp(firstDueAt + uint64(i) * INTERVAL + GRACE + 1);
+            feed.setUpdatedAt(block.timestamp);
+            fresh.claimMissedPayment();
+        }
+        assertEq(fresh.paymentCursor(), NUM_INTEREST);
+
+        vm.warp(firstDueAt + uint64(NUM_INTEREST) * INTERVAL + GRACE + 1);
+        feed.setUpdatedAt(block.timestamp);
+        vm.expectRevert(CreditLoan.PastInterestPhase.selector);
+        fresh.claimMissedPayment();
+    }
+
+    function test_claimMissedPayment_invalidOracleReverts() public {
+        _warpPastGrace(0);
+        feed.setAnswer(0);
+        vm.expectRevert(CreditLoan.InvalidOraclePrice.selector);
+        clone.claimMissedPayment();
+    }
+
+    function test_claimMissedPayment_negativeOracleReverts() public {
+        _warpPastGrace(0);
+        feed.setAnswer(-1);
+        vm.expectRevert(CreditLoan.InvalidOraclePrice.selector);
+        clone.claimMissedPayment();
+    }
+
+    function test_claimMissedPayment_staleOracleReverts() public {
+        _warpPastGrace(0);
+        feed.setUpdatedAt(block.timestamp - STALENESS - 10);
+        vm.expectRevert(CreditLoan.StaleOraclePrice.selector);
+        clone.claimMissedPayment();
+    }
+
+    function test_claimMissedPayment_capsAtAvailableCollateral() public {
+        // Use a tiny collateral amount so the computed seize overshoots
+        // the available balance.
+        CreditLoan tiny = new CreditLoan();
+        InitParams memory p = _defaultParams(100);
+        vm.prank(address(factory));
+        tiny.initialize(p);
+        _mockMoonwellSuccess();
+        deal(usdc, address(tiny), PRINCIPAL);
+        vm.prank(address(factory));
+        tiny.activate();
+        deal(cbbtc, address(tiny), 100);
+
+        _warpPastGrace(0);
+
+        tiny.claimMissedPayment();
+        assertEq(tiny.seizedCollateralAmount(), 100); // capped
+        assertEq(IERC20(cbbtc).balanceOf(address(tiny)), 0);
+    }
+
+    function test_claimMissedPayment_triggersAccelerate() public {
+        // Miss cursor 0 → missedCount=1, still Active.
+        _warpPastGrace(0);
+        clone.claimMissedPayment();
+        assertTrue(clone.status() == LoanStatus.Active);
+        assertEq(clone.missedCount(), 1);
+
+        // Miss cursor 1 → missedCount=2 == consecutiveMissesForDefault → accelerate.
+        _warpPastGrace(1);
+
+        vm.expectEmit(true, true, true, true, address(clone));
+        emit LoanDefaulted(2, uint64(block.timestamp));
+        clone.claimMissedPayment();
+
+        assertTrue(clone.status() == LoanStatus.Defaulted);
+        assertEq(clone.missedCount(), 2);
+    }
+}

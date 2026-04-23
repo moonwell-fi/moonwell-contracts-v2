@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
@@ -34,10 +35,20 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     error PaymentGraceElapsed();
     error EnterMarketsFailed(uint256 errorCode);
     error BorrowFailed(uint256 errorCode);
+    error PastInterestPhase();
+    error PaymentNotYetMissed();
+    error InvalidOraclePrice();
+    error StaleOraclePrice();
 
     event LoanActivated(uint64 activatedAt);
     event InterestPaid(uint32 indexed cursor, uint256 amount);
     event LoanSettled();
+    event CollateralSeized(
+        uint32 indexed cursor,
+        uint256 missedUsd,
+        uint256 seizedCollateral
+    );
+    event LoanDefaulted(uint16 missedCount, uint64 at);
 
     address public lender;
     address public borrower;
@@ -192,8 +203,77 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         revert NotImplemented();
     }
 
-    function claimMissedPayment() external pure override {
-        revert NotImplemented();
+    /// Anyone can trigger progressive clawback for a missed interest
+    /// installment (§7.5). Only valid during the interest phase and only
+    /// once grace has elapsed on the current cursor. Seizes collateral
+    /// equal to the missed USD + overSeizureBps premium, priced via the
+    /// clone's immutable Chainlink feed, capped at remaining collateral.
+    /// When the missed-count threshold is crossed the loan accelerates.
+    function claimMissedPayment() external override nonReentrant {
+        if (status != LoanStatus.Active) revert LoanNotActive();
+
+        uint32 cursor = paymentCursor;
+        if (cursor >= schedule.numInterestPayments) revert PastInterestPhase();
+        if (block.timestamp <= _interestDueAt(cursor) + gracePeriod) {
+            revert PaymentNotYetMissed();
+        }
+
+        uint256 seizeAmount = _computeSeizeAmount();
+
+        uint256 available = collateralAmount - seizedCollateralAmount;
+        if (seizeAmount > available) seizeAmount = available;
+
+        seizedCollateralAmount += seizeAmount;
+        unchecked {
+            /// missedCount is uint16; bounded by schedule.numInterestPayments
+            /// and consecutiveMissesForDefault (capped at 10 by factory).
+            missedCount += 1;
+        }
+        paymentCursor = cursor + 1;
+
+        IERC20(collateralToken).safeTransfer(lender, seizeAmount);
+        emit CollateralSeized(
+            cursor,
+            schedule.interestAmountPerPayment,
+            seizeAmount
+        );
+
+        if (missedCount >= consecutiveMissesForDefault) {
+            _accelerate();
+        }
+    }
+
+    /// Priced per spec §7.5: treats principalToken as 1 USD at its own
+    /// decimals (MVP assumes USDC-class stables). Non-stable principals
+    /// would require a principal-side feed in InitParams — out of scope
+    /// here.
+    function _computeSeizeAmount() internal view returns (uint256) {
+        (, int256 answer, , uint256 updatedAt, ) = collateralChainlinkFeed
+            .latestRoundData();
+        if (answer <= 0) revert InvalidOraclePrice();
+        if (block.timestamp - updatedAt > stalenessWindow) {
+            revert StaleOraclePrice();
+        }
+
+        uint256 feedDecimals = collateralChainlinkFeed.decimals();
+        uint256 collateralPriceUsd1e18 = uint256(answer) *
+            (10 ** (18 - feedDecimals));
+
+        uint256 principalDecimals = IERC20Metadata(principalToken).decimals();
+        uint256 missedUsd1e18 = (schedule.interestAmountPerPayment * 1e18) /
+            (10 ** principalDecimals);
+        uint256 seizeUsd1e18 = (missedUsd1e18 * (10_000 + overSeizureBps)) /
+            10_000;
+
+        uint256 collateralDecimals = IERC20Metadata(collateralToken).decimals();
+        return
+            (seizeUsd1e18 * (10 ** collateralDecimals)) /
+            collateralPriceUsd1e18;
+    }
+
+    function _accelerate() internal {
+        status = LoanStatus.Defaulted;
+        emit LoanDefaulted(missedCount, uint64(block.timestamp));
     }
 
     function seizeAll() external pure override {
