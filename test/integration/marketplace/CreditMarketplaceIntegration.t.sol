@@ -498,4 +498,191 @@ contract CreditMarketplaceIntegration is Test, Signers {
         assertGe(IERC20(mUsdc).balanceOf(lender), mTokenAmount);
         assertEq(IERC20(usdc).balanceOf(loanAddr), 0);
     }
+
+    // ─── fuzz: interest amount per installment ──────────────────────
+
+    function _postAndMatchWithInterest(
+        uint256 interestAmt,
+        uint256 mTokenAmount,
+        uint64 firstDueAt
+    ) internal returns (address loanAddr) {
+        Offer memory o = _offer(1, mTokenAmount);
+        Request memory r = _request(2);
+        BackendTerms memory t = _terms(3, mTokenAmount, firstDueAt);
+        t.schedule.interestAmountPerPayment = interestAmt;
+        /// Trailing stub stays equal to one installment — matches the
+        /// happy-path contract and keeps lender interest distributable.
+        t.schedule.finalPaymentAmount = PRINCIPAL + interestAmt;
+
+        bytes32 domain = factory.DOMAIN_SEPARATOR();
+        uint256 offerId = factory.postOffer(o, signOffer(o, lenderKey, domain));
+        uint256 requestId = factory.postRequest(
+            r,
+            signRequest(r, borrowerKey, domain)
+        );
+        bytes memory oSig = signOffer(o, lenderKey, domain);
+        bytes memory rSig = signRequest(r, borrowerKey, domain);
+        bytes memory bSig = signBackendTerms(t, backendSignerKey, domain);
+        (, loanAddr) = factory.createLoan(
+            offerId,
+            requestId,
+            t,
+            oSig,
+            rSig,
+            bSig
+        );
+    }
+
+    /// Fuzz `interestAmountPerPayment` while keeping principal fixed.
+    /// Exercises the trailing-stub accounting in _settle across a wide
+    /// range of marketplace APRs (roughly 0.25% to 25% per installment
+    /// against 400 USDC principal).
+    function testFuzz_fullLifecycle_varyInterest(uint256 seed) public {
+        uint256 interestAmt = bound(seed, 1e6, 100e6);
+
+        uint256 mTokenAmount = _lenderMTokenBalance();
+        uint64 firstDueAt = uint64(block.timestamp + INTERVAL);
+
+        address loanAddr = _postAndMatchWithInterest(
+            interestAmt,
+            mTokenAmount,
+            firstDueAt
+        );
+        CreditLoan clone = CreditLoan(loanAddr);
+        assertTrue(clone.status() == LoanStatus.Active);
+
+        // Interest × NUM_INTEREST, plus principal + trailing stub at end.
+        // Over-fund generously.
+        deal(usdc, borrower, PRINCIPAL + interestAmt * 10);
+        vm.prank(borrower);
+        IERC20(usdc).approve(loanAddr, type(uint256).max);
+
+        for (uint32 i = 0; i < NUM_INTEREST; i++) {
+            vm.warp(firstDueAt + uint64(i) * INTERVAL);
+            vm.prank(borrower);
+            clone.makePayment();
+        }
+        vm.warp(firstDueAt + uint64(NUM_INTEREST) * INTERVAL - 1);
+        vm.prank(borrower);
+        clone.makePayment();
+
+        assertTrue(clone.status() == LoanStatus.Settled);
+        assertEq(
+            clone.totalInterestPaid(),
+            NUM_INTEREST * interestAmt + interestAmt
+        );
+        assertEq(IERC20(cbbtc).balanceOf(borrower), COLLATERAL_AMOUNT);
+        assertEq(IERC20(usdc).balanceOf(loanAddr), 0, "clone drained");
+    }
+
+    // ─── fuzz: payment timing within grace window ───────────────────
+
+    /// Fuzz how late within the grace window each payment lands. Small
+    /// offset = pay promptly; large offset = pay at the last possible
+    /// second before clawback is available. Moonwell borrow accrual
+    /// grows with delay, so this also stresses the settlement solvency
+    /// check (`selfBal >= borrowBal`) across a realistic range of
+    /// borrower behaviors.
+    function testFuzz_fullLifecycle_varyPaymentTiming(uint256 seed) public {
+        // Stay 1s short of grace expiry on the tightest end.
+        uint64 offset = uint64(bound(seed, 0, GRACE - 1));
+
+        uint256 mTokenAmount = _lenderMTokenBalance();
+        uint64 firstDueAt = uint64(block.timestamp + INTERVAL);
+
+        address loanAddr = _postAndMatch(mTokenAmount, firstDueAt);
+        CreditLoan clone = CreditLoan(loanAddr);
+
+        deal(usdc, borrower, FINAL_AMT * 2);
+        vm.prank(borrower);
+        IERC20(usdc).approve(loanAddr, type(uint256).max);
+
+        // Each interest payment lands at dueAt + offset (within grace).
+        for (uint32 i = 0; i < NUM_INTEREST; i++) {
+            vm.warp(firstDueAt + uint64(i) * INTERVAL + offset);
+            vm.prank(borrower);
+            clone.makePayment();
+        }
+        // Final payment also lands within its own grace window.
+        vm.warp(firstDueAt + uint64(NUM_INTEREST) * INTERVAL + offset);
+        vm.prank(borrower);
+        clone.makePayment();
+
+        assertTrue(clone.status() == LoanStatus.Settled);
+        assertEq(IERC20(cbbtc).balanceOf(borrower), COLLATERAL_AMOUNT);
+        assertEq(IERC20(usdc).balanceOf(loanAddr), 0);
+    }
+
+    // ─── fuzz: collateral ratio at origination ──────────────────────
+
+    function _postAndMatchWithCollateral(
+        uint256 collateral,
+        uint256 mTokenAmount,
+        uint64 firstDueAt
+    ) internal returns (address loanAddr) {
+        Offer memory o = _offer(1, mTokenAmount);
+        Request memory r = _request(2);
+        r.collateralAmount = collateral;
+        BackendTerms memory t = _terms(3, mTokenAmount, firstDueAt);
+        t.collateralAmount = collateral;
+
+        bytes32 domain = factory.DOMAIN_SEPARATOR();
+        uint256 offerId = factory.postOffer(o, signOffer(o, lenderKey, domain));
+        uint256 requestId = factory.postRequest(
+            r,
+            signRequest(r, borrowerKey, domain)
+        );
+        bytes memory oSig = signOffer(o, lenderKey, domain);
+        bytes memory rSig = signRequest(r, borrowerKey, domain);
+        bytes memory bSig = signBackendTerms(t, backendSignerKey, domain);
+        (, loanAddr) = factory.createLoan(
+            offerId,
+            requestId,
+            t,
+            oSig,
+            rSig,
+            bSig
+        );
+    }
+
+    /// Fuzz `collateralAmount` against a fixed principal. Lower bound
+    /// picked so LTV still passes (0.01 cbBTC ≈ $1,000 well above the
+    /// $440 floor for a $400 principal at 10% buffer, given BTC ~$100k).
+    /// Verifies the §7.3 LTV check accepts all sufficiently-collateralized
+    /// loans, not just the one we had in the smoke test.
+    function testFuzz_fullLifecycle_varyCollateral(uint256 seed) public {
+        uint256 collateral = bound(seed, 1e6, 1e8); // 0.01 to 1.0 cbBTC
+
+        uint256 mTokenAmount = _lenderMTokenBalance();
+        uint64 firstDueAt = uint64(block.timestamp + INTERVAL);
+
+        // Re-fund borrower's cbBTC in case the fuzzed amount exceeds
+        // what setUp dealt.
+        deal(cbbtc, borrower, collateral);
+        vm.prank(borrower);
+        IERC20(cbbtc).approve(address(factory), type(uint256).max);
+
+        address loanAddr = _postAndMatchWithCollateral(
+            collateral,
+            mTokenAmount,
+            firstDueAt
+        );
+        CreditLoan clone = CreditLoan(loanAddr);
+        assertTrue(clone.status() == LoanStatus.Active);
+        assertEq(clone.collateralAmount(), collateral);
+        assertEq(IERC20(cbbtc).balanceOf(loanAddr), collateral);
+
+        deal(usdc, borrower, FINAL_AMT * 2);
+        vm.prank(borrower);
+        IERC20(usdc).approve(loanAddr, type(uint256).max);
+        _runPaymentLoop(clone, firstDueAt);
+
+        assertTrue(clone.status() == LoanStatus.Settled);
+        // Full collateral returns to borrower — no misses means no seize.
+        assertEq(
+            IERC20(cbbtc).balanceOf(borrower),
+            collateral,
+            "full collateral returned"
+        );
+    }
 }
