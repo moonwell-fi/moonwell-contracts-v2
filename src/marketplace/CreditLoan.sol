@@ -1,14 +1,37 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
 import {ICreditLoan} from "@protocol/marketplace/ICreditLoan.sol";
 import {InitParams, LoanStatus, PaymentSchedule} from "@protocol/marketplace/CreditTypes.sol";
 
+/// @dev Minimal inward-facing slices of the Moonwell ABI. Declared locally
+/// so CreditLoan doesn't take a dependency on the full Comptroller /
+/// MToken surface; only the calls this contract actually makes.
+interface IMoonwellComptroller {
+    function enterMarkets(
+        address[] calldata mTokens
+    ) external returns (uint256[] memory);
+}
+
+interface IMoonwellMToken {
+    function borrow(uint256 borrowAmount) external returns (uint256);
+}
+
 contract CreditLoan is ICreditLoan {
+    using SafeERC20 for IERC20;
+
     error NotImplemented();
     error AlreadyInitialized();
+    error OnlyFactory();
+    error LoanNotPending();
+    error EnterMarketsFailed(uint256 errorCode);
+    error BorrowFailed(uint256 errorCode);
+
+    event LoanActivated(uint64 activatedAt);
 
     address public lender;
     address public borrower;
@@ -78,8 +101,29 @@ contract CreditLoan is ICreditLoan {
         status = LoanStatus.Pending;
     }
 
-    function activate() external pure override {
-        revert NotImplemented();
+    /// Called by the factory at the tail of createLoan (§7.3). Enters the
+    /// Moonwell market, draws `principal` via `mToken.borrow`, and
+    /// forwards the borrowed principalToken to the borrower. Reentrancy
+    /// is guarded by the factory's nonReentrant on createLoan (§12.1);
+    /// this function is only reachable during that atomic call.
+    function activate() external override {
+        if (msg.sender != factory) revert OnlyFactory();
+        if (status != LoanStatus.Pending) revert LoanNotPending();
+
+        address[] memory markets = new address[](1);
+        markets[0] = mToken;
+        uint256[] memory errs = IMoonwellComptroller(comptrollerAddr)
+            .enterMarkets(markets);
+        if (errs[0] != 0) revert EnterMarketsFailed(errs[0]);
+
+        uint256 err = IMoonwellMToken(mToken).borrow(principal);
+        if (err != 0) revert BorrowFailed(err);
+
+        IERC20(principalToken).safeTransfer(borrower, principal);
+
+        status = LoanStatus.Active;
+        activatedAt = uint64(block.timestamp);
+        emit LoanActivated(activatedAt);
     }
 
     function makePayment() external pure override {
