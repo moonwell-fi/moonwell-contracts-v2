@@ -3,13 +3,18 @@ pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin-contracts/contracts/security/Pausable.sol";
+import {ReentrancyGuard} from "@openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import {ECDSA} from "@openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+import {Clones} from "@openzeppelin-contracts/contracts/proxy/Clones.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
 import {ICreditMarketplaceFactory} from "@protocol/marketplace/ICreditMarketplaceFactory.sol";
 import {ICreditLoan} from "@protocol/marketplace/ICreditLoan.sol";
 import {CreditTypeHashes} from "@protocol/marketplace/CreditTypeHashes.sol";
 import {EIP712Lib} from "@protocol/marketplace/EIP712Lib.sol";
+import {PriceLib} from "@protocol/marketplace/PriceLib.sol";
 import {InitParams, Offer, Request, BackendTerms, OfferStatus, RequestStatus} from "@protocol/marketplace/CreditTypes.sol";
 
 interface IComptrollerProbe {
@@ -19,8 +24,11 @@ interface IComptrollerProbe {
 contract CreditMarketplaceFactory is
     ICreditMarketplaceFactory,
     Ownable,
-    Pausable
+    Pausable,
+    ReentrancyGuard
 {
+    using SafeERC20 for IERC20;
+
     error NotImplemented();
     error ZeroAddress();
     error InvalidComptroller();
@@ -46,6 +54,12 @@ contract CreditMarketplaceFactory is
     error NotMTokenWhitelisted();
     error NotCollateralWhitelisted();
     error NotPrincipalTokenWhitelisted();
+    error BackendTermsExpired();
+    error WrongChain();
+    error WrongFactory();
+    error InsufficientLenderBalance();
+    error InsufficientCollateral(uint256 haveUsd1e18, uint256 requiredUsd1e18);
+    error BoundsViolation(bytes32 which);
 
     event BackendSignerUpdated(
         address indexed previousSigner,
@@ -101,6 +115,15 @@ contract CreditMarketplaceFactory is
         uint64 expiresAt
     );
     event RequestCanceled(uint256 indexed requestId);
+    event LoanCreated(
+        uint256 indexed loanId,
+        address indexed loanAddress,
+        address indexed lender,
+        address borrower,
+        uint256 principal,
+        uint16 apr,
+        uint32 term
+    );
 
     /// Max age accepted from a Chainlink feed at whitelist time. Not the
     /// per-loan staleness budget — that's the governance-tunable
@@ -540,21 +563,275 @@ contract CreditMarketplaceFactory is
     }
 
     // ────────────────────────────────────────────────────────────────
-    // Stubs (PR5: createLoan)
+    // Match flow (§7.3)
     // ────────────────────────────────────────────────────────────────
 
     function createLoan(
-        uint256,
-        uint256,
-        BackendTerms calldata,
-        bytes calldata,
-        bytes calldata,
-        bytes calldata
-    ) external pure override returns (uint256, address) {
-        revert NotImplemented();
+        uint256 offerId,
+        uint256 requestId,
+        BackendTerms calldata terms,
+        bytes calldata offerSig,
+        bytes calldata requestSig,
+        bytes calldata backendSig
+    )
+        external
+        override
+        whenNotPaused
+        nonReentrant
+        returns (uint256 loanId, address loanAddress)
+    {
+        /// All validation, signature verification, nonce burn, bounds, and
+        /// LTV checks happen in one helper to keep the outer stack shallow
+        /// under optimizer_runs = 1.
+        _preValidateMatch(
+            offerId,
+            requestId,
+            terms,
+            offerSig,
+            requestSig,
+            backendSig
+        );
+
+        Offer storage o = offers[offerId];
+        Request storage r = requests[requestId];
+
+        loanAddress = Clones.clone(creditLoanImplementation);
+        ICreditLoan(loanAddress).initialize(_buildInitParams(o, r, terms));
+
+        IERC20(o.mToken).safeTransferFrom(
+            o.lender,
+            loanAddress,
+            o.mTokenAmount
+        );
+        IERC20(r.collateralToken).safeTransferFrom(
+            r.borrower,
+            loanAddress,
+            r.collateralAmount
+        );
+
+        ICreditLoan(loanAddress).activate();
+
+        o.status = OfferStatus.Consumed;
+        r.status = RequestStatus.Consumed;
+        loanId = nextLoanId++;
+        loans[loanId] = loanAddress;
+
+        _emitLoanCreated(loanId, loanAddress, o, r, terms);
     }
 
-    function getLoan(uint256) external pure override returns (address) {
-        revert NotImplemented();
+    function _emitLoanCreated(
+        uint256 loanId,
+        address loanAddress,
+        Offer storage o,
+        Request storage r,
+        BackendTerms calldata terms
+    ) private {
+        emit LoanCreated(
+            loanId,
+            loanAddress,
+            o.lender,
+            r.borrower,
+            terms.principal,
+            terms.apr,
+            terms.term
+        );
+    }
+
+    function getLoan(uint256 loanId) external view override returns (address) {
+        return loans[loanId];
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // Match internal helpers
+    // ────────────────────────────────────────────────────────────────
+
+    function _preValidateMatch(
+        uint256 offerId,
+        uint256 requestId,
+        BackendTerms calldata terms,
+        bytes calldata offerSig,
+        bytes calldata requestSig,
+        bytes calldata backendSig
+    ) private {
+        Offer storage o = offers[offerId];
+        Request storage r = requests[requestId];
+        if (o.status != OfferStatus.Active) revert OfferNotActive();
+        if (r.status != RequestStatus.Active) revert RequestNotActive();
+        if (o.expiresAt <= block.timestamp) revert OfferExpired();
+        if (r.expiresAt <= block.timestamp) revert RequestExpired();
+
+        _verifySignatures(o, r, terms, offerSig, requestSig, backendSig);
+
+        if (terms.validUntil <= block.timestamp) revert BackendTermsExpired();
+        if (terms.chainId != block.chainid) revert WrongChain();
+        if (terms.factory != address(this)) revert WrongFactory();
+
+        _consumeNonce(o.lender, o.nonce);
+        _consumeNonce(r.borrower, r.nonce);
+        _consumeNonce(backendSigner, terms.loanNonce);
+
+        _checkTermsBounds(o, r, terms);
+
+        if (IERC20(o.mToken).balanceOf(o.lender) < o.mTokenAmount) {
+            revert InsufficientLenderBalance();
+        }
+
+        _checkOriginationLtv(o, r, terms);
+    }
+
+    /// Split out of createLoan to keep the stack shallow under
+    /// optimizer_runs = 1 (§13.1).
+    function _verifySignatures(
+        Offer storage o,
+        Request storage r,
+        BackendTerms calldata terms,
+        bytes calldata offerSig,
+        bytes calldata requestSig,
+        bytes calldata backendSig
+    ) private view {
+        bytes32 d;
+        address recovered;
+
+        d = EIP712Lib.hash(DOMAIN_SEPARATOR, CreditTypeHashes.hashOffer(o));
+        recovered = ECDSA.recover(d, offerSig);
+        if (recovered != o.lender) {
+            revert InvalidSignature(o.lender, recovered);
+        }
+
+        d = EIP712Lib.hash(DOMAIN_SEPARATOR, CreditTypeHashes.hashRequest(r));
+        recovered = ECDSA.recover(d, requestSig);
+        if (recovered != r.borrower) {
+            revert InvalidSignature(r.borrower, recovered);
+        }
+
+        d = EIP712Lib.hash(
+            DOMAIN_SEPARATOR,
+            CreditTypeHashes.hashBackendTerms(terms)
+        );
+        recovered = ECDSA.recover(d, backendSig);
+        if (recovered != backendSigner) {
+            revert InvalidSignature(backendSigner, recovered);
+        }
+    }
+
+    function _checkTermsBounds(
+        Offer storage o,
+        Request storage r,
+        BackendTerms calldata terms
+    ) private view {
+        if (terms.lender != o.lender) revert BoundsViolation("lender");
+        if (terms.borrower != r.borrower) revert BoundsViolation("borrower");
+        if (terms.mToken != o.mToken) revert BoundsViolation("mToken");
+        if (terms.mTokenAmount != o.mTokenAmount) {
+            revert BoundsViolation("mTokenAmount");
+        }
+        if (terms.principalToken != o.principalToken) {
+            revert BoundsViolation("principalToken.offer");
+        }
+        if (terms.principalToken != r.principalToken) {
+            revert BoundsViolation("principalToken.request");
+        }
+        if (terms.principal > o.maxPrincipal) {
+            revert BoundsViolation("principal.max");
+        }
+        if (terms.principal != r.principal) {
+            revert BoundsViolation("principal.request");
+        }
+        if (terms.collateralToken != r.collateralToken) {
+            revert BoundsViolation("collateralToken");
+        }
+        if (terms.collateralAmount != r.collateralAmount) {
+            revert BoundsViolation("collateralAmount");
+        }
+        if (terms.apr < o.minApr || terms.apr > o.maxApr) {
+            revert BoundsViolation("apr.offer");
+        }
+        if (terms.apr > r.maxApr) revert BoundsViolation("apr.request");
+        if (terms.term < o.minTerm || terms.term > o.maxTerm) {
+            revert BoundsViolation("term.offer");
+        }
+        if (terms.term < r.minTerm || terms.term > r.maxTerm) {
+            revert BoundsViolation("term.request");
+        }
+        if (!_containsCollateral(o.acceptedCollateral, r.collateralToken)) {
+            revert BoundsViolation("collateral.notAccepted");
+        }
+        if (terms.borrowerCreditTier < o.minBorrowerCreditTier) {
+            revert BoundsViolation("creditTier");
+        }
+    }
+
+    function _containsCollateral(
+        address[] memory list,
+        address token
+    ) private pure returns (bool) {
+        for (uint256 i = 0; i < list.length; i++) {
+            if (list[i] == token) return true;
+        }
+        return false;
+    }
+
+    function _checkOriginationLtv(
+        Offer storage o,
+        Request storage r,
+        BackendTerms calldata terms
+    ) private view {
+        AggregatorV3Interface principalFeed = principalTokenFeeds[
+            o.principalToken
+        ];
+        AggregatorV3Interface collateralFeed = collateralFeeds[
+            r.collateralToken
+        ];
+        if (address(principalFeed) == address(0)) {
+            revert NotPrincipalTokenWhitelisted();
+        }
+        if (address(collateralFeed) == address(0)) {
+            revert NotCollateralWhitelisted();
+        }
+
+        uint256 collateralUsd1e18 = PriceLib.valueToUsd1e18(
+            r.collateralToken,
+            r.collateralAmount,
+            collateralFeed,
+            stalenessWindow
+        );
+        uint256 principalUsd1e18 = PriceLib.valueToUsd1e18(
+            o.principalToken,
+            terms.principal,
+            principalFeed,
+            stalenessWindow
+        );
+        uint256 requiredUsd1e18 = (principalUsd1e18 *
+            (10_000 + minOriginationLtvBufferBps)) / 10_000;
+        if (collateralUsd1e18 < requiredUsd1e18) {
+            revert InsufficientCollateral(collateralUsd1e18, requiredUsd1e18);
+        }
+    }
+
+    function _buildInitParams(
+        Offer storage o,
+        Request storage r,
+        BackendTerms calldata terms
+    ) private view returns (InitParams memory p) {
+        p.lender = o.lender;
+        p.borrower = r.borrower;
+        p.mToken = o.mToken;
+        p.mTokenAmount = o.mTokenAmount;
+        p.principalToken = o.principalToken;
+        p.principal = terms.principal;
+        p.collateralToken = r.collateralToken;
+        p.collateralChainlinkFeed = collateralFeeds[r.collateralToken];
+        p.collateralAmount = r.collateralAmount;
+        p.apr = terms.apr;
+        p.term = terms.term;
+        p.schedule = terms.schedule;
+        p.gracePeriod = terms.gracePeriod;
+        p.overSeizureBps = terms.overSeizureBps;
+        p.consecutiveMissesForDefault = terms.consecutiveMissesForDefault;
+        p.marketplaceFeeBps = terms.marketplaceFeeBps;
+        p.feeRecipient = terms.feeRecipient;
+        p.backendSignerAtOrigination = backendSigner;
+        p.stalenessWindow = stalenessWindow;
+        p.comptrollerAddr = comptroller;
     }
 }

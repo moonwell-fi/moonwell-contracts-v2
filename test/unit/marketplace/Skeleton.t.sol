@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {InitParams, BackendTerms} from "@protocol/marketplace/CreditTypes.sol";
+import {InitParams} from "@protocol/marketplace/CreditTypes.sol";
 import {CreditLoan} from "@protocol/marketplace/CreditLoan.sol";
 import {CreditMarketplaceFactory} from "@protocol/marketplace/CreditMarketplaceFactory.sol";
 
@@ -98,17 +98,6 @@ contract SkeletonTest is Fixture {
         fresh.initialize(p);
 
         assertEq(fresh.factory(), rogue);
-    }
-
-    function test_matchFlow_stillStubs() public {
-        BackendTerms memory t;
-        bytes memory empty;
-
-        vm.expectRevert(CreditMarketplaceFactory.NotImplemented.selector);
-        factory.createLoan(0, 0, t, empty, empty, empty);
-
-        vm.expectRevert(CreditMarketplaceFactory.NotImplemented.selector);
-        factory.getLoan(0);
     }
 
     function test_pause_callableByGuardian_unpauseOwnerOnly() public {
