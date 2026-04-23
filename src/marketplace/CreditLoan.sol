@@ -245,8 +245,17 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         );
         if (err != 0) revert RepayFailed(err);
 
-        uint256 fee = (totalInterestPaid * marketplaceFeeBps) / 10_000;
-        uint256 lenderInterest = totalInterestPaid - fee;
+        /// Base the fee split on what's actually left after Moonwell
+        /// takes its borrow accrual, not on `totalInterestPaid` (which
+        /// ignores accrual). Spec §7.7 wrote the formula against the
+        /// gross borrower payments — that only works when Moonwell's
+        /// borrow APR is zero. Real accrual is non-zero, so we read the
+        /// post-repay balance as the distributable pot. Lender bears
+        /// the Moonwell cost (their choice of pledged asset); fee
+        /// scales down proportionally.
+        uint256 distributable = IERC20(principalToken).balanceOf(address(this));
+        uint256 fee = (distributable * marketplaceFeeBps) / 10_000;
+        uint256 lenderInterest = distributable - fee;
 
         if (fee > 0) {
             IERC20(principalToken).safeTransfer(feeRecipient, fee);
