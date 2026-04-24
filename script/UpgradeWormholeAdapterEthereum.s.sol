@@ -24,15 +24,15 @@ import {ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, 
  so this is a one-off deployer script (same pattern as DeployXWellEthereum.s.sol).
 
  to simulate:
-     forge script script/UpgradeWormholeBridgeAdapterEthereum.s.sol:UpgradeWormholeBridgeAdapterEthereum \
+     forge script script/UpgradeWormholeAdapterEthereum.s.sol:UpgradeWormholeAdapterEthereum \
        -vvvv --rpc-url ethereum
 
  to run:
-    forge script script/UpgradeWormholeBridgeAdapterEthereum.s.sol:UpgradeWormholeBridgeAdapterEthereum \
+    forge script script/UpgradeWormholeAdapterEthereum.s.sol:UpgradeWormholeAdapterEthereum \
       -vvvv --rpc-url ethereum --broadcast --etherscan-api-key ethereum --verify
 
 */
-contract UpgradeWormholeBridgeAdapterEthereum is Script {
+contract UpgradeWormholeAdapterEthereum is Script {
     function run() public {
         Addresses addresses = new Addresses();
 
