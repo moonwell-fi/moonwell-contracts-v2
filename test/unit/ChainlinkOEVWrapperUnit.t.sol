@@ -1134,9 +1134,10 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         );
     }
 
-    /// @notice TDD (Task 3): when the registry returns a plain raw aggregator
-    ///         (no priceFeed() selector), _getLoanTokenPrice must read directly
-    ///         from it and produce the correct price.
+    /// @notice TDD (Task 3): when the registry returns an OEV wrapper (one that
+    ///         exposes priceFeed() pointing at an inner raw aggregator),
+    ///         _getLoanTokenPrice must single-hop-dereference to the inner
+    ///         aggregator and read the fresh price from it.
     ///
     ///         FAILING MECHANISM (pre-Task 4): the current _getLoanTokenPrice
     ///         does not call _resolveRawFeed. When the registry returns a
