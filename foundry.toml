@@ -46,6 +46,7 @@ opSepolia = { endpoint= "${OP_SEPOLIA_RPC_URL}", retries = 2, retry_backoff = 10
 
 # comment out the following lines so that CI passes fast and doesn't throw errors related to connecting to CI
 [etherscan]
+ethereum = { key = "${ETHERSCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=1" }
 #optimism = { key = "${BASESCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=10" }
 #moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
 #moonbeam = { key = "${BASESCAN_API_KEY}", url= "https://api.etherscan.io/v2/api?chainid=1284" }

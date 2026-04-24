@@ -37,13 +37,19 @@ contract OrderBookTest is Fixture {
     function setUp() public override {
         super.setUp();
         vm.startPrank(temporalGovernor);
-        factory.whitelistMToken(mUsdc, true);
-        factory.whitelistCollateralToken(
-            cbbtc,
+        // whitelistMToken registers the underlying (USDC) feed in the
+        // same call — the principal side no longer has its own
+        // whitelist. chainlinkBtcUsd is a live feed we reuse as a
+        // stand-in for the USDC/USD oracle; the real one would be
+        // addresses.getAddress("USDC_ORACLE").
+        factory.whitelistMToken(
+            mUsdc,
+            true,
             AggregatorV3Interface(chainlinkBtcUsd)
         );
-        factory.whitelistPrincipalToken(
-            usdc,
+        factory.whitelistCollateralToken(
+            cbbtc,
+            true,
             AggregatorV3Interface(chainlinkBtcUsd)
         );
         vm.stopPrank();
@@ -220,9 +226,12 @@ contract OrderBookTest is Fixture {
         factory.postOffer(offer, sig);
     }
 
-    function test_postOffer_principalTokenNotWhitelistedReverts() public {
+    function test_postOffer_principalMustEqualMTokenUnderlying() public {
+        // mUsdc's real underlying is USDC; a lender can't sign an Offer
+        // that claims a different principalToken because the clone's
+        // borrow would draw USDC regardless of what was signed.
         Offer memory offer = _defaultOffer(1);
-        offer.principalToken = makeAddr("unknownStable");
+        offer.principalToken = makeAddr("someOtherToken");
         bytes memory sig = signOffer(
             offer,
             lenderKey,
@@ -230,7 +239,7 @@ contract OrderBookTest is Fixture {
         );
 
         vm.expectRevert(
-            CreditMarketplaceFactory.NotPrincipalTokenWhitelisted.selector
+            CreditMarketplaceFactory.PrincipalMustMatchMTokenUnderlying.selector
         );
         factory.postOffer(offer, sig);
     }

@@ -21,6 +21,10 @@ interface IComptrollerProbe {
     function getAllMarkets() external view returns (address[] memory);
 }
 
+interface IMErc20Underlying {
+    function underlying() external view returns (address);
+}
+
 contract CreditMarketplaceFactory is
     ICreditMarketplaceFactory,
     Ownable,
@@ -54,6 +58,7 @@ contract CreditMarketplaceFactory is
     error NotMTokenWhitelisted();
     error NotCollateralWhitelisted();
     error NotPrincipalTokenWhitelisted();
+    error PrincipalMustMatchMTokenUnderlying();
     error BackendTermsExpired();
     error WrongChain();
     error WrongFactory();
@@ -69,14 +74,16 @@ contract CreditMarketplaceFactory is
         address indexed previous,
         address indexed updated
     );
-    event MTokenWhitelisted(address indexed mToken, bool allowed);
-    event CollateralWhitelisted(address indexed token, address indexed feed);
-    event CollateralRemoved(address indexed token);
-    event PrincipalTokenWhitelisted(
-        address indexed token,
+    event MTokenWhitelisted(
+        address indexed mToken,
+        bool allowed,
         address indexed feed
     );
-    event PrincipalTokenRemoved(address indexed token);
+    event CollateralWhitelisted(
+        address indexed token,
+        bool allowed,
+        address indexed feed
+    );
     event StalenessWindowUpdated(uint32 seconds_);
     event MinOriginationLtvBufferBpsUpdated(uint16 previous, uint16 updated);
     event DefaultParamsUpdated(
@@ -158,8 +165,11 @@ contract CreditMarketplaceFactory is
     mapping(address => bool) public isMTokenWhitelisted;
     mapping(address => AggregatorV3Interface) public collateralFeeds;
     mapping(address => bool) public isCollateralWhitelisted;
+    /// Feed for the principal side of each match, keyed by the mToken's
+    /// underlying. Populated via `whitelistMToken` — the principal token
+    /// is always `IMErc20(mToken).underlying()`, so it's not its own
+    /// whitelist surface.
     mapping(address => AggregatorV3Interface) public principalTokenFeeds;
-    mapping(address => bool) public isPrincipalTokenWhitelisted;
 
     mapping(uint256 => Offer) public offers;
     mapping(uint256 => Request) public requests;
@@ -263,51 +273,52 @@ contract CreditMarketplaceFactory is
         emit CreditLoanImplementationUpdated(previous, newImpl);
     }
 
+    /// Whitelist (or un-whitelist) an mToken. When enabling, the caller
+    /// must supply a Chainlink feed for the mToken's underlying; that
+    /// feed is stored in `principalTokenFeeds` so createLoan's LTV
+    /// check can price the borrower's principal. Disabling clears the
+    /// per-mToken flag but leaves the underlying's feed intact, because
+    /// multiple mTokens can share an underlying and we don't want a
+    /// removal to brick their still-live whitelist entries.
     function whitelistMToken(
         address mToken,
-        bool allowed
+        bool allowed,
+        AggregatorV3Interface underlyingFeed
     ) external override onlyOwner {
         if (mToken == address(0)) revert ZeroAddress();
-        isMTokenWhitelisted[mToken] = allowed;
-        emit MTokenWhitelisted(mToken, allowed);
+        if (allowed) {
+            if (address(underlyingFeed) == address(0)) revert ZeroAddress();
+            _probeFeed(underlyingFeed);
+            isMTokenWhitelisted[mToken] = true;
+            principalTokenFeeds[
+                IMErc20Underlying(mToken).underlying()
+            ] = underlyingFeed;
+        } else {
+            isMTokenWhitelisted[mToken] = false;
+        }
+        emit MTokenWhitelisted(mToken, allowed, address(underlyingFeed));
     }
 
+    /// Whitelist (or un-whitelist) a collateral token plus its Chainlink
+    /// feed. Disabling clears both the flag and the feed entry because
+    /// collateral is a 1:1 token-to-feed relationship (unlike mTokens
+    /// which can share an underlying).
     function whitelistCollateralToken(
         address token,
+        bool allowed,
         AggregatorV3Interface feed
     ) external override onlyOwner {
         if (token == address(0)) revert ZeroAddress();
-        if (address(feed) == address(0)) revert ZeroAddress();
-        _probeFeed(feed);
-        collateralFeeds[token] = feed;
-        isCollateralWhitelisted[token] = true;
-        emit CollateralWhitelisted(token, address(feed));
-    }
-
-    function removeCollateralToken(address token) external override onlyOwner {
-        if (token == address(0)) revert ZeroAddress();
-        delete collateralFeeds[token];
-        isCollateralWhitelisted[token] = false;
-        emit CollateralRemoved(token);
-    }
-
-    function whitelistPrincipalToken(
-        address token,
-        AggregatorV3Interface feed
-    ) external override onlyOwner {
-        if (token == address(0)) revert ZeroAddress();
-        if (address(feed) == address(0)) revert ZeroAddress();
-        _probeFeed(feed);
-        principalTokenFeeds[token] = feed;
-        isPrincipalTokenWhitelisted[token] = true;
-        emit PrincipalTokenWhitelisted(token, address(feed));
-    }
-
-    function removePrincipalToken(address token) external override onlyOwner {
-        if (token == address(0)) revert ZeroAddress();
-        delete principalTokenFeeds[token];
-        isPrincipalTokenWhitelisted[token] = false;
-        emit PrincipalTokenRemoved(token);
+        if (allowed) {
+            if (address(feed) == address(0)) revert ZeroAddress();
+            _probeFeed(feed);
+            collateralFeeds[token] = feed;
+            isCollateralWhitelisted[token] = true;
+        } else {
+            delete collateralFeeds[token];
+            isCollateralWhitelisted[token] = false;
+        }
+        emit CollateralWhitelisted(token, allowed, address(feed));
     }
 
     function setStalenessWindow(uint32 seconds_) external override onlyOwner {
@@ -426,8 +437,13 @@ contract CreditMarketplaceFactory is
         if (!isMTokenWhitelisted[offer.mToken]) {
             revert NotMTokenWhitelisted();
         }
-        if (!isPrincipalTokenWhitelisted[offer.principalToken]) {
-            revert NotPrincipalTokenWhitelisted();
+        /// principalToken is derivable from the mToken, so it must match
+        /// or the lender signed something the clone can't deliver: the
+        /// clone's `borrow(principal)` always draws `mToken.underlying()`.
+        if (
+            offer.principalToken != IMErc20Underlying(offer.mToken).underlying()
+        ) {
+            revert PrincipalMustMatchMTokenUnderlying();
         }
         for (uint256 i = 0; i < offer.acceptedCollateral.length; i++) {
             if (!isCollateralWhitelisted[offer.acceptedCollateral[i]]) {
@@ -472,7 +488,13 @@ contract CreditMarketplaceFactory is
     ) external override whenNotPaused returns (uint256 requestId) {
         if (request.expiresAt <= block.timestamp) revert RequestExpired();
         if (request.maxTerm < request.minTerm) revert InvalidTermBounds();
-        if (!isPrincipalTokenWhitelisted[request.principalToken]) {
+        /// The borrower's principalToken only matches if some whitelisted
+        /// mToken has it as its underlying (feed was registered via
+        /// whitelistMToken). Gatekeep here so dead requests don't clog
+        /// the order book.
+        if (
+            address(principalTokenFeeds[request.principalToken]) == address(0)
+        ) {
             revert NotPrincipalTokenWhitelisted();
         }
         if (!isCollateralWhitelisted[request.collateralToken]) {

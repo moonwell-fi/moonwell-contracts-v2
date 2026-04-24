@@ -93,14 +93,13 @@ contract CreditMarketplaceIntegration is Test, Signers {
         );
 
         // Governance-level setup per spec §14.3 post-deploy checklist.
+        // whitelistMToken also registers the underlying's feed so the
+        // LTV check at createLoan can price the principal.
         vm.startPrank(temporalGovernor);
-        factory.whitelistMToken(mUsdc, true);
-        factory.whitelistPrincipalToken(
-            usdc,
-            AggregatorV3Interface(usdcOracle)
-        );
+        factory.whitelistMToken(mUsdc, true, AggregatorV3Interface(usdcOracle));
         factory.whitelistCollateralToken(
             cbbtc,
+            true,
             AggregatorV3Interface(btcUsdFeed)
         );
         factory.setStalenessWindow(1 days);

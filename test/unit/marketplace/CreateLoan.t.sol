@@ -107,14 +107,17 @@ contract CreateLoanTest is Fixture {
         );
 
         vm.startPrank(temporalGovernor);
-        localFactory.whitelistMToken(address(mockMToken), true);
+        // whitelistMToken also registers the underlying's feed — one
+        // call where the old interface needed two.
+        localFactory.whitelistMToken(
+            address(mockMToken),
+            true,
+            AggregatorV3Interface(address(usdcFeed))
+        );
         localFactory.whitelistCollateralToken(
             cbbtc,
+            true,
             AggregatorV3Interface(address(cbbtcFeed))
-        );
-        localFactory.whitelistPrincipalToken(
-            usdc,
-            AggregatorV3Interface(address(usdcFeed))
         );
         localFactory.setStalenessWindow(3_600);
         localFactory.setMinOriginationLtvBufferBps(1_000);
@@ -575,6 +578,7 @@ contract CreateLoanTest is Fixture {
         vm.prank(temporalGovernor);
         localFactory.whitelistCollateralToken(
             cbbtc,
+            true,
             AggregatorV3Interface(address(cheapFeed))
         );
 
@@ -611,7 +615,11 @@ contract CreateLoanTest is Fixture {
         // …then governance yanks the mToken (e.g. Moonwell pauses the
         // market). The stale offer must not be matcheable.
         vm.prank(temporalGovernor);
-        localFactory.whitelistMToken(address(mockMToken), false);
+        localFactory.whitelistMToken(
+            address(mockMToken),
+            false,
+            AggregatorV3Interface(address(0))
+        );
 
         vm.expectRevert(CreditMarketplaceFactory.NotMTokenWhitelisted.selector);
         localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);

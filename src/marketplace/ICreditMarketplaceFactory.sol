@@ -52,21 +52,17 @@ interface ICreditMarketplaceFactory {
 
     function setCreditLoanImplementation(address newImpl) external;
 
-    function whitelistMToken(address mToken, bool allowed) external;
+    function whitelistMToken(
+        address mToken,
+        bool allowed,
+        AggregatorV3Interface underlyingFeed
+    ) external;
 
     function whitelistCollateralToken(
         address token,
+        bool allowed,
         AggregatorV3Interface feed
     ) external;
-
-    function removeCollateralToken(address token) external;
-
-    function whitelistPrincipalToken(
-        address token,
-        AggregatorV3Interface feed
-    ) external;
-
-    function removePrincipalToken(address token) external;
 
     function setStalenessWindow(uint32 seconds_) external;
 

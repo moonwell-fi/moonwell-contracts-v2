@@ -957,20 +957,21 @@ address public pauseGuardian;
 mapping(address => AggregatorV3Interface) public collateralFeeds;  // token → Chainlink feed
 mapping(address => bool) public isCollateralWhitelisted;
 
-// ─── Principal-token whitelist (for onchain LTV check at match) ──
-// Every principal token offered must have a registered Chainlink feed so
-// createLoan can price it in USD at origination (see §7.3).
-mapping(address => AggregatorV3Interface) public principalTokenFeeds;
-mapping(address => bool) public isPrincipalTokenWhitelisted;
-
 // ─── Onchain LTV buffer (basis points above 100%) ────────────────
 // collateralValueUsd1e18 must be ≥ principalValueUsd1e18 * (10_000 + buffer) / 10_000
 // at match time. E.g. 1_000 bps = 10% — collateral must be worth at least 110%
 // of principal in USD at the moment createLoan executes.
 uint16 public minOriginationLtvBufferBps;
 
-// ─── mToken whitelist ────────────────────────────────────────────
+// ─── mToken whitelist (plus its underlying's feed) ───────────────
+// The principal token is always `IMErc20(mToken).underlying()` — the
+// clone's `borrow(principal)` draws that asset — so the principal side
+// doesn't need its own whitelist. Governance registers the feed for
+// the underlying at whitelistMToken time; `principalTokenFeeds` is
+// keyed by underlying address so two mTokens that share an underlying
+// (uncommon but possible) share the same feed entry.
 mapping(address => bool) public isMTokenWhitelisted;
+mapping(address => AggregatorV3Interface) public principalTokenFeeds;
 
 // ─── Default parameters (copied into clone at init) ──────────────
 uint32 public defaultGracePeriod;            // e.g. 86400 (24h)
@@ -1043,7 +1044,7 @@ Factory.postOffer(offer, signature):
   require offer.maxApr >= offer.minApr
   require offer.maxTerm >= offer.minTerm
   require offer.mToken whitelisted
-  require offer.principalToken whitelisted  // must have a principalTokenFeeds entry (see §7.3)
+  require offer.principalToken == IMErc20(offer.mToken).underlying()
   require each token in offer.acceptedCollateral is whitelisted
   digest = hashOffer(offer) → EIP-712
   recovered = ECDSA.recover(digest, signature)
@@ -1556,17 +1557,16 @@ interface ICreditMarketplaceFactory {
   // ─── Admin (onlyOwner = Temporal Governor) ───
   function setBackendSigner(address newSigner) external;
   function setCreditLoanImplementation(address newImpl) external;
-  function whitelistMToken(address mToken, bool allowed) external;
+  function whitelistMToken(
+    address mToken,
+    bool allowed,
+    AggregatorV3Interface underlyingFeed
+  ) external;
   function whitelistCollateralToken(
     address token,
+    bool allowed,
     AggregatorV3Interface feed
   ) external;
-  function removeCollateralToken(address token) external;
-  function whitelistPrincipalToken(
-    address token,
-    AggregatorV3Interface feed
-  ) external;
-  function removePrincipalToken(address token) external;
   function setStalenessWindow(uint32 seconds_) external;
   function setMinOriginationLtvBufferBps(uint16 bufferBps) external;
   function setDefaultParams(
@@ -1785,29 +1785,29 @@ function setCreditLoanImplementation(address newImpl) external onlyOwner;
 // revert if newImpl is not a contract or already been initialized as a regular loan.
 // Factory should call newImpl.initialize(...) with sentinel values to lock it before storing.
 
-// ─── mToken whitelist ─────────────────────────────────────────────
-function whitelistMToken(address mToken, bool allowed) external onlyOwner;
+// ─── mToken whitelist (registers the underlying's feed too) ───────
+function whitelistMToken(
+  address mToken,
+  bool allowed,
+  AggregatorV3Interface underlyingFeed
+) external onlyOwner;
+// When `allowed == true`: requires non-zero `underlyingFeed`, probes
+// liveness, sets `isMTokenWhitelisted[mToken] = true`, stores the feed
+// at `principalTokenFeeds[mToken.underlying()]`. When `allowed == false`:
+// clears only the mToken flag (feed stays in case other mTokens share
+// the same underlying). Existing loans reference the immutable feed
+// captured at init, so removal only affects future origination.
 
 // ─── Collateral whitelist ─────────────────────────────────────────
 function whitelistCollateralToken(
   address token,
+  bool allowed,
   AggregatorV3Interface feed
 ) external onlyOwner;
-// revert if feed.latestRoundData returns invalid (answer <= 0 or updatedAt stale on current block)
-
-function removeCollateralToken(address token) external onlyOwner;
-// existing loans already reference the immutable feed address, so removal only
-// affects future loan origination
-
-// ─── Principal-token whitelist (for onchain LTV check) ────────────
-function whitelistPrincipalToken(
-  address token,
-  AggregatorV3Interface feed
-) external onlyOwner;
-// same live-feed validation as whitelistCollateralToken
-
-function removePrincipalToken(address token) external onlyOwner;
-// only blocks NEW offers/matches; existing loans are unaffected
+// When `allowed == true`: requires non-zero `feed`, probes liveness,
+// stores flag + feed. When `allowed == false`: clears both flag and
+// feed (collateral is 1:1 with its feed — unlike mToken, no shared
+// entries to preserve).
 
 // ─── Oracle / LTV params ──────────────────────────────────────────
 function setStalenessWindow(uint32 seconds_) external onlyOwner;
@@ -1879,9 +1879,9 @@ only callable during `createLoan`.
 - **Origination now also reads feeds** (both collateral and principal). A stale
   or zero-price feed therefore blocks new loans by design — a deliberate
   safety/liveness trade that favors safety.
-- At `whitelistCollateralToken` / `whitelistPrincipalToken` time, the setter
-  does a live round-data probe so a misconfigured feed is caught at proposal
-  execution rather than at first match.
+- At `whitelistMToken` / `whitelistCollateralToken` time, the setter does a live
+  round-data probe so a misconfigured feed is caught at proposal execution
+  rather than at first match.
 - The whitelist probe also rejects feeds with `decimals() > 18`
   (`InvalidFeedDecimals`). `PriceLib.valueToUsd1e18` scales up via
   `10 ** (18 - feedDecimals)`, which would underflow-revert on loan origination
@@ -2093,17 +2093,24 @@ contract Fixture is Test {
       _pauseGuardian: PAUSE_GUARDIAN
     });
 
-    // Whitelist starting set under gov impersonation
+    // Whitelist starting set under gov impersonation. whitelistMToken
+    // registers the underlying's feed in the same call — the principal
+    // side has no separate whitelist.
     vm.startPrank(TEMPORAL_GOVERNOR);
-    factory.whitelistMToken(MUSDC, true);
-    factory.whitelistMToken(MCBBTC, true);
+    factory.whitelistMToken(
+      MUSDC,
+      true,
+      AggregatorV3Interface(address(0x1234)) // mock USDC/USD feed for mUSDC.underlying()
+    );
+    factory.whitelistMToken(
+      MCBBTC,
+      true,
+      AggregatorV3Interface(address(0x1234)) // mock cbBTC/USD feed for mCBBTC.underlying()
+    );
     factory.whitelistCollateralToken(
       USDC,
-      AggregatorV3Interface(address(0x1234)) // mock USDC/USD feed for unit tests
-    );
-    factory.whitelistPrincipalToken(
-      USDC,
-      AggregatorV3Interface(address(0x1234)) // same mock — USDC is both a collateral and principal asset
+      true,
+      AggregatorV3Interface(address(0x1234))
     );
     factory.setStalenessWindow(3600);
     factory.setMinOriginationLtvBufferBps(1000); // collateral ≥ 110% of principal at origination
@@ -2296,18 +2303,18 @@ contract Deploy is Script {
 
 After mainnet deploy, a governance proposal should:
 
-1. Call `factory.whitelistMToken(mUSDC, true)` and for every other supported
-   mToken.
-2. Call `factory.whitelistCollateralToken(collateralA, feedA)` for each approved
-   collateral (live feed probed at setter time).
-3. Call `factory.whitelistPrincipalToken(USDC, usdcUsdFeed)` for every principal
-   token that will be offered (required before any `postOffer` succeeds).
-4. Call `factory.setMinOriginationLtvBufferBps(1000)` (or the chosen value; see
+1. Call `factory.whitelistMToken(mUSDC, true, usdcUsdFeed)` for every supported
+   mToken. This one call registers both the mToken flag and the feed for its
+   underlying — the principal side has no separate whitelist; the principal
+   token is always `IMErc20(mToken).underlying()`.
+2. Call `factory.whitelistCollateralToken(collateralA, true, feedA)` for each
+   approved collateral (live feed probed at setter time).
+3. Call `factory.setMinOriginationLtvBufferBps(1000)` (or the chosen value; see
    §17 appendix / open parameter questions).
-5. Call `factory.setDefaultParams(...)` with production values.
-6. Verify `factory.backendSigner()` is the expected ops key.
-7. Verify `factory.feeRecipient()` is the treasury multisig.
-8. Verify `factory.pauseGuardian()` matches `chains/<id>.json::PAUSE_GUARDIAN`.
+4. Call `factory.setDefaultParams(...)` with production values.
+5. Verify `factory.backendSigner()` is the expected ops key.
+6. Verify `factory.feeRecipient()` is the treasury multisig.
+7. Verify `factory.pauseGuardian()` matches `chains/<id>.json::PAUSE_GUARDIAN`.
    If a new guardian is being introduced (e.g., for Optimism before its
    canonical guardian is designated), the proposal MUST call
    `factory.setPauseGuardian(...)` explicitly rather than leaving a sentinel.
@@ -2344,18 +2351,18 @@ audit handoff.
 Each PR is designed to be reviewable independently. Any can be broken up
 further.
 
-| #   | Title                                                      | Contents                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Tests                                                                                                                                                                                                                           |
-| --- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | --- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Skeleton + test harness                                    | Directory layout under `src/marketplace/` and `test/marketplace/`. Interfaces (`ICreditMarketplaceFactory`, `ICreditLoan`). Stub `CreditMarketplaceFactory` and `CreditLoan` with all functions reverting `NotImplemented`. Foundry fixture that forks Base at a pinned block, deploys stubs, impersonates Temporal Governor.                                                                                                                                                                                                                               | Fixture loads successfully. Impersonation works.                                                                                                                                                                                |
-| 2   | Factory admin + EIP-712 infrastructure                     | Ownable + Pausable wiring. Pause guardian role (`pauseGuardian`, `setPauseGuardian`, `onlyOwnerOrGuardian` modifier). Domain separator construction. Type hashes as constants (including `OFFER_CANCEL_TYPEHASH`, `REQUEST_CANCEL_TYPEHASH`). `_hashOffer`, `_hashRequest`, `_hashBackendTerms`, `_hashPaymentSchedule`, `_hashOfferCancel`, `_hashRequestCancel` helpers. `usedNonces` storage + `_consumeNonce`. All admin setters (`setBackendSigner`, `whitelistMToken`, `whitelistPrincipalToken`, `setMinOriginationLtvBufferBps`, etc.) with events. | Each owner-only setter reverts for non-owner. Guardian can pause; guardian cannot unpause or touch other admin. Domain hash matches computed value. Nonce consumption is idempotent.                                            |
-| 3   | Offer + request CRUD                                       | `postOffer`, `cancelOffer`, `postRequest`, `cancelRequest`. Signature verification using the full `"\x19\x01"                                                                                                                                                                                                                                                                                                                                                                                                                                               |                                                                                                                                                                                                                                 | DOMAIN_SEPARATOR |     | structHash` envelope — including the cancel typehashes (§5.5) so cancel sigs are bound to chainId/factory/nonce. Status transitions. | Happy-path post + read. Invalid signature reverts. Expired offer reverts on post. Canceled offer cannot be re-matched (nonce burned). Cancel sig from a different chainId/factory is rejected. |
-| 4   | `CreditLoan.initialize` + `activate`                       | `InitParams` struct. `initialize` with init guard. `activate` that calls `comptroller.enterMarkets`, `mToken.borrow`, `IERC20.transfer` to borrower. Status transitions.                                                                                                                                                                                                                                                                                                                                                                                    | Init guard blocks re-init. Activate can only be called by factory. Moonwell return codes checked.                                                                                                                               |
-| 5   | `Factory.createLoan` end-to-end                            | Full match flow per §7.3, including the onchain LTV check (both `collateralFeeds` and `principalTokenFeeds` consulted, value normalized via `_valueToUsd1e18`, rejected when `collateralUsd < principalUsd * (1 + minOriginationLtvBufferBps) / 10_000`). Deploys clone, pulls funds, activates.                                                                                                                                                                                                                                                            | Happy-path match creates clone, transfers funds, emits `LoanCreated`. All sig/bounds failure modes revert. Stale feed or under-collateralized request reverts before any state change.                                          |
-| 6   | `CreditLoan.makePayment` + schedule helpers                | `_interestDueAt`. `makePayment`. Interest accrual. Transition to final payment.                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Interest payments within window succeed. Late payment (past grace) reverts. Final payment triggers `_settle`.                                                                                                                   |
-| 7   | `CreditLoan.claimMissedPayment` + oracle integration       | Oracle read + staleness check. Seize math. `missedCount` increment. Acceleration trigger.                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Clawback seizes exact expected amount. Stale oracle reverts. Acceleration after `consecutiveMissesForDefault`.                                                                                                                  |
-| 8   | `CreditLoan.seizeAll` + `_settle` + default unwind helpers | `seizeAll`. `_settle` (called from final payment) uses `forceApprove(type(uint).max)` + `repayBorrowBehalf(type(uint).max)` sentinel so it tolerates Moonwell APR drift; reverts `InsufficientPrincipalForRepay` cleanly when the clone can't cover the Moonwell borrow. `repayLoanAfterDefault` (also `forceApprove`), `redeemAndReturn`.                                                                                                                                                                                                                  | Happy-path settle. Settle handles small APR drift; reverts cleanly on large drift so the lender can unwind via the default path. Default unwind path (lender repays Moonwell, redeems mTokens). Invariants hold on every close. |
-| 9   | Base Sepolia deployment script + integration test          | `script/Deploy.s.sol`. Integration test that runs against a forked Base Sepolia, posts an offer + request, matches, pays, settles.                                                                                                                                                                                                                                                                                                                                                                                                                          | End-to-end on testnet fork.                                                                                                                                                                                                     |
-| 10  | Mainnet deployment readiness                               | Audit hardening (confirm reentrancy guards everywhere; confirm all Moonwell return codes checked). Gas benchmarking. Simulation against Base mainnet fork with real lender + real collateral. Deploy script for Base mainnet.                                                                                                                                                                                                                                                                                                                               | Gas report recorded (target: `createLoan` < 2_000_000 on forked Base with real Moonwell; < 1_000_000 with mocked Moonwell). All invariants hold on mainnet fork.                                                                |
+| #   | Title                                                      | Contents                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Tests                                                                                                                                                                                                                           |
+| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | --- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Skeleton + test harness                                    | Directory layout under `src/marketplace/` and `test/marketplace/`. Interfaces (`ICreditMarketplaceFactory`, `ICreditLoan`). Stub `CreditMarketplaceFactory` and `CreditLoan` with all functions reverting `NotImplemented`. Foundry fixture that forks Base at a pinned block, deploys stubs, impersonates Temporal Governor.                                                                                                                                                                                                                                | Fixture loads successfully. Impersonation works.                                                                                                                                                                                |
+| 2   | Factory admin + EIP-712 infrastructure                     | Ownable + Pausable wiring. Pause guardian role (`pauseGuardian`, `setPauseGuardian`, `onlyOwnerOrGuardian` modifier). Domain separator construction. Type hashes as constants (including `OFFER_CANCEL_TYPEHASH`, `REQUEST_CANCEL_TYPEHASH`). `_hashOffer`, `_hashRequest`, `_hashBackendTerms`, `_hashPaymentSchedule`, `_hashOfferCancel`, `_hashRequestCancel` helpers. `usedNonces` storage + `_consumeNonce`. All admin setters (`setBackendSigner`, `whitelistMToken`, `whitelistCollateralToken`, `setMinOriginationLtvBufferBps`, etc.) with events. | Each owner-only setter reverts for non-owner. Guardian can pause; guardian cannot unpause or touch other admin. Domain hash matches computed value. Nonce consumption is idempotent.                                            |
+| 3   | Offer + request CRUD                                       | `postOffer`, `cancelOffer`, `postRequest`, `cancelRequest`. Signature verification using the full `"\x19\x01"                                                                                                                                                                                                                                                                                                                                                                                                                                                |                                                                                                                                                                                                                                 | DOMAIN_SEPARATOR |     | structHash` envelope — including the cancel typehashes (§5.5) so cancel sigs are bound to chainId/factory/nonce. Status transitions. | Happy-path post + read. Invalid signature reverts. Expired offer reverts on post. Canceled offer cannot be re-matched (nonce burned). Cancel sig from a different chainId/factory is rejected. |
+| 4   | `CreditLoan.initialize` + `activate`                       | `InitParams` struct. `initialize` with init guard. `activate` that calls `comptroller.enterMarkets`, `mToken.borrow`, `IERC20.transfer` to borrower. Status transitions.                                                                                                                                                                                                                                                                                                                                                                                     | Init guard blocks re-init. Activate can only be called by factory. Moonwell return codes checked.                                                                                                                               |
+| 5   | `Factory.createLoan` end-to-end                            | Full match flow per §7.3, including the onchain LTV check (both `collateralFeeds` and `principalTokenFeeds` consulted, value normalized via `_valueToUsd1e18`, rejected when `collateralUsd < principalUsd * (1 + minOriginationLtvBufferBps) / 10_000`). Deploys clone, pulls funds, activates.                                                                                                                                                                                                                                                             | Happy-path match creates clone, transfers funds, emits `LoanCreated`. All sig/bounds failure modes revert. Stale feed or under-collateralized request reverts before any state change.                                          |
+| 6   | `CreditLoan.makePayment` + schedule helpers                | `_interestDueAt`. `makePayment`. Interest accrual. Transition to final payment.                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Interest payments within window succeed. Late payment (past grace) reverts. Final payment triggers `_settle`.                                                                                                                   |
+| 7   | `CreditLoan.claimMissedPayment` + oracle integration       | Oracle read + staleness check. Seize math. `missedCount` increment. Acceleration trigger.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Clawback seizes exact expected amount. Stale oracle reverts. Acceleration after `consecutiveMissesForDefault`.                                                                                                                  |
+| 8   | `CreditLoan.seizeAll` + `_settle` + default unwind helpers | `seizeAll`. `_settle` (called from final payment) uses `forceApprove(type(uint).max)` + `repayBorrowBehalf(type(uint).max)` sentinel so it tolerates Moonwell APR drift; reverts `InsufficientPrincipalForRepay` cleanly when the clone can't cover the Moonwell borrow. `repayLoanAfterDefault` (also `forceApprove`), `redeemAndReturn`.                                                                                                                                                                                                                   | Happy-path settle. Settle handles small APR drift; reverts cleanly on large drift so the lender can unwind via the default path. Default unwind path (lender repays Moonwell, redeems mTokens). Invariants hold on every close. |
+| 9   | Base Sepolia deployment script + integration test          | `script/Deploy.s.sol`. Integration test that runs against a forked Base Sepolia, posts an offer + request, matches, pays, settles.                                                                                                                                                                                                                                                                                                                                                                                                                           | End-to-end on testnet fork.                                                                                                                                                                                                     |
+| 10  | Mainnet deployment readiness                               | Audit hardening (confirm reentrancy guards everywhere; confirm all Moonwell return codes checked). Gas benchmarking. Simulation against Base mainnet fork with real lender + real collateral. Deploy script for Base mainnet.                                                                                                                                                                                                                                                                                                                                | Gas report recorded (target: `createLoan` < 2_000_000 on forked Base with real Moonwell; < 1_000_000 with mocked Moonwell). All invariants hold on mainnet fork.                                                                |
 
 ---
 

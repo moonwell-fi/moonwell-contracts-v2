@@ -18,14 +18,16 @@ contract AdminSettersTest is Fixture {
         address indexed previous,
         address indexed updated
     );
-    event MTokenWhitelisted(address indexed mToken, bool allowed);
-    event CollateralWhitelisted(address indexed token, address indexed feed);
-    event CollateralRemoved(address indexed token);
-    event PrincipalTokenWhitelisted(
-        address indexed token,
+    event MTokenWhitelisted(
+        address indexed mToken,
+        bool allowed,
         address indexed feed
     );
-    event PrincipalTokenRemoved(address indexed token);
+    event CollateralWhitelisted(
+        address indexed token,
+        bool allowed,
+        address indexed feed
+    );
     event StalenessWindowUpdated(uint32 seconds_);
     event MinOriginationLtvBufferBpsUpdated(uint16 previous, uint16 updated);
     event DefaultParamsUpdated(
@@ -120,53 +122,112 @@ contract AdminSettersTest is Fixture {
     }
 
     // ─── whitelistMToken ───────────────────────────────────────────
-    function test_whitelistMToken_enables() public {
+    /// mUsdc's real underlying on Base is USDC. Whitelisting mUsdc
+    /// therefore also registers a feed against USDC. We use
+    /// chainlinkBtcUsd as the stand-in feed — the actual price is
+    /// wrong for USDC but the setter doesn't care, only _probeFeed
+    /// liveness matters.
+    function test_whitelistMToken_enablesAndRegistersUnderlyingFeed() public {
         vm.expectEmit(true, true, true, true, address(factory));
-        emit MTokenWhitelisted(mUsdc, true);
+        emit MTokenWhitelisted(mUsdc, true, chainlinkBtcUsd);
         vm.prank(temporalGovernor);
-        factory.whitelistMToken(mUsdc, true);
+        factory.whitelistMToken(
+            mUsdc,
+            true,
+            AggregatorV3Interface(chainlinkBtcUsd)
+        );
         assertTrue(factory.isMTokenWhitelisted(mUsdc));
+        assertEq(address(factory.principalTokenFeeds(usdc)), chainlinkBtcUsd);
     }
 
-    function test_whitelistMToken_disables() public {
-        vm.prank(temporalGovernor);
-        factory.whitelistMToken(mUsdc, true);
+    function test_whitelistMToken_disablesLeavesFeedIntact() public {
+        vm.startPrank(temporalGovernor);
+        factory.whitelistMToken(
+            mUsdc,
+            true,
+            AggregatorV3Interface(chainlinkBtcUsd)
+        );
 
         vm.expectEmit(true, true, true, true, address(factory));
-        emit MTokenWhitelisted(mUsdc, false);
-        vm.prank(temporalGovernor);
-        factory.whitelistMToken(mUsdc, false);
+        emit MTokenWhitelisted(mUsdc, false, address(0));
+        factory.whitelistMToken(
+            mUsdc,
+            false,
+            AggregatorV3Interface(address(0))
+        );
+        vm.stopPrank();
+
         assertFalse(factory.isMTokenWhitelisted(mUsdc));
+        // Underlying feed stays in case another mToken shares the
+        // same underlying.
+        assertEq(address(factory.principalTokenFeeds(usdc)), chainlinkBtcUsd);
     }
 
     function test_whitelistMToken_nonOwnerReverts() public {
         vm.expectRevert(bytes(NOT_OWNER));
-        factory.whitelistMToken(mUsdc, true);
+        factory.whitelistMToken(
+            mUsdc,
+            true,
+            AggregatorV3Interface(chainlinkBtcUsd)
+        );
     }
 
-    function test_whitelistMToken_zeroReverts() public {
+    function test_whitelistMToken_zeroMTokenReverts() public {
         vm.prank(temporalGovernor);
         vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
-        factory.whitelistMToken(address(0), true);
+        factory.whitelistMToken(
+            address(0),
+            true,
+            AggregatorV3Interface(chainlinkBtcUsd)
+        );
+    }
+
+    function test_whitelistMToken_enableRequiresFeed() public {
+        vm.prank(temporalGovernor);
+        vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
+        factory.whitelistMToken(mUsdc, true, AggregatorV3Interface(address(0)));
     }
 
     // ─── whitelistCollateralToken ──────────────────────────────────
-    function test_whitelistCollateralToken_liveFeed() public {
+    function test_whitelistCollateralToken_enablesWithLiveFeed() public {
         vm.expectEmit(true, true, true, true, address(factory));
-        emit CollateralWhitelisted(cbbtc, chainlinkBtcUsd);
+        emit CollateralWhitelisted(cbbtc, true, chainlinkBtcUsd);
         vm.prank(temporalGovernor);
         factory.whitelistCollateralToken(
             cbbtc,
+            true,
             AggregatorV3Interface(chainlinkBtcUsd)
         );
         assertTrue(factory.isCollateralWhitelisted(cbbtc));
         assertEq(address(factory.collateralFeeds(cbbtc)), chainlinkBtcUsd);
     }
 
+    function test_whitelistCollateralToken_disablesClearsFeed() public {
+        vm.startPrank(temporalGovernor);
+        factory.whitelistCollateralToken(
+            cbbtc,
+            true,
+            AggregatorV3Interface(chainlinkBtcUsd)
+        );
+
+        vm.expectEmit(true, true, true, true, address(factory));
+        emit CollateralWhitelisted(cbbtc, false, address(0));
+        factory.whitelistCollateralToken(
+            cbbtc,
+            false,
+            AggregatorV3Interface(address(0))
+        );
+        vm.stopPrank();
+
+        assertFalse(factory.isCollateralWhitelisted(cbbtc));
+        assertEq(address(factory.collateralFeeds(cbbtc)), address(0));
+    }
+
     function test_whitelistCollateralToken_nonOwnerReverts() public {
         vm.expectRevert(bytes(NOT_OWNER));
         factory.whitelistCollateralToken(
             cbbtc,
+            true,
             AggregatorV3Interface(chainlinkBtcUsd)
         );
     }
@@ -176,15 +237,17 @@ contract AdminSettersTest is Fixture {
         vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
         factory.whitelistCollateralToken(
             address(0),
+            true,
             AggregatorV3Interface(chainlinkBtcUsd)
         );
     }
 
-    function test_whitelistCollateralToken_zeroFeedReverts() public {
+    function test_whitelistCollateralToken_enableRequiresFeed() public {
         vm.prank(temporalGovernor);
         vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
         factory.whitelistCollateralToken(
             cbbtc,
+            true,
             AggregatorV3Interface(address(0))
         );
     }
@@ -210,6 +273,7 @@ contract AdminSettersTest is Fixture {
         vm.expectRevert(CreditMarketplaceFactory.InvalidOraclePrice.selector);
         factory.whitelistCollateralToken(
             cbbtc,
+            true,
             AggregatorV3Interface(fakeFeed)
         );
     }
@@ -226,6 +290,7 @@ contract AdminSettersTest is Fixture {
         vm.expectRevert(CreditMarketplaceFactory.InvalidFeedDecimals.selector);
         factory.whitelistCollateralToken(
             cbbtc,
+            true,
             AggregatorV3Interface(fakeFeed)
         );
     }
@@ -246,119 +311,9 @@ contract AdminSettersTest is Fixture {
         vm.expectRevert(CreditMarketplaceFactory.StaleOraclePrice.selector);
         factory.whitelistCollateralToken(
             cbbtc,
+            true,
             AggregatorV3Interface(fakeFeed)
         );
-    }
-
-    // ─── removeCollateralToken ─────────────────────────────────────
-    function test_removeCollateralToken_clears() public {
-        vm.prank(temporalGovernor);
-        factory.whitelistCollateralToken(
-            cbbtc,
-            AggregatorV3Interface(chainlinkBtcUsd)
-        );
-
-        vm.expectEmit(true, true, true, true, address(factory));
-        emit CollateralRemoved(cbbtc);
-        vm.prank(temporalGovernor);
-        factory.removeCollateralToken(cbbtc);
-
-        assertFalse(factory.isCollateralWhitelisted(cbbtc));
-        assertEq(address(factory.collateralFeeds(cbbtc)), address(0));
-    }
-
-    function test_removeCollateralToken_nonOwnerReverts() public {
-        vm.expectRevert(bytes(NOT_OWNER));
-        factory.removeCollateralToken(cbbtc);
-    }
-
-    function test_removeCollateralToken_zeroReverts() public {
-        vm.prank(temporalGovernor);
-        vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
-        factory.removeCollateralToken(address(0));
-    }
-
-    // ─── whitelistPrincipalToken ───────────────────────────────────
-    function test_whitelistPrincipalToken_liveFeed() public {
-        // USDC/USD feed on Base — chainlinkBtcUsd works as a live feed for probe
-        // purposes; production will register a real USDC/USD feed.
-        vm.expectEmit(true, true, true, true, address(factory));
-        emit PrincipalTokenWhitelisted(usdc, chainlinkBtcUsd);
-        vm.prank(temporalGovernor);
-        factory.whitelistPrincipalToken(
-            usdc,
-            AggregatorV3Interface(chainlinkBtcUsd)
-        );
-        assertTrue(factory.isPrincipalTokenWhitelisted(usdc));
-        assertEq(address(factory.principalTokenFeeds(usdc)), chainlinkBtcUsd);
-    }
-
-    function test_whitelistPrincipalToken_nonOwnerReverts() public {
-        vm.expectRevert(bytes(NOT_OWNER));
-        factory.whitelistPrincipalToken(
-            usdc,
-            AggregatorV3Interface(chainlinkBtcUsd)
-        );
-    }
-
-    function test_whitelistPrincipalToken_zeroReverts() public {
-        vm.prank(temporalGovernor);
-        vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
-        factory.whitelistPrincipalToken(
-            address(0),
-            AggregatorV3Interface(chainlinkBtcUsd)
-        );
-
-        vm.prank(temporalGovernor);
-        vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
-        factory.whitelistPrincipalToken(
-            usdc,
-            AggregatorV3Interface(address(0))
-        );
-    }
-
-    function test_whitelistPrincipalToken_staleFeedReverts() public {
-        address fakeFeed = makeAddr("fakeFeed");
-        _mockDecimals(fakeFeed, 8);
-        vm.mockCall(
-            fakeFeed,
-            abi.encodeWithSelector(
-                AggregatorV3Interface.latestRoundData.selector
-            ),
-            abi.encode(
-                uint80(0),
-                int256(1e8),
-                uint256(0),
-                block.timestamp - 2 days,
-                uint80(0)
-            )
-        );
-
-        vm.prank(temporalGovernor);
-        vm.expectRevert(CreditMarketplaceFactory.StaleOraclePrice.selector);
-        factory.whitelistPrincipalToken(usdc, AggregatorV3Interface(fakeFeed));
-    }
-
-    // ─── removePrincipalToken ──────────────────────────────────────
-    function test_removePrincipalToken_clears() public {
-        vm.prank(temporalGovernor);
-        factory.whitelistPrincipalToken(
-            usdc,
-            AggregatorV3Interface(chainlinkBtcUsd)
-        );
-
-        vm.expectEmit(true, true, true, true, address(factory));
-        emit PrincipalTokenRemoved(usdc);
-        vm.prank(temporalGovernor);
-        factory.removePrincipalToken(usdc);
-
-        assertFalse(factory.isPrincipalTokenWhitelisted(usdc));
-        assertEq(address(factory.principalTokenFeeds(usdc)), address(0));
-    }
-
-    function test_removePrincipalToken_nonOwnerReverts() public {
-        vm.expectRevert(bytes(NOT_OWNER));
-        factory.removePrincipalToken(usdc);
     }
 
     // ─── setStalenessWindow ────────────────────────────────────────
