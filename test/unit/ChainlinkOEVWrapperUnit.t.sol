@@ -5,6 +5,7 @@ import {Test} from "@forge-std/Test.sol";
 import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {MockChainlinkOracleWithoutLatestRound} from "@test/mock/MockChainlinkOracleWithoutLatestRound.sol";
+import {MockOEVWrapperFeed} from "@test/mock/MockOEVWrapperFeed.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {MockERC20Decimals} from "@test/mock/MockERC20Decimals.sol";
@@ -1133,6 +1134,60 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         );
     }
 
+    /// @notice TDD (Task 3): when the registry returns a plain raw aggregator
+    ///         (no priceFeed() selector), _getLoanTokenPrice must read directly
+    ///         from it and produce the correct price.
+    ///
+    ///         FAILING MECHANISM (pre-Task 4): the current _getLoanTokenPrice
+    ///         does not call _resolveRawFeed. When the registry returns a
+    ///         MockOEVWrapperFeed (which exposes priceFeed() pointing at an
+    ///         inner raw aggregator), the current code reads the OUTER wrapper
+    ///         price (1_500e8) instead of the inner raw price (2_000e8).
+    ///         After Task 4 adds _resolveRawFeed, the single-hop deref will
+    ///         detect priceFeed() on the outer, resolve to the inner, and
+    ///         return 2_000e18 as expected.
+    ///
+    /// @dev Uses vm.mockCall on address(1) (the chainlinkOracle registry slot
+    ///      in the harness) because MockChainlinkOracle is a feed mock that
+    ///      has no getFeed(string) registry method.
+    function testLoanPriceReadsRawFeedWhenRegistryUnwrapped() public {
+        // Inner (raw) feed: the "fresh" price that the post-fix code must read.
+        MockChainlinkOracle rawLoanFeed = new MockChainlinkOracle(2_000e8, 8);
+        rawLoanFeed.set(1, 2_000e8, 1, block.timestamp, 1);
+
+        // Outer OEV wrapper registered in ChainlinkOracle, with a stale/wrong
+        // price on its own latestRoundData. The inner priceFeed() is the raw
+        // feed above.  Current code reads the outer directly; post-fix code
+        // dereferences to the inner.
+        MockOEVWrapperFeed outerWrapper = new MockOEVWrapperFeed(
+            address(rawLoanFeed),
+            8,
+            "MOCK_WRAPPER",
+            1
+        );
+        outerWrapper.setLatestRound(1, 1_500e8, 1, block.timestamp, 1);
+
+        // Stub the registry (address(1)) to return the outer wrapper for the
+        // loan symbol. The harness was constructed with chainlinkOracle =
+        // address(1).
+        string memory loanSymbol = loanToken.symbol();
+        vm.mockCall(
+            address(1),
+            abi.encodeWithSignature("getFeed(string)", loanSymbol),
+            abi.encode(address(outerWrapper))
+        );
+
+        uint256 priceScaled = harness.exposed_getLoanTokenPrice(
+            EIP20Interface(address(loanToken))
+        );
+
+        // Post-fix: _resolveRawFeed detects priceFeed() on the outer wrapper,
+        // dereferences to rawLoanFeed, and returns its price: 2_000e18.
+        // Pre-fix: reads outer latestRoundData() directly → 1_500e18.
+        // This assertion FAILS today (pre-Task 4).
+        assertEq(priceScaled, 2_000e18, "raw feed price not used");
+    }
+
     function testUpdatePriceEarlyAndLiquidateRevertsOnLoanTokenTransferFailure()
         public
     {
@@ -1283,6 +1338,13 @@ contract ChainlinkOEVWrapperHarness is ChainlinkOEVWrapper {
                 collateralAnswer,
                 EIP20Interface(underlyingCollateral)
             );
+    }
+
+    /// @notice Expose the internal _getLoanTokenPrice for testing
+    function exposed_getLoanTokenPrice(
+        EIP20Interface underlyingLoan
+    ) external view returns (uint256) {
+        return _getLoanTokenPrice(underlyingLoan);
     }
 
     /// @notice Expose the internal _calculateCollateralSplit for testing
