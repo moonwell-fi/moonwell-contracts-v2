@@ -1280,11 +1280,6 @@
         "name": "CHAINLINK_WELL_USD_ORACLE_PROXY"
     },
     {
-        "addr": "0x34A1D3fff3958843C43aD80F30b94c510645C316",
-        "isContract": true,
-        "name": "CHAINLINK_WELL_USD_ORACLE_PROXY_IMPL_V2"
-    },
-    {
         "addr": "0x71FBaD6c2200C8A5B89380f9B6bb8a35d411c852",
         "isContract": true,
         "name": "MORPHO_CHAINLINK_WELL_USD_ORACLE"
@@ -1358,11 +1353,6 @@
         "addr": "0xeb083d234ec636A10325ea42bCbbE09Aa56d1547",
         "isContract": true,
         "name": "CHAINLINK_ETH_USD_OEV_WRAPPER"
-    },
-    {
-        "addr": "0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496",
-        "isContract": true,
-        "name": "CHAINLINK_ETH_USD_OEV_WRAPPER_V3"
     },
     {
         "addr": "0xB5421a112f07C31820f413852E7e39E2d765e4B8",
