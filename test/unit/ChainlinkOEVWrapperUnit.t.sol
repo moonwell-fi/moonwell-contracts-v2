@@ -1350,6 +1350,13 @@ contract ChainlinkOEVWrapperHarness is ChainlinkOEVWrapper {
         return _getLoanTokenPrice(underlyingLoan);
     }
 
+    /// @notice Expose the internal _resolveRawFeed for testing
+    function exposed_resolveRawFeed(
+        AggregatorV3Interface registryFeed
+    ) external view returns (AggregatorV3Interface) {
+        return _resolveRawFeed(registryFeed);
+    }
+
     /// @notice Expose the internal _calculateCollateralSplit for testing
     function exposed_calculateCollateralSplit(
         uint256 repayAmount,
