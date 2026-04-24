@@ -1178,6 +1178,65 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         assertEq(priceScaled, 2_000e18, "raw feed price not used");
     }
 
+    /// @notice Regression: when the registry returns a plain raw aggregator
+    ///         (no priceFeed() selector), _resolveRawFeed must fall through
+    ///         and _getLoanTokenPrice must read the raw feed directly.
+    function testLoanPriceReadsRawFeedWhenRegistryEntryIsRaw() public {
+        // Deploy a plain raw aggregator — MockChainlinkOracle has no priceFeed()
+        // selector, so _resolveRawFeed's try/catch must hit the catch branch and
+        // return the registry feed unchanged.
+        MockChainlinkOracle rawLoanFeed = new MockChainlinkOracle(2_000e8, 8);
+        rawLoanFeed.set(1, 2_000e8, 1, block.timestamp, 1);
+
+        string memory loanSymbol = loanToken.symbol();
+        // Use the DRY helper — it stubs getFeed(symbol) on the registry AND
+        // stubs priceFeed() on the feed address to return address(0). The
+        // address(0) stub activates _resolveRawFeed's defensive fallback branch
+        // (not the try/catch path), but the observable behavior is identical:
+        // _getLoanTokenPrice reads from rawLoanFeed directly.
+        _mockRegistryGetFeed(address(1), loanSymbol, address(rawLoanFeed));
+
+        uint256 priceScaled = harness.exposed_getLoanTokenPrice(
+            EIP20Interface(address(loanToken))
+        );
+
+        // 2_000e8 feed @ 8 decimals → 2_000e18 after scaling to 18.
+        // loanToken has 18 decimals so no further adjustment.
+        assertEq(priceScaled, 2_000e18, "raw feed price not used");
+    }
+
+    /// @notice Regression: when the registry returns a contract that truly has
+    ///         no priceFeed() selector (not mocked to return zero), the
+    ///         try/catch in _resolveRawFeed must catch the revert and fall
+    ///         through to return the input unchanged.
+    function testLoanPriceReadsRawFeedWhenRegistryEntryLacksPriceFeedSelector()
+        public
+    {
+        MockChainlinkOracle rawLoanFeed = new MockChainlinkOracle(2_500e8, 8);
+        rawLoanFeed.set(1, 2_500e8, 1, block.timestamp, 1);
+
+        string memory loanSymbol = loanToken.symbol();
+        // Mock ONLY getFeed(symbol). Do NOT mock priceFeed() on rawLoanFeed —
+        // that selector will hit the MockChainlinkOracle contract, which has
+        // no such function, causing a revert that _resolveRawFeed's catch
+        // clause must swallow.
+        vm.mockCall(
+            address(1),
+            abi.encodeWithSignature("getFeed(string)", loanSymbol),
+            abi.encode(address(rawLoanFeed))
+        );
+
+        uint256 priceScaled = harness.exposed_getLoanTokenPrice(
+            EIP20Interface(address(loanToken))
+        );
+
+        assertEq(
+            priceScaled,
+            2_500e18,
+            "try/catch fallthrough did not read raw feed"
+        );
+    }
+
     function testUpdatePriceEarlyAndLiquidateRevertsOnLoanTokenTransferFailure()
         public
     {
