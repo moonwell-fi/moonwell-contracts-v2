@@ -1178,13 +1178,14 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         assertEq(priceScaled, 2_000e18, "raw feed price not used");
     }
 
-    /// @notice Regression: when the registry returns a plain raw aggregator
-    ///         (no priceFeed() selector), _resolveRawFeed must fall through
+    /// @notice Regression: when the registry returns a raw aggregator (via
+    ///         the DRY helper which stubs priceFeed() to address(0)),
+    ///         _resolveRawFeed's zero-inner defensive fallback must fire
     ///         and _getLoanTokenPrice must read the raw feed directly.
+    ///         (The genuine try/catch branch is covered by
+    ///         testLoanPriceReadsRawFeedWhenRegistryEntryLacksPriceFeedSelector.)
     function testLoanPriceReadsRawFeedWhenRegistryEntryIsRaw() public {
-        // Deploy a plain raw aggregator — MockChainlinkOracle has no priceFeed()
-        // selector, so _resolveRawFeed's try/catch must hit the catch branch and
-        // return the registry feed unchanged.
+        // Plain raw aggregator used as the registry's target for the loan symbol.
         MockChainlinkOracle rawLoanFeed = new MockChainlinkOracle(2_000e8, 8);
         rawLoanFeed.set(1, 2_000e8, 1, block.timestamp, 1);
 
