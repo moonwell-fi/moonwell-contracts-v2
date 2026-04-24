@@ -593,6 +593,30 @@ contract CreateLoanTest is Fixture {
         localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
     }
 
+    function test_createLoan_mTokenDeWhitelistedBetweenPostAndMatch_reverts()
+        public
+    {
+        // Offer posted against the current whitelist…
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        // …then governance yanks the mToken (e.g. Moonwell pauses the
+        // market). The stale offer must not be matcheable.
+        vm.prank(temporalGovernor);
+        localFactory.whitelistMToken(address(mockMToken), false);
+
+        vm.expectRevert(CreditMarketplaceFactory.NotMTokenWhitelisted.selector);
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+    }
+
     function test_createLoan_insufficientLenderBalanceReverts() public {
         (
             uint256 offerId,

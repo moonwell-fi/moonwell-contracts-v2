@@ -660,6 +660,16 @@ contract CreditMarketplaceFactory is
         if (o.expiresAt <= block.timestamp) revert OfferExpired();
         if (r.expiresAt <= block.timestamp) revert RequestExpired();
 
+        /// Re-check the mToken whitelist at match time. postOffer already
+        /// gates it, but governance can remove an mToken between post and
+        /// match (e.g. Moonwell pauses a market, collateral factor drops,
+        /// asset develops a risk concern) — stale offers against a
+        /// de-whitelisted mToken must not become matchable. Collateral
+        /// and principal tokens get the equivalent check via
+        /// `collateralFeeds` / `principalTokenFeeds` inside
+        /// `_checkOriginationLtv` (removal deletes the feed).
+        if (!isMTokenWhitelisted[o.mToken]) revert NotMTokenWhitelisted();
+
         _verifySignatures(o, r, terms, offerSig, requestSig, backendSig);
 
         if (terms.validUntil <= block.timestamp) revert BackendTermsExpired();
