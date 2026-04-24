@@ -1304,6 +1304,81 @@ contract ChainlinkOEVWrapperUnitTest is Test {
             mockMTokenLoan
         );
     }
+
+    /// @notice Defensive fallback: registry returns an OEV wrapper whose
+    ///         priceFeed() resolves to address(0). _resolveRawFeed must
+    ///         ignore the zero inner and return the outer registry feed, so
+    ///         _getLoanTokenPrice reads the outer's own round data.
+    function testLoanPriceFallsBackToOuterWhenInnerIsZero() public {
+        MockOEVWrapperFeed outerWrapper = new MockOEVWrapperFeed(
+            address(0),
+            8,
+            "MOCK_WRAPPER_ZERO_INNER",
+            1
+        );
+        outerWrapper.setLatestRound(1, 1_500e8, 1, block.timestamp, 1);
+
+        string memory loanSymbol = loanToken.symbol();
+        // Only mock getFeed — the MockOEVWrapperFeed exposes its own
+        // priceFeed() state var (returns address(0)), which is the scenario
+        // under test.
+        vm.mockCall(
+            address(1),
+            abi.encodeWithSignature("getFeed(string)", loanSymbol),
+            abi.encode(address(outerWrapper))
+        );
+
+        uint256 priceScaled = harness.exposed_getLoanTokenPrice(
+            EIP20Interface(address(loanToken))
+        );
+
+        // outer's price 1_500e8 @ 8 decimals → 1_500e18
+        assertEq(priceScaled, 1_500e18, "defensive fallback not taken");
+    }
+
+    /// @notice Single-hop deref: _resolveRawFeed must dereference exactly once.
+    ///         If outer.priceFeed() returns middle (which itself is a wrapper
+    ///         with its own priceFeed() pointing at innerInner), we must stop
+    ///         at middle and read middle's round data — not recurse to
+    ///         innerInner.
+    function testDerefIsSingleHop() public {
+        // innerInner — should NEVER be reached.
+        MockChainlinkOracle innerInner = new MockChainlinkOracle(9_999e8, 8);
+        innerInner.set(1, 9_999e8, 1, block.timestamp, 1);
+
+        // middle — the target of the single hop. Its OWN round data is what
+        // we expect to read.
+        MockOEVWrapperFeed middleWrapper = new MockOEVWrapperFeed(
+            address(innerInner),
+            8,
+            "MIDDLE",
+            1
+        );
+        middleWrapper.setLatestRound(1, 4_242e8, 1, block.timestamp, 1);
+
+        // outer — registered in the registry. priceFeed() returns middle.
+        MockOEVWrapperFeed outerWrapper = new MockOEVWrapperFeed(
+            address(middleWrapper),
+            8,
+            "OUTER",
+            1
+        );
+        outerWrapper.setLatestRound(1, 1e8, 1, block.timestamp, 1);
+
+        string memory loanSymbol = loanToken.symbol();
+        vm.mockCall(
+            address(1),
+            abi.encodeWithSignature("getFeed(string)", loanSymbol),
+            abi.encode(address(outerWrapper))
+        );
+
+        uint256 priceScaled = harness.exposed_getLoanTokenPrice(
+            EIP20Interface(address(loanToken))
+        );
+
+        // Must be middle's 4_242e18, NOT innerInner's 9_999e18 and NOT outer's 1e18.
+        assertEq(priceScaled, 4_242e18, "deref took more than one hop");
+    }
 }
 
 /// @notice Mock price feed with configurable decimals for testing
