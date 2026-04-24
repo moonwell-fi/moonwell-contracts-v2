@@ -11,3 +11,5 @@
 @deprecated=deprecated/
 @script=script/
 @crv-rewards=crv-rewards/
+wormhole-sdk/=lib/wormhole-solidity-sdk/src/
+wormhole-solidity-sdk/=lib/wormhole-solidity-sdk/src/
