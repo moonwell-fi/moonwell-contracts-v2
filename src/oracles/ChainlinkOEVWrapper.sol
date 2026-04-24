@@ -599,20 +599,18 @@ contract ChainlinkOEVWrapper is
     ///      returns the inner aggregator. Otherwise returns the input unchanged.
     ///      Deliberately single-hop to avoid recursion and match the registry
     ///      invariant that entries are raw or a single level of wrapping.
-    ///      Uses a low-level staticcall so that both call failure and short/empty
-    ///      return data are handled without propagating a revert.
     function _resolveRawFeed(
         AggregatorV3Interface registryFeed
     ) internal view returns (AggregatorV3Interface) {
-        // selector for IOEVWrapperFeed.priceFeed()
-        (bool success, bytes memory data) = address(registryFeed).staticcall(
-            abi.encodeWithSelector(IOEVWrapperFeed.priceFeed.selector)
-        );
-        if (success && data.length >= 32) {
-            address inner = abi.decode(data, (address));
-            if (inner != address(0)) {
-                return AggregatorV3Interface(inner);
+        try IOEVWrapperFeed(address(registryFeed)).priceFeed() returns (
+            AggregatorV3Interface inner
+        ) {
+            if (address(inner) != address(0)) {
+                return inner;
             }
+        } catch {
+            // registry feed is a raw aggregator (no priceFeed() selector);
+            // fall through and return the input.
         }
         return registryFeed;
     }

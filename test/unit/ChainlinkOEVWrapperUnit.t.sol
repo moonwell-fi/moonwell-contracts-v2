@@ -9,6 +9,7 @@ import {MockOEVWrapperFeed} from "@test/mock/MockOEVWrapperFeed.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {MockERC20Decimals} from "@test/mock/MockERC20Decimals.sol";
+import {IOEVWrapperFeed} from "@protocol/oracles/IOEVWrapperFeed.sol";
 
 contract ChainlinkOEVWrapperUnitTest is Test {
     address public owner = address(0x1);
@@ -64,6 +65,28 @@ contract ChainlinkOEVWrapperUnitTest is Test {
             500,
             3600,
             10
+        );
+    }
+
+    /// @notice Stub both getFeed() on the registry and priceFeed() on the feed
+    ///         address so that _resolveRawFeed's try/catch returns address(0)
+    ///         and falls through to treat the feed as a raw aggregator.
+    function _mockRegistryGetFeed(
+        address registry,
+        string memory symbol,
+        address feed
+    ) internal {
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("getFeed(string)", symbol),
+            abi.encode(feed)
+        );
+        // Stub priceFeed() to return address(0) so _resolveRawFeed's
+        // defensive fallback activates and reads `feed` directly.
+        vm.mockCall(
+            feed,
+            abi.encodeWithSelector(IOEVWrapperFeed.priceFeed.selector),
+            abi.encode(address(0))
         );
     }
 
@@ -516,11 +539,7 @@ contract ChainlinkOEVWrapperUnitTest is Test {
 
         // Mock the loan token price feed
         address mockLoanFeed = address(0x9999);
-        vm.mockCall(
-            address(1),
-            abi.encodeWithSignature("getFeed(string)", loanToken.symbol()),
-            abi.encode(mockLoanFeed)
-        );
+        _mockRegistryGetFeed(address(1), loanToken.symbol(), mockLoanFeed);
         vm.mockCall(
             mockLoanFeed,
             abi.encodeWithSignature("latestRoundData()"),
@@ -595,11 +614,7 @@ contract ChainlinkOEVWrapperUnitTest is Test {
 
         // Mock the loan token price feed
         address mockLoanFeed = address(0x9999);
-        vm.mockCall(
-            address(1),
-            abi.encodeWithSignature("getFeed(string)", loanToken.symbol()),
-            abi.encode(mockLoanFeed)
-        );
+        _mockRegistryGetFeed(address(1), loanToken.symbol(), mockLoanFeed);
         vm.mockCall(
             mockLoanFeed,
             abi.encodeWithSignature("latestRoundData()"),
@@ -665,11 +680,7 @@ contract ChainlinkOEVWrapperUnitTest is Test {
 
         // Mock the loan token price feed
         address mockLoanFeed = address(0x9999);
-        vm.mockCall(
-            address(1),
-            abi.encodeWithSignature("getFeed(string)", loanToken.symbol()),
-            abi.encode(mockLoanFeed)
-        );
+        _mockRegistryGetFeed(address(1), loanToken.symbol(), mockLoanFeed);
         vm.mockCall(
             mockLoanFeed,
             abi.encodeWithSignature("latestRoundData()"),
@@ -757,11 +768,7 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         // - Loan: $100 -> $80 (should be fetched fresh via our fix)
 
         address mockLoanFeed = address(0x9999);
-        vm.mockCall(
-            address(1),
-            abi.encodeWithSignature("getFeed(string)", loanToken.symbol()),
-            abi.encode(mockLoanFeed)
-        );
+        _mockRegistryGetFeed(address(1), loanToken.symbol(), mockLoanFeed);
 
         int256 freshLoanPrice = 80e8;
         vm.mockCall(
@@ -930,11 +937,7 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         mTokenCollateral = new MockMToken(exchangeRate);
 
         address mockLoanFeed = address(0x9999);
-        vm.mockCall(
-            address(1),
-            abi.encodeWithSignature("getFeed(string)", loanToken.symbol()),
-            abi.encode(mockLoanFeed)
-        );
+        _mockRegistryGetFeed(address(1), loanToken.symbol(), mockLoanFeed);
 
         // Mock loan feed with zero answer
         vm.mockCall(
@@ -970,11 +973,7 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         mTokenCollateral = new MockMToken(exchangeRate);
 
         address mockLoanFeed = address(0x9999);
-        vm.mockCall(
-            address(1),
-            abi.encodeWithSignature("getFeed(string)", loanToken.symbol()),
-            abi.encode(mockLoanFeed)
-        );
+        _mockRegistryGetFeed(address(1), loanToken.symbol(), mockLoanFeed);
 
         // Mock loan feed with negative answer
         vm.mockCall(
@@ -1010,11 +1009,7 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         mTokenCollateral = new MockMToken(exchangeRate);
 
         address mockLoanFeed = address(0x9999);
-        vm.mockCall(
-            address(1),
-            abi.encodeWithSignature("getFeed(string)", loanToken.symbol()),
-            abi.encode(mockLoanFeed)
-        );
+        _mockRegistryGetFeed(address(1), loanToken.symbol(), mockLoanFeed);
 
         // Mock loan feed with updatedAt = 0 (incomplete round)
         vm.mockCall(
@@ -1050,11 +1045,7 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         mTokenCollateral = new MockMToken(exchangeRate);
 
         address mockLoanFeed = address(0x9999);
-        vm.mockCall(
-            address(1),
-            abi.encodeWithSignature("getFeed(string)", loanToken.symbol()),
-            abi.encode(mockLoanFeed)
-        );
+        _mockRegistryGetFeed(address(1), loanToken.symbol(), mockLoanFeed);
 
         // Mock loan feed with answeredInRound < roundId (stale price)
         vm.mockCall(
@@ -1090,11 +1081,7 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         mTokenCollateral = new MockMToken(exchangeRate);
 
         address mockLoanFeed = address(0x9999);
-        vm.mockCall(
-            address(1),
-            abi.encodeWithSignature("getFeed(string)", loanToken.symbol()),
-            abi.encode(mockLoanFeed)
-        );
+        _mockRegistryGetFeed(address(1), loanToken.symbol(), mockLoanFeed);
 
         // Mock loan feed with valid data
         vm.mockCall(
