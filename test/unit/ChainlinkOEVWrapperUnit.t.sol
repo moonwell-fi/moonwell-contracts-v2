@@ -1150,7 +1150,9 @@ contract ChainlinkOEVWrapperUnitTest is Test {
     /// @dev Uses vm.mockCall on address(1) (the chainlinkOracle registry slot
     ///      in the harness) because MockChainlinkOracle is a feed mock that
     ///      has no getFeed(string) registry method.
-    function testLoanPriceReadsRawFeedWhenRegistryUnwrapped() public {
+    function testLoanPriceDerefsPriceFeedWhenRegistryEntryIsOEVWrapper()
+        public
+    {
         // Inner (raw) feed: the "fresh" price that the post-fix code must read.
         MockChainlinkOracle rawLoanFeed = new MockChainlinkOracle(2_000e8, 8);
         rawLoanFeed.set(1, 2_000e8, 1, block.timestamp, 1);
