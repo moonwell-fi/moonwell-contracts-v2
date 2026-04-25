@@ -351,6 +351,23 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         emit LoanDefaulted(missedCount, uint64(block.timestamp));
     }
 
+    /// Lender escape hatch when `_settle` is wedged: borrower has paid
+    /// every interest installment on time but the final principal
+    /// payment can't settle (typical cause: Moonwell borrow APR drifted
+    /// above marketplace APR for the term, leaving the clone short of
+    /// `borrowBalanceCurrent`). Without this, a solvent-but-stuck loan
+    /// has no recovery path because the missed-payment route requires
+    /// missed *interest*, not a settlement shortfall. Callable by the
+    /// lender once the principal due date + grace has elapsed.
+    function forceDefault() external override nonReentrant {
+        if (status != LoanStatus.Active) revert LoanNotActive();
+        if (msg.sender != lender) revert OnlyLender();
+        if (block.timestamp <= schedule.principalDueAt + gracePeriod) {
+            revert PaymentNotYetMissed();
+        }
+        _accelerate();
+    }
+
     /// After acceleration, the lender claims all remaining collateral
     /// without per-payment oracle math (§7.6). Status flips Closed; the
     /// Moonwell borrow stays open until the lender unwinds via the

@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin-contracts/contracts/security/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
-import {ECDSA} from "@openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+import {SignatureChecker} from "@openzeppelin-contracts/contracts/utils/cryptography/SignatureChecker.sol";
 import {Clones} from "@openzeppelin-contracts/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -52,7 +52,7 @@ contract CreditMarketplaceFactory is
     error RequestNotActive();
     error OfferExpired();
     error RequestExpired();
-    error InvalidSignature(address expected, address recovered);
+    error InvalidSignature(address signer);
     error InvalidAprBounds();
     error InvalidTermBounds();
     error NotMTokenWhitelisted();
@@ -455,9 +455,14 @@ contract CreditMarketplaceFactory is
             DOMAIN_SEPARATOR,
             CreditTypeHashes.hashOffer(offer)
         );
-        address recovered = ECDSA.recover(digest, signature);
-        if (recovered != offer.lender) {
-            revert InvalidSignature(offer.lender, recovered);
+        if (
+            !SignatureChecker.isValidSignatureNow(
+                offer.lender,
+                digest,
+                signature
+            )
+        ) {
+            revert InvalidSignature(offer.lender);
         }
 
         if (usedNonces[offer.lender][offer.nonce]) revert NonceAlreadyUsed();
@@ -505,9 +510,14 @@ contract CreditMarketplaceFactory is
             DOMAIN_SEPARATOR,
             CreditTypeHashes.hashRequest(request)
         );
-        address recovered = ECDSA.recover(digest, signature);
-        if (recovered != request.borrower) {
-            revert InvalidSignature(request.borrower, recovered);
+        if (
+            !SignatureChecker.isValidSignatureNow(
+                request.borrower,
+                digest,
+                signature
+            )
+        ) {
+            revert InvalidSignature(request.borrower);
         }
 
         if (usedNonces[request.borrower][request.nonce]) {
@@ -541,9 +551,14 @@ contract CreditMarketplaceFactory is
             DOMAIN_SEPARATOR,
             CreditTypeHashes.hashOfferCancel(offerId, o.lender, o.nonce)
         );
-        address recovered = ECDSA.recover(digest, cancelSignature);
-        if (recovered != o.lender) {
-            revert InvalidSignature(o.lender, recovered);
+        if (
+            !SignatureChecker.isValidSignatureNow(
+                o.lender,
+                digest,
+                cancelSignature
+            )
+        ) {
+            revert InvalidSignature(o.lender);
         }
 
         _consumeNonce(o.lender, o.nonce);
@@ -562,9 +577,14 @@ contract CreditMarketplaceFactory is
             DOMAIN_SEPARATOR,
             CreditTypeHashes.hashRequestCancel(requestId, r.borrower, r.nonce)
         );
-        address recovered = ECDSA.recover(digest, cancelSignature);
-        if (recovered != r.borrower) {
-            revert InvalidSignature(r.borrower, recovered);
+        if (
+            !SignatureChecker.isValidSignatureNow(
+                r.borrower,
+                digest,
+                cancelSignature
+            )
+        ) {
+            revert InvalidSignature(r.borrower);
         }
 
         _consumeNonce(r.borrower, r.nonce);
@@ -617,7 +637,15 @@ contract CreditMarketplaceFactory is
         Offer storage o = offers[offerId];
         Request storage r = requests[requestId];
 
-        loanAddress = Clones.clone(creditLoanImplementation);
+        /// Deterministic salt = keccak256(loanNonce). loanNonce is part
+        /// of the signed BackendTerms and unique per match, so the
+        /// clone's address is reorg-stable: a re-execution after a chain
+        /// reorg lands at the same address. Indexers can rely on the
+        /// LoanCreated event's `loanAddress` instead of recomputing.
+        loanAddress = Clones.cloneDeterministic(
+            creditLoanImplementation,
+            keccak256(abi.encode(terms.loanNonce))
+        );
         ICreditLoan(loanAddress).initialize(_buildInitParams(o, r, terms));
 
         IERC20(o.mToken).safeTransferFrom(
@@ -722,27 +750,25 @@ contract CreditMarketplaceFactory is
         bytes calldata backendSig
     ) private view {
         bytes32 d;
-        address recovered;
 
         d = EIP712Lib.hash(DOMAIN_SEPARATOR, CreditTypeHashes.hashOffer(o));
-        recovered = ECDSA.recover(d, offerSig);
-        if (recovered != o.lender) {
-            revert InvalidSignature(o.lender, recovered);
+        if (!SignatureChecker.isValidSignatureNow(o.lender, d, offerSig)) {
+            revert InvalidSignature(o.lender);
         }
 
         d = EIP712Lib.hash(DOMAIN_SEPARATOR, CreditTypeHashes.hashRequest(r));
-        recovered = ECDSA.recover(d, requestSig);
-        if (recovered != r.borrower) {
-            revert InvalidSignature(r.borrower, recovered);
+        if (!SignatureChecker.isValidSignatureNow(r.borrower, d, requestSig)) {
+            revert InvalidSignature(r.borrower);
         }
 
         d = EIP712Lib.hash(
             DOMAIN_SEPARATOR,
             CreditTypeHashes.hashBackendTerms(terms)
         );
-        recovered = ECDSA.recover(d, backendSig);
-        if (recovered != backendSigner) {
-            revert InvalidSignature(backendSigner, recovered);
+        if (
+            !SignatureChecker.isValidSignatureNow(backendSigner, d, backendSig)
+        ) {
+            revert InvalidSignature(backendSigner);
         }
     }
 

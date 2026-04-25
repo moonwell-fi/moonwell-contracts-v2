@@ -271,6 +271,50 @@ contract SettleTest is Fixture {
         clone.makePayment();
     }
 
+    // ─── forceDefault ────────────────────────────────────────────────
+
+    /// Lender escape hatch: borrower paid all interest on time but the
+    /// final payment can't settle (Moonwell APR drift, etc). Without
+    /// forceDefault the loan is stuck Active forever.
+    function test_forceDefault_afterPrincipalGraceElapsed() public {
+        // Pay all interest on time so we land at cursor == numInterestPayments
+        // with status still Active.
+        _payAllInterest();
+        assertEq(clone.paymentCursor(), NUM_INTEREST);
+        assertTrue(clone.status() == LoanStatus.Active);
+
+        vm.warp(principalDueAt + GRACE + 1);
+        vm.prank(lender);
+        clone.forceDefault();
+
+        assertTrue(clone.status() == LoanStatus.Defaulted);
+    }
+
+    function test_forceDefault_beforePrincipalGraceReverts() public {
+        _payAllInterest();
+        vm.warp(principalDueAt + GRACE - 1);
+        vm.prank(lender);
+        vm.expectRevert(CreditLoan.PaymentNotYetMissed.selector);
+        clone.forceDefault();
+    }
+
+    function test_forceDefault_wrongCallerReverts() public {
+        _payAllInterest();
+        vm.warp(principalDueAt + GRACE + 1);
+        vm.prank(borrower);
+        vm.expectRevert(CreditLoan.OnlyLender.selector);
+        clone.forceDefault();
+    }
+
+    function test_forceDefault_notActiveReverts() public {
+        // Loan is Defaulted already; forceDefault should reject.
+        _triggerDefault();
+        vm.warp(principalDueAt + GRACE + 1);
+        vm.prank(lender);
+        vm.expectRevert(CreditLoan.LoanNotActive.selector);
+        clone.forceDefault();
+    }
+
     // ─── seizeAll ────────────────────────────────────────────────────
 
     function _triggerDefault() internal {

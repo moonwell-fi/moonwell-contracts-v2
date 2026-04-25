@@ -274,8 +274,7 @@ contract OrderBookTest is Fixture {
         vm.expectRevert(
             abi.encodeWithSelector(
                 CreditMarketplaceFactory.InvalidSignature.selector,
-                lender,
-                backendSignerEOA
+                lender
             )
         );
         factory.postOffer(offer, sig);
@@ -438,8 +437,7 @@ contract OrderBookTest is Fixture {
         vm.expectRevert(
             abi.encodeWithSelector(
                 CreditMarketplaceFactory.InvalidSignature.selector,
-                borrower,
-                lender
+                borrower
             )
         );
         factory.postRequest(request, sig);
@@ -497,8 +495,7 @@ contract OrderBookTest is Fixture {
         vm.expectRevert(
             abi.encodeWithSelector(
                 CreditMarketplaceFactory.InvalidSignature.selector,
-                lender,
-                backendSignerEOA
+                lender
             )
         );
         factory.cancelOffer(offerId, sig);
@@ -590,8 +587,7 @@ contract OrderBookTest is Fixture {
         vm.expectRevert(
             abi.encodeWithSelector(
                 CreditMarketplaceFactory.InvalidSignature.selector,
-                borrower,
-                lender
+                borrower
             )
         );
         factory.cancelRequest(requestId, sig);

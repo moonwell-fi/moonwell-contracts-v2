@@ -12,6 +12,8 @@ interface ICreditLoan {
 
     function claimMissedPayment() external;
 
+    function forceDefault() external;
+
     function seizeAll() external;
 
     function repayLoanAfterDefault(uint256 repayAmount) external;

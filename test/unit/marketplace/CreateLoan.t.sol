@@ -499,8 +499,7 @@ contract CreateLoanTest is Fixture {
         vm.expectRevert(
             abi.encodeWithSelector(
                 CreditMarketplaceFactory.InvalidSignature.selector,
-                backendSignerEOA,
-                lender
+                backendSignerEOA
             )
         );
         localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
