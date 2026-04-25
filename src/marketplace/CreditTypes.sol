@@ -103,6 +103,7 @@ struct InitParams {
     uint256 principal;
     address collateralToken;
     AggregatorV3Interface collateralChainlinkFeed;
+    AggregatorV3Interface principalChainlinkFeed;
     uint256 collateralAmount;
     uint16 apr;
     uint32 term;

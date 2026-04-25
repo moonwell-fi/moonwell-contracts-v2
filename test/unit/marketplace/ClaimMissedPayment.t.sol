@@ -66,11 +66,13 @@ contract ClaimMissedPaymentTest is Fixture {
 
     CreditLoan internal clone;
     MutableFeed internal feed;
+    MutableFeed internal usdcFeed;
     uint64 internal firstDueAt;
 
     function setUp() public override {
         super.setUp();
         feed = new MutableFeed(1e13, 8); // cbBTC @ $100k
+        usdcFeed = new MutableFeed(1e8, 8); // USDC @ $1
         firstDueAt = uint64(block.timestamp + INTERVAL);
 
         clone = new CreditLoan();
@@ -99,6 +101,11 @@ contract ClaimMissedPaymentTest is Fixture {
         p.principal = PRINCIPAL;
         p.collateralToken = cbbtc;
         p.collateralChainlinkFeed = AggregatorV3Interface(address(feed));
+        // Separate feed for the principal side — pegged at $1 so the
+        // seize math computes against a stable USDC reference. Tests
+        // that simulate a principal depeg can `usdcFeed.setAnswer(...)`
+        // before calling claimMissedPayment.
+        p.principalChainlinkFeed = AggregatorV3Interface(address(usdcFeed));
         p.collateralAmount = collateral;
         p.apr = 800;
         p.term = 30 days;
@@ -134,10 +141,16 @@ contract ClaimMissedPaymentTest is Fixture {
         deal(usdc, address(clone), PRINCIPAL);
     }
 
+    function _refreshFeeds() internal {
+        feed.setUpdatedAt(block.timestamp);
+        usdcFeed.setUpdatedAt(block.timestamp);
+    }
+
     function _warpPastGrace(uint32 cursor) internal {
         uint64 dueAt = firstDueAt + uint64(cursor) * INTERVAL;
         vm.warp(dueAt + GRACE + 1);
-        feed.setUpdatedAt(block.timestamp); // keep feed fresh
+        feed.setUpdatedAt(block.timestamp); // collateral feed
+        usdcFeed.setUpdatedAt(block.timestamp); // principal feed
     }
 
     // ─── tests ────────────────────────────────────────────────────────
@@ -162,6 +175,23 @@ contract ClaimMissedPaymentTest is Fixture {
         assertTrue(clone.status() == LoanStatus.Active);
     }
 
+    /// Depeg scenario: principal token (USDC) drops to $0.50. The
+    /// missed payment's USD value drops 50% in the seize math, so the
+    /// lender seizes proportionally less collateral — protects the
+    /// borrower from over-seizure during a USDC depeg event. Previously
+    /// (before the principal feed wire-up) the seize math hardcoded
+    /// $1 and would have over-seized 2x.
+    function test_claimMissedPayment_principalDepegHalvesSeize() public {
+        _warpPastGrace(0);
+        usdcFeed.setAnswer(5e7); // $0.50, half-peg
+
+        // Was 12_000 at $1; at $0.50 missed-USD halves so seize halves.
+        uint256 expectedSeize = 6_000;
+
+        clone.claimMissedPayment();
+        assertEq(clone.seizedCollateralAmount(), expectedSeize);
+    }
+
     function test_claimMissedPayment_anyoneCanCall() public {
         _warpPastGrace(0);
         address keeper = makeAddr("keeper");
@@ -180,7 +210,7 @@ contract ClaimMissedPaymentTest is Fixture {
 
     function test_claimMissedPayment_withinGraceReverts() public {
         vm.warp(firstDueAt + GRACE - 1);
-        feed.setUpdatedAt(block.timestamp);
+        _refreshFeeds();
 
         vm.expectRevert(CreditLoan.PaymentNotYetMissed.selector);
         clone.claimMissedPayment();
@@ -207,12 +237,13 @@ contract ClaimMissedPaymentTest is Fixture {
         for (uint32 i = 0; i < NUM_INTEREST; i++) {
             vm.warp(firstDueAt + uint64(i) * INTERVAL + GRACE + 1);
             feed.setUpdatedAt(block.timestamp);
+            usdcFeed.setUpdatedAt(block.timestamp);
             fresh.claimMissedPayment();
         }
         assertEq(fresh.paymentCursor(), NUM_INTEREST);
 
         vm.warp(firstDueAt + uint64(NUM_INTEREST) * INTERVAL + GRACE + 1);
-        feed.setUpdatedAt(block.timestamp);
+        _refreshFeeds();
         vm.expectRevert(CreditLoan.PastInterestPhase.selector);
         fresh.claimMissedPayment();
     }

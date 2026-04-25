@@ -348,11 +348,15 @@ contract CreditMarketplaceIntegration is Test, Signers {
     /// is real; we just re-stamp `updatedAt` to the current block so the
     /// staleness check inside claimMissedPayment passes.
     function _refreshOracle() internal {
-        (uint80 r, int256 a, uint256 s, , uint80 ar) = AggregatorV3Interface(
-            btcUsdFeed
-        ).latestRoundData();
+        _restampFeed(btcUsdFeed);
+        _restampFeed(usdcOracle);
+    }
+
+    function _restampFeed(address f) internal {
+        (uint80 r, int256 a, uint256 s, , uint80 ar) = AggregatorV3Interface(f)
+            .latestRoundData();
         vm.mockCall(
-            btcUsdFeed,
+            f,
             abi.encodeWithSelector(
                 AggregatorV3Interface.latestRoundData.selector
             ),

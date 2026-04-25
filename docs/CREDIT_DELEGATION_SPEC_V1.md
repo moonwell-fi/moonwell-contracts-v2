@@ -505,12 +505,29 @@ struct Offer {
   uint32 minTerm; // seconds; backend's term must be ≥ this
   uint32 maxTerm; // seconds; backend's term must be ≤ this
   address[] acceptedCollateral; // whitelist of collateral tokens the lender will accept
-  uint16 minBorrowerCreditTier; // lender's floor on counterparty tier (0 = anyone)
+  uint16 minBorrowerCreditTier; // lender's floor on counterparty tier (0 = anyone); see §4.2.1
   uint64 expiresAt; // unix seconds; offer is auto-dead after this
   uint256 nonce; // lender-chosen unique value; prevents replay
   OfferStatus status; // NOT part of OFFER_TYPEHASH — stamped Active by the factory at post time
 }
 ```
+
+#### 4.2.1 Credit-tier scale (off-chain convention)
+
+`minBorrowerCreditTier` and `BackendTerms.borrowerCreditTier` are opaque
+`uint16`s on-chain — the factory enforces only `terms.tier >= offer.minTier` at
+match time. The numeric scale is owned by the credit bureau (`lunar-indexer`):
+
+- `0` — unrated / "anyone" (lender accepts any counterparty)
+- `1` — lowest verifiable rating (e.g., new wallet, no history)
+- `1_000` — highest rating (long history, perfect repayment record)
+- Intermediate values scale linearly; the bureau publishes the computation
+  alongside the indexer schema.
+
+Frontends should surface tier values with the bureau's human-readable labels
+(e.g., "Tier 850 — Excellent"); backends pricing offers should treat tier as a
+continuous quality signal when computing APR. Changes to the scale are a
+coordinated bureau + backend update — not a contract change.
 
 ### 4.3 `Request`
 
@@ -928,11 +945,15 @@ Offers and requests can be canceled before consumption via `cancelOffer` /
 
 ### 5.7 Signature format
 
-All signatures are 65 bytes (EIP-2098 compact sigs are fine to accept —
-OpenZeppelin's ECDSA handles both). `ecrecover`-compatible. Smart-account
-signers (EIP-1271) are **out of scope for MVP** — only EOAs (the lender and
-borrower must be EOAs, and the backend must be an EOA). Supporting EIP-1271 is a
-phase-2 enhancement.
+All signatures are routed through OpenZeppelin's
+`SignatureChecker.isValidSignatureNow`, which handles both **65-byte ECDSA sigs
+from EOAs** and **EIP-1271 contract sigs from smart accounts**. EIP-2098 compact
+sigs are accepted in the EOA branch. Lender, borrower, and backend signer can
+each be either an EOA or a contract — a Gnosis Safe-as-lender or a
+multisig-as-backend signs by implementing `isValidSignature(hash, sig)` per
+EIP-1271. The factory's `InvalidSignature(address signer)` error reports the
+expected signer on failure (no `recovered` debug field, since EIP-1271 doesn't
+expose one).
 
 ---
 
@@ -1959,9 +1980,12 @@ depends on the factory's state nonce at the moment of deployment. If a match is
 reorg'd out, the address may differ on re-execution. Events carry the actual
 clone address, so indexers will resolve correctly.
 
-Consider `Clones.cloneDeterministic(salt)` with
-`salt = keccak256(abi.encode(loanId, backendTerms.loanNonce))` for reorg-stable
-addresses if the indexer benefits from this. Optional.
+Implementation uses
+`Clones.cloneDeterministic(creditLoanImplementation, keccak256(abi.encode(terms.loanNonce)))`.
+The loanNonce is part of the signed `BackendTerms`, monotonic per backend
+signer, and unique per match — so a re-execution after a chain reorg lands at
+the same address. Indexers (`lunar-indexer`) can subscribe to the clone using
+the `LoanCreated` event's `loanAddress` without reorg-churn worries.
 
 ### 12.9 Spam and griefing
 
@@ -1971,15 +1995,51 @@ addresses if the indexer benefits from this. Optional.
   mapping is keyed on the signer address, and attackers can't sign as someone
   else
 
-### 12.10 Liquidator opportunity
+### 12.10 Liquidator opportunity (lender's principal risk)
 
-If a clone's Moonwell health drops below 1.0, an external Moonwell liquidator
-can seize its collateral (which is the lender's mTokens — not the borrower's
-non-Moonwell collateral). This is a real risk to the lender. Mitigations:
+This is the **biggest non-default risk surface for the lender** and deserves
+explicit treatment, not a footnote.
 
-- Lender's own `minBorrowerCreditTier` filter lets them refuse risky borrowers
-- Over-seizure on missed payments helps compensate
-- Governance can exclude mTokens with volatile collateral factors
+If the clone's Moonwell health drops below 1.0 — driven by oracle moves,
+collateral-factor changes, or interest accrual outpacing buffer — an external
+Moonwell liquidator can seize the clone's mToken balance (the lender's pledge)
+at the discount Moonwell hardcodes (typically 8–10%). The borrower's
+non-Moonwell collateral is in escrow on the clone and untouched by this; only
+the lender bears the loss. Default unwinding (§7.6) is also untouched — the
+borrower can still pay the loan and recover their collateral; the lender just
+ends up with fewer mTokens than they pledged.
+
+**Quantifying it**: a 10% liquidation discount on a fully-pledged position means
+the lender loses up to 10% of `mTokenAmount`. That's the _worst case_ for a
+single liquidation event; partial liquidations are bounded by Moonwell's
+per-call seize size.
+
+**Mitigations layered into the protocol**:
+
+- **`minBorrowerCreditTier` on Offer.** Lender refuses low-tier counterparties,
+  which the bureau scores partly on collateral volatility expectations.
+- **Conservative `mTokenAmount` vs `principal`.** The backend's pricing engine
+  should leave headroom against Moonwell's collateral factor — e.g., for a 75%
+  CF, only borrow ≤ 50% of the pledged collateral's USD value. This is a backend
+  contract, not on-chain.
+- **Onchain LTV check (§7.3) + APR floor (§7.3 last block).** Both push the loan
+  further from the liquidation threshold at origination.
+- **Over-seizure on missed payments.** When the borrower misses,
+  `claimMissedPayment` seizes `missed × (1 + overSeizureBps)` worth of
+  collateral. Some of that excess offsets Moonwell drift.
+- **Pause guardian.** During acute oracle/CF changes that threaten many active
+  loans simultaneously, the guardian can pause the factory in one tx —
+  origination stops while in-flight loans run out (or are resolved by lenders
+  via `forceDefault` if needed).
+- **Governance can exclude mTokens with volatile collateral factors** via
+  `whitelistMToken(mToken, false, 0)` — kills new matches against that mToken;
+  existing loans run to completion.
+
+**Open ops question** for the integration handoff: should the backend pricing
+engine pre-compute the borrower's max safe principal _on each match_ using live
+Moonwell collateral factor, or rely on governance to cap aggressively at
+whitelist time? The former is more adaptive; the latter is more conservative.
+Decision affects backend complexity, not the contract.
 
 ### 12.11 Borrowing caps
 

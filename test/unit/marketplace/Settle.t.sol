@@ -44,6 +44,10 @@ contract MockSettleMToken is ERC20 {
         return borrowOf[account];
     }
 
+    function borrowRatePerTimestamp() external pure returns (uint256) {
+        return 0;
+    }
+
     /// Honors Moonwell's type(uint).max full-repay sentinel.
     function repayBorrowBehalf(
         address borrower_,
@@ -152,6 +156,7 @@ contract SettleTest is Fixture {
         p.principal = PRINCIPAL;
         p.collateralToken = cbbtc;
         p.collateralChainlinkFeed = AggregatorV3Interface(address(feed));
+        p.principalChainlinkFeed = AggregatorV3Interface(address(feed));
         p.collateralAmount = COLLATERAL_AMOUNT;
         p.apr = 800;
         p.term = 30 days;

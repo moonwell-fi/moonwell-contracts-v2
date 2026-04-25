@@ -68,6 +68,8 @@ interface ICreditMarketplaceFactory {
 
     function setMinOriginationLtvBufferBps(uint16 bufferBps) external;
 
+    function setAprFloorBufferBps(uint16 bufferBps) external;
+
     function setDefaultParams(
         uint32 gracePeriod,
         uint16 overSeizureBps,

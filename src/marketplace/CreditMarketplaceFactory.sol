@@ -25,6 +25,11 @@ interface IMErc20Underlying {
     function underlying() external view returns (address);
 }
 
+interface IMTokenBorrowRate {
+    /// Compound v2 / Moonwell per-timestamp borrow rate, scaled to 1e18.
+    function borrowRatePerTimestamp() external view returns (uint256);
+}
+
 contract CreditMarketplaceFactory is
     ICreditMarketplaceFactory,
     Ownable,
@@ -65,6 +70,10 @@ contract CreditMarketplaceFactory is
     error InsufficientLenderBalance();
     error InsufficientCollateral(uint256 haveUsd1e18, uint256 requiredUsd1e18);
     error BoundsViolation(bytes32 which);
+    error MarketplaceAprBelowMoonwellFloor(
+        uint256 marketplaceRatePerSec,
+        uint256 minRequiredRatePerSec
+    );
 
     event BackendSignerUpdated(
         address indexed previousSigner,
@@ -100,6 +109,7 @@ contract CreditMarketplaceFactory is
         address indexed previousGuardian,
         address indexed newGuardian
     );
+    event AprFloorBufferBpsUpdated(uint16 previous, uint16 updated);
     event OfferPosted(
         uint256 indexed offerId,
         address indexed lender,
@@ -157,6 +167,12 @@ contract CreditMarketplaceFactory is
 
     uint32 public stalenessWindow;
     uint16 public minOriginationLtvBufferBps;
+    /// Required margin between marketplace APR and Moonwell's borrow APR
+    /// at match time, in bps. Marketplace per-second rate must be at
+    /// least `moonwellRate * (10_000 + bufferBps) / 10_000` for a match
+    /// to succeed; otherwise `_settle` would risk reverting
+    /// InsufficientPrincipalForRepay over the loan term.
+    uint16 public aprFloorBufferBps;
     uint32 public defaultGracePeriod;
     uint16 public defaultOverSeizureBps;
     uint16 public defaultConsecutiveMissesForDefault;
@@ -338,6 +354,19 @@ contract CreditMarketplaceFactory is
         uint16 previous = minOriginationLtvBufferBps;
         minOriginationLtvBufferBps = bufferBps;
         emit MinOriginationLtvBufferBpsUpdated(previous, bufferBps);
+    }
+
+    /// Capped at 10_000 bps (100%) — marketplace APR must be no more
+    /// than 2× Moonwell's borrow APR. 0 disables the floor (allow
+    /// marketplace APR == Moonwell APR, which would still typically
+    /// settle but with razor-thin margin).
+    function setAprFloorBufferBps(
+        uint16 bufferBps
+    ) external override onlyOwner {
+        if (bufferBps > MAX_LTV_BUFFER_BPS) revert InvalidBufferBps();
+        uint16 previous = aprFloorBufferBps;
+        aprFloorBufferBps = bufferBps;
+        emit AprFloorBufferBpsUpdated(previous, bufferBps);
     }
 
     function setDefaultParams(
@@ -737,6 +766,32 @@ contract CreditMarketplaceFactory is
         }
 
         _checkOriginationLtv(o, r, terms);
+        _checkAprFloor(o.mToken, terms.apr);
+    }
+
+    /// Marketplace per-second rate must clear Moonwell's current borrow
+    /// rate plus `aprFloorBufferBps`. Without this, a loan can run the
+    /// full term and still revert at `_settle` because the clone's
+    /// principalToken balance is short of `borrowBalanceCurrent` —
+    /// recoverable via `forceDefault` + the unwind helpers, but ugly UX.
+    function _checkAprFloor(
+        address mToken,
+        uint16 marketplaceAprBps
+    ) private view {
+        uint256 moonwellRatePerSec = IMTokenBorrowRate(mToken)
+            .borrowRatePerTimestamp();
+        /// Convert marketplace APR (bps, annual) → per-second rate
+        /// scaled to 1e18: bps × 1e14 ÷ secondsPerYear.
+        uint256 marketplaceRatePerSec = (uint256(marketplaceAprBps) * 1e14) /
+            365 days;
+        uint256 minRequired = (moonwellRatePerSec *
+            (10_000 + aprFloorBufferBps)) / 10_000;
+        if (marketplaceRatePerSec < minRequired) {
+            revert MarketplaceAprBelowMoonwellFloor(
+                marketplaceRatePerSec,
+                minRequired
+            );
+        }
     }
 
     /// Split out of createLoan to keep the stack shallow under
@@ -879,6 +934,7 @@ contract CreditMarketplaceFactory is
         p.principal = terms.principal;
         p.collateralToken = r.collateralToken;
         p.collateralChainlinkFeed = collateralFeeds[r.collateralToken];
+        p.principalChainlinkFeed = principalTokenFeeds[o.principalToken];
         p.collateralAmount = r.collateralAmount;
         p.apr = terms.apr;
         p.term = terms.term;

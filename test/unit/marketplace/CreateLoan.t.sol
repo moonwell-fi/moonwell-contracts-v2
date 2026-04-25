@@ -42,6 +42,12 @@ contract MockMToken is ERC20 {
         IERC20(underlying).transfer(msg.sender, amount);
         return 0;
     }
+    /// Floor check needs a per-second borrow rate. Returning 0 means
+    /// any positive marketplace APR clears the floor — fine for unit
+    /// tests that don't exercise the floor branch.
+    function borrowRatePerTimestamp() external pure returns (uint256) {
+        return 0;
+    }
 }
 
 contract MockPriceFeed {
@@ -593,6 +599,43 @@ contract CreateLoanTest is Fixture {
         bytes memory bSig = _signedTerms(t);
 
         vm.expectRevert();
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+    }
+
+    function test_createLoan_aprBelowMoonwellFloor_reverts() public {
+        // Governance sets a 10% margin requirement.
+        vm.prank(temporalGovernor);
+        localFactory.setAprFloorBufferBps(1_000);
+
+        // Mock the mToken to return a borrow rate equal to the
+        // marketplace's APR — fails the 10% buffer.
+        uint256 marketplaceRatePerSec = (uint256(800) * 1e14) / 365 days;
+        vm.mockCall(
+            address(mockMToken),
+            abi.encodeWithSignature("borrowRatePerTimestamp()"),
+            abi.encode(marketplaceRatePerSec)
+        );
+
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CreditMarketplaceFactory
+                    .MarketplaceAprBelowMoonwellFloor
+                    .selector,
+                marketplaceRatePerSec,
+                (marketplaceRatePerSec * 11_000) / 10_000
+            )
+        );
         localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
     }
 

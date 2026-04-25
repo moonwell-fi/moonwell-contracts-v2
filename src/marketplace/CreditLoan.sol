@@ -74,6 +74,7 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     uint256 public principal;
     address public collateralToken;
     AggregatorV3Interface public collateralChainlinkFeed;
+    AggregatorV3Interface public principalChainlinkFeed;
     uint256 public collateralAmount;
     uint16 public apr;
     uint32 public term;
@@ -118,6 +119,7 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         principal = params.principal;
         collateralToken = params.collateralToken;
         collateralChainlinkFeed = params.collateralChainlinkFeed;
+        principalChainlinkFeed = params.principalChainlinkFeed;
         collateralAmount = params.collateralAmount;
         apr = params.apr;
         term = params.term;
@@ -318,32 +320,51 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         }
     }
 
-    /// Priced per spec §7.5: treats principalToken as 1 USD at its own
-    /// decimals (MVP assumes USDC-class stables). Non-stable principals
-    /// would require a principal-side feed in InitParams — out of scope
-    /// here.
+    /// Prices both sides through real Chainlink feeds — the principal
+    /// side via `principalChainlinkFeed` (no longer a $1-stablecoin
+    /// assumption), the collateral side via `collateralChainlinkFeed`.
+    /// During a depeg event (USDC → $0.50, etc.) the missed payment's
+    /// real USD value drops in lockstep, so the seize math stays
+    /// proportional and the lender doesn't end up with collateral
+    /// worth far more or far less than the actual missed obligation.
     function _computeSeizeAmount() internal view returns (uint256) {
+        // Missed amount in USD via the principal feed.
+        uint256 missedUsd1e18 = _priceUsd1e18(
+            principalToken,
+            schedule.interestAmountPerPayment,
+            principalChainlinkFeed
+        );
+        uint256 seizeUsd1e18 = (missedUsd1e18 * (10_000 + overSeizureBps)) /
+            10_000;
+
+        // Inverse: USD → collateral units.
         (, int256 answer, , uint256 updatedAt, ) = collateralChainlinkFeed
             .latestRoundData();
         if (answer <= 0) revert InvalidOraclePrice();
         if (block.timestamp - updatedAt > stalenessWindow) {
             revert StaleOraclePrice();
         }
-
-        uint256 feedDecimals = collateralChainlinkFeed.decimals();
         uint256 collateralPriceUsd1e18 = uint256(answer) *
-            (10 ** (18 - feedDecimals));
-
-        uint256 principalDecimals = IERC20Metadata(principalToken).decimals();
-        uint256 missedUsd1e18 = (schedule.interestAmountPerPayment * 1e18) /
-            (10 ** principalDecimals);
-        uint256 seizeUsd1e18 = (missedUsd1e18 * (10_000 + overSeizureBps)) /
-            10_000;
-
+            (10 ** (18 - collateralChainlinkFeed.decimals()));
         uint256 collateralDecimals = IERC20Metadata(collateralToken).decimals();
         return
             (seizeUsd1e18 * (10 ** collateralDecimals)) /
             collateralPriceUsd1e18;
+    }
+
+    function _priceUsd1e18(
+        address token,
+        uint256 amount,
+        AggregatorV3Interface feed
+    ) internal view returns (uint256) {
+        (, int256 answer, , uint256 updatedAt, ) = feed.latestRoundData();
+        if (answer <= 0) revert InvalidOraclePrice();
+        if (block.timestamp - updatedAt > stalenessWindow) {
+            revert StaleOraclePrice();
+        }
+        uint256 priceUsd1e18 = uint256(answer) * (10 ** (18 - feed.decimals()));
+        uint256 tokenDecimals = IERC20Metadata(token).decimals();
+        return (amount * priceUsd1e18) / (10 ** tokenDecimals);
     }
 
     function _accelerate() internal {
