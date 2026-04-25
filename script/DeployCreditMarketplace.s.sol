@@ -8,6 +8,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 import {CreditLoan} from "@protocol/marketplace/CreditLoan.sol";
 import {CreditMarketplaceFactory} from "@protocol/marketplace/CreditMarketplaceFactory.sol";
+import {CreditTierRegistry} from "@protocol/marketplace/CreditTierRegistry.sol";
 
 /// Deploys the Credit Marketplace per spec §14. Chain-specific addresses
 /// (Temporal Governor, Unitroller, Pause Guardian) come from
@@ -38,9 +39,22 @@ contract DeployCreditMarketplace is Script {
     address internal constant FEE_RECIPIENT =
         address(0xfEE0000000000000000000000000000000000002);
 
+    /// PLACEHOLDER — Safe / EOA that owns the CreditTierRegistry and
+    /// can call `setTier`. MUST be distinct from BACKEND_SIGNER:
+    /// the whole point of the two-key separation is that a backend
+    /// compromise can't simultaneously elevate borrowers in the
+    /// registry. Replace with the Moonwell credit-bureau ops key
+    /// before any mainnet deploy.
+    address internal constant TIER_REGISTRY_OWNER =
+        address(0xC0DE000000000000000000000000000000000003);
+
     function run()
         external
-        returns (CreditLoan loanImpl, CreditMarketplaceFactory factory)
+        returns (
+            CreditLoan loanImpl,
+            CreditMarketplaceFactory factory,
+            CreditTierRegistry tierRegistry
+        )
     {
         Addresses addresses = new Addresses();
 
@@ -51,23 +65,27 @@ contract DeployCreditMarketplace is Script {
         vm.startBroadcast();
 
         loanImpl = new CreditLoan();
+        tierRegistry = new CreditTierRegistry(TIER_REGISTRY_OWNER);
         factory = new CreditMarketplaceFactory(
             temporalGovernor,
             comptroller,
             address(loanImpl),
             BACKEND_SIGNER,
             FEE_RECIPIENT,
-            pauseGuardian
+            pauseGuardian,
+            address(tierRegistry)
         );
 
         vm.stopBroadcast();
 
         console.log("CreditLoan implementation:", address(loanImpl));
+        console.log("CreditTierRegistry:", address(tierRegistry));
         console.log("CreditMarketplaceFactory:", address(factory));
         console.log("Owner (temporal governor):", temporalGovernor);
         console.log("Comptroller (unitroller proxy):", comptroller);
         console.log("Pause guardian:", pauseGuardian);
         console.log("Backend signer:", BACKEND_SIGNER);
         console.log("Fee recipient:", FEE_RECIPIENT);
+        console.log("Tier registry owner:", TIER_REGISTRY_OWNER);
     }
 }

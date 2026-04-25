@@ -174,7 +174,8 @@ contract SettleTest is Fixture {
         p.marketplaceFeeBps = FEE_BPS;
         p.feeRecipient = feeRecipient;
         p.comptrollerAddr = unitroller;
-        p.stalenessWindow = 3_600;
+        p.collateralFeedStaleness = 3_600;
+        p.principalFeedStaleness = 3_600;
     }
 
     function _payAllInterest() internal {

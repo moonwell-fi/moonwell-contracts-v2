@@ -1,0 +1,50 @@
+name: Credit Marketplace
+
+on: [pull_request]
+
+env:
+  FOUNDRY_PROFILE: ci
+  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+
+jobs:
+  marketplace-unit-tests:
+    name: Marketplace Unit Tests
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Run Marketplace Unit Tests
+        uses: nick-fields/retry@v3
+        with:
+          polling_interval_seconds: 30
+          retry_wait_seconds: 60
+          timeout_minutes: 20
+          max_attempts: 3
+          command: time forge test --match-path 'test/unit/marketplace/*' -vvv
+
+  marketplace-integration-tests:
+    name: Marketplace Integration Tests
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Run Marketplace Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+          polling_interval_seconds: 30
+          retry_wait_seconds: 60
+          timeout_minutes: 30
+          max_attempts: 3
+          command: time forge test --match-path 'test/integration/marketplace/*' --fork-url base -vvv

@@ -75,9 +75,16 @@ contract CreateLoanTest is Fixture {
         address indexed loanAddress,
         address indexed lender,
         address borrower,
+        address mToken,
+        uint256 mTokenAmount,
+        address principalToken,
         uint256 principal,
+        address collateralToken,
+        uint256 collateralAmount,
         uint16 apr,
-        uint32 term
+        uint32 term,
+        uint16 marketplaceFeeBps,
+        uint64 principalDueAt
     );
 
     MockComptroller internal mockComptroller;
@@ -109,23 +116,28 @@ contract CreateLoanTest is Fixture {
             address(localImpl),
             backendSignerEOA,
             feeRecipient,
-            pauseGuardian
+            pauseGuardian,
+            address(tierRegistry)
         );
 
         vm.startPrank(temporalGovernor);
+        // setStalenessWindow first because whitelist setters reject any
+        // per-feed staleness above the global cap.
+        localFactory.setStalenessWindow(3_600);
         // whitelistMToken also registers the underlying's feed — one
         // call where the old interface needed two.
         localFactory.whitelistMToken(
             address(mockMToken),
             true,
-            AggregatorV3Interface(address(usdcFeed))
+            AggregatorV3Interface(address(usdcFeed)),
+            3_600
         );
         localFactory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(address(cbbtcFeed))
+            AggregatorV3Interface(address(cbbtcFeed)),
+            3_600
         );
-        localFactory.setStalenessWindow(3_600);
         localFactory.setMinOriginationLtvBufferBps(1_000);
         vm.stopPrank();
 
@@ -327,15 +339,28 @@ contract CreateLoanTest is Fixture {
         ) = _postMatchable(1, 2);
         BackendTerms memory t = _terms(3);
 
-        vm.expectEmit(true, false, true, false, address(localFactory));
+        // Match all topics (loanId, loanAddress, lender) and full data:
+        // mToken, mTokenAmount, principalToken, principal, collateralToken,
+        // collateralAmount, apr, term, marketplaceFeeBps, principalDueAt.
+        // loanAddress is the deterministic clone — match-by-topic with
+        // checkData=true only when we know the address; here we leave
+        // topic[1] unchecked and rely on the structural match elsewhere.
+        vm.expectEmit(true, false, true, true, address(localFactory));
         emit LoanCreated(
             0,
-            address(0),
+            address(0), // unchecked (topic[1] not matched)
             lender,
             borrower,
+            address(mockMToken),
+            M_TOKEN_AMOUNT,
+            usdc,
             PRINCIPAL,
+            cbbtc,
+            COLLATERAL_AMOUNT,
             800,
-            30 days
+            30 days,
+            500,
+            t.schedule.principalDueAt
         );
 
         localFactory.createLoan(
@@ -578,13 +603,78 @@ contract CreateLoanTest is Fixture {
         localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
     }
 
+    /// Backend signs a higher tier than the registry holds for the
+    /// borrower. Factory must reject — this is the post-backend-compromise
+    /// mitigation: even with a stolen signing key, an attacker can't elevate
+    /// a borrower beyond their registry tier without also compromising the
+    /// registry owner.
+    function test_createLoan_borrowerTierAboveRegistryReverts() public {
+        // Registry holds tier=3 for borrower; backend signs tier=10.
+        vm.prank(tierRegistryOwner);
+        tierRegistry.setTier(borrower, 3);
+
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        t.borrowerCreditTier = 10;
+
+        // Precompute sigs BEFORE expectRevert — argument evaluation
+        // would otherwise consume the "next call" the cheatcode is
+        // watching for and the assertion would fire on a static call.
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CreditMarketplaceFactory.BorrowerTierMismatch.selector,
+                uint16(10),
+                uint16(3)
+            )
+        );
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+    }
+
+    /// Registry tier matches signed tier and clears the offer minimum →
+    /// match succeeds. Verifies the registry path doesn't break the
+    /// happy case when wired correctly.
+    function test_createLoan_borrowerTierMatchesRegistryAndOfferMin() public {
+        vm.prank(tierRegistryOwner);
+        tierRegistry.setTier(borrower, 7);
+
+        Offer memory o = _offer(1);
+        o.minBorrowerCreditTier = 5; // registry's 7 clears this
+        uint256 offerId = localFactory.postOffer(o, _offerSig(o));
+
+        Request memory r = _request(2);
+        uint256 requestId = localFactory.postRequest(r, _requestSig(r));
+
+        BackendTerms memory t = _terms(3);
+        t.borrowerCreditTier = 7;
+
+        (uint256 loanId, ) = localFactory.createLoan(
+            offerId,
+            requestId,
+            t,
+            _offerSig(o),
+            _requestSig(r),
+            _signedTerms(t)
+        );
+        assertEq(loanId, 0);
+    }
+
     function test_createLoan_undercollateralizedReverts() public {
         MockPriceFeed cheapFeed = new MockPriceFeed(1e6, 8); // $0.01
         vm.prank(temporalGovernor);
         localFactory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(address(cheapFeed))
+            AggregatorV3Interface(address(cheapFeed)),
+            3_600
         );
 
         (
@@ -660,7 +750,8 @@ contract CreateLoanTest is Fixture {
         localFactory.whitelistMToken(
             address(mockMToken),
             false,
-            AggregatorV3Interface(address(0))
+            AggregatorV3Interface(address(0)),
+            0
         );
 
         vm.expectRevert(CreditMarketplaceFactory.NotMTokenWhitelisted.selector);

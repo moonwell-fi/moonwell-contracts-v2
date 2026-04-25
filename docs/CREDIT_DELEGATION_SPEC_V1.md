@@ -599,6 +599,54 @@ struct BackendTerms {
 }
 ```
 
+**Tier registry cross-check.** `borrowerCreditTier` is also stored onchain via
+the `CreditTierRegistry` contract (§4.7), and `createLoan` enforces strict
+equality between the signed value and the registry's current value plus the
+offer's `minBorrowerCreditTier`. This neutralises a backend-key compromise: even
+with a stolen signing key, an attacker cannot elevate a borrower onto offers
+requiring tier ≥ minTier without also compromising the registry-owner key.
+
+### 4.7 `CreditTierRegistry`
+
+Standalone `Ownable2Step` contract owned by a Safe / EOA distinct from the
+BackendTerms signer. Stores a `mapping(address => uint16) tier` plus a batch
+`setTiers` admin for periodic syncs from the off-chain credit bureau
+(lunar-indexer). The factory holds an immutable reference to the registry and
+reads `tier(borrower)` at match time.
+
+```solidity
+contract CreditTierRegistry is Ownable2Step {
+  mapping(address => uint16) public tier;
+  function setTier(address borrower, uint16 newTier) external onlyOwner;
+  function setTiers(address[] calldata, uint16[] calldata) external onlyOwner;
+}
+```
+
+Two-key separation is the security property: any single-key compromise (backend
+or registry) is insufficient to misuse a higher-tier offer.
+
+### 4.8 `FeedConfig` (per-feed staleness)
+
+The factory stores collateral and principal feeds in a packed struct that
+bundles each feed with its own staleness window. Chainlink heartbeats vary by
+asset (BTC/USD ≈ 1h, USDC/USD ≈ 24h), so a single factory-wide window can't be
+tight enough for one and loose enough for the other without compromise.
+
+```solidity
+struct FeedConfig {
+    AggregatorV3Interface feed;
+    uint32 staleness;
+}
+mapping(address => FeedConfig) public collateralFeeds;
+mapping(address => FeedConfig) public principalTokenFeeds;
+```
+
+Per-feed staleness is set at whitelist time (`whitelistMToken` /
+`whitelistCollateralToken`) and capped by the factory's `stalenessWindow` global
+(which now functions as a max-cap, not a single value). The clone snapshots the
+per-feed values into `collateralFeedStaleness` and `principalFeedStaleness` at
+originate time, replacing the old single-window field.
+
 ### 4.6 Per-loan state (lives on the clone)
 
 ```solidity
@@ -611,6 +659,7 @@ address public principalToken;
 uint256 public principal;
 address public collateralToken;
 AggregatorV3Interface public collateralChainlinkFeed;
+AggregatorV3Interface public principalChainlinkFeed;
 uint256 public collateralAmount;
 uint16 public apr;
 uint32 public term;
@@ -623,7 +672,12 @@ address public feeRecipient;
 address public factory;
 address public backendSignerAtOrigination;   // snapshot for audit; does not gate any behavior after init
 uint64 public activatedAt;
-uint32 public stalenessWindow;               // copied from factory at init, frozen from there
+// Per-feed staleness — snapshotted from FeedConfig at originate time
+// so the clone can validate freshness against the right window for each
+// asset. Replaces the prior single `stalenessWindow` field.
+uint32 public collateralFeedStaleness;
+uint32 public principalFeedStaleness;
+uint16 public keeperBountyBps;               // bps of seize routed to claimMissedPayment caller
 address public comptrollerAddr;              // copied for gas efficiency / upgrade independence
 
 // Mutables:
@@ -1393,7 +1447,21 @@ CreditLoan.claimMissedPayment():
   missedCount += 1
   paymentCursor = cursor + 1  // move past the missed payment — lender is compensated via seize
 
-  IERC20(collateralToken).safeTransfer(lender, seizeCollateralAmount)
+  // Carve a configurable share of the seize for whoever called the
+  // function. Without this, claimMissedPayment is permissionless in
+  // name only — every cent of seize goes to the lender, so only the
+  // lender's own bot has any reason to call it. The bounty (default 0,
+  // capped at 100 bps via `setKeeperBountyBps`) puts a real incentive
+  // on a neutral keeper. msg.sender is the recipient (not tx.origin)
+  // so 4337 / Safe-relay flows work.
+  uint256 keeperShare = (seizeCollateralAmount * keeperBountyBps) / 10_000
+  uint256 lenderShare = seizeCollateralAmount - keeperShare
+  if lenderShare > 0:
+    IERC20(collateralToken).safeTransfer(lender, lenderShare)
+  if keeperShare > 0:
+    IERC20(collateralToken).safeTransfer(msg.sender, keeperShare)
+    emit KeeperBountyPaid(msg.sender, keeperShare)
+
   emit CollateralSeized(cursor, missedAmountUsd, seizeCollateralAmount)
 
   if missedCount >= consecutiveMissesForDefault:
@@ -1404,6 +1472,12 @@ CreditLoan.claimMissedPayment():
 missed payment + over-seizure, the loan goes into default regardless of
 `consecutiveMissesForDefault`. The lender takes what's left; the rest is a
 deficiency (documented limitation — MVP does not try to recoup from elsewhere).
+
+**Per-feed staleness:** `_computeSeizeAmount` reads `principalFeedStaleness` for
+the principal-side price check and `collateralFeedStaleness` for the
+collateral-side check. Both are snapshotted from the factory's `FeedConfig` at
+originate time so a slow-heartbeat principal (USDC, ~24h) and a fast-heartbeat
+collateral (BTC, ~1h) can each enforce their own freshness window.
 
 ### 7.6 Accelerate (default)
 
@@ -1682,33 +1756,50 @@ event RequestPosted(
 );
 event RequestCanceled(uint256 indexed requestId);
 
+// Carries enough match data for an indexer to populate a dashboard
+// without follow-up view calls. Schedule, feeds, and gracePeriod stay
+// derivable from the deterministic loanAddress.
 event LoanCreated(
   uint256 indexed loanId,
   address indexed loanAddress,
   address indexed lender,
   address borrower,
+  address mToken,
+  uint256 mTokenAmount,
+  address principalToken,
   uint256 principal,
+  address collateralToken,
+  uint256 collateralAmount,
   uint16 apr,
-  uint32 term
+  uint32 term,
+  uint16 marketplaceFeeBps,
+  uint64 principalDueAt
 );
 
 event BackendSignerUpdated(
   address indexed previousSigner,
   address indexed newSigner
 );
-event CollateralWhitelisted(address indexed token, address indexed feed);
-event CollateralRemoved(address indexed token);
-event PrincipalTokenWhitelisted(address indexed token, address indexed feed);
-event PrincipalTokenRemoved(address indexed token);
-event MTokenWhitelisted(address indexed mToken, bool allowed);
+event CollateralWhitelisted(
+  address indexed token,
+  bool allowed,
+  address indexed feed
+);
+event MTokenWhitelisted(
+  address indexed mToken,
+  bool allowed,
+  address indexed feed
+);
 event DefaultParamsUpdated(
   uint32 gracePeriod,
   uint16 overSeizureBps,
   uint16 consecutiveMissesForDefault,
   uint16 marketplaceFeeBps
 );
-event StalenessWindowUpdated(uint32 seconds_);
+event StalenessWindowUpdated(uint32 seconds_); // global cap on per-feed staleness
 event MinOriginationLtvBufferBpsUpdated(uint16 previous, uint16 updated);
+event AprFloorBufferBpsUpdated(uint16 previous, uint16 updated);
+event KeeperBountyBpsUpdated(uint16 previous, uint16 updated);
 event FeeRecipientUpdated(address indexed previous, address indexed updated);
 event CreditLoanImplementationUpdated(
   address indexed previous,
@@ -1731,11 +1822,16 @@ event CollateralSeized(
   uint256 missedUsd,
   uint256 seizedCollateral
 );
+event KeeperBountyPaid(address indexed keeper, uint256 amount);
 event LoanDefaulted(uint16 missedCount, uint64 at);
 event DefaultSeized(uint256 amount);
 event LenderReimbursed(uint256 mTokenAmount);
 event LoanSettled();
 ```
+
+`CreditTierRegistry` emits its own
+`TierSet(address indexed borrower, uint16 previousTier, uint16 newTier)` for
+every per-borrower update.
 
 ---
 
@@ -1777,7 +1873,28 @@ error EnterMarketsFailed(uint errorCode);
 error InvalidImplementation();
 error InvalidComptroller(); // constructor probe failed — likely passed impl instead of proxy
 error InvalidBufferBps(); // setMinOriginationLtvBufferBps out of sane range
+error InvalidStalenessWindow(); // setStalenessWindow / per-feed staleness out of (0, max] range
+error InvalidKeeperBountyBps(); // setKeeperBountyBps > 100 bps
+error InvalidFeedDecimals(); // _probeFeed: Chainlink decimals > 18
+error InvalidGracePeriod();
+error InvalidOverSeizureBps();
+error InvalidConsecutiveMisses();
+error InvalidMarketplaceFeeBps();
+error MarketplaceAprBelowMoonwellFloor(
+  uint256 marketplaceRatePerSec,
+  uint256 minRequired
+);
+error BorrowerTierMismatch(uint16 signed, uint16 onchain);
+error PrincipalMustMatchMTokenUnderlying();
+error MoonwellBorrowOutstanding(uint256 balance); // redeemAndReturn called with open borrow
+error LoanNotPending();
+error LoanNotClosed();
+error PastInterestPhase(); // claimMissedPayment past the interest-only phase
+error PaymentNotYetMissed(); // claimMissedPayment / forceDefault before grace
 error OnlyOwnerOrGuardian(); // pause() caller is neither
+error OnlyFactory();
+error OnlyBorrower();
+error OnlyLender();
 error ZeroAddress();
 ```
 
@@ -1806,37 +1923,54 @@ function setCreditLoanImplementation(address newImpl) external onlyOwner;
 // revert if newImpl is not a contract or already been initialized as a regular loan.
 // Factory should call newImpl.initialize(...) with sentinel values to lock it before storing.
 
-// ─── mToken whitelist (registers the underlying's feed too) ───────
+// ─── mToken whitelist (registers the underlying's feed + per-feed staleness) ─
 function whitelistMToken(
   address mToken,
   bool allowed,
-  AggregatorV3Interface underlyingFeed
+  AggregatorV3Interface underlyingFeed,
+  uint32 feedStaleness
 ) external onlyOwner;
-// When `allowed == true`: requires non-zero `underlyingFeed`, probes
-// liveness, sets `isMTokenWhitelisted[mToken] = true`, stores the feed
-// at `principalTokenFeeds[mToken.underlying()]`. When `allowed == false`:
-// clears only the mToken flag (feed stays in case other mTokens share
-// the same underlying). Existing loans reference the immutable feed
-// captured at init, so removal only affects future origination.
+// When `allowed == true`: requires non-zero `underlyingFeed` and
+// `feedStaleness` ∈ (0, stalenessWindow]; probes liveness; sets
+// `isMTokenWhitelisted[mToken] = true`; stores `FeedConfig{feed,
+// staleness}` at `principalTokenFeeds[mToken.underlying()]`. When
+// `allowed == false`: clears only the mToken flag (feed stays in case
+// other mTokens share the same underlying). Existing loans reference
+// the immutable feed + staleness captured at init, so removal only
+// affects future origination.
 
-// ─── Collateral whitelist ─────────────────────────────────────────
+// ─── Collateral whitelist (with per-feed staleness) ───────────────
 function whitelistCollateralToken(
   address token,
   bool allowed,
-  AggregatorV3Interface feed
+  AggregatorV3Interface feed,
+  uint32 feedStaleness
 ) external onlyOwner;
-// When `allowed == true`: requires non-zero `feed`, probes liveness,
-// stores flag + feed. When `allowed == false`: clears both flag and
-// feed (collateral is 1:1 with its feed — unlike mToken, no shared
-// entries to preserve).
+// When `allowed == true`: requires non-zero `feed` and `feedStaleness`
+// ∈ (0, stalenessWindow]; probes liveness; stores FeedConfig. When
+// `allowed == false`: clears both flag and feed (collateral is 1:1
+// with its feed — unlike mToken, no shared entries to preserve).
 
 // ─── Oracle / LTV params ──────────────────────────────────────────
 function setStalenessWindow(uint32 seconds_) external onlyOwner;
-// sanity cap: revert if seconds_ > 7 days
+// Cap on the per-feed staleness any whitelist setter can stamp in.
+// Sanity cap: revert if seconds_ == 0 or > 7 days. Per-feed values
+// live in FeedConfig — this is the global ceiling, not the per-loan
+// budget.
 
 function setMinOriginationLtvBufferBps(uint16 bufferBps) external onlyOwner;
 // sanity cap: revert InvalidBufferBps if bufferBps < 100 or > 10_000
 // (i.e. collateral must be worth ≥ 101% of principal; never more than 200%)
+
+function setAprFloorBufferBps(uint16 bufferBps) external onlyOwner;
+// Required margin between marketplace APR and Moonwell's borrow APR.
+// Marketplace per-second rate must be ≥ moonwellRate * (1 + bufferBps/10_000)
+// at match time, else `MarketplaceAprBelowMoonwellFloor`. 0 disables.
+
+// ─── Keeper bounty ────────────────────────────────────────────────
+function setKeeperBountyBps(uint16 bountyBps) external onlyOwner;
+// Carves a bps slice of every claimMissedPayment seize for msg.sender.
+// Capped at 100 bps via `MAX_KEEPER_BOUNTY_BPS`. 0 disables.
 
 // ─── Default loan params ──────────────────────────────────────────
 function setDefaultParams(
@@ -1924,9 +2058,21 @@ only callable during `createLoan`.
   governance-curated Chainlink feeds and reverts if
   `collateralUsd < principalUsd * (1 + buffer)`. The attacker can only sign
   loans that would also be honored by a fresh signer at current oracle prices.
+- **Tier-elevation attacks are blocked by the `CreditTierRegistry` (§4.7).** An
+  attacker with the backend key cannot upgrade a borrower onto offers requiring
+  tier ≥ minTier without also compromising the registry-owner key. Registry
+  writes are gated by a separate `Ownable2Step` owner; the factory enforces
+  `terms.borrowerCreditTier == registry.tier(borrower)` at match time. Two-key
+  separation is the structural defense.
+- **APR-floor attacks are blocked by `_checkAprFloor`.** Even if the attacker
+  signs at `offer.minApr`, marketplace per-second rate must clear Moonwell's
+  current borrow rate × `(1 + aprFloorBufferBps)` or the match reverts.
 - If a compromise is suspected, the pause guardian can freeze origination in a
   single transaction while the Temporal Governor proposal to rotate
-  `backendSigner` goes through its 5-day cycle.
+  `backendSigner` goes through its 5-day cycle. The recommended ops posture is
+  to deploy `_backendSigner` as a Safe (multisig), making the `SignatureChecker`
+  EIP-1271 path the primary verification — the factory accepts contract-wallet
+  signatures end-to-end.
 
 ### 12.4 Signature attacks
 
@@ -2281,7 +2427,8 @@ CreditMarketplaceFactory(
     address _creditLoanImplementation,  // deploy CreditLoan first; pass its address
     address _backendSigner,             // TBD — Moonwell ops team generates a cold-key signer for prod
     address _feeRecipient,              // TBD — Moonwell treasury multisig
-    address _pauseGuardian              // chains/<id>.json::PAUSE_GUARDIAN
+    address _pauseGuardian,             // chains/<id>.json::PAUSE_GUARDIAN
+    address _tierRegistry               // deploy CreditTierRegistry first (separate owner key from _backendSigner)
 )
 ```
 

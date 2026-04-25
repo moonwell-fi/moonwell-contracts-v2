@@ -114,6 +114,12 @@ struct InitParams {
     uint16 marketplaceFeeBps;
     address feeRecipient;
     address backendSignerAtOrigination;
-    uint32 stalenessWindow;
+    /// Per-feed staleness windows. Replaces the single `stalenessWindow`
+    /// field — Chainlink heartbeats vary by asset (BTC/USD ≈ 1h,
+    /// USDC/USD ≈ 24h), so one window can't be right for both. Set at
+    /// whitelist time on the factory and snapshotted into the clone here.
+    uint32 collateralFeedStaleness;
+    uint32 principalFeedStaleness;
+    uint16 keeperBountyBps;
     address comptrollerAddr;
 }

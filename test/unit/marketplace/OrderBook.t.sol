@@ -37,6 +37,9 @@ contract OrderBookTest is Fixture {
     function setUp() public override {
         super.setUp();
         vm.startPrank(temporalGovernor);
+        // Cap must be set before per-feed staleness — whitelist setters
+        // reject any value above the cap.
+        factory.setStalenessWindow(1 days);
         // whitelistMToken registers the underlying (USDC) feed in the
         // same call — the principal side no longer has its own
         // whitelist. chainlinkBtcUsd is a live feed we reuse as a
@@ -45,12 +48,14 @@ contract OrderBookTest is Fixture {
         factory.whitelistMToken(
             mUsdc,
             true,
-            AggregatorV3Interface(chainlinkBtcUsd)
+            AggregatorV3Interface(chainlinkBtcUsd),
+            3_600
         );
         factory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(chainlinkBtcUsd)
+            AggregatorV3Interface(chainlinkBtcUsd),
+            3_600
         );
         vm.stopPrank();
     }

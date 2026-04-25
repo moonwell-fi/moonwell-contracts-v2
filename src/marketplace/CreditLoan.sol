@@ -62,6 +62,7 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         uint256 missedUsd,
         uint256 seizedCollateral
     );
+    event KeeperBountyPaid(address indexed keeper, uint256 amount);
     event LoanDefaulted(uint16 missedCount, uint64 at);
     event DefaultSeized(uint256 amount);
     event LenderReimbursed(uint256 mTokenAmount);
@@ -87,7 +88,16 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     address public factory;
     address public backendSignerAtOrigination;
     uint64 public activatedAt;
-    uint32 public stalenessWindow;
+    /// Per-feed staleness windows snapshotted from the factory's
+    /// FeedConfig at originate time. Replaces the old single
+    /// `stalenessWindow` so a slow-heartbeat principal (USDC, ~24h)
+    /// and a fast-heartbeat collateral (BTC, ~1h) get independent
+    /// freshness budgets.
+    uint32 public collateralFeedStaleness;
+    uint32 public principalFeedStaleness;
+    /// Bps of seized collateral routed to whoever called
+    /// `claimMissedPayment` (msg.sender). 0 disables the bounty.
+    uint16 public keeperBountyBps;
     address public comptrollerAddr;
 
     uint32 public paymentCursor;
@@ -130,7 +140,9 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         marketplaceFeeBps = params.marketplaceFeeBps;
         feeRecipient = params.feeRecipient;
         backendSignerAtOrigination = params.backendSignerAtOrigination;
-        stalenessWindow = params.stalenessWindow;
+        collateralFeedStaleness = params.collateralFeedStaleness;
+        principalFeedStaleness = params.principalFeedStaleness;
+        keeperBountyBps = params.keeperBountyBps;
         comptrollerAddr = params.comptrollerAddr;
 
         status = LoanStatus.Pending;
@@ -285,7 +297,12 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     /// once grace has elapsed on the current cursor. Seizes collateral
     /// equal to the missed USD + overSeizureBps premium, priced via the
     /// clone's immutable Chainlink feed, capped at remaining collateral.
-    /// When the missed-count threshold is crossed the loan accelerates.
+    /// A small `keeperBountyBps` slice is routed to msg.sender so neutral
+    /// keepers can profitably trigger this (without it, the lender's own
+    /// bot is the only viable caller — permissionless in name only).
+    /// msg.sender (not tx.origin) is the recipient so 4337 / Safe-relay
+    /// flows work. When the missed-count threshold is crossed the loan
+    /// accelerates.
     function claimMissedPayment() external override nonReentrant {
         if (status != LoanStatus.Active) revert LoanNotActive();
 
@@ -308,7 +325,15 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         }
         paymentCursor = cursor + 1;
 
-        IERC20(collateralToken).safeTransfer(lender, seizeAmount);
+        uint256 keeperShare = (seizeAmount * keeperBountyBps) / 10_000;
+        uint256 lenderShare = seizeAmount - keeperShare;
+        if (lenderShare > 0) {
+            IERC20(collateralToken).safeTransfer(lender, lenderShare);
+        }
+        if (keeperShare > 0) {
+            IERC20(collateralToken).safeTransfer(msg.sender, keeperShare);
+            emit KeeperBountyPaid(msg.sender, keeperShare);
+        }
         emit CollateralSeized(
             cursor,
             schedule.interestAmountPerPayment,
@@ -323,25 +348,30 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     /// Prices both sides through real Chainlink feeds — the principal
     /// side via `principalChainlinkFeed` (no longer a $1-stablecoin
     /// assumption), the collateral side via `collateralChainlinkFeed`.
-    /// During a depeg event (USDC → $0.50, etc.) the missed payment's
-    /// real USD value drops in lockstep, so the seize math stays
-    /// proportional and the lender doesn't end up with collateral
-    /// worth far more or far less than the actual missed obligation.
+    /// Each side uses its own staleness budget so a slow-heartbeat
+    /// principal feed and a fast-heartbeat collateral feed don't have
+    /// to share a window. During a depeg event (USDC → $0.50, etc.) the
+    /// missed payment's real USD value drops in lockstep, so the seize
+    /// math stays proportional and the lender doesn't end up with
+    /// collateral worth far more or far less than the actual missed
+    /// obligation.
     function _computeSeizeAmount() internal view returns (uint256) {
         // Missed amount in USD via the principal feed.
         uint256 missedUsd1e18 = _priceUsd1e18(
             principalToken,
             schedule.interestAmountPerPayment,
-            principalChainlinkFeed
+            principalChainlinkFeed,
+            principalFeedStaleness
         );
         uint256 seizeUsd1e18 = (missedUsd1e18 * (10_000 + overSeizureBps)) /
             10_000;
 
-        // Inverse: USD → collateral units.
+        // Inverse: USD → collateral units, gated by the collateral
+        // feed's own staleness budget.
         (, int256 answer, , uint256 updatedAt, ) = collateralChainlinkFeed
             .latestRoundData();
         if (answer <= 0) revert InvalidOraclePrice();
-        if (block.timestamp - updatedAt > stalenessWindow) {
+        if (block.timestamp - updatedAt > collateralFeedStaleness) {
             revert StaleOraclePrice();
         }
         uint256 collateralPriceUsd1e18 = uint256(answer) *
@@ -355,11 +385,12 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     function _priceUsd1e18(
         address token,
         uint256 amount,
-        AggregatorV3Interface feed
+        AggregatorV3Interface feed,
+        uint32 maxStaleness
     ) internal view returns (uint256) {
         (, int256 answer, , uint256 updatedAt, ) = feed.latestRoundData();
         if (answer <= 0) revert InvalidOraclePrice();
-        if (block.timestamp - updatedAt > stalenessWindow) {
+        if (block.timestamp - updatedAt > maxStaleness) {
             revert StaleOraclePrice();
         }
         uint256 priceUsd1e18 = uint256(answer) * (10 ** (18 - feed.decimals()));

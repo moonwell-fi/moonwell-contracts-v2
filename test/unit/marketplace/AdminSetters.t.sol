@@ -30,6 +30,7 @@ contract AdminSettersTest is Fixture {
     );
     event StalenessWindowUpdated(uint32 seconds_);
     event MinOriginationLtvBufferBpsUpdated(uint16 previous, uint16 updated);
+    event KeeperBountyBpsUpdated(uint16 previous, uint16 updated);
     event DefaultParamsUpdated(
         uint32 gracePeriod,
         uint16 overSeizureBps,
@@ -46,6 +47,16 @@ contract AdminSettersTest is Fixture {
     );
 
     string constant NOT_OWNER = "Ownable: caller is not the owner";
+
+    function setUp() public override {
+        super.setUp();
+        // Whitelist setters now take a per-feed staleness gated by the
+        // factory's max-cap. Default to 1 day so individual whitelist
+        // tests can pass any reasonable staleness; tests that assert
+        // setStalenessWindow's setter behavior re-set this explicitly.
+        vm.prank(temporalGovernor);
+        factory.setStalenessWindow(1 days);
+    }
 
     // ─── setBackendSigner ───────────────────────────────────────────
     function test_setBackendSigner_updates() public {
@@ -134,10 +145,14 @@ contract AdminSettersTest is Fixture {
         factory.whitelistMToken(
             mUsdc,
             true,
-            AggregatorV3Interface(chainlinkBtcUsd)
+            AggregatorV3Interface(chainlinkBtcUsd),
+            3_600
         );
         assertTrue(factory.isMTokenWhitelisted(mUsdc));
-        assertEq(address(factory.principalTokenFeeds(usdc)), chainlinkBtcUsd);
+        (AggregatorV3Interface feed, uint32 staleness) = factory
+            .principalTokenFeeds(usdc);
+        assertEq(address(feed), chainlinkBtcUsd);
+        assertEq(staleness, 3_600);
     }
 
     function test_whitelistMToken_disablesLeavesFeedIntact() public {
@@ -145,7 +160,8 @@ contract AdminSettersTest is Fixture {
         factory.whitelistMToken(
             mUsdc,
             true,
-            AggregatorV3Interface(chainlinkBtcUsd)
+            AggregatorV3Interface(chainlinkBtcUsd),
+            3_600
         );
 
         vm.expectEmit(true, true, true, true, address(factory));
@@ -153,14 +169,16 @@ contract AdminSettersTest is Fixture {
         factory.whitelistMToken(
             mUsdc,
             false,
-            AggregatorV3Interface(address(0))
+            AggregatorV3Interface(address(0)),
+            0
         );
         vm.stopPrank();
 
         assertFalse(factory.isMTokenWhitelisted(mUsdc));
         // Underlying feed stays in case another mToken shares the
         // same underlying.
-        assertEq(address(factory.principalTokenFeeds(usdc)), chainlinkBtcUsd);
+        (AggregatorV3Interface feed, ) = factory.principalTokenFeeds(usdc);
+        assertEq(address(feed), chainlinkBtcUsd);
     }
 
     function test_whitelistMToken_nonOwnerReverts() public {
@@ -168,7 +186,8 @@ contract AdminSettersTest is Fixture {
         factory.whitelistMToken(
             mUsdc,
             true,
-            AggregatorV3Interface(chainlinkBtcUsd)
+            AggregatorV3Interface(chainlinkBtcUsd),
+            3_600
         );
     }
 
@@ -178,14 +197,47 @@ contract AdminSettersTest is Fixture {
         factory.whitelistMToken(
             address(0),
             true,
-            AggregatorV3Interface(chainlinkBtcUsd)
+            AggregatorV3Interface(chainlinkBtcUsd),
+            3_600
         );
     }
 
     function test_whitelistMToken_enableRequiresFeed() public {
         vm.prank(temporalGovernor);
         vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
-        factory.whitelistMToken(mUsdc, true, AggregatorV3Interface(address(0)));
+        factory.whitelistMToken(
+            mUsdc,
+            true,
+            AggregatorV3Interface(address(0)),
+            3_600
+        );
+    }
+
+    function test_whitelistMToken_zeroStalenessReverts() public {
+        vm.prank(temporalGovernor);
+        vm.expectRevert(
+            CreditMarketplaceFactory.InvalidStalenessWindow.selector
+        );
+        factory.whitelistMToken(
+            mUsdc,
+            true,
+            AggregatorV3Interface(chainlinkBtcUsd),
+            0
+        );
+    }
+
+    function test_whitelistMToken_stalenessAboveCapReverts() public {
+        // Cap is 1 day per setUp. 1 day + 1 second exceeds.
+        vm.prank(temporalGovernor);
+        vm.expectRevert(
+            CreditMarketplaceFactory.InvalidStalenessWindow.selector
+        );
+        factory.whitelistMToken(
+            mUsdc,
+            true,
+            AggregatorV3Interface(chainlinkBtcUsd),
+            uint32(1 days + 1)
+        );
     }
 
     // ─── whitelistCollateralToken ──────────────────────────────────
@@ -196,10 +248,14 @@ contract AdminSettersTest is Fixture {
         factory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(chainlinkBtcUsd)
+            AggregatorV3Interface(chainlinkBtcUsd),
+            3_600
         );
         assertTrue(factory.isCollateralWhitelisted(cbbtc));
-        assertEq(address(factory.collateralFeeds(cbbtc)), chainlinkBtcUsd);
+        (AggregatorV3Interface feed, uint32 staleness) = factory
+            .collateralFeeds(cbbtc);
+        assertEq(address(feed), chainlinkBtcUsd);
+        assertEq(staleness, 3_600);
     }
 
     function test_whitelistCollateralToken_disablesClearsFeed() public {
@@ -207,7 +263,8 @@ contract AdminSettersTest is Fixture {
         factory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(chainlinkBtcUsd)
+            AggregatorV3Interface(chainlinkBtcUsd),
+            3_600
         );
 
         vm.expectEmit(true, true, true, true, address(factory));
@@ -215,12 +272,14 @@ contract AdminSettersTest is Fixture {
         factory.whitelistCollateralToken(
             cbbtc,
             false,
-            AggregatorV3Interface(address(0))
+            AggregatorV3Interface(address(0)),
+            0
         );
         vm.stopPrank();
 
         assertFalse(factory.isCollateralWhitelisted(cbbtc));
-        assertEq(address(factory.collateralFeeds(cbbtc)), address(0));
+        (AggregatorV3Interface feed, ) = factory.collateralFeeds(cbbtc);
+        assertEq(address(feed), address(0));
     }
 
     function test_whitelistCollateralToken_nonOwnerReverts() public {
@@ -228,7 +287,8 @@ contract AdminSettersTest is Fixture {
         factory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(chainlinkBtcUsd)
+            AggregatorV3Interface(chainlinkBtcUsd),
+            3_600
         );
     }
 
@@ -238,7 +298,8 @@ contract AdminSettersTest is Fixture {
         factory.whitelistCollateralToken(
             address(0),
             true,
-            AggregatorV3Interface(chainlinkBtcUsd)
+            AggregatorV3Interface(chainlinkBtcUsd),
+            3_600
         );
     }
 
@@ -248,7 +309,8 @@ contract AdminSettersTest is Fixture {
         factory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(address(0))
+            AggregatorV3Interface(address(0)),
+            3_600
         );
     }
 
@@ -274,8 +336,40 @@ contract AdminSettersTest is Fixture {
         factory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(fakeFeed)
+            AggregatorV3Interface(fakeFeed),
+            3_600
         );
+    }
+
+    /// Boundary: 18-decimal feed is accepted (`_probeFeed` rejects > 18).
+    /// The price math in `_priceUsd1e18` becomes `answer * 10^0 = answer`,
+    /// so as long as the feed answer fits in uint256 we're fine. No
+    /// overflow at sane Chainlink magnitudes.
+    function test_whitelistCollateralToken_feedDecimalsAtMaxAccepted() public {
+        address fakeFeed = makeAddr("fakeFeed18");
+        _mockDecimals(fakeFeed, 18);
+        vm.mockCall(
+            fakeFeed,
+            abi.encodeWithSelector(
+                AggregatorV3Interface.latestRoundData.selector
+            ),
+            abi.encode(
+                uint80(0),
+                int256(1e18), // $1 in 18 decimals
+                uint256(0),
+                block.timestamp,
+                uint80(0)
+            )
+        );
+
+        vm.prank(temporalGovernor);
+        factory.whitelistCollateralToken(
+            cbbtc,
+            true,
+            AggregatorV3Interface(fakeFeed),
+            3_600
+        );
+        assertTrue(factory.isCollateralWhitelisted(cbbtc));
     }
 
     function test_whitelistCollateralToken_feedDecimalsTooHighReverts() public {
@@ -291,7 +385,8 @@ contract AdminSettersTest is Fixture {
         factory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(fakeFeed)
+            AggregatorV3Interface(fakeFeed),
+            3_600
         );
     }
 
@@ -312,7 +407,8 @@ contract AdminSettersTest is Fixture {
         factory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(fakeFeed)
+            AggregatorV3Interface(fakeFeed),
+            3_600
         );
     }
 
@@ -364,6 +460,36 @@ contract AdminSettersTest is Fixture {
         vm.prank(temporalGovernor);
         vm.expectRevert(CreditMarketplaceFactory.InvalidBufferBps.selector);
         factory.setMinOriginationLtvBufferBps(99);
+    }
+
+    // ─── setKeeperBountyBps ────────────────────────────────────────
+    function test_setKeeperBountyBps_updates() public {
+        vm.expectEmit(true, true, true, true, address(factory));
+        emit KeeperBountyBpsUpdated(0, 50);
+        vm.prank(temporalGovernor);
+        factory.setKeeperBountyBps(50);
+        assertEq(factory.keeperBountyBps(), 50);
+    }
+
+    function test_setKeeperBountyBps_nonOwnerReverts() public {
+        vm.expectRevert(bytes(NOT_OWNER));
+        factory.setKeeperBountyBps(50);
+    }
+
+    function test_setKeeperBountyBps_aboveMaxReverts() public {
+        vm.prank(temporalGovernor);
+        vm.expectRevert(
+            CreditMarketplaceFactory.InvalidKeeperBountyBps.selector
+        );
+        factory.setKeeperBountyBps(101); // MAX is 100 bps
+    }
+
+    function test_setKeeperBountyBps_zeroDisablesBounty() public {
+        vm.startPrank(temporalGovernor);
+        factory.setKeeperBountyBps(50);
+        factory.setKeeperBountyBps(0);
+        vm.stopPrank();
+        assertEq(factory.keeperBountyBps(), 0);
     }
 
     function test_setMinOriginationLtvBufferBps_aboveMaxReverts() public {

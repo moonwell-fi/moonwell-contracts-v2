@@ -12,6 +12,7 @@ import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol
 
 import {ICreditMarketplaceFactory} from "@protocol/marketplace/ICreditMarketplaceFactory.sol";
 import {ICreditLoan} from "@protocol/marketplace/ICreditLoan.sol";
+import {CreditTierRegistry} from "@protocol/marketplace/CreditTierRegistry.sol";
 import {CreditTypeHashes} from "@protocol/marketplace/CreditTypeHashes.sol";
 import {EIP712Lib} from "@protocol/marketplace/EIP712Lib.sol";
 import {PriceLib} from "@protocol/marketplace/PriceLib.sol";
@@ -50,6 +51,7 @@ contract CreditMarketplaceFactory is
     error InvalidOverSeizureBps();
     error InvalidConsecutiveMisses();
     error InvalidMarketplaceFeeBps();
+    error InvalidKeeperBountyBps();
     error InvalidFeedDecimals();
     error NonceAlreadyUsed();
     error OnlyOwnerOrGuardian();
@@ -74,6 +76,10 @@ contract CreditMarketplaceFactory is
         uint256 marketplaceRatePerSec,
         uint256 minRequiredRatePerSec
     );
+    /// Backend signed a tier that doesn't match the registry's current
+    /// value for the borrower. Catches a backend that's lying about
+    /// tier, or a registry that's drifted ahead of backend signatures.
+    error BorrowerTierMismatch(uint16 signed, uint16 onchain);
 
     event BackendSignerUpdated(
         address indexed previousSigner,
@@ -110,6 +116,7 @@ contract CreditMarketplaceFactory is
         address indexed newGuardian
     );
     event AprFloorBufferBpsUpdated(uint16 previous, uint16 updated);
+    event KeeperBountyBpsUpdated(uint16 previous, uint16 updated);
     event OfferPosted(
         uint256 indexed offerId,
         address indexed lender,
@@ -132,20 +139,31 @@ contract CreditMarketplaceFactory is
         uint64 expiresAt
     );
     event RequestCanceled(uint256 indexed requestId);
+    /// Carries enough match data for an indexer to populate a dashboard
+    /// without follow-up view calls to the clone. Loan-specific fields
+    /// not in the event (schedule, feeds, gracePeriod) are derivable
+    /// from the deterministic `loanAddress` if needed.
     event LoanCreated(
         uint256 indexed loanId,
         address indexed loanAddress,
         address indexed lender,
         address borrower,
+        address mToken,
+        uint256 mTokenAmount,
+        address principalToken,
         uint256 principal,
+        address collateralToken,
+        uint256 collateralAmount,
         uint16 apr,
-        uint32 term
+        uint32 term,
+        uint16 marketplaceFeeBps,
+        uint64 principalDueAt
     );
 
-    /// Max age accepted from a Chainlink feed at whitelist time. Not the
-    /// per-loan staleness budget — that's the governance-tunable
-    /// `stalenessWindow`. This constant exists purely to catch a dead feed
-    /// at proposal execution rather than at first match.
+    /// Max age accepted from a Chainlink feed at whitelist time. Distinct
+    /// from the per-feed `staleness` stored in FeedConfig — this constant
+    /// exists purely to catch a dead feed at proposal execution rather
+    /// than at first match.
     uint256 internal constant FEED_LIVENESS_AT_WHITELIST = 1 days;
 
     uint32 internal constant MAX_STALENESS_WINDOW = 7 days;
@@ -155,18 +173,43 @@ contract CreditMarketplaceFactory is
     uint16 internal constant MAX_CONSECUTIVE_MISSES = 10;
     uint16 internal constant MIN_LTV_BUFFER_BPS = 100;
     uint16 internal constant MAX_LTV_BUFFER_BPS = 10_000;
+    /// Hard cap on the keeper bounty that can be carved off a missed-
+    /// payment seize. 100 bps = 1% — generous against typical $10-$100
+    /// missed installments while still leaving the lender ≥99% of the
+    /// over-seizure premium.
+    uint16 internal constant MAX_KEEPER_BOUNTY_BPS = 100;
+
+    /// Bundles a Chainlink feed with the staleness window appropriate
+    /// for its heartbeat. Per-feed instead of one-size-fits-all so a
+    /// fast-heartbeat asset (BTC/USD ~1h) doesn't impose its window on
+    /// a slow-heartbeat asset (USDC/USD ~24h) or vice versa. Packs into
+    /// a single storage slot (20 + 4 bytes).
+    struct FeedConfig {
+        AggregatorV3Interface feed;
+        uint32 staleness;
+    }
 
     bytes32 public immutable DOMAIN_SEPARATOR;
     address public immutable comptroller;
     address public immutable temporalGovernor;
+    /// Onchain mirror of the off-chain credit-tier scale. Read at
+    /// match time; a backend-compromise cannot upgrade a borrower
+    /// without also compromising the registry's owner key.
+    CreditTierRegistry public immutable tierRegistry;
 
     address public creditLoanImplementation;
     address public backendSigner;
     address public feeRecipient;
     address public pauseGuardian;
 
+    /// Upper bound for the per-feed `staleness` value passed to the
+    /// whitelist setters. Each whitelisted feed stores its own staleness
+    /// in `FeedConfig`; this guards against a misconfigured proposal
+    /// stamping in a multi-day window for an asset that ought to refresh
+    /// every hour.
     uint32 public stalenessWindow;
     uint16 public minOriginationLtvBufferBps;
+    uint16 public keeperBountyBps;
     /// Required margin between marketplace APR and Moonwell's borrow APR
     /// at match time, in bps. Marketplace per-second rate must be at
     /// least `moonwellRate * (10_000 + bufferBps) / 10_000` for a match
@@ -179,13 +222,13 @@ contract CreditMarketplaceFactory is
     uint16 public defaultMarketplaceFeeBps;
 
     mapping(address => bool) public isMTokenWhitelisted;
-    mapping(address => AggregatorV3Interface) public collateralFeeds;
+    mapping(address => FeedConfig) public collateralFeeds;
     mapping(address => bool) public isCollateralWhitelisted;
     /// Feed for the principal side of each match, keyed by the mToken's
     /// underlying. Populated via `whitelistMToken` — the principal token
     /// is always `IMErc20(mToken).underlying()`, so it's not its own
     /// whitelist surface.
-    mapping(address => AggregatorV3Interface) public principalTokenFeeds;
+    mapping(address => FeedConfig) public principalTokenFeeds;
 
     mapping(uint256 => Offer) public offers;
     mapping(uint256 => Request) public requests;
@@ -203,7 +246,8 @@ contract CreditMarketplaceFactory is
         address _creditLoanImplementation,
         address _backendSigner,
         address _feeRecipient,
-        address _pauseGuardian
+        address _pauseGuardian,
+        address _tierRegistry
     ) {
         if (_temporalGovernor == address(0)) revert ZeroAddress();
         if (_comptroller == address(0)) revert ZeroAddress();
@@ -211,6 +255,7 @@ contract CreditMarketplaceFactory is
         if (_backendSigner == address(0)) revert ZeroAddress();
         if (_feeRecipient == address(0)) revert ZeroAddress();
         if (_pauseGuardian == address(0)) revert ZeroAddress();
+        if (_tierRegistry == address(0)) revert ZeroAddress();
 
         /// Cheap sanity probe: callers must pass the Unitroller (proxy) — a
         /// live comptroller always has ≥1 listed market. The `COMPTROLLER`
@@ -226,6 +271,7 @@ contract CreditMarketplaceFactory is
         backendSigner = _backendSigner;
         feeRecipient = _feeRecipient;
         pauseGuardian = _pauseGuardian;
+        tierRegistry = CreditTierRegistry(_tierRegistry);
 
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
@@ -290,25 +336,31 @@ contract CreditMarketplaceFactory is
     }
 
     /// Whitelist (or un-whitelist) an mToken. When enabling, the caller
-    /// must supply a Chainlink feed for the mToken's underlying; that
-    /// feed is stored in `principalTokenFeeds` so createLoan's LTV
-    /// check can price the borrower's principal. Disabling clears the
-    /// per-mToken flag but leaves the underlying's feed intact, because
-    /// multiple mTokens can share an underlying and we don't want a
-    /// removal to brick their still-live whitelist entries.
+    /// must supply a Chainlink feed for the mToken's underlying plus the
+    /// staleness window appropriate for that feed's heartbeat (USDC/USD
+    /// is ~24h, USDT/USD is ~24h, etc.). The pair is stored in
+    /// `principalTokenFeeds` so createLoan's LTV check can price the
+    /// borrower's principal under the right freshness budget. Disabling
+    /// clears the per-mToken flag but leaves the underlying's feed
+    /// intact, because multiple mTokens can share an underlying and we
+    /// don't want a removal to brick their still-live whitelist entries.
     function whitelistMToken(
         address mToken,
         bool allowed,
-        AggregatorV3Interface underlyingFeed
+        AggregatorV3Interface underlyingFeed,
+        uint32 feedStaleness
     ) external override onlyOwner {
         if (mToken == address(0)) revert ZeroAddress();
         if (allowed) {
             if (address(underlyingFeed) == address(0)) revert ZeroAddress();
+            if (feedStaleness == 0 || feedStaleness > stalenessWindow) {
+                revert InvalidStalenessWindow();
+            }
             _probeFeed(underlyingFeed);
             isMTokenWhitelisted[mToken] = true;
             principalTokenFeeds[
                 IMErc20Underlying(mToken).underlying()
-            ] = underlyingFeed;
+            ] = FeedConfig({feed: underlyingFeed, staleness: feedStaleness});
         } else {
             isMTokenWhitelisted[mToken] = false;
         }
@@ -316,19 +368,26 @@ contract CreditMarketplaceFactory is
     }
 
     /// Whitelist (or un-whitelist) a collateral token plus its Chainlink
-    /// feed. Disabling clears both the flag and the feed entry because
-    /// collateral is a 1:1 token-to-feed relationship (unlike mTokens
-    /// which can share an underlying).
+    /// feed and a per-feed staleness window. Disabling clears both the
+    /// flag and the feed entry because collateral is a 1:1 token-to-feed
+    /// relationship (unlike mTokens which can share an underlying).
     function whitelistCollateralToken(
         address token,
         bool allowed,
-        AggregatorV3Interface feed
+        AggregatorV3Interface feed,
+        uint32 feedStaleness
     ) external override onlyOwner {
         if (token == address(0)) revert ZeroAddress();
         if (allowed) {
             if (address(feed) == address(0)) revert ZeroAddress();
+            if (feedStaleness == 0 || feedStaleness > stalenessWindow) {
+                revert InvalidStalenessWindow();
+            }
             _probeFeed(feed);
-            collateralFeeds[token] = feed;
+            collateralFeeds[token] = FeedConfig({
+                feed: feed,
+                staleness: feedStaleness
+            });
             isCollateralWhitelisted[token] = true;
         } else {
             delete collateralFeeds[token];
@@ -337,6 +396,9 @@ contract CreditMarketplaceFactory is
         emit CollateralWhitelisted(token, allowed, address(feed));
     }
 
+    /// Sets the maximum staleness any individual feed may be configured
+    /// with at whitelist time. Per-feed values live in `FeedConfig`; this
+    /// is the cap a misconfigured proposal would otherwise circumvent.
     function setStalenessWindow(uint32 seconds_) external override onlyOwner {
         if (seconds_ == 0 || seconds_ > MAX_STALENESS_WINDOW) {
             revert InvalidStalenessWindow();
@@ -367,6 +429,19 @@ contract CreditMarketplaceFactory is
         uint16 previous = aprFloorBufferBps;
         aprFloorBufferBps = bufferBps;
         emit AprFloorBufferBpsUpdated(previous, bufferBps);
+    }
+
+    /// Sets the keeper bounty for `claimMissedPayment`. Carves a small
+    /// share of the seized collateral to whoever calls the function, so
+    /// neutral keepers can profitably trigger clawback even when only
+    /// the lender benefits from the seizure. Capped at 100 bps (1%) —
+    /// generous against typical $10–$100 missed installments while
+    /// leaving the lender ≥99% of the over-seizure premium. 0 disables.
+    function setKeeperBountyBps(uint16 bountyBps) external override onlyOwner {
+        if (bountyBps > MAX_KEEPER_BOUNTY_BPS) revert InvalidKeeperBountyBps();
+        uint16 previous = keeperBountyBps;
+        keeperBountyBps = bountyBps;
+        emit KeeperBountyBpsUpdated(previous, bountyBps);
     }
 
     function setDefaultParams(
@@ -527,7 +602,8 @@ contract CreditMarketplaceFactory is
         /// whitelistMToken). Gatekeep here so dead requests don't clog
         /// the order book.
         if (
-            address(principalTokenFeeds[request.principalToken]) == address(0)
+            address(principalTokenFeeds[request.principalToken].feed) ==
+            address(0)
         ) {
             revert NotPrincipalTokenWhitelisted();
         }
@@ -710,9 +786,16 @@ contract CreditMarketplaceFactory is
             loanAddress,
             o.lender,
             r.borrower,
+            o.mToken,
+            o.mTokenAmount,
+            o.principalToken,
             terms.principal,
+            r.collateralToken,
+            r.collateralAmount,
             terms.apr,
-            terms.term
+            terms.term,
+            terms.marketplaceFeeBps,
+            terms.schedule.principalDueAt
         );
     }
 
@@ -869,7 +952,16 @@ contract CreditMarketplaceFactory is
         if (!_containsCollateral(o.acceptedCollateral, r.collateralToken)) {
             revert BoundsViolation("collateral.notAccepted");
         }
-        if (terms.borrowerCreditTier < o.minBorrowerCreditTier) {
+        /// Backend's signed tier must match registry exactly. This
+        /// ties the off-chain risk-engine's view of the borrower to
+        /// onchain state, so a compromised backend can't grant a
+        /// borrower a higher tier than the registry shows. The
+        /// registry value is then gated against the offer's minimum.
+        uint16 onchainTier = tierRegistry.tier(r.borrower);
+        if (terms.borrowerCreditTier != onchainTier) {
+            revert BorrowerTierMismatch(terms.borrowerCreditTier, onchainTier);
+        }
+        if (onchainTier < o.minBorrowerCreditTier) {
             revert BoundsViolation("creditTier");
         }
     }
@@ -889,30 +981,26 @@ contract CreditMarketplaceFactory is
         Request storage r,
         BackendTerms calldata terms
     ) private view {
-        AggregatorV3Interface principalFeed = principalTokenFeeds[
-            o.principalToken
-        ];
-        AggregatorV3Interface collateralFeed = collateralFeeds[
-            r.collateralToken
-        ];
-        if (address(principalFeed) == address(0)) {
+        FeedConfig storage principalCfg = principalTokenFeeds[o.principalToken];
+        FeedConfig storage collateralCfg = collateralFeeds[r.collateralToken];
+        if (address(principalCfg.feed) == address(0)) {
             revert NotPrincipalTokenWhitelisted();
         }
-        if (address(collateralFeed) == address(0)) {
+        if (address(collateralCfg.feed) == address(0)) {
             revert NotCollateralWhitelisted();
         }
 
         uint256 collateralUsd1e18 = PriceLib.valueToUsd1e18(
             r.collateralToken,
             r.collateralAmount,
-            collateralFeed,
-            stalenessWindow
+            collateralCfg.feed,
+            collateralCfg.staleness
         );
         uint256 principalUsd1e18 = PriceLib.valueToUsd1e18(
             o.principalToken,
             terms.principal,
-            principalFeed,
-            stalenessWindow
+            principalCfg.feed,
+            principalCfg.staleness
         );
         uint256 requiredUsd1e18 = (principalUsd1e18 *
             (10_000 + minOriginationLtvBufferBps)) / 10_000;
@@ -926,6 +1014,9 @@ contract CreditMarketplaceFactory is
         Request storage r,
         BackendTerms calldata terms
     ) private view returns (InitParams memory p) {
+        FeedConfig storage collateralCfg = collateralFeeds[r.collateralToken];
+        FeedConfig storage principalCfg = principalTokenFeeds[o.principalToken];
+
         p.lender = o.lender;
         p.borrower = r.borrower;
         p.mToken = o.mToken;
@@ -933,8 +1024,8 @@ contract CreditMarketplaceFactory is
         p.principalToken = o.principalToken;
         p.principal = terms.principal;
         p.collateralToken = r.collateralToken;
-        p.collateralChainlinkFeed = collateralFeeds[r.collateralToken];
-        p.principalChainlinkFeed = principalTokenFeeds[o.principalToken];
+        p.collateralChainlinkFeed = collateralCfg.feed;
+        p.principalChainlinkFeed = principalCfg.feed;
         p.collateralAmount = r.collateralAmount;
         p.apr = terms.apr;
         p.term = terms.term;
@@ -945,7 +1036,9 @@ contract CreditMarketplaceFactory is
         p.marketplaceFeeBps = terms.marketplaceFeeBps;
         p.feeRecipient = terms.feeRecipient;
         p.backendSignerAtOrigination = backendSigner;
-        p.stalenessWindow = stalenessWindow;
+        p.collateralFeedStaleness = collateralCfg.staleness;
+        p.principalFeedStaleness = principalCfg.staleness;
+        p.keeperBountyBps = keeperBountyBps;
         p.comptrollerAddr = comptroller;
     }
 }

@@ -22,6 +22,7 @@ contract SkeletonTest is Fixture {
         assertEq(factory.backendSigner(), backendSignerEOA);
         assertEq(factory.feeRecipient(), feeRecipient);
         assertEq(factory.creditLoanImplementation(), address(loanImpl));
+        assertEq(address(factory.tierRegistry()), address(tierRegistry));
         assertTrue(factory.DOMAIN_SEPARATOR() != bytes32(0));
     }
 
@@ -36,7 +37,8 @@ contract SkeletonTest is Fixture {
             address(freshImpl),
             backendSignerEOA,
             feeRecipient,
-            pauseGuardian
+            pauseGuardian,
+            address(tierRegistry)
         );
     }
 
@@ -50,7 +52,8 @@ contract SkeletonTest is Fixture {
             address(freshImpl),
             backendSignerEOA,
             feeRecipient,
-            pauseGuardian
+            pauseGuardian,
+            address(tierRegistry)
         );
 
         vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
@@ -60,6 +63,18 @@ contract SkeletonTest is Fixture {
             address(freshImpl),
             backendSignerEOA,
             feeRecipient,
+            address(0),
+            address(tierRegistry)
+        );
+
+        vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
+        new CreditMarketplaceFactory(
+            temporalGovernor,
+            unitroller,
+            address(freshImpl),
+            backendSignerEOA,
+            feeRecipient,
+            pauseGuardian,
             address(0)
         );
     }

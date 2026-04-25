@@ -50,7 +50,8 @@ contract ActivateTest is Fixture {
         p.term = 30 days;
         p.feeRecipient = feeRecipient;
         p.comptrollerAddr = unitroller;
-        p.stalenessWindow = 3_600;
+        p.collateralFeedStaleness = 3_600;
+        p.principalFeedStaleness = 3_600;
     }
 
     function _mockMoonwellSuccess() internal {

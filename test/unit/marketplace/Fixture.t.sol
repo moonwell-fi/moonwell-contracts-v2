@@ -7,6 +7,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 import {CreditMarketplaceFactory} from "@protocol/marketplace/CreditMarketplaceFactory.sol";
 import {CreditLoan} from "@protocol/marketplace/CreditLoan.sol";
+import {CreditTierRegistry} from "@protocol/marketplace/CreditTierRegistry.sol";
 
 import {Signers} from "./Signers.sol";
 
@@ -18,6 +19,8 @@ abstract contract Fixture is Test, Signers {
 
     CreditMarketplaceFactory internal factory;
     CreditLoan internal loanImpl;
+    CreditTierRegistry internal tierRegistry;
+    address internal tierRegistryOwner;
 
     address internal temporalGovernor;
     address internal unitroller;
@@ -52,12 +55,14 @@ abstract contract Fixture is Test, Signers {
         chainlinkBtcUsd = addresses.getAddress("CHAINLINK_BTC_USD");
 
         feeRecipient = makeAddr("feeRecipient");
+        tierRegistryOwner = makeAddr("tierRegistryOwner");
 
         (backendSignerEOA, backendSignerKey) = makeAddrAndKey("backend");
         (lender, lenderKey) = makeAddrAndKey("lender");
         (borrower, borrowerKey) = makeAddrAndKey("borrower");
 
         loanImpl = new CreditLoan();
+        tierRegistry = new CreditTierRegistry(tierRegistryOwner);
 
         factory = new CreditMarketplaceFactory(
             temporalGovernor,
@@ -65,7 +70,8 @@ abstract contract Fixture is Test, Signers {
             address(loanImpl),
             backendSignerEOA,
             feeRecipient,
-            pauseGuardian
+            pauseGuardian,
+            address(tierRegistry)
         );
     }
 }

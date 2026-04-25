@@ -49,6 +49,7 @@ contract ClaimMissedPaymentTest is Fixture {
         uint256 missedUsd,
         uint256 seizedCollateral
     );
+    event KeeperBountyPaid(address indexed keeper, uint256 amount);
     event LoanDefaulted(uint16 missedCount, uint64 at);
 
     bytes4 internal constant ENTER_MARKETS_SEL =
@@ -123,7 +124,8 @@ contract ClaimMissedPaymentTest is Fixture {
         p.marketplaceFeeBps = 500;
         p.feeRecipient = feeRecipient;
         p.comptrollerAddr = unitroller;
-        p.stalenessWindow = STALENESS;
+        p.collateralFeedStaleness = STALENESS;
+        p.principalFeedStaleness = STALENESS;
     }
 
     function _mockMoonwellSuccess() internal {
@@ -190,6 +192,64 @@ contract ClaimMissedPaymentTest is Fixture {
 
         clone.claimMissedPayment();
         assertEq(clone.seizedCollateralAmount(), expectedSeize);
+    }
+
+    /// Keeper bounty: when keeperBountyBps > 0, msg.sender keeps a
+    /// fraction of the seize; the lender gets the rest. Sum is the
+    /// full seize amount — bounty doesn't expand the seize, just
+    /// redistributes it.
+    function test_claimMissedPayment_keeperBountyPaid() public {
+        // Build a fresh clone with bounty=50 bps (within the 100 bps cap).
+        CreditLoan bountyClone = new CreditLoan();
+        InitParams memory p = _defaultParams(COLLATERAL_AMOUNT);
+        p.keeperBountyBps = 50; // 0.5%
+
+        vm.prank(address(factory));
+        bountyClone.initialize(p);
+        _mockMoonwellSuccess();
+        deal(usdc, address(bountyClone), PRINCIPAL);
+        vm.prank(address(factory));
+        bountyClone.activate();
+        deal(cbbtc, address(bountyClone), COLLATERAL_AMOUNT);
+
+        _warpPastGrace(0);
+
+        // Expected seize: 12_000 (same math as happy case).
+        // 50 bps of 12_000 = 60 to keeper; 11_940 to lender.
+        uint256 totalSeize = 12_000;
+        uint256 expectedBounty = (totalSeize * 50) / 10_000;
+        uint256 expectedLender = totalSeize - expectedBounty;
+
+        address keeper = makeAddr("keeper");
+        uint256 lenderBefore = IERC20(cbbtc).balanceOf(lender);
+
+        vm.expectEmit(true, true, true, true, address(bountyClone));
+        emit KeeperBountyPaid(keeper, expectedBounty);
+
+        vm.prank(keeper);
+        bountyClone.claimMissedPayment();
+
+        assertEq(IERC20(cbbtc).balanceOf(keeper), expectedBounty);
+        assertEq(
+            IERC20(cbbtc).balanceOf(lender) - lenderBefore,
+            expectedLender
+        );
+        assertEq(bountyClone.seizedCollateralAmount(), totalSeize);
+    }
+
+    /// keeperBountyBps == 0 disables the carve. Lender gets the full
+    /// seize, no KeeperBountyPaid event emitted.
+    function test_claimMissedPayment_keeperBountyDisabled() public {
+        _warpPastGrace(0);
+
+        uint256 lenderBefore = IERC20(cbbtc).balanceOf(lender);
+        address keeper = makeAddr("keeper");
+
+        vm.prank(keeper);
+        clone.claimMissedPayment();
+
+        assertEq(IERC20(cbbtc).balanceOf(keeper), 0);
+        assertEq(IERC20(cbbtc).balanceOf(lender) - lenderBefore, 12_000);
     }
 
     function test_claimMissedPayment_anyoneCanCall() public {
@@ -265,6 +325,26 @@ contract ClaimMissedPaymentTest is Fixture {
     function test_claimMissedPayment_staleOracleReverts() public {
         _warpPastGrace(0);
         feed.setUpdatedAt(block.timestamp - STALENESS - 10);
+        vm.expectRevert(CreditLoan.StaleOraclePrice.selector);
+        clone.claimMissedPayment();
+    }
+
+    /// Boundary: feed updated *exactly* `staleness` seconds ago is
+    /// accepted (the comparison is strict `>`, not `>=`). One second
+    /// older flips into the revert path. This test pins the boundary
+    /// so a future tweak from `>` to `>=` would surface as a test
+    /// failure rather than a silently changed acceptance window.
+    function test_claimMissedPayment_staleOracleAtBoundaryAccepted() public {
+        _warpPastGrace(0);
+        feed.setUpdatedAt(block.timestamp - STALENESS); // exactly at threshold
+        usdcFeed.setUpdatedAt(block.timestamp - STALENESS);
+        clone.claimMissedPayment();
+        assertEq(clone.missedCount(), 1);
+    }
+
+    function test_claimMissedPayment_staleOracleOneSecondOverReverts() public {
+        _warpPastGrace(0);
+        feed.setUpdatedAt(block.timestamp - STALENESS - 1);
         vm.expectRevert(CreditLoan.StaleOraclePrice.selector);
         clone.claimMissedPayment();
     }

@@ -55,13 +55,15 @@ interface ICreditMarketplaceFactory {
     function whitelistMToken(
         address mToken,
         bool allowed,
-        AggregatorV3Interface underlyingFeed
+        AggregatorV3Interface underlyingFeed,
+        uint32 feedStaleness
     ) external;
 
     function whitelistCollateralToken(
         address token,
         bool allowed,
-        AggregatorV3Interface feed
+        AggregatorV3Interface feed,
+        uint32 feedStaleness
     ) external;
 
     function setStalenessWindow(uint32 seconds_) external;
@@ -69,6 +71,8 @@ interface ICreditMarketplaceFactory {
     function setMinOriginationLtvBufferBps(uint16 bufferBps) external;
 
     function setAprFloorBufferBps(uint16 bufferBps) external;
+
+    function setKeeperBountyBps(uint16 bountyBps) external;
 
     function setDefaultParams(
         uint32 gracePeriod,

@@ -62,6 +62,15 @@ coverage:
 test-unit:
 	time forge test --match-contract UnitTest -vvv
 
+# Marketplace tests use *Test suffixes (not *UnitTest), so the standard
+# UnitTest match-contract filter excludes them. These targets explicitly
+# match the marketplace test paths.
+test-marketplace:
+	time forge test --match-path 'test/unit/marketplace/*' -vvv
+
+test-marketplace-integration:
+	time forge test --match-path 'test/integration/marketplace/*' --fork-url base -vvv
+
 # Verify the numbers in a rewards-distribution MIP balance across chains.
 # Usage:
 #   make audit-rewards PROPOSAL=mip-x51

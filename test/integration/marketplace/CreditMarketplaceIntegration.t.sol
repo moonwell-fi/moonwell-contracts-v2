@@ -10,6 +10,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 import {CreditLoan} from "@protocol/marketplace/CreditLoan.sol";
 import {CreditMarketplaceFactory} from "@protocol/marketplace/CreditMarketplaceFactory.sol";
+import {CreditTierRegistry} from "@protocol/marketplace/CreditTierRegistry.sol";
 import {Offer, OfferStatus, Request, RequestStatus, BackendTerms, PaymentSchedule, LoanStatus} from "@protocol/marketplace/CreditTypes.sol";
 import {CreditTypeHashes} from "@protocol/marketplace/CreditTypeHashes.sol";
 import {EIP712Lib} from "@protocol/marketplace/EIP712Lib.sol";
@@ -32,6 +33,8 @@ contract CreditMarketplaceIntegration is Test, Signers {
 
     CreditLoan internal loanImpl;
     CreditMarketplaceFactory internal factory;
+    CreditTierRegistry internal tierRegistry;
+    address internal tierRegistryOwner;
 
     address internal temporalGovernor;
     address internal unitroller;
@@ -78,31 +81,43 @@ contract CreditMarketplaceIntegration is Test, Signers {
         btcUsdFeed = addresses.getAddress("CHAINLINK_BTC_USD");
 
         feeRecipient = makeAddr("feeRecipient");
+        tierRegistryOwner = makeAddr("tierRegistryOwner");
         (backendSignerEOA, backendSignerKey) = makeAddrAndKey("backend");
         (lender, lenderKey) = makeAddrAndKey("lender");
         (borrower, borrowerKey) = makeAddrAndKey("borrower");
 
         loanImpl = new CreditLoan();
+        tierRegistry = new CreditTierRegistry(tierRegistryOwner);
         factory = new CreditMarketplaceFactory(
             temporalGovernor,
             unitroller,
             address(loanImpl),
             backendSignerEOA,
             feeRecipient,
-            pauseGuardian
+            pauseGuardian,
+            address(tierRegistry)
         );
 
         // Governance-level setup per spec §14.3 post-deploy checklist.
         // whitelistMToken also registers the underlying's feed so the
-        // LTV check at createLoan can price the principal.
+        // LTV check at createLoan can price the principal. Cap goes in
+        // first because whitelist setters validate per-feed staleness
+        // against it.
         vm.startPrank(temporalGovernor);
-        factory.whitelistMToken(mUsdc, true, AggregatorV3Interface(usdcOracle));
+        factory.setStalenessWindow(1 days);
+        // USDC/USD heartbeat ~24h; BTC/USD ~1h. Per-feed windows here.
+        factory.whitelistMToken(
+            mUsdc,
+            true,
+            AggregatorV3Interface(usdcOracle),
+            uint32(1 days)
+        );
         factory.whitelistCollateralToken(
             cbbtc,
             true,
-            AggregatorV3Interface(btcUsdFeed)
+            AggregatorV3Interface(btcUsdFeed),
+            3_600
         );
-        factory.setStalenessWindow(1 days);
         factory.setMinOriginationLtvBufferBps(1_000); // 10%
         factory.setDefaultParams(
             GRACE,
