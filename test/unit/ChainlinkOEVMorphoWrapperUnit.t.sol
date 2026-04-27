@@ -5,27 +5,21 @@ import {Test} from "@forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
-import {IOEVWrapperFeed} from "@protocol/oracles/IOEVWrapperFeed.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
+import {IMorphoChainlinkOracleV2} from "@protocol/morpho/IMorphoChainlinkOracleV2.sol";
+import {MarketParams} from "@protocol/morpho/IMetaMorpho.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {MockERC20Decimals} from "@test/mock/MockERC20Decimals.sol";
-import {MockOEVWrapperFeed} from "@test/mock/MockOEVWrapperFeed.sol";
 
 /// @notice Test harness exposing internal helpers for unit tests.
-/// @dev Requires Task 9 to (a) change `_getLoanTokenPrice` visibility from
-///      private to internal and (b) add `_resolveRawFeed`. Until Task 9 lands
-///      this file will not compile — that is the intended TDD "red" state.
+/// @dev `_getLoanTokenPrice` visibility is `internal` so this harness can call
+///      it directly with a constructed MarketParams pointing at a mock per-
+///      market Morpho oracle whose `QUOTE_FEED_1()` returns a configurable feed.
 contract ChainlinkOEVMorphoWrapperHarness is ChainlinkOEVMorphoWrapper {
     function exposed_getLoanTokenPrice(
-        EIP20Interface loanToken
+        MarketParams memory marketParams
     ) external view returns (uint256) {
-        return _getLoanTokenPrice(loanToken);
-    }
-
-    function exposed_resolveRawFeed(
-        AggregatorV3Interface registryFeed
-    ) external view returns (AggregatorV3Interface) {
-        return _resolveRawFeed(registryFeed);
+        return _getLoanTokenPrice(marketParams);
     }
 }
 
@@ -38,7 +32,7 @@ contract ChainlinkOEVMorphoWrapperUnitTest is Test {
     uint256 public defaultMaxDecrements = 5;
 
     MockChainlinkOracle mockPriceFeed;
-    address public mockChainlinkOracle = address(0xABCD); // registry stub via vm.mockCall
+    address public mockChainlinkOracle = address(0xABCD); // vestigial registry stub
     MockERC20Decimals loanToken;
 
     ChainlinkOEVMorphoWrapperHarness harness;
@@ -69,230 +63,120 @@ contract ChainlinkOEVMorphoWrapperUnitTest is Test {
         harness = ChainlinkOEVMorphoWrapperHarness(payable(address(proxy)));
     }
 
-    /// @notice DRY helper: mock ChainlinkOracle.getFeed(symbol) on the
-    ///         registry AND stub priceFeed() on the returned feed address
-    ///         to return address(0), so _resolveRawFeed's zero-inner
-    ///         defensive fallback fires and _getLoanTokenPrice reads the
-    ///         feed directly as a raw aggregator.
-    function _mockRegistryGetFeed(
-        address registry,
-        string memory symbol,
-        address feed
-    ) internal {
-        vm.mockCall(
-            registry,
-            abi.encodeWithSignature("getFeed(string)", symbol),
-            abi.encode(feed)
+    /// @notice Helper that constructs a MarketParams pointing at a mock Morpho
+    ///         oracle whose `QUOTE_FEED_1()` returns the supplied address.
+    function _makeMarketParams(
+        address loanTokenAddr,
+        address quoteFeed
+    ) internal returns (MarketParams memory mp) {
+        address mockMorphoOracle = address(
+            uint160(uint256(keccak256(abi.encode("morpho-oracle", quoteFeed))))
         );
         vm.mockCall(
-            feed,
-            abi.encodeWithSelector(IOEVWrapperFeed.priceFeed.selector),
-            abi.encode(address(0))
+            mockMorphoOracle,
+            abi.encodeWithSelector(
+                IMorphoChainlinkOracleV2.QUOTE_FEED_1.selector
+            ),
+            abi.encode(quoteFeed)
         );
+        mp = MarketParams({
+            loanToken: loanTokenAddr,
+            collateralToken: address(0),
+            oracle: mockMorphoOracle,
+            irm: address(0),
+            lltv: 0
+        });
     }
 
-    /// @notice TDD (Task 8): when the registry returns an OEV wrapper (a
-    ///         contract that exposes priceFeed() pointing at an inner raw
-    ///         aggregator), _getLoanTokenPrice must single-hop-dereference
-    ///         to the inner aggregator and read the fresh price from it.
-    ///
-    ///         FAILING MECHANISM (pre-Task 9):
-    ///         - Current `_getLoanTokenPrice` is PRIVATE (this file will not
-    ///           compile until Task 9 changes it to internal).
-    ///         - Current code does not call `_resolveRawFeed` (which Task 9
-    ///           adds), so the outer wrapper's own (stale) price is read.
-    ///         After Task 9 the harness compiles, _resolveRawFeed dereferences
-    ///         outer → inner, and this assertion passes.
-    function testLoanPriceDerefsPriceFeedWhenRegistryEntryIsOEVWrapper()
-        public
-    {
-        // Inner (raw) feed — this is what _getLoanTokenPrice must read.
-        MockChainlinkOracle innerRaw = new MockChainlinkOracle(2_000e8, 8);
-        innerRaw.set(1, 2_000e8, 1, block.timestamp, 1);
+    /// @notice The Morpho wrapper sources the loan-token price from the per-
+    ///         market oracle's `QUOTE_FEED_1()` — which is a raw Chainlink
+    ///         aggregator by Morpho convention. No registry lookup, no deref.
+    function testLoanPriceReadsQuoteFeed1() public {
+        MockChainlinkOracle quoteFeed = new MockChainlinkOracle(2_000e8, 8);
+        quoteFeed.set(1, 2_000e8, 1, block.timestamp, 1);
 
-        // Outer OEV wrapper registered in ChainlinkOracle. Its own
-        // latestRoundData returns a stale 1_500e8 to prove we don't read it.
-        MockOEVWrapperFeed outerWrapper = new MockOEVWrapperFeed(
-            address(innerRaw),
-            8,
-            "MOCK_WRAPPER",
-            1
-        );
-        outerWrapper.setLatestRound(1, 1_500e8, 1, block.timestamp, 1);
-
-        string memory loanSymbol = loanToken.symbol();
-        // Only mock getFeed — outerWrapper's priceFeed() is native.
-        vm.mockCall(
-            mockChainlinkOracle,
-            abi.encodeWithSignature("getFeed(string)", loanSymbol),
-            abi.encode(address(outerWrapper))
+        MarketParams memory mp = _makeMarketParams(
+            address(loanToken),
+            address(quoteFeed)
         );
 
-        uint256 priceScaled = harness.exposed_getLoanTokenPrice(
-            EIP20Interface(address(loanToken))
-        );
-
-        assertEq(priceScaled, 2_000e18, "wrapper was not dereferenced");
+        uint256 priceScaled = harness.exposed_getLoanTokenPrice(mp);
+        assertEq(priceScaled, 2_000e18, "QUOTE_FEED_1 price not used");
     }
 
-    /// @notice Regression: registry returns a raw aggregator (helper stubs
-    ///         priceFeed() to address(0), triggering zero-inner defensive
-    ///         fallback). _getLoanTokenPrice must read the feed directly.
-    function testLoanPriceReadsRawFeedWhenRegistryEntryIsRaw() public {
-        MockChainlinkOracle rawLoanFeed = new MockChainlinkOracle(2_000e8, 8);
-        rawLoanFeed.set(1, 2_000e8, 1, block.timestamp, 1);
-
-        string memory loanSymbol = loanToken.symbol();
-        _mockRegistryGetFeed(
-            mockChainlinkOracle,
-            loanSymbol,
-            address(rawLoanFeed)
+    /// @notice Defensive: if the per-market oracle returns address(0) for
+    ///         QUOTE_FEED_1, the wrapper must revert with a clear message.
+    function testLoanPriceRevertsWhenQuoteFeed1IsZero() public {
+        MarketParams memory mp = _makeMarketParams(
+            address(loanToken),
+            address(0)
         );
-
-        uint256 priceScaled = harness.exposed_getLoanTokenPrice(
-            EIP20Interface(address(loanToken))
-        );
-        assertEq(priceScaled, 2_000e18, "raw feed price not used");
+        vm.expectRevert("ChainlinkOEVMorphoWrapper: loan feed not set");
+        harness.exposed_getLoanTokenPrice(mp);
     }
 
-    /// @notice Genuine try/catch branch: registry returns a contract that has
-    ///         no priceFeed() selector (MockChainlinkOracle doesn't). The
-    ///         try/catch must swallow the revert and fall through.
-    function testLoanPriceReadsRawFeedWhenRegistryEntryLacksPriceFeedSelector()
-        public
-    {
-        MockChainlinkOracle rawLoanFeed = new MockChainlinkOracle(2_500e8, 8);
-        rawLoanFeed.set(1, 2_500e8, 1, block.timestamp, 1);
-
-        string memory loanSymbol = loanToken.symbol();
-        // Mock ONLY getFeed — do NOT stub priceFeed() on the feed, so the
-        // MockChainlinkOracle's missing selector triggers a revert that the
-        // try/catch must catch.
-        vm.mockCall(
-            mockChainlinkOracle,
-            abi.encodeWithSignature("getFeed(string)", loanSymbol),
-            abi.encode(address(rawLoanFeed))
-        );
-
-        uint256 priceScaled = harness.exposed_getLoanTokenPrice(
-            EIP20Interface(address(loanToken))
-        );
-        assertEq(
-            priceScaled,
-            2_500e18,
-            "try/catch fallthrough did not read raw feed"
-        );
-    }
-
-    /// @notice Defensive fallback: registry returns an OEV wrapper whose
-    ///         priceFeed() is address(0). _resolveRawFeed must ignore the
-    ///         zero inner and return the outer wrapper — which is then read.
-    function testLoanPriceFallsBackToOuterWhenInnerIsZero() public {
-        MockOEVWrapperFeed outerWrapper = new MockOEVWrapperFeed(
-            address(0),
-            8,
-            "MOCK_WRAPPER_ZERO_INNER",
-            1
-        );
-        outerWrapper.setLatestRound(1, 1_500e8, 1, block.timestamp, 1);
-
-        string memory loanSymbol = loanToken.symbol();
-        vm.mockCall(
-            mockChainlinkOracle,
-            abi.encodeWithSignature("getFeed(string)", loanSymbol),
-            abi.encode(address(outerWrapper))
-        );
-
-        uint256 priceScaled = harness.exposed_getLoanTokenPrice(
-            EIP20Interface(address(loanToken))
-        );
-        assertEq(priceScaled, 1_500e18, "defensive fallback not taken");
-    }
-
-    /// @notice Single-hop: three-level chain outer -> middle -> innerInner.
-    ///         _resolveRawFeed must stop at middle.
-    function testDerefIsSingleHop() public {
-        MockChainlinkOracle innerInner = new MockChainlinkOracle(9_999e8, 8);
-        innerInner.set(1, 9_999e8, 1, block.timestamp, 1);
-
-        MockOEVWrapperFeed middleWrapper = new MockOEVWrapperFeed(
-            address(innerInner),
-            8,
-            "MIDDLE",
-            1
-        );
-        middleWrapper.setLatestRound(1, 4_242e8, 1, block.timestamp, 1);
-
-        MockOEVWrapperFeed outerWrapper = new MockOEVWrapperFeed(
-            address(middleWrapper),
-            8,
-            "OUTER",
-            1
-        );
-        outerWrapper.setLatestRound(1, 1e8, 1, block.timestamp, 1);
-
-        string memory loanSymbol = loanToken.symbol();
-        vm.mockCall(
-            mockChainlinkOracle,
-            abi.encodeWithSignature("getFeed(string)", loanSymbol),
-            abi.encode(address(outerWrapper))
-        );
-
-        uint256 priceScaled = harness.exposed_getLoanTokenPrice(
-            EIP20Interface(address(loanToken))
-        );
-        assertEq(priceScaled, 4_242e18, "deref took more than one hop");
-    }
-
-    /// @notice Validation parity: updatedAt == 0 must revert (previously the
-    ///         Morpho wrapper skipped this check; now it matches the Core
-    ///         wrapper via _validateRoundData).
+    /// @notice Validation parity: updatedAt == 0 must revert (matches the
+    ///         Core wrapper via _validateRoundData).
     function testLoanPriceRevertsOnZeroUpdatedAt() public {
-        MockChainlinkOracle rawLoanFeed = new MockChainlinkOracle(1e8, 8);
-        rawLoanFeed.set(1, 1e8, 1, 0, 1); // updatedAt = 0
+        MockChainlinkOracle quoteFeed = new MockChainlinkOracle(1e8, 8);
+        quoteFeed.set(1, 1e8, 1, 0, 1); // updatedAt = 0
 
-        string memory loanSymbol = loanToken.symbol();
-        _mockRegistryGetFeed(
-            mockChainlinkOracle,
-            loanSymbol,
-            address(rawLoanFeed)
+        MarketParams memory mp = _makeMarketParams(
+            address(loanToken),
+            address(quoteFeed)
         );
 
         vm.expectRevert("Round is in incompleted state");
-        harness.exposed_getLoanTokenPrice(EIP20Interface(address(loanToken)));
+        harness.exposed_getLoanTokenPrice(mp);
     }
 
     /// @notice Validation parity: answeredInRound < roundId must revert.
     function testLoanPriceRevertsOnStaleAnsweredInRound() public {
-        MockChainlinkOracle rawLoanFeed = new MockChainlinkOracle(1e8, 8);
-        rawLoanFeed.set(2, 1e8, 1, block.timestamp, 1); // answeredInRound (1) < roundId (2)
+        MockChainlinkOracle quoteFeed = new MockChainlinkOracle(1e8, 8);
+        quoteFeed.set(2, 1e8, 1, block.timestamp, 1); // answeredInRound (1) < roundId (2)
 
-        string memory loanSymbol = loanToken.symbol();
-        _mockRegistryGetFeed(
-            mockChainlinkOracle,
-            loanSymbol,
-            address(rawLoanFeed)
+        MarketParams memory mp = _makeMarketParams(
+            address(loanToken),
+            address(quoteFeed)
         );
 
         vm.expectRevert("Stale price");
-        harness.exposed_getLoanTokenPrice(EIP20Interface(address(loanToken)));
+        harness.exposed_getLoanTokenPrice(mp);
     }
 
-    /// @notice Validation parity: answer <= 0 must revert (was already checked
-    ///         but via a different error message; now uses _validateRoundData's
-    ///         standard message).
+    /// @notice Validation parity: answer <= 0 must revert.
     function testLoanPriceRevertsOnNonPositiveAnswer() public {
-        MockChainlinkOracle rawLoanFeed = new MockChainlinkOracle(1e8, 8);
-        rawLoanFeed.set(1, 0, 1, block.timestamp, 1); // answer = 0
+        MockChainlinkOracle quoteFeed = new MockChainlinkOracle(1e8, 8);
+        quoteFeed.set(1, 0, 1, block.timestamp, 1); // answer = 0
 
-        string memory loanSymbol = loanToken.symbol();
-        _mockRegistryGetFeed(
-            mockChainlinkOracle,
-            loanSymbol,
-            address(rawLoanFeed)
+        MarketParams memory mp = _makeMarketParams(
+            address(loanToken),
+            address(quoteFeed)
         );
 
         vm.expectRevert("Chainlink price cannot be lower or equal to 0");
-        harness.exposed_getLoanTokenPrice(EIP20Interface(address(loanToken)));
+        harness.exposed_getLoanTokenPrice(mp);
+    }
+
+    /// @notice 6-decimal loan token (USDC-like) must scale to 1e30 when fed
+    ///         a 1e8 price from an 8-decimal Chainlink aggregator.
+    function testLoanPriceScalesToTokenDecimals6() public {
+        MockERC20Decimals usdcLike = new MockERC20Decimals(
+            "USDC-like",
+            "USDC6",
+            6
+        );
+        MockChainlinkOracle quoteFeed = new MockChainlinkOracle(1e8, 8);
+        quoteFeed.set(1, 1e8, 1, block.timestamp, 1);
+
+        MarketParams memory mp = _makeMarketParams(
+            address(usdcLike),
+            address(quoteFeed)
+        );
+
+        uint256 priceScaled = harness.exposed_getLoanTokenPrice(mp);
+        // 1e8 @ 8 decimals -> 1e18 in feed-scaled.
+        // Then 6-decimal token scales by 1e12 -> 1e30.
+        assertEq(priceScaled, 1e30, "6-decimal scaling wrong");
     }
 }
