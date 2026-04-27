@@ -333,8 +333,12 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
         );
         vm.stopPrank();
 
-        // Parse event to get protocol fee
-        (uint256 protocolFee, ) = _parseLiquidationEvent();
+        // Parse event for split amounts and the actual seized collateral.
+        (
+            uint256 actualSeizedAssets,
+            uint256 protocolFee,
+            uint256 liquidatorFee
+        ) = _parseLiquidationEventFull();
 
         // Assertions
         assertEq(wrapper.cachedRoundId(), 777);
@@ -343,10 +347,22 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
             0,
             "no loan repaid"
         );
-        assertGt(
-            IERC20(collToken).balanceOf(LIQUIDATOR) - liqCollBefore,
-            0,
-            "no collateral received"
+        uint256 liquidatorReceived = IERC20(collToken).balanceOf(LIQUIDATOR) -
+            liqCollBefore;
+        assertGt(liquidatorReceived, 0, "no collateral received");
+
+        // Invariant: every collateral token seized must end up either with
+        // the liquidator or with the redeemer (protocol). No tokens stuck.
+        assertEq(
+            liquidatorFee + protocolFee,
+            actualSeizedAssets,
+            "split conservation: liquidatorFee + protocolFee != seized"
+        );
+        // The on-chain transfer split must match the event split exactly.
+        assertEq(
+            liquidatorReceived,
+            liquidatorFee,
+            "liquidator on-chain receipt != event liquidatorFee"
         );
 
         // Verify redeemer received protocol fee (underlying tokens)
@@ -363,6 +379,17 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                 redeemerCollAfter - redeemerCollBefore,
                 protocolFee,
                 "Redeemer balance should match protocol fee from event"
+            );
+
+            // Directional split check: with liquidatorFeeBps = 4000 (40%),
+            // the liquidator receives the full repayment value PLUS 40% of
+            // the collateral surplus, while the protocol receives only 60%
+            // of the surplus. So whenever the protocol gets any fee at all,
+            // the liquidator's share must strictly dominate.
+            assertGt(
+                liquidatorFee,
+                protocolFee,
+                "liquidatorFee should exceed protocolFee when protocolFee > 0"
             );
 
             address mTokenCollateral = _findMTokenForUnderlying(collToken);
@@ -384,6 +411,47 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                 redeemerCollBefore,
                 "Redeemer should not receive tokens when protocolFee is 0"
             );
+            // protocolFee == 0 is the collateral-worth-less-than-repay case;
+            // the liquidator must have received 100% of the seized collateral.
+            assertEq(
+                liquidatorFee,
+                actualSeizedAssets,
+                "liquidator should receive full seized when protocolFee is 0"
+            );
+        }
+    }
+
+    /// @notice Parse PriceUpdatedEarlyAndLiquidated for all numeric fields.
+    /// @dev Mirrors `_parseLiquidationEvent` but also returns `seizedAssets`
+    ///      so callers can verify split conservation.
+    function _parseLiquidationEventFull()
+        internal
+        returns (
+            uint256 seizedAssets,
+            uint256 protocolFee,
+            uint256 liquidatorFee
+        )
+    {
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 eventSig = keccak256(
+            "PriceUpdatedEarlyAndLiquidated(address,uint256,uint256,uint256,uint256)"
+        );
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] == eventSig) {
+                (
+                    uint256 _seized,
+                    ,
+                    uint256 _protocolFee,
+                    uint256 _liquidatorFee
+                ) = abi.decode(
+                        logs[i].data,
+                        (uint256, uint256, uint256, uint256)
+                    );
+
+                seizedAssets = _seized;
+                protocolFee = _protocolFee;
+                liquidatorFee = _liquidatorFee;
+            }
         }
     }
 
