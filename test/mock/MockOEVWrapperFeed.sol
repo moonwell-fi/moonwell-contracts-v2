@@ -9,6 +9,10 @@ import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol
 contract MockOEVWrapperFeed is AggregatorV3Interface {
     AggregatorV3Interface public priceFeed;
 
+    /// @notice Deployer; gates the mutator setters so an arbitrary caller
+    ///         cannot rewrite the mock's state mid-test. Test-only.
+    address public immutable owner;
+
     uint8 private _decimals;
     string private _description;
     uint256 private _version;
@@ -19,14 +23,20 @@ contract MockOEVWrapperFeed is AggregatorV3Interface {
     uint256 public r_updatedAt;
     uint80 public r_answeredInRound;
 
+    modifier onlyOwner() {
+        require(msg.sender == owner, "MOEV: not owner");
+        _;
+    }
+
     constructor(address inner, uint8 dec, string memory desc, uint256 ver) {
+        owner = msg.sender;
         priceFeed = AggregatorV3Interface(inner);
         _decimals = dec;
         _description = desc;
         _version = ver;
     }
 
-    function setPriceFeed(address inner) external {
+    function setPriceFeed(address inner) external onlyOwner {
         priceFeed = AggregatorV3Interface(inner);
     }
 
@@ -36,7 +46,7 @@ contract MockOEVWrapperFeed is AggregatorV3Interface {
         uint256 startedAt,
         uint256 updatedAt,
         uint80 answeredInRound
-    ) external {
+    ) external onlyOwner {
         r_roundId = roundId;
         r_answer = answer;
         r_startedAt = startedAt;
