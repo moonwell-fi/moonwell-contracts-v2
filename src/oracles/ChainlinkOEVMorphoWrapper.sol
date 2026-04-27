@@ -511,6 +511,18 @@ contract ChainlinkOEVMorphoWrapper is
             address(loanFeed) != address(0),
             "ChainlinkOEVMorphoWrapper: loan feed not set"
         );
+        require(
+            address(
+                IMorphoChainlinkOracleV2(marketParams.oracle).QUOTE_FEED_2()
+            ) == address(0),
+            "ChainlinkOEVMorphoWrapper: chained quote feeds unsupported"
+        );
+        require(
+            address(
+                IMorphoChainlinkOracleV2(marketParams.oracle).BASE_FEED_2()
+            ) == address(0),
+            "ChainlinkOEVMorphoWrapper: chained base feeds unsupported"
+        );
 
         int256 loanAnswer;
         {

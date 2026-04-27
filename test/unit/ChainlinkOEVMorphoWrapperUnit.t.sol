@@ -65,6 +65,10 @@ contract ChainlinkOEVMorphoWrapperUnitTest is Test {
 
     /// @notice Helper that constructs a MarketParams pointing at a mock Morpho
     ///         oracle whose `QUOTE_FEED_1()` returns the supplied address.
+    /// @dev Stubs `QUOTE_FEED_2()` and `BASE_FEED_2()` to return address(0)
+    ///      by default, satisfying the wrapper's defensive checks against
+    ///      chained feeds. Tests that need a non-zero second feed should
+    ///      override the stub with their own `vm.mockCall`.
     function _makeMarketParams(
         address loanTokenAddr,
         address quoteFeed
@@ -78,6 +82,20 @@ contract ChainlinkOEVMorphoWrapperUnitTest is Test {
                 IMorphoChainlinkOracleV2.QUOTE_FEED_1.selector
             ),
             abi.encode(quoteFeed)
+        );
+        vm.mockCall(
+            mockMorphoOracle,
+            abi.encodeWithSelector(
+                IMorphoChainlinkOracleV2.QUOTE_FEED_2.selector
+            ),
+            abi.encode(address(0))
+        );
+        vm.mockCall(
+            mockMorphoOracle,
+            abi.encodeWithSelector(
+                IMorphoChainlinkOracleV2.BASE_FEED_2.selector
+            ),
+            abi.encode(address(0))
         );
         mp = MarketParams({
             loanToken: loanTokenAddr,
@@ -155,6 +173,35 @@ contract ChainlinkOEVMorphoWrapperUnitTest is Test {
         );
 
         vm.expectRevert("Chainlink price cannot be lower or equal to 0");
+        harness.exposed_getLoanTokenPrice(mp);
+    }
+
+    /// @notice Defensive: if the per-market oracle exposes a non-zero
+    ///         QUOTE_FEED_2(), the wrapper must reject — Morpho's chained
+    ///         feed mode is not supported by this OEV wrapper because the
+    ///         split math reads only QUOTE_FEED_1 directly.
+    function testLoanPriceRevertsWhenQuoteFeed2IsSet() public {
+        MockChainlinkOracle quoteFeed = new MockChainlinkOracle(2_000e8, 8);
+        quoteFeed.set(1, 2_000e8, 1, block.timestamp, 1);
+
+        MarketParams memory mp = _makeMarketParams(
+            address(loanToken),
+            address(quoteFeed)
+        );
+
+        // Override the helper's default address(0) stub with a non-zero feed
+        // address to simulate a chained-quote market.
+        vm.mockCall(
+            mp.oracle,
+            abi.encodeWithSelector(
+                IMorphoChainlinkOracleV2.QUOTE_FEED_2.selector
+            ),
+            abi.encode(address(0xBEEF))
+        );
+
+        vm.expectRevert(
+            "ChainlinkOEVMorphoWrapper: chained quote feeds unsupported"
+        );
         harness.exposed_getLoanTokenPrice(mp);
     }
 
