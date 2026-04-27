@@ -79,7 +79,9 @@ contract mipx39 is HybridProposal {
         ) {
             vm.startBroadcast();
 
-            address baseEthUsdFeed = addresses.getAddress("CHAINLINK_ETH_USD");
+            address baseEthUsdFeed = addresses.getAddress(
+                "CHAINLINK_ETH_USD_FEED"
+            );
             address baseRethEthExchangeRateFeed = addresses.getAddress(
                 "CHAINLINK_RETH_ETH_EXCHANGE_RATE"
             );
@@ -112,7 +114,7 @@ contract mipx39 is HybridProposal {
             vm.startBroadcast();
 
             address optimismEthUsdFeed = addresses.getAddress(
-                "CHAINLINK_ETH_USD"
+                "CHAINLINK_ETH_USD_FEED"
             );
             address optimismRethEthExchangeRateFeed = addresses.getAddress(
                 "CHAINLINK_RETH_ETH_EXCHANGE_RATE"

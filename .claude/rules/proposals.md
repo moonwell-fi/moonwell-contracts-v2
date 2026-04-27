@@ -20,3 +20,15 @@
   budget = Σ speeds × duration, safety-module budget = stkEPS × duration,
   Moonbeam bridge fan-out, no negative amounts, 4-week epoch). Deterministic,
   ~1s, no LLM. The same check runs in CI via `proposal-summary.yml`.
+- Add the `mips.json` entry only AFTER the corresponding `.sol` file exists —
+  registering an entry whose artifact doesn't exist breaks every
+  `PostProposalCheck` test via `vm.getCode` failure during setUp
+- Address registration in `chains/*.json` happens POST on-chain execution, not
+  pre — registering placeholder dry-run addresses breaks simulate because
+  `_checkAddress` validates `code.length > 0` at fork state
+- Use `afterDeploy()` (which runs before `build()`) to snapshot pre-upgrade
+  state into proposal instance vars, so `validate()` can assert strict equality
+  after governance executes (catches accidental storage resets)
+- For Morpho oracle wrapper proxies, the ProxyAdmin is
+  `CHAINLINK_ORACLE_PROXY_ADMIN` (not `MRD_PROXY_ADMIN` — that one is for mToken
+  markets)

@@ -5,14 +5,14 @@ import "@utils/ChainIds.sol";
 
 abstract contract ChainlinkOracleConfigs is Test {
     struct OracleConfig {
-        string oracleName; /// e.g., CHAINLINK_ETH_USD
+        string oracleName; /// e.g., CHAINLINK_ETH_USD_FEED
         string symbol; /// e.g., as found in addresses
         string mTokenKey; /// e.g., MOONWELL_WETH (defaults to MOONWELL_[symbol] if not specified)
     }
 
     struct CompositeOracleConfig {
         string compositeOracleName; /// e.g., "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE"
-        string baseFeedName; /// e.g., "CHAINLINK_ETH_USD" (the base feed for round tracking)
+        string baseFeedName; /// e.g., "CHAINLINK_ETH_USD_FEED" (the base feed for round tracking)
         string symbol; /// e.g., "wstETH"
         string mTokenKey; /// e.g., "MOONWELL_wstETH"
     }
@@ -47,7 +47,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         );
         // WETH already activated by MIP-X38
         // _oracleConfigs[BASE_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
+        //     OracleConfig("CHAINLINK_ETH_USD_FEED", "WETH", "MOONWELL_WETH")
         // );
         // cbETH uses cbETH_COMPOSITE_ORACLE (reverted from cbETHETH_ORACLE in MIP-B57)
         // Now handled via _compositeOracleConfigs below
@@ -89,7 +89,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         _compositeOracleConfigs[BASE_CHAIN_ID].push(
             CompositeOracleConfig(
                 "cbETH_COMPOSITE_ORACLE",
-                "CHAINLINK_ETH_USD",
+                "CHAINLINK_ETH_USD_FEED",
                 "cbETH",
                 "MOONWELL_cbETH"
             )
@@ -97,7 +97,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         _compositeOracleConfigs[BASE_CHAIN_ID].push(
             CompositeOracleConfig(
                 "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE",
-                "CHAINLINK_ETH_USD",
+                "CHAINLINK_ETH_USD_FEED",
                 "wstETH",
                 "MOONWELL_wstETH"
             )
@@ -105,7 +105,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         _compositeOracleConfigs[BASE_CHAIN_ID].push(
             CompositeOracleConfig(
                 "CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE",
-                "CHAINLINK_ETH_USD",
+                "CHAINLINK_ETH_USD_FEED",
                 "rETH",
                 "MOONWELL_rETH"
             )
@@ -113,7 +113,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         _compositeOracleConfigs[BASE_CHAIN_ID].push(
             CompositeOracleConfig(
                 "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE",
-                "CHAINLINK_ETH_USD",
+                "CHAINLINK_ETH_USD_FEED",
                 "weETH",
                 "MOONWELL_weETH"
             )
@@ -121,7 +121,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         _compositeOracleConfigs[BASE_CHAIN_ID].push(
             CompositeOracleConfig(
                 "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
-                "CHAINLINK_ETH_USD",
+                "CHAINLINK_ETH_USD_FEED",
                 "wrsETH",
                 "MOONWELL_wrsETH"
             )
@@ -149,7 +149,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         );
         // WETH already activated by MIP-X38
         // _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
+        //     OracleConfig("CHAINLINK_ETH_USD_FEED", "WETH", "MOONWELL_WETH")
         // );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_WBTC_USD", "WBTC", "MOONWELL_WBTC")
@@ -168,7 +168,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         _compositeOracleConfigs[OPTIMISM_CHAIN_ID].push(
             CompositeOracleConfig(
                 "CHAINLINK_WSTETH_USD_COMPOSITE_ORACLE",
-                "CHAINLINK_ETH_USD",
+                "CHAINLINK_ETH_USD_FEED",
                 "wstETH",
                 "MOONWELL_wstETH"
             )
@@ -176,7 +176,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         _compositeOracleConfigs[OPTIMISM_CHAIN_ID].push(
             CompositeOracleConfig(
                 "CHAINLINK_cbETH_USD_COMPOSITE_ORACLE",
-                "CHAINLINK_ETH_USD",
+                "CHAINLINK_ETH_USD_FEED",
                 "cbETH",
                 "MOONWELL_cbETH"
             )
@@ -184,7 +184,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         _compositeOracleConfigs[OPTIMISM_CHAIN_ID].push(
             CompositeOracleConfig(
                 "CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE",
-                "CHAINLINK_ETH_USD",
+                "CHAINLINK_ETH_USD_FEED",
                 "rETH",
                 "MOONWELL_rETH"
             )
@@ -192,7 +192,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         _compositeOracleConfigs[OPTIMISM_CHAIN_ID].push(
             CompositeOracleConfig(
                 "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE",
-                "CHAINLINK_ETH_USD",
+                "CHAINLINK_ETH_USD_FEED",
                 "weETH",
                 "MOONWELL_weETH"
             )
@@ -200,7 +200,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         _compositeOracleConfigs[OPTIMISM_CHAIN_ID].push(
             CompositeOracleConfig(
                 "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
-                "CHAINLINK_ETH_USD",
+                "CHAINLINK_ETH_USD_FEED",
                 "wrsETH",
                 "MOONWELL_wrsETH"
             )

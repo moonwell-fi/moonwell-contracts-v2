@@ -42,7 +42,7 @@ contract mipx14 is HybridProposal {
 
         // Initialize oracle configurations for Base
         _oracleConfigs[BASE_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
+            OracleConfig("CHAINLINK_ETH_USD_FEED", "WETH", "MOONWELL_WETH")
         );
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_BTC_USD", "cbBTC", "MOONWELL_cbBTC")
@@ -65,7 +65,7 @@ contract mipx14 is HybridProposal {
 
         // Initialize oracle configurations for Optimism
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
+            OracleConfig("CHAINLINK_ETH_USD_FEED", "WETH", "MOONWELL_WETH")
         );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_USDC_USD", "USDC", "MOONWELL_USDC")

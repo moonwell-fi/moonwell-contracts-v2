@@ -100,7 +100,7 @@ contract mipx53 is HybridProposal {
         if (!addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER_V3")) {
             vm.startBroadcast();
             ChainlinkOEVWrapper wrapper = new ChainlinkOEVWrapper(
-                addresses.getAddress("CHAINLINK_ETH_USD"),
+                addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 addresses.getAddress("CHAINLINK_ORACLE"),
                 addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"),
@@ -136,7 +136,7 @@ contract mipx53 is HybridProposal {
         if (!addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER_V3")) {
             vm.startBroadcast();
             ChainlinkOEVWrapper wrapper = new ChainlinkOEVWrapper(
-                addresses.getAddress("CHAINLINK_ETH_USD"),
+                addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 addresses.getAddress("CHAINLINK_ORACLE"),
                 addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"),
@@ -285,7 +285,7 @@ contract mipx53 is HybridProposal {
         );
         assertEq(
             address(wrapper.priceFeed()),
-            addresses.getAddress("CHAINLINK_ETH_USD"),
+            addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
             string.concat(chainName, ": priceFeed should be raw ETH/USD feed")
         );
     }

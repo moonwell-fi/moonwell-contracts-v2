@@ -79,6 +79,10 @@ RewardsDistribution, ProtocolDeployment
 - RPC endpoints configured in `foundry.toml` for all supported chains
 - EVM target is Cancun
 - Optimizer runs: 1
+- Morpho's `IMorphoChainlinkOracleV2` carries per-market feeds: `BASE_FEED_1` =
+  collateral, `QUOTE_FEED_1` = loan. Both are raw aggregators by Morpho
+  convention — read them directly for per-market price lookups. Do NOT reach
+  into Moonwell's Core `ChainlinkOracle` registry for Morpho-side prices.
 
 ## Guardrails
 
