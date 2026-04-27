@@ -7,23 +7,29 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
-import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {ETHEREUM_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /*
 
- Upgrade WormholeBridgeAdapter on Ethereum mainnet to V3 (direct VAA verification) and set new pause guardian
+ Upgrade WormholeBridgeAdapter on Ethereum to Wormhole Executor framework (V4).
+
+ The adapter already has V3 (wormhole core bridge) set from the processVAA migration.
+ This V4 upgrade adds executor, quoter router, quoter, and wormhole chain ID.
+
+ The Ethereum xWELL deployment is owned by MOONWELL_DEPLOYER, not governance,
+ so this is a one-off deployer script (same pattern as DeployXWellEthereum.s.sol).
 
  to simulate:
-     forge script script/UpgradeWormholeAdapterEthereum.s.sol:UpgradeWormholeAdapterEthereum -vvvv --rpc-url ethereum
+     forge script script/UpgradeWormholeAdapterEthereum.s.sol:UpgradeWormholeAdapterEthereum \
+       -vvvv --rpc-url ethereum
 
  to run:
-    forge script script/UpgradeWormholeAdapterEthereum.s.sol:UpgradeWormholeAdapterEthereum -vvvv \
-    --rpc-url ethereum --broadcast --etherscan-api-key ethereum --verify
+    forge script script/UpgradeWormholeAdapterEthereum.s.sol:UpgradeWormholeAdapterEthereum \
+      -vvvv --rpc-url ethereum --broadcast --etherscan-api-key ethereum --verify
 
 */
 contract UpgradeWormholeAdapterEthereum is Script {
@@ -35,99 +41,147 @@ contract UpgradeWormholeAdapterEthereum is Script {
             "This script must be run on Ethereum mainnet"
         );
 
-        ProxyAdmin proxyAdmin = ProxyAdmin(addresses.getAddress("PROXY_ADMIN"));
-
-        address wormholeAdapterProxy = addresses.getAddress(
+        address proxyAdmin = addresses.getAddress("PROXY_ADMIN");
+        address adapterProxy = addresses.getAddress(
             "WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
+
+        // Snapshot pre-upgrade state
+        WormholeBridgeAdapter adapter = WormholeBridgeAdapter(adapterProxy);
+        address ownerBefore = adapter.owner();
+        uint96 gasLimitBefore = adapter.gasLimit();
+        address xERC20Before = address(adapter.xERC20());
+        address wormholeBefore = address(adapter.wormhole());
+
+        console.log("=== Pre-upgrade state ===");
+        console.log("  Owner:", ownerBefore);
+        console.log("  Gas limit:", uint256(gasLimitBefore));
+        console.log("  xERC20:", xERC20Before);
+        console.log("  Wormhole (V3):", wormholeBefore);
+        console.log("  Proxy:", adapterProxy);
+        console.log("  ProxyAdmin:", proxyAdmin);
 
         vm.startBroadcast();
 
-        // Deploy new WormholeBridgeAdapter implementation
+        // Deploy new implementation
         address newImpl = address(new WormholeBridgeAdapter());
+        console.log("  New implementation:", newImpl);
 
-        // Upgrade proxy with initializeV3
-        proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(wormholeAdapterProxy),
+        // Upgrade and initialize V5 (executor framework)
+        // V3 (wormhole core bridge) is already set on-chain
+        ProxyAdmin(proxyAdmin).upgradeAndCall(
+            ITransparentUpgradeableProxy(adapterProxy),
             newImpl,
             abi.encodeWithSignature(
-                "initializeV3(address)",
-                addresses.getAddress("WORMHOLE_CORE")
+                "initializeV5(address,address,address)",
+                addresses.getAddress("WORMHOLE_EXECUTOR"),
+                addresses.getAddress("WORMHOLE_QUOTER_ROUTER"),
+                addresses.getAddress("WORMHOLE_QUOTER")
             )
         );
 
-        // Update xWELL pause guardian
-        xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
-        xwellProxy.grantPauseGuardian(addresses.getAddress("PAUSE_GUARDIAN"));
-
         vm.stopBroadcast();
 
-        // Add new logic address to new implementation
-        addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_IMPL_V2", newImpl);
-
-        addresses.printAddresses();
+        console.log("\n=== Upgrade Complete ===");
 
         // Run validation
-        _validateDeployment(addresses, proxyAdmin);
+        _validateUpgrade(
+            addresses,
+            adapterProxy,
+            proxyAdmin,
+            newImpl,
+            ownerBefore,
+            gasLimitBefore,
+            xERC20Before,
+            wormholeBefore
+        );
     }
 
-    function _validateDeployment(
+    function _validateUpgrade(
         Addresses addresses,
-        ProxyAdmin proxyAdmin
-    ) internal {
-        address wormholeAdapterProxy = addresses.getAddress(
-            "WORMHOLE_BRIDGE_ADAPTER_PROXY"
-        );
-        address newImpl = addresses.getAddress(
-            "WORMHOLE_BRIDGE_ADAPTER_IMPL_V2"
-        );
-        address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
-
+        address adapterProxy,
+        address proxyAdmin,
+        address expectedImpl,
+        address expectedOwner,
+        uint96 expectedGasLimit,
+        address expectedXERC20,
+        address expectedWormhole
+    ) internal view {
         console.log("\n=== Running Validation ===");
 
-        // 1. Verify proxy implementation updated
+        WormholeBridgeAdapter adapter = WormholeBridgeAdapter(adapterProxy);
+
+        // 1. Verify implementation upgraded
         validateProxy(
             vm,
-            wormholeAdapterProxy,
-            newImpl,
-            address(proxyAdmin),
+            adapterProxy,
+            expectedImpl,
+            proxyAdmin,
             "Ethereum WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
-        console.log(
-            "WormholeBridgeAdapter implementation updated to:",
-            newImpl
+
+        // 2. Verify V3 state preserved (wormhole core bridge)
+        require(
+            address(adapter.wormhole()) == expectedWormhole,
+            "wormhole core bridge changed after upgrade"
         );
 
-        // 2. Verify wormhole() returns WORMHOLE_CORE
-        WormholeBridgeAdapter adapter = WormholeBridgeAdapter(
-            wormholeAdapterProxy
+        // 3. Verify V4 state (executor framework)
+        require(
+            address(adapter.executor()) ==
+                addresses.getAddress("WORMHOLE_EXECUTOR"),
+            "executor not set correctly"
         );
         require(
-            address(adapter.wormhole()) == wormholeCore,
-            "Ethereum: wormhole core not set correctly"
+            address(adapter.executorQuoterRouter()) ==
+                addresses.getAddress("WORMHOLE_QUOTER_ROUTER"),
+            "executorQuoterRouter not set correctly"
         );
-        console.log("wormhole() set to:", wormholeCore);
-
-        // 3. Verify gasLimit is 300_000
+        // 4. Verify storage preservation
         require(
-            adapter.gasLimit() == 300_000,
-            "Ethereum: gasLimit changed after upgrade"
+            adapter.owner() == expectedOwner,
+            "owner changed after upgrade"
         );
-        console.log("gasLimit preserved: 300000");
-
-        // 4. Verify initializeV3 cannot be called again (reinitializer guard)
-        try adapter.initializeV3(address(1)) {
-            revert("Ethereum: initializeV3 should have reverted");
-        } catch {}
-
-        // 5. Verify xWELL pause guardian updated
-        xWELL xwellProxy = xWELL(addresses.getAddress("xWELL_PROXY"));
-        address expectedGuardian = addresses.getAddress("PAUSE_GUARDIAN");
         require(
-            xwellProxy.pauseGuardian() == expectedGuardian,
-            "Ethereum: xWELL pause guardian not updated correctly"
+            adapter.gasLimit() == expectedGasLimit,
+            "gasLimit changed after upgrade"
         );
-        console.log("xWELL pause guardian updated to:", expectedGuardian);
+        require(
+            address(adapter.xERC20()) == expectedXERC20,
+            "xERC20 changed after upgrade"
+        );
+
+        // 5. Verify trusted senders still configured
+        require(
+            adapter.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                addresses.getAddress(
+                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                    MOONBEAM_CHAIN_ID
+                )
+            ),
+            "Moonbeam adapter not trusted"
+        );
+        require(
+            adapter.isTrustedSender(
+                BASE_WORMHOLE_CHAIN_ID,
+                addresses.getAddress(
+                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                    BASE_CHAIN_ID
+                )
+            ),
+            "Base adapter not trusted"
+        );
+        require(
+            adapter.isTrustedSender(
+                OPTIMISM_WORMHOLE_CHAIN_ID,
+                addresses.getAddress(
+                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                    OPTIMISM_CHAIN_ID
+                )
+            ),
+            "Optimism adapter not trusted"
+        );
 
         console.log("=== Validation Passed ===\n");
     }

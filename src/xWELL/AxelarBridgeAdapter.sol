@@ -324,6 +324,17 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter {
     //// ------------------------------------------------------------
     //// ------------------------------------------------------------
 
+    /// @notice Off-chain quote bridge out is not supported on Axelar
+    function _bridgeOut(
+        address,
+        uint256,
+        uint256,
+        address,
+        bytes calldata
+    ) internal override {
+        revert("AxelarBridge: off-chain quote not supported");
+    }
+
     /// @notice execute a bridge in using the axelar gateway
     /// @param commandId the command id
     /// @param sourceChain the source chain
