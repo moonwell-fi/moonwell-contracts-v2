@@ -7,6 +7,41 @@
 
 ---
 
+## 0. Architectural correction (post-review)
+
+The original design (sections below) assumed the Morpho wrapper should mirror
+the Core wrapper's loan-feed source — `chainlinkOracle.getFeed(symbol)` with
+single-hop deref via `_resolveRawFeed`. Post-review, that coupling is wrong by
+design: a Morpho market carries its own oracle in `MarketParams.oracle`, and
+that oracle's `QUOTE_FEED_1()` is the raw Chainlink aggregator for the loan
+asset by Morpho's own convention (it is not OEV-wrapped).
+
+**Final shape for `ChainlinkOEVMorphoWrapper`:**
+
+- `_getLoanTokenPrice` takes `MarketParams memory` (already on hand at the
+  caller) and reads
+  `IMorphoChainlinkOracleV2(marketParams.oracle).QUOTE_FEED_1()`.
+- No `_resolveRawFeed` helper, no `IOEVWrapperFeed` import, no Core-registry
+  lookup — `QUOTE_FEED_1` is raw by convention.
+- `_validateRoundData` parity check is preserved (non-zero answer, non-zero
+  `updatedAt`, `answeredInRound >= roundId`).
+- The `chainlinkOracle` storage slot is retained for layout compatibility with
+  prior implementations but is unused by the new logic. `initializeV2` continues
+  to validate and assign it for API stability with already-deployed proxies; no
+  `reinitializer` bump is needed.
+
+**The Core wrapper (`ChainlinkOEVWrapper`) is unchanged.** Its symbol-based
+`ChainlinkOracle.getFeed(symbol)` lookup is correct for the Moonwell mToken
+liquidation flow: there is no per-market oracle in Core, so the registry is the
+right source of truth and `_resolveRawFeed` is still the right tool to guard
+against accidental wrapper-of-wrapper registration.
+
+The sections below describe the original analysis. Where the Morpho wrapper's
+intended implementation differs from the final shape, the Morpho-specific
+references should be read as historical context.
+
+---
+
 ## 1. Problem Statement
 
 Both `ChainlinkOEVWrapper` and `ChainlinkOEVMorphoWrapper` expose a
@@ -97,7 +132,12 @@ additional changes.
 
 ### 3.2 Deref helper
 
-Add an internal view helper to each wrapper:
+> **Post-review correction:** the deref helper is added only to
+> `ChainlinkOEVWrapper` (Core). `ChainlinkOEVMorphoWrapper` does not need it
+> because it sources the loan feed directly from
+> `MarketParams.oracle.QUOTE_FEED_1()` (see §0).
+
+Add an internal view helper to the Core wrapper:
 
 ```solidity
 /// @notice Resolve a feed registered in ChainlinkOracle down to its raw
@@ -196,26 +236,43 @@ AggregatorV3Interface loanFeed = chainlinkOracle.getFeed(
 require(loanAnswer > 0, "ChainlinkOEVMorphoWrapper: invalid loan token price");
 ```
 
-**After:**
+**After (final shape — see §0):**
 
 ```solidity
-AggregatorV3Interface registryFeed = chainlinkOracle.getFeed(
-    loanToken.symbol()
-);
-AggregatorV3Interface loanFeed = _resolveRawFeed(registryFeed);
-int256 loanAnswer;
-{
-    (uint80 roundId, int256 answer, , uint256 updatedAt, uint80 answeredInRound)
-        = loanFeed.latestRoundData();
+function _getLoanTokenPrice(
+  MarketParams memory marketParams
+) internal view returns (uint256) {
+  AggregatorV3Interface loanFeed = IMorphoChainlinkOracleV2(marketParams.oracle)
+    .QUOTE_FEED_1();
+  require(
+    address(loanFeed) != address(0),
+    "ChainlinkOEVMorphoWrapper: loan feed not set"
+  );
+  int256 loanAnswer;
+  {
+    (
+      uint80 roundId,
+      int256 answer,
+      ,
+      uint256 updatedAt,
+      uint80 answeredInRound
+    ) = loanFeed.latestRoundData();
     _validateRoundData(roundId, answer, updatedAt, answeredInRound);
     loanAnswer = answer;
+  }
+  uint8 feedDecimals = loanFeed.decimals();
+  // ... scaling
 }
-uint8 feedDecimals = loanFeed.decimals();
-// ... scaling
 ```
 
-This commit simultaneously fixes the desync (via `_resolveRawFeed`) and restores
-validation parity (via `_validateRoundData`).
+This simultaneously eliminates the cross-system coupling on the Core registry,
+ensures the loan side is read directly from a raw Chainlink aggregator (so it
+cannot be OEV-delayed against the collateral side), and applies
+`_validateRoundData` for parity with the collateral side.
+
+The `chainlinkOracle` storage variable is retained on the contract for layout
+compatibility with prior implementations but is unused by the new code path.
+`IOEVWrapperFeed` is no longer imported by this file.
 
 ### 4.3 `src/oracles/IOEVWrapperFeed.sol`
 
@@ -235,8 +292,7 @@ New file as specified in §3.1.
 
 ### 5.1 Unit tests
 
-Extend `test/unit/ChainlinkOEVWrapperTest.t.sol` and
-`test/unit/ChainlinkOEVMorphoWrapperTest.t.sol` (create if absent):
+**Core wrapper (`test/unit/ChainlinkOEVWrapperUnit.t.sol`):**
 
 1. **Raw-feed path:** registry returns a plain mock aggregator with no
    `priceFeed()` method. Assert `_getLoanTokenPrice` reads from it directly and
@@ -252,9 +308,21 @@ Extend `test/unit/ChainlinkOEVWrapperTest.t.sol` and
    itself is used (no revert, no deref-to-zero).
 5. **Single-hop invariant:** mock whose `priceFeed()` itself points at another
    mock exposing `priceFeed()`. Assert only one hop is taken.
-6. **Morpho validation parity:** three new cases in the Morpho test —
-   `updatedAt == 0` reverts, `answeredInRound < roundId` reverts, `answer <= 0`
-   continues to revert as before.
+
+**Morpho wrapper (`test/unit/ChainlinkOEVMorphoWrapperUnit.t.sol`) — see §0:**
+
+The Morpho wrapper now sources the loan-token feed from
+`MarketParams.oracle.QUOTE_FEED_1()`, not the Core registry. Tests construct a
+`MarketParams` whose `oracle` is a `vm.mockCall`-stubbed
+`IMorphoChainlinkOracleV2` returning a configurable `QUOTE_FEED_1`:
+
+1. **QUOTE_FEED_1 is the source of truth:** assert the price comes from the
+   per-market quote feed.
+2. **Zero QUOTE_FEED_1 reverts:** defensive guard against unset feeds.
+3. **Validation parity:** three cases — `updatedAt == 0` reverts,
+   `answeredInRound < roundId` reverts, `answer <= 0` reverts.
+4. **Decimal scaling:** 6-decimal loan token (USDC-like) scales correctly to the
+   wrapper's 1e18-mantissa convention.
 
 ### 5.2 Integration tests
 
