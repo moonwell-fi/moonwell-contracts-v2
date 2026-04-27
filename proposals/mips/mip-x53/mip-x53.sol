@@ -34,6 +34,20 @@ contract mipx53 is HybridProposal {
     /// @notice Max decrements — matches MIP-X38 parameters.
     uint256 public constant MAX_DECREMENTS = 10;
 
+    /// @notice Snapshot of pre-upgrade Morpho wrapper state, captured in
+    ///         afterDeploy() and asserted in validate() to prove the proxy
+    ///         upgrade preserved every storage variable. Storage on a
+    ///         proposal contract instance is reused across lifecycle hooks.
+    uint16 internal _preUpgradeLiquidatorFeeBps;
+    uint256 internal _preUpgradeMaxRoundDelay;
+    uint256 internal _preUpgradeMaxDecrements;
+    address internal _preUpgradeFeeRecipient;
+    address internal _preUpgradeOwner;
+    address internal _preUpgradePriceFeed;
+    address internal _preUpgradeChainlinkOracle;
+    uint256 internal _preUpgradeCachedRoundId;
+    address internal _preUpgradeMorphoBlue;
+
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./proposals/mips/mip-x53/x53.md")
@@ -136,6 +150,28 @@ contract mipx53 is HybridProposal {
                 address(wrapper)
             );
         }
+
+        vm.selectFork(primaryForkId());
+    }
+
+    /// @notice Snapshot the pre-upgrade Morpho wrapper proxy state on Base so
+    ///         validate() can later assert exact equality post-upgrade. Runs
+    ///         AFTER deploy() and BEFORE build()/simulate(), per the proposal
+    ///         lifecycle.
+    function afterDeploy(Addresses addresses, address) public override {
+        vm.selectFork(BASE_FORK_ID);
+        ChainlinkOEVMorphoWrapper proxy = ChainlinkOEVMorphoWrapper(
+            payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
+        );
+        _preUpgradeLiquidatorFeeBps = proxy.liquidatorFeeBps();
+        _preUpgradeMaxRoundDelay = proxy.maxRoundDelay();
+        _preUpgradeMaxDecrements = proxy.maxDecrements();
+        _preUpgradeFeeRecipient = proxy.feeRecipient();
+        _preUpgradeOwner = proxy.owner();
+        _preUpgradePriceFeed = address(proxy.priceFeed());
+        _preUpgradeChainlinkOracle = address(proxy.chainlinkOracle());
+        _preUpgradeCachedRoundId = proxy.cachedRoundId();
+        _preUpgradeMorphoBlue = address(proxy.morphoBlue());
 
         vm.selectFork(primaryForkId());
     }
@@ -270,29 +306,65 @@ contract mipx53 is HybridProposal {
         );
     }
 
-    /// @notice Sanity-check the Morpho wrapper state after proxy upgrade. The
-    ///         implementation swap preserves storage layout (no reinitializer)
-    ///         so state values configured by MIP-X38/X43 must remain intact.
+    /// @notice Strict-equality check: every Morpho wrapper proxy state value
+    ///         after the implementation swap must equal the value captured in
+    ///         afterDeploy() before the upgrade. Catches any subtle storage
+    ///         shift or accidental reinitialization that a `> 0` sanity
+    ///         check would miss.
     function _validateMorphoWrapperState(Addresses addresses) internal view {
         ChainlinkOEVMorphoWrapper wrapper = ChainlinkOEVMorphoWrapper(
             payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
         );
 
-        assertGt(
+        assertEq(
             wrapper.liquidatorFeeBps(),
-            0,
-            "Base: Morpho wrapper liquidatorFeeBps reset after upgrade"
+            _preUpgradeLiquidatorFeeBps,
+            "Base: Morpho wrapper liquidatorFeeBps changed by upgrade"
         );
-        assertGt(
+        assertEq(
             wrapper.maxRoundDelay(),
-            0,
-            "Base: Morpho wrapper maxRoundDelay reset after upgrade"
+            _preUpgradeMaxRoundDelay,
+            "Base: Morpho wrapper maxRoundDelay changed by upgrade"
         );
-        assertGt(
+        assertEq(
             wrapper.maxDecrements(),
-            0,
-            "Base: Morpho wrapper maxDecrements reset after upgrade"
+            _preUpgradeMaxDecrements,
+            "Base: Morpho wrapper maxDecrements changed by upgrade"
         );
+        assertEq(
+            wrapper.feeRecipient(),
+            _preUpgradeFeeRecipient,
+            "Base: Morpho wrapper feeRecipient changed by upgrade"
+        );
+        assertEq(
+            wrapper.owner(),
+            _preUpgradeOwner,
+            "Base: Morpho wrapper owner changed by upgrade"
+        );
+        assertEq(
+            address(wrapper.priceFeed()),
+            _preUpgradePriceFeed,
+            "Base: Morpho wrapper priceFeed changed by upgrade"
+        );
+        assertEq(
+            address(wrapper.chainlinkOracle()),
+            _preUpgradeChainlinkOracle,
+            "Base: Morpho wrapper chainlinkOracle changed by upgrade"
+        );
+        assertEq(
+            wrapper.cachedRoundId(),
+            _preUpgradeCachedRoundId,
+            "Base: Morpho wrapper cachedRoundId changed by upgrade"
+        );
+        assertEq(
+            address(wrapper.morphoBlue()),
+            _preUpgradeMorphoBlue,
+            "Base: Morpho wrapper morphoBlue changed by upgrade"
+        );
+
+        // Cross-check against current expected addresses to catch a
+        // pre-existing misconfiguration that the snapshot would otherwise
+        // mask (the snapshot only proves "no change", not "correct value").
         assertEq(
             wrapper.owner(),
             addresses.getAddress("TEMPORAL_GOVERNOR"),
