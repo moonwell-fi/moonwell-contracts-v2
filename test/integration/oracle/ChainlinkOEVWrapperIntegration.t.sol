@@ -1039,9 +1039,15 @@ contract ChainlinkOEVWrapperIntegrationTest is
     }
 
     function testUpdatePriceEarlyAndLiquidate_RevertLiquidationFailed() public {
-        // Use ETH/WETH for this test
+        // Use ETH/WETH for this test. Resolve the wrapper dynamically through
+        // the live ChainlinkOracle registry so the test works regardless of
+        // which OEV wrapper version is currently wired (MIP-X53 swaps the
+        // canonical "WETH" feed during PostProposalCheck setUp).
+        IChainlinkOracle oracleRegistry = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
         ChainlinkOEVWrapper wrapper = ChainlinkOEVWrapper(
-            payable(addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"))
+            payable(address(oracleRegistry.getFeed("WETH")))
         );
         MToken mTokenCollateral = MToken(addresses.getAddress("MOONWELL_WETH"));
         MToken mTokenBorrow = MToken(addresses.getAddress("MOONWELL_USDC"));
