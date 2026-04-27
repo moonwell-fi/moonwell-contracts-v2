@@ -8,6 +8,7 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
+import {MToken} from "@protocol/MToken.sol";
 import {IChainlinkOracle} from "@protocol/interfaces/IChainlinkOracle.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -60,6 +61,17 @@ contract mipx53 is HybridProposal {
     uint256 internal _opWethUpdatedAtPre;
     int256 internal _baseMorphoAnswerPre;
     uint256 internal _baseMorphoUpdatedAtPre;
+
+    /// @notice Pre-upgrade ChainlinkOracle.getUnderlyingPrice(MOONWELL_WETH)
+    ///         captures the full price-resolution path (wrapper scaling + OEV
+    ///         logic) as seen by consumers. Validated post-upgrade within ±2%
+    ///         to catch any decimal-scaling regression in the new wrapper.
+    uint256 internal _baseGetUnderlyingPricePre;
+    uint256 internal _opGetUnderlyingPricePre;
+
+    /// @notice Pre-upgrade decimals() on the Base Morpho wrapper, used to
+    ///         confirm the upgrade does not change the returned precision.
+    uint8 internal _baseMorphoDecimalsPre;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -211,9 +223,8 @@ contract mipx53 is HybridProposal {
             _baseWethUpdatedAtPre = updatedAt;
         }
 
-        // Base Morpho: capture the proxy's underlying priceFeed answer.
-        // The proxy address survives the upgrade; the priceFeed pointer
-        // must too.
+        // Base Morpho: capture the proxy's underlying priceFeed answer and
+        // the wrapper's decimals() so validate() can assert exact parity.
         {
             ChainlinkOEVMorphoWrapper morpho = ChainlinkOEVMorphoWrapper(
                 payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
@@ -223,9 +234,24 @@ contract mipx53 is HybridProposal {
                 .latestRoundData();
             _baseMorphoAnswerPre = ans;
             _baseMorphoUpdatedAtPre = updatedAt;
+            _baseMorphoDecimalsPre = morpho.decimals();
         }
 
-        // Optimism: capture the raw feed answer.
+        // Base: capture the full getUnderlyingPrice path for MOONWELL_WETH.
+        if (addresses.isAddressSet("MOONWELL_WETH")) {
+            IChainlinkOracle oracle = IChainlinkOracle(
+                addresses.getAddress("CHAINLINK_ORACLE")
+            );
+            _baseGetUnderlyingPricePre = oracle.getUnderlyingPrice(
+                MToken(addresses.getAddress("MOONWELL_WETH"))
+            );
+        } else {
+            console.log(
+                "Base: MOONWELL_WETH not set, skipping getUnderlyingPrice snapshot"
+            );
+        }
+
+        // Optimism: capture the raw feed answer and getUnderlyingPrice path.
         vm.selectFork(OPTIMISM_FORK_ID);
         {
             ChainlinkOEVWrapper oldWrapper = ChainlinkOEVWrapper(
@@ -236,6 +262,19 @@ contract mipx53 is HybridProposal {
                 .latestRoundData();
             _opWethAnswerPre = ans;
             _opWethUpdatedAtPre = updatedAt;
+        }
+
+        if (addresses.isAddressSet("MOONWELL_WETH")) {
+            IChainlinkOracle oracle = IChainlinkOracle(
+                addresses.getAddress("CHAINLINK_ORACLE")
+            );
+            _opGetUnderlyingPricePre = oracle.getUnderlyingPrice(
+                MToken(addresses.getAddress("MOONWELL_WETH"))
+            );
+        } else {
+            console.log(
+                "Optimism: MOONWELL_WETH not set, skipping getUnderlyingPrice snapshot"
+            );
         }
 
         vm.selectFork(primaryForkId());
@@ -315,6 +354,27 @@ contract mipx53 is HybridProposal {
             "Base Morpho"
         );
 
+        // Full price-resolution path: assert getUnderlyingPrice is within ±2%
+        // of the pre-upgrade value. Catches decimal-scaling bugs in the new
+        // wrapper that the raw-feed equality check above would miss.
+        _validateGetUnderlyingPriceWithinTolerance(
+            addresses,
+            "Base",
+            _baseGetUnderlyingPricePre
+        );
+
+        // Morpho wrapper decimals must be unchanged across the proxy upgrade.
+        {
+            ChainlinkOEVMorphoWrapper morpho = ChainlinkOEVMorphoWrapper(
+                payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
+            );
+            assertEq(
+                morpho.decimals(),
+                _baseMorphoDecimalsPre,
+                "Base Morpho: wrapper decimals changed across upgrade"
+            );
+        }
+
         /// -------------------------------------------------------
         /// Optimism validation
         /// -------------------------------------------------------
@@ -331,6 +391,14 @@ contract mipx53 is HybridProposal {
             _opWethAnswerPre,
             _opWethUpdatedAtPre,
             "Optimism WETH"
+        );
+
+        // Full price-resolution path: assert getUnderlyingPrice is within ±2%
+        // of the pre-upgrade value on Optimism.
+        _validateGetUnderlyingPriceWithinTolerance(
+            addresses,
+            "Optimism",
+            _opGetUnderlyingPricePre
         );
 
         vm.selectFork(primaryForkId());
@@ -492,6 +560,46 @@ contract mipx53 is HybridProposal {
             wrapper.feeRecipient(),
             addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"),
             "Base: Morpho wrapper feeRecipient mismatch"
+        );
+    }
+
+    /// @notice Reads ChainlinkOracle.getUnderlyingPrice(MOONWELL_WETH)
+    ///         post-upgrade and asserts it is within ±2% of the pre-upgrade
+    ///         value captured in beforeSimulationHook(). If MOONWELL_WETH is
+    ///         not registered on the current fork the check is skipped with a
+    ///         log — this guards against future chain additions.
+    ///
+    ///         The 2% tolerance absorbs OEV-delay-cache-state differences
+    ///         (different cachedRoundId values can cause walk-back vs
+    ///         current-round selection on the same block) while being tight
+    ///         enough to catch any decimal-scaling bug (off by ≥10x).
+    function _validateGetUnderlyingPriceWithinTolerance(
+        Addresses addresses,
+        string memory chainName,
+        uint256 capturedPrice
+    ) internal view {
+        if (!addresses.isAddressSet("MOONWELL_WETH")) {
+            console.log(
+                string.concat(
+                    chainName,
+                    ": MOONWELL_WETH not set, skipping getUnderlyingPrice tolerance check"
+                )
+            );
+            return;
+        }
+
+        IChainlinkOracle oracle = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+        uint256 postPrice = oracle.getUnderlyingPrice(
+            MToken(addresses.getAddress("MOONWELL_WETH"))
+        );
+
+        assertApproxEqRel(
+            postPrice,
+            capturedPrice,
+            2e16, // 2% — 2e16 / 1e18 = 0.02
+            string.concat(chainName, ": getUnderlyingPrice diverged")
         );
     }
 }
