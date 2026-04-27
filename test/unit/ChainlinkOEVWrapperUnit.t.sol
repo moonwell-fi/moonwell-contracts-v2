@@ -1121,23 +1121,16 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         );
     }
 
-    /// @notice TDD (Task 3): when the registry returns an OEV wrapper (one that
-    ///         exposes priceFeed() pointing at an inner raw aggregator),
-    ///         _getLoanTokenPrice must single-hop-dereference to the inner
-    ///         aggregator and read the fresh price from it.
-    ///
-    ///         FAILING MECHANISM (pre-Task 4): the current _getLoanTokenPrice
-    ///         does not call _resolveRawFeed. When the registry returns a
-    ///         MockOEVWrapperFeed (which exposes priceFeed() pointing at an
-    ///         inner raw aggregator), the current code reads the OUTER wrapper
-    ///         price (1_500e8) instead of the inner raw price (2_000e8).
-    ///         After Task 4 adds _resolveRawFeed, the single-hop deref will
-    ///         detect priceFeed() on the outer, resolve to the inner, and
-    ///         return 2_000e18 as expected.
-    ///
+    /// @notice When the registry entry under the loan-token symbol is itself an
+    ///         OEV wrapper (exposes priceFeed() pointing at an inner raw
+    ///         aggregator), `_getLoanTokenPrice` must single-hop-dereference to
+    ///         the inner aggregator and read the fresh price from it. Regression
+    ///         coverage for the bounty bug: without `_resolveRawFeed`, the outer
+    ///         wrapper's own (potentially delayed) price would be used, skewing
+    ///         the liquidator/protocol fee split.
     /// @dev Uses vm.mockCall on address(1) (the chainlinkOracle registry slot
-    ///      in the harness) because MockChainlinkOracle is a feed mock that
-    ///      has no getFeed(string) registry method.
+    ///      in the harness) because MockChainlinkOracle is a feed mock that has
+    ///      no getFeed(string) registry method.
     function testLoanPriceDerefsPriceFeedWhenRegistryEntryIsOEVWrapper()
         public
     {
