@@ -1756,6 +1756,135 @@ contract ChainlinkOEVWrapperIntegrationTest is
         return (ChainlinkOEVWrapper(payable(address(0))), false);
     }
 
+    /// @notice Expected split output from _computeExpectedSplit
+    struct ExpectedSplit {
+        uint256 liquidatorFee;
+        uint256 protocolFee;
+    }
+
+    /// @notice All parameters for _computeExpectedSplit, packed to avoid stack-too-deep.
+    struct SplitParams {
+        uint256 repayAmount;
+        int256 collateralAnswer;
+        uint8 collateralFeedDecimals;
+        uint8 collateralTokenDecimals;
+        uint256 collateralSeized;
+        int256 loanAnswer;
+        uint8 loanFeedDecimals;
+        uint8 loanTokenDecimals;
+        uint256 exchangeRate;
+        uint16 liquidatorFeeBps;
+    }
+
+    /// @notice Mirror the production _calculateCollateralSplit formula exactly.
+    /// @dev Scales both prices the same way the wrapper does, then reproduces
+    ///      the USD-then-mToken conversion arithmetic step by step.
+    function _computeExpectedSplit(
+        SplitParams memory p
+    ) internal pure returns (ExpectedSplit memory split) {
+        // --- loan price (mirrors _getLoanTokenPrice) ---
+        uint256 loanPricePerUnit = uint256(p.loanAnswer);
+        if (p.loanFeedDecimals < 18) {
+            loanPricePerUnit =
+                loanPricePerUnit *
+                (10 ** (18 - p.loanFeedDecimals));
+        } else if (p.loanFeedDecimals > 18) {
+            loanPricePerUnit =
+                loanPricePerUnit /
+                (10 ** (p.loanFeedDecimals - 18));
+        }
+        uint256 loanPrice;
+        if (p.loanTokenDecimals < 18) {
+            loanPrice = loanPricePerUnit * (10 ** (18 - p.loanTokenDecimals));
+        } else if (p.loanTokenDecimals > 18) {
+            loanPrice = loanPricePerUnit / (10 ** (p.loanTokenDecimals - 18));
+        } else {
+            loanPrice = loanPricePerUnit;
+        }
+
+        // --- collateral price (mirrors _getCollateralTokenPrice) ---
+        uint256 collateralPricePerUnit = uint256(p.collateralAnswer);
+        if (p.collateralFeedDecimals < 18) {
+            collateralPricePerUnit =
+                collateralPricePerUnit *
+                (10 ** (18 - p.collateralFeedDecimals));
+        } else if (p.collateralFeedDecimals > 18) {
+            collateralPricePerUnit =
+                collateralPricePerUnit /
+                (10 ** (p.collateralFeedDecimals - 18));
+        }
+        uint256 collateralPrice;
+        if (p.collateralTokenDecimals < 18) {
+            collateralPrice =
+                collateralPricePerUnit *
+                (10 ** (18 - p.collateralTokenDecimals));
+        } else if (p.collateralTokenDecimals > 18) {
+            collateralPrice =
+                collateralPricePerUnit /
+                (10 ** (p.collateralTokenDecimals - 18));
+        } else {
+            collateralPrice = collateralPricePerUnit;
+        }
+
+        // --- USD values (mirrors _calculateCollateralSplit) ---
+        uint256 underlyingAmount = (p.collateralSeized * p.exchangeRate) / 1e18;
+        uint256 repayUSD = (p.repayAmount * loanPrice) / 1e18;
+        uint256 collateralUSD = (underlyingAmount * collateralPrice) / 1e18;
+
+        // Degenerate case: collateral worth <= repay amount, liquidator gets all
+        if (collateralUSD <= repayUSD) {
+            split.liquidatorFee = p.collateralSeized;
+            split.protocolFee = 0;
+            return split;
+        }
+
+        uint256 liquidatorUSD = repayUSD +
+            ((collateralUSD - repayUSD) * uint256(p.liquidatorFeeBps)) /
+            uint256(10000); // MAX_BPS
+
+        uint256 liquidatorUnderlyingAmount = (liquidatorUSD * 1e18) /
+            collateralPrice;
+        split.liquidatorFee =
+            (liquidatorUnderlyingAmount * 1e18) /
+            p.exchangeRate;
+        split.protocolFee = p.collateralSeized - split.liquidatorFee;
+    }
+
+    /// @notice Read on-chain post-liquidation state and delegate to _computeExpectedSplit.
+    /// @dev Exists solely to keep testFullLiquidationDerefsWrappedLoanFeed below
+    ///      the stack-variable limit imposed by the 0.8.19 codegen without --via-ir.
+    /// @param repayAmount     Loan tokens repaid
+    /// @param collateralSeized Total mToken collateral seized (liquidatorFee + protocolFee)
+    /// @param loanAnswer      Raw int256 from the INNER loan feed captured pre-mock
+    /// @param loanFeedDecimals Decimals of the inner loan feed
+    function _resolveAndComputeSplit(
+        ChainlinkOEVWrapper wrapper,
+        address mTokenCollateralAddr,
+        address mTokenBorrowAddr,
+        uint256 repayAmount,
+        uint256 collateralSeized,
+        int256 loanAnswer,
+        uint8 loanFeedDecimals
+    ) internal view returns (ExpectedSplit memory) {
+        AggregatorV3Interface pf = wrapper.priceFeed();
+        (, int256 collateralAnswer, , , ) = pf.latestRoundData();
+        SplitParams memory p;
+        p.repayAmount = repayAmount;
+        p.collateralAnswer = collateralAnswer;
+        p.collateralFeedDecimals = pf.decimals();
+        p.collateralTokenDecimals = IERC20(
+            MErc20(mTokenCollateralAddr).underlying()
+        ).decimals();
+        p.collateralSeized = collateralSeized;
+        p.loanAnswer = loanAnswer;
+        p.loanFeedDecimals = loanFeedDecimals;
+        p.loanTokenDecimals = IERC20(MErc20(mTokenBorrowAddr).underlying())
+            .decimals();
+        p.exchangeRate = MErc20(mTokenCollateralAddr).exchangeRateStored();
+        p.liquidatorFeeBps = wrapper.liquidatorFeeBps();
+        return _computeExpectedSplit(p);
+    }
+
     /// @notice End-to-end regression: register a MockOEVWrapperFeed under the
     ///         loan-token's symbol with a wildly wrong OUTER price, run a real
     ///         Core liquidation through the OEV wrapper, and assert the split
@@ -1901,23 +2030,45 @@ contract ChainlinkOEVWrapperIntegrationTest is
 
         (uint256 protocolFee, uint256 liquidatorFee) = _parseLiquidationEvent();
 
-        // Conservation: every mToken split must add up.
-        // Repurpose the existing assertions but additionally rule out the
-        // "outer was read" scenario.
+        // Conservation: liquidator must receive something.
         assertGt(liquidatorFee, 0, "liquidator should receive collateral");
 
-        // If the wrapper had read the OUTER's price=1 ($1e-8), then
-        // repayUSD ≈ 0, every seized cent of collateral is "surplus", and
-        // the liquidator's share is exactly liquidatorFeeBps/MAX_BPS of
-        // total — i.e. ~40% with the LIQUIDATOR_FEE_BPS = 4000 default.
-        // With the inner ($1) read correctly, the liquidator's share is
-        // (repayUSD + 40% * surplus) / total — ALWAYS strictly greater
-        // than 40%. So if the deref fired, liquidatorFee >= protocolFee.
-        if (protocolFee > 0) {
-            assertGe(
+        // Compute the expected split using the exact same formula as the
+        // production _calculateCollateralSplit.
+        ExpectedSplit memory expected = _resolveAndComputeSplit(
+            wrapper,
+            mTokenCollateralAddr,
+            mTokenBorrowAddr,
+            repayAmount,
+            liquidatorFee + protocolFee,
+            innerLoanAnswer,
+            innerLoanDecimals
+        );
+
+        // Degenerate case: collateral value <= repay value — liquidator takes all.
+        uint256 collateralSeized = liquidatorFee + protocolFee;
+        if (expected.liquidatorFee == collateralSeized) {
+            assertEq(
                 liquidatorFee,
+                collateralSeized,
+                "degenerate: liquidator should take all collateral"
+            );
+            assertEq(protocolFee, 0, "degenerate: protocol fee should be 0");
+        } else {
+            // Normal case: assert exact split to 0.1% tolerance, accounting
+            // for the tiny exchangeRate drift between event-emission time and
+            // the post-tx read above.
+            assertApproxEqRel(
+                liquidatorFee,
+                expected.liquidatorFee,
+                1e15,
+                "liquidatorFee: split does not match inner-price reproduction"
+            );
+            assertApproxEqRel(
                 protocolFee,
-                "split skewed: outer wrapper price was read instead of inner"
+                expected.protocolFee,
+                1e15,
+                "protocolFee: split does not match inner-price reproduction"
             );
         }
 
@@ -1929,11 +2080,6 @@ contract ChainlinkOEVWrapperIntegrationTest is
             1,
             "mock outer answer should remain untouched"
         );
-
-        // Silence unused warning for innerLoanAnswer — we keep the read so a
-        // later strengthening of this test (full split reproduction) can
-        // wire it in without re-reading the feed.
-        innerLoanAnswer;
     }
 
     /// @notice Regression test for the loan-feed desync bounty fix.
