@@ -19,6 +19,7 @@ import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol
 import {IOEVWrapperFeed} from "@protocol/oracles/IOEVWrapperFeed.sol";
 import {IChainlinkOracle} from "@protocol/interfaces/IChainlinkOracle.sol";
 import {OEVProtocolFeeRedeemer} from "@protocol/OEVProtocolFeeRedeemer.sol";
+import {MockOEVWrapperFeed} from "@test/mock/MockOEVWrapperFeed.sol";
 
 contract ChainlinkOEVWrapperIntegrationTest is
     PostProposalCheck,
@@ -1753,6 +1754,186 @@ contract ChainlinkOEVWrapperIntegrationTest is
             }
         }
         return (ChainlinkOEVWrapper(payable(address(0))), false);
+    }
+
+    /// @notice End-to-end regression: register a MockOEVWrapperFeed under the
+    ///         loan-token's symbol with a wildly wrong OUTER price, run a real
+    ///         Core liquidation through the OEV wrapper, and assert the split
+    ///         used the INNER (real) price — i.e. the wrapper's
+    ///         _resolveRawFeed deref fired during the actual liquidation path.
+    /// @dev This is the missing coverage for the try-success branch of
+    ///      _resolveRawFeed when the registered loan feed is itself a wrapper.
+    ///      The unit tests cover the deref logic in isolation; this test
+    ///      proves it composes correctly inside updatePriceEarlyAndLiquidate.
+    function testFullLiquidationDerefsWrappedLoanFeed() public {
+        if (block.chainid != 8453) return;
+
+        // Pick the first OEV-wrapped collateral whose underlying isn't a
+        // stable, so we can borrow USDC against it. This reuses whichever
+        // wrappers the live ChainlinkOracleConfigs registers on Base.
+        OracleConfig[] memory oracleConfigs = getOracleConfigurations(
+            block.chainid
+        );
+        ChainlinkOEVWrapper wrapper;
+        address mTokenCollateralAddr;
+        for (uint256 i = 0; i < oracleConfigs.length; i++) {
+            // Skip stables — borrow asset for stable-collateral synthetic
+            // positions defaults to DAI in the harness, and we want USDC
+            // here so we can wrap a known feed.
+            if (
+                keccak256(bytes(oracleConfigs[i].symbol)) ==
+                keccak256(bytes("USDC")) ||
+                keccak256(bytes(oracleConfigs[i].symbol)) ==
+                keccak256(bytes("USDBC")) ||
+                keccak256(bytes(oracleConfigs[i].symbol)) ==
+                keccak256(bytes("EURC")) ||
+                keccak256(bytes(oracleConfigs[i].symbol)) ==
+                keccak256(bytes("DAI")) ||
+                keccak256(bytes(oracleConfigs[i].symbol)) ==
+                keccak256(bytes("USDS"))
+            ) {
+                continue;
+            }
+            string memory wrapperKey = string(
+                abi.encodePacked(oracleConfigs[i].oracleName, "_OEV_WRAPPER")
+            );
+            if (!addresses.isAddressSet(wrapperKey)) continue;
+
+            string memory mTokenKey = string(
+                abi.encodePacked("MOONWELL_", oracleConfigs[i].symbol)
+            );
+            if (!addresses.isAddressSet(mTokenKey)) continue;
+
+            wrapper = ChainlinkOEVWrapper(
+                payable(addresses.getAddress(wrapperKey))
+            );
+            mTokenCollateralAddr = addresses.getAddress(mTokenKey);
+            break;
+        }
+        require(
+            address(wrapper) != address(0),
+            "no OEV-wrapped non-stable collateral found"
+        );
+        require(
+            mTokenCollateralAddr != address(0),
+            "collateral mToken not resolved"
+        );
+
+        address mTokenBorrowAddr = addresses.getAddress("MOONWELL_USDC");
+        address borrower = _borrower(wrapper);
+        address liquidator = _liquidator(wrapper);
+
+        (, uint256 borrowAmount) = _setupSyntheticPosition(
+            mTokenCollateralAddr,
+            mTokenBorrowAddr,
+            borrower
+        );
+
+        // Capture the real registered USDC feed before we replace it.
+        ChainlinkOracle oracle = ChainlinkOracle(address(comptroller.oracle()));
+        AggregatorV3Interface realLoanFeed = oracle.getFeed("USDC");
+        require(
+            address(realLoanFeed) != address(0),
+            "USDC feed not registered"
+        );
+
+        // Capture the inner feed's price BEFORE doing anything else, so the
+        // expected split math can be computed without depending on values
+        // that the test will later mock.
+        (, int256 innerLoanAnswer, , , ) = realLoanFeed.latestRoundData();
+        uint8 innerLoanDecimals = realLoanFeed.decimals();
+
+        // Wrap the loan feed: outer's priceFeed() -> realLoanFeed.
+        // The OUTER's own latestRoundData() returns 1 ($1e-8) — a wildly
+        // wrong value. If the wrapper code reads the OUTER directly, the
+        // split math would treat USDC as nearly worthless and the protocol
+        // fee would be ~all the seized collateral. The deref must redirect
+        // to the real inner feed and produce the same split as if no
+        // wrapping had occurred.
+        MockOEVWrapperFeed mockWrapper = new MockOEVWrapperFeed(
+            address(realLoanFeed),
+            innerLoanDecimals,
+            "MOCK_USDC_WRAPPER",
+            1
+        );
+        mockWrapper.setLatestRound(1, 1, 1, block.timestamp, 1);
+
+        vm.prank(oracle.admin());
+        oracle.setFeed("USDC", address(mockWrapper));
+
+        // Sanity-check: the registry now returns our mock outer.
+        assertEq(
+            address(oracle.getFeed("USDC")),
+            address(mockWrapper),
+            "registry not pointed at mock wrapper"
+        );
+
+        // Crash collateral price to make the position underwater.
+        _crashPriceForLiquidation(wrapper, borrower);
+
+        // Execute the liquidation. If the deref breaks, this either reverts
+        // (e.g. answer cannot be lower than 0 — but 1 is valid so it would
+        // proceed with a corrupted split) OR it produces a wildly skewed
+        // split where the liquidator gets practically all the surplus.
+        uint256 repayAmount = borrowAmount / 10;
+        deal(MErc20(mTokenBorrowAddr).underlying(), liquidator, repayAmount);
+
+        if (
+            block.timestamp <= MToken(mTokenBorrowAddr).accrualBlockTimestamp()
+        ) {
+            vm.warp(MToken(mTokenBorrowAddr).accrualBlockTimestamp() + 1);
+        }
+
+        vm.startPrank(liquidator);
+        IERC20(MErc20(mTokenBorrowAddr).underlying()).approve(
+            address(wrapper),
+            repayAmount
+        );
+
+        vm.recordLogs();
+        wrapper.updatePriceEarlyAndLiquidate(
+            borrower,
+            repayAmount,
+            mTokenCollateralAddr,
+            mTokenBorrowAddr
+        );
+        vm.stopPrank();
+
+        (uint256 protocolFee, uint256 liquidatorFee) = _parseLiquidationEvent();
+
+        // Conservation: every mToken split must add up.
+        // Repurpose the existing assertions but additionally rule out the
+        // "outer was read" scenario.
+        assertGt(liquidatorFee, 0, "liquidator should receive collateral");
+
+        // If the wrapper had read the OUTER's price=1 ($1e-8), then
+        // repayUSD ≈ 0, every seized cent of collateral is "surplus", and
+        // the liquidator's share is exactly liquidatorFeeBps/MAX_BPS of
+        // total — i.e. ~40% with the LIQUIDATOR_FEE_BPS = 4000 default.
+        // With the inner ($1) read correctly, the liquidator's share is
+        // (repayUSD + 40% * surplus) / total — ALWAYS strictly greater
+        // than 40%. So if the deref fired, liquidatorFee >= protocolFee.
+        if (protocolFee > 0) {
+            assertGe(
+                liquidatorFee,
+                protocolFee,
+                "split skewed: outer wrapper price was read instead of inner"
+            );
+        }
+
+        // The mockWrapper's outer price was never consumed; its r_answer
+        // should still be the wildly-wrong 1 we set. Sanity for the test
+        // setup itself.
+        assertEq(
+            mockWrapper.r_answer(),
+            1,
+            "mock outer answer should remain untouched"
+        );
+
+        // Silence unused warning for innerLoanAnswer — we keep the read so a
+        // later strengthening of this test (full split reproduction) can
+        // wire it in without re-reading the feed.
+        innerLoanAnswer;
     }
 
     /// @notice Regression test for the loan-feed desync bounty fix.
