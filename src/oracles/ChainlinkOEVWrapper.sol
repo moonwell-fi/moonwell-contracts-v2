@@ -617,10 +617,10 @@ contract ChainlinkOEVWrapper is
 
     /// @notice Get the loan token price from the raw underlying Chainlink feed.
     /// @dev Single-hop dereferences any OEV wrapper registered under the loan
-    ///      token's symbol in ChainlinkOracle, so the split math uses a
-    ///      fresh-price reference regardless of OEV delay on the registry feed.
-    ///      Restores parity with the collateral side which already reads the
-    ///      raw `priceFeed` directly.
+    ///      token's symbol in ChainlinkOracle, so the split math reads from a
+    ///      raw Chainlink aggregator. Mirrors the collateral side's freshness
+    ///      guarantee (which reads from the wrapper's own `priceFeed` directly,
+    ///      a raw aggregator by deployment convention).
     /// @param underlyingLoan The underlying loan token interface
     /// @return The price scaled to 1e18 and adjusted for token decimals
     function _getLoanTokenPrice(
@@ -629,7 +629,21 @@ contract ChainlinkOEVWrapper is
         AggregatorV3Interface registryFeed = chainlinkOracle.getFeed(
             underlyingLoan.symbol()
         );
+        // Defense-in-depth: if the registry was misconfigured to point at an
+        // EOA, the call inside _resolveRawFeed would revert with the
+        // non-actionable "call to non-contract address" message (Solidity's
+        // try/catch does not catch this revert in 0.8.19). Reject upfront
+        // with a clear message. We re-check after resolve in case the
+        // registry returns a wrapper whose inner priceFeed() points at an EOA.
+        require(
+            address(registryFeed).code.length > 0,
+            "ChainlinkOEVWrapper: loan feed has no code"
+        );
         AggregatorV3Interface loanFeed = _resolveRawFeed(registryFeed);
+        require(
+            address(loanFeed).code.length > 0,
+            "ChainlinkOEVWrapper: loan feed has no code"
+        );
 
         int256 loanAnswer;
         {

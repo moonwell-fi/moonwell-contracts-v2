@@ -1238,6 +1238,33 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         );
     }
 
+    /// @notice Defense-in-depth: if the registry returns an address with no
+    ///         contract code (e.g., the registry was misconfigured to point
+    ///         at an EOA), `_resolveRawFeed`'s try/catch falls through and
+    ///         the wrapper would otherwise call `latestRoundData()` on an EOA
+    ///         (which silently returns empty data). The new code-length check
+    ///         must trip first with a clear message.
+    function testLoanPriceRevertsWhenResolvedFeedHasNoCode() public {
+        // EOA with no code. Do NOT mock priceFeed() on it — that would make
+        // _resolveRawFeed return a different (mock-etched) address. Leaving
+        // it unmocked causes _resolveRawFeed's try/catch to fall through and
+        // return the EOA itself.
+        address eoaFeed = address(0xDEAD);
+
+        string memory loanSymbol = loanToken.symbol();
+        vm.mockCall(
+            address(1),
+            abi.encodeWithSignature("getFeed(string)", loanSymbol),
+            abi.encode(eoaFeed)
+        );
+
+        // Sanity: confirm no code at the EOA address before invoking.
+        assertEq(eoaFeed.code.length, 0, "EOA must have no code");
+
+        vm.expectRevert("ChainlinkOEVWrapper: loan feed has no code");
+        harness.exposed_getLoanTokenPrice(EIP20Interface(address(loanToken)));
+    }
+
     function testUpdatePriceEarlyAndLiquidateRevertsOnLoanTokenTransferFailure()
         public
     {
