@@ -11,7 +11,6 @@ import {IMorphoBlue} from "../morpho/IMorphoBlue.sol";
 import {MarketParams} from "../morpho/IMetaMorpho.sol";
 import {IMorphoChainlinkOracleV2} from "../morpho/IMorphoChainlinkOracleV2.sol";
 import {IChainlinkOracle} from "../interfaces/IChainlinkOracle.sol";
-import {IOEVWrapperFeed} from "./IOEVWrapperFeed.sol";
 
 /**
  * @title ChainlinkOEVMorphoWrapper
@@ -34,7 +33,10 @@ contract ChainlinkOEVMorphoWrapper is
     /// @notice The Chainlink price feed this proxy forwards to
     AggregatorV3Interface public priceFeed;
 
-    /// @notice The ChainlinkOracle contract
+    /// @notice The ChainlinkOracle contract.
+    /// @dev Vestigial after the loan-feed source moved to
+    ///      MorphoChainlinkOracleV2.QUOTE_FEED_1. Storage slot retained for
+    ///      layout compatibility with prior implementations.
     IChainlinkOracle public chainlinkOracle;
 
     /// @notice The Morpho Blue contract address
@@ -490,42 +492,25 @@ contract ChainlinkOEVMorphoWrapper is
         );
     }
 
-    /// @notice Resolve a feed registered in ChainlinkOracle down to its raw
-    ///         Chainlink aggregator, single-hop.
-    /// @dev If the registry feed is itself an OEV wrapper (exposes priceFeed()),
-    ///      returns the inner aggregator. Otherwise returns the input unchanged.
-    ///      Deliberately single-hop to avoid recursion and match the registry
-    ///      invariant that entries are raw or a single level of wrapping.
-    function _resolveRawFeed(
-        AggregatorV3Interface registryFeed
-    ) internal view returns (AggregatorV3Interface) {
-        try IOEVWrapperFeed(address(registryFeed)).priceFeed() returns (
-            AggregatorV3Interface inner
-        ) {
-            if (address(inner) != address(0)) {
-                return inner;
-            }
-        } catch {
-            // registry feed is a raw aggregator (no priceFeed() selector);
-            // fall through and return the input.
-        }
-        return registryFeed;
-    }
-
-    /// @notice Get the loan token price from the raw underlying Chainlink feed.
-    /// @dev Single-hop dereferences any OEV wrapper registered under the loan
-    ///      token's symbol, and applies the same `_validateRoundData` checks as
-    ///      the collateral side to enforce non-zero answer, non-zero updatedAt,
-    ///      and answeredInRound >= roundId.
-    /// @param loanToken The loan token interface
-    /// @return The price scaled to 1e18 and adjusted for token decimals
+    /// @notice Get the loan token price from the Morpho market's per-market
+    ///         oracle, sourced directly from QUOTE_FEED_1.
+    /// @dev By Morpho's convention, QUOTE_FEED_1 is the raw Chainlink
+    ///      aggregator for the quote (loan) asset of the market — it is not
+    ///      OEV-wrapped, so no dereferencing is needed. Reads it directly,
+    ///      runs full Chainlink staleness validation via _validateRoundData,
+    ///      and scales to 1e18 with loan-token decimal adjustment.
+    /// @param marketParams The Morpho market parameters (loanToken + oracle)
+    /// @return The price scaled to 1e18 and adjusted for loan token decimals
     function _getLoanTokenPrice(
-        EIP20Interface loanToken
+        MarketParams memory marketParams
     ) internal view returns (uint256) {
-        AggregatorV3Interface registryFeed = chainlinkOracle.getFeed(
-            loanToken.symbol()
+        AggregatorV3Interface loanFeed = IMorphoChainlinkOracleV2(
+            marketParams.oracle
+        ).QUOTE_FEED_1();
+        require(
+            address(loanFeed) != address(0),
+            "ChainlinkOEVMorphoWrapper: loan feed not set"
         );
-        AggregatorV3Interface loanFeed = _resolveRawFeed(registryFeed);
 
         int256 loanAnswer;
         {
@@ -550,7 +535,7 @@ contract ChainlinkOEVMorphoWrapper is
             loanPricePerUnit = loanPricePerUnit / (10 ** (feedDecimals - 18));
         }
 
-        uint8 tokenDecimals = loanToken.decimals();
+        uint8 tokenDecimals = EIP20Interface(marketParams.loanToken).decimals();
         if (tokenDecimals < 18) {
             return loanPricePerUnit * (10 ** (18 - tokenDecimals));
         } else if (tokenDecimals > 18) {
@@ -605,9 +590,7 @@ contract ChainlinkOEVMorphoWrapper is
         uint256 collateralReceived,
         MarketParams memory marketParams
     ) internal view returns (uint256 liquidatorFee, uint256 protocolFee) {
-        uint256 loanTokenPrice = _getLoanTokenPrice(
-            EIP20Interface(marketParams.loanToken)
-        );
+        uint256 loanTokenPrice = _getLoanTokenPrice(marketParams);
         uint256 collateralTokenPrice = _getCollateralTokenPrice(
             collateralAnswer,
             EIP20Interface(marketParams.collateralToken)
