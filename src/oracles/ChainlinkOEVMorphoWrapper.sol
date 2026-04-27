@@ -57,6 +57,12 @@ contract ChainlinkOEVMorphoWrapper is
     /// @notice The max decrements
     uint256 public maxDecrements;
 
+    /// @notice Storage gap for future-proofing upgradeable storage layout.
+    /// @dev Reserves slots so that future implementations can add state
+    ///      variables without breaking layout. Reduce this gap (and only
+    ///      this gap) when adding new state.
+    uint256[50] private __gap;
+
     /// @notice Emitted when the fee recipient is changed
     event FeeRecipientChanged(address oldFeeRecipient, address newFeeRecipient);
 
