@@ -11,7 +11,7 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {IMetaMorpho, MarketParams, MarketAllocation} from "@protocol/morpho/IMetaMorpho.sol";
 import {ChainlinkOracleConfigs} from "@proposals/ChainlinkOracleConfigs.sol";
 import {OEVProtocolFeeRedeemer} from "@protocol/OEVProtocolFeeRedeemer.sol";
-import {IOEVWrapperFeed} from "@protocol/oracles/IOEVWrapperFeed.sol";
+import {IMorphoChainlinkOracleV2} from "@protocol/morpho/IMorphoChainlinkOracleV2.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
 contract ChainlinkOEVMorphoWrapperIntegrationTest is
@@ -625,54 +625,28 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
         );
     }
 
-    /// @notice Regression for bounty fix: verify on Base fork that each
-    ///         Morpho wrapper's registered loan-token feed — when resolved
-    ///         through _resolveRawFeed's single-hop deref — lands on a live
-    ///         on-chain contract whose latestRoundData returns a positive
-    ///         answer. Mirrors the Core wrapper's deref regression.
-    function testLoanFeedDerefProducesNonZeroPrice() public {
+    /// @notice Regression: verify the per-market QUOTE_FEED_1 — which the
+    ///         wrapper now reads directly for the loan-token price — is a
+    ///         live raw Chainlink aggregator returning a positive answer.
+    function testLoanFeedQuoteFeed1IsLiveRawAggregator() public {
         if (block.chainid != 8453) return;
 
-        for (uint256 i = 0; i < wrappers.length; i++) {
-            ChainlinkOEVMorphoWrapper wrapper = wrappers[i];
-            // The WELL/USDC market is the only Morpho wrapper in scope today;
-            // USDC is the loan token.
-            AggregatorV3Interface registered = wrapper
-                .chainlinkOracle()
-                .getFeed("USDC");
-
-            if (address(registered) == address(0)) continue;
-
-            try IOEVWrapperFeed(address(registered)).priceFeed() returns (
-                AggregatorV3Interface inner
-            ) {
-                if (address(inner) != address(0)) {
-                    _assertFreshPrice(inner, "USDC inner feed");
-                    continue;
-                }
-            } catch {
-                // Registered feed is a raw aggregator; fall through to assert
-                // on the registered feed itself.
-            }
-            _assertFreshPrice(registered, "USDC registered feed");
-        }
+        // WELL/USDC Morpho market on Base.
+        address morphoOracle = 0x71FBaD6c2200C8A5B89380f9B6bb8a35d411c852;
+        AggregatorV3Interface quoteFeed = IMorphoChainlinkOracleV2(morphoOracle)
+            .QUOTE_FEED_1();
+        require(address(quoteFeed) != address(0), "QUOTE_FEED_1 unset");
+        _assertHasCode(address(quoteFeed), "QUOTE_FEED_1");
+        (, int256 ans, , uint256 updatedAt, ) = quoteFeed.latestRoundData();
+        require(ans > 0, "QUOTE_FEED_1 answer <= 0");
+        require(updatedAt > 0, "QUOTE_FEED_1 updatedAt == 0");
     }
 
-    function _assertFreshPrice(
-        AggregatorV3Interface feed,
-        string memory label
-    ) internal view {
+    function _assertHasCode(address target, string memory label) internal view {
         uint256 codeLen;
-        address a = address(feed);
         assembly {
-            codeLen := extcodesize(a)
+            codeLen := extcodesize(target)
         }
         require(codeLen > 0, string(abi.encodePacked(label, " has no code")));
-        (, int256 ans, , uint256 updatedAt, ) = feed.latestRoundData();
-        require(ans > 0, string(abi.encodePacked(label, " answer <= 0")));
-        require(
-            updatedAt > 0,
-            string(abi.encodePacked(label, " updatedAt == 0"))
-        );
     }
 }
