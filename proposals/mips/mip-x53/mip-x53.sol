@@ -5,6 +5,7 @@ import "@forge-std/Test.sol";
 
 import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
 import {IChainlinkOracle} from "@protocol/interfaces/IChainlinkOracle.sol";
@@ -47,6 +48,18 @@ contract mipx53 is HybridProposal {
     address internal _preUpgradeChainlinkOracle;
     uint256 internal _preUpgradeCachedRoundId;
     address internal _preUpgradeMorphoBlue;
+
+    /// @notice Snapshot of the price returned by the OLD WETH feed wrapper on
+    ///         each chain, captured in beforeSimulationHook() and asserted
+    ///         in validate() against the price returned by the NEW wrapper.
+    ///         Both wrappers must wrap the same raw aggregator, so their
+    ///         underlying answer at the same block state must be identical.
+    int256 internal _baseWethAnswerPre;
+    uint256 internal _baseWethUpdatedAtPre;
+    int256 internal _opWethAnswerPre;
+    uint256 internal _opWethUpdatedAtPre;
+    int256 internal _baseMorphoAnswerPre;
+    uint256 internal _baseMorphoUpdatedAtPre;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -176,6 +189,58 @@ contract mipx53 is HybridProposal {
         vm.selectFork(primaryForkId());
     }
 
+    /// @notice Snapshot the raw underlying aggregator price on each chain
+    ///         immediately before simulation executes the proposal actions.
+    ///         The hook runs inside `simulate()` BEFORE the on-chain effects
+    ///         (`setFeed` re-wire on Base/Optimism, Morpho proxy upgrade on
+    ///         Base) — capturing the answer here lets `validate()` prove the
+    ///         new wrapper, when read through the same underlying raw feed,
+    ///         returns an identical price for the same block state.
+    function beforeSimulationHook(Addresses addresses) public override {
+        // Base: capture the raw feed answer through the OLD wrapper's
+        // priceFeed pointer (which is the canonical raw ETH/USD aggregator).
+        vm.selectFork(BASE_FORK_ID);
+        {
+            ChainlinkOEVWrapper oldWrapper = ChainlinkOEVWrapper(
+                payable(addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"))
+            );
+            (, int256 ans, , uint256 updatedAt, ) = oldWrapper
+                .priceFeed()
+                .latestRoundData();
+            _baseWethAnswerPre = ans;
+            _baseWethUpdatedAtPre = updatedAt;
+        }
+
+        // Base Morpho: capture the proxy's underlying priceFeed answer.
+        // The proxy address survives the upgrade; the priceFeed pointer
+        // must too.
+        {
+            ChainlinkOEVMorphoWrapper morpho = ChainlinkOEVMorphoWrapper(
+                payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
+            );
+            (, int256 ans, , uint256 updatedAt, ) = morpho
+                .priceFeed()
+                .latestRoundData();
+            _baseMorphoAnswerPre = ans;
+            _baseMorphoUpdatedAtPre = updatedAt;
+        }
+
+        // Optimism: capture the raw feed answer.
+        vm.selectFork(OPTIMISM_FORK_ID);
+        {
+            ChainlinkOEVWrapper oldWrapper = ChainlinkOEVWrapper(
+                payable(addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"))
+            );
+            (, int256 ans, , uint256 updatedAt, ) = oldWrapper
+                .priceFeed()
+                .latestRoundData();
+            _opWethAnswerPre = ans;
+            _opWethUpdatedAtPre = updatedAt;
+        }
+
+        vm.selectFork(primaryForkId());
+    }
+
     function build(Addresses addresses) public override {
         /// -------------------------------------------------------
         /// Base: re-wire WETH feed + upgrade Morpho wrapper proxy
@@ -231,6 +296,24 @@ contract mipx53 is HybridProposal {
         _validateCoreWrapper(addresses, "Base");
         _validateFeedWired(addresses, "Base");
         _validateMorphoWrapperState(addresses);
+        _validatePricePreserved(
+            ChainlinkOEVWrapper(
+                payable(
+                    addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER_V3")
+                )
+            ).priceFeed(),
+            _baseWethAnswerPre,
+            _baseWethUpdatedAtPre,
+            "Base WETH"
+        );
+        _validatePricePreserved(
+            ChainlinkOEVMorphoWrapper(
+                payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
+            ).priceFeed(),
+            _baseMorphoAnswerPre,
+            _baseMorphoUpdatedAtPre,
+            "Base Morpho"
+        );
 
         /// -------------------------------------------------------
         /// Optimism validation
@@ -239,8 +322,43 @@ contract mipx53 is HybridProposal {
         vm.selectFork(OPTIMISM_FORK_ID);
         _validateCoreWrapper(addresses, "Optimism");
         _validateFeedWired(addresses, "Optimism");
+        _validatePricePreserved(
+            ChainlinkOEVWrapper(
+                payable(
+                    addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER_V3")
+                )
+            ).priceFeed(),
+            _opWethAnswerPre,
+            _opWethUpdatedAtPre,
+            "Optimism WETH"
+        );
 
         vm.selectFork(primaryForkId());
+    }
+
+    /// @notice Asserts that the raw aggregator behind the post-upgrade wrapper
+    ///         returns the same answer/updatedAt captured pre-simulation.
+    ///         Block state is unchanged across the simulation, so the raw
+    ///         aggregator's `latestRoundData` is invariant — any mismatch
+    ///         means the new wrapper points at a DIFFERENT raw feed than
+    ///         the old wrapper did, which would silently distort liquidations.
+    function _validatePricePreserved(
+        AggregatorV3Interface rawFeed,
+        int256 expectedAnswer,
+        uint256 expectedUpdatedAt,
+        string memory label
+    ) internal view {
+        (, int256 ans, , uint256 updatedAt, ) = rawFeed.latestRoundData();
+        assertEq(
+            ans,
+            expectedAnswer,
+            string.concat(label, ": raw feed answer changed across upgrade")
+        );
+        assertEq(
+            updatedAt,
+            expectedUpdatedAt,
+            string.concat(label, ": raw feed updatedAt changed across upgrade")
+        );
     }
 
     /// @notice Validate the new ChainlinkOEVWrapper constructor parameters on
