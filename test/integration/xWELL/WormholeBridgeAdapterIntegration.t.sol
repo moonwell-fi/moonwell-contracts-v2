@@ -291,6 +291,79 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     }
 
     // ---------------------------------------------------------------
+    // On-chain quote bridge tests (the bridge(uint256,uint256,address)
+    // overload). After mip-x53 fixes quoterAddress on Base + Optimism,
+    // bridgeCost > 0 and the on-chain-quote path becomes usable. Moonbeam
+    // has no on-chain quoter — the path always reverts up front there.
+    // ---------------------------------------------------------------
+
+    function testBridgeOnchainQuoteFailsZeroValue() public {
+        address user = address(0xBEEF);
+        uint256 amount = 1e18;
+        deal(address(xwellProxy), user, amount);
+
+        vm.startPrank(user);
+        xwellProxy.approve(address(adapter), amount);
+
+        if (block.chainid == MOONBEAM_CHAIN_ID) {
+            vm.expectRevert(
+                "WormholeBridge: onchain quoting not available, use bridge with signedQuote"
+            );
+        } else {
+            vm.expectRevert("WormholeBridge: cost not equal to quote");
+        }
+        adapter.bridge{value: 0}(uint256(sourceWormholeChainId), amount, user);
+        vm.stopPrank();
+    }
+
+    function testBridgeOnchainQuoteSucceeds() public {
+        if (block.chainid == MOONBEAM_CHAIN_ID) {
+            // Moonbeam has no on-chain quoter — covered by the failure test
+            return;
+        }
+
+        address user = address(0xBEEF);
+        uint256 amount = 1e18;
+        deal(address(xwellProxy), user, amount);
+
+        // Etch a mock router onto the live ExecutorQuoterRouter so
+        // requestExecution succeeds without going to the real Wormhole network.
+        address routerAddr = address(adapter.executorQuoterRouter());
+        MockExecutorQuoterRouter mockRouter = new MockExecutorQuoterRouter();
+        vm.etch(routerAddr, address(mockRouter).code);
+        // Force a non-zero quote so the require(msg.value == cost) path runs
+        MockExecutorQuoterRouter(routerAddr).setQuote(0.001 ether);
+
+        uint256 cost = adapter.bridgeCost(sourceWormholeChainId);
+        assertGt(cost, 0, "expected non-zero on-chain quote post-mip-x53");
+
+        vm.deal(user, cost);
+
+        uint256 supplyBefore = xwellProxy.totalSupply();
+        uint256 balanceBefore = xwellProxy.balanceOf(user);
+
+        vm.startPrank(user);
+        xwellProxy.approve(address(adapter), amount);
+        adapter.bridge{value: cost}(
+            uint256(sourceWormholeChainId),
+            amount,
+            user
+        );
+        vm.stopPrank();
+
+        assertEq(
+            balanceBefore - xwellProxy.balanceOf(user),
+            amount,
+            "user xWELL not burned"
+        );
+        assertEq(
+            supplyBefore - xwellProxy.totalSupply(),
+            amount,
+            "totalSupply did not drop"
+        );
+    }
+
+    // ---------------------------------------------------------------
     // Test 9: Wormhole core rejection propagates through executeVAAv1
     // ---------------------------------------------------------------
 
