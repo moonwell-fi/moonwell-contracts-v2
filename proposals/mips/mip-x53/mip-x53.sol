@@ -29,8 +29,8 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 ///
 ///         Each redeployed wrapper preserves the existing wrapper's full
 ///         configuration (priceFeed pointer, chainlinkOracle, feeRecipient,
-///         owner, liquidatorFeeBps, maxRoundDelay, maxDecrements) — read live
-///         from on-chain state — so the only change observable post-upgrade
+///         owner, liquidatorFeeBps, maxRoundDelay, maxDecrements) - read live
+///         from on-chain state - so the only change observable post-upgrade
 ///         is the loan-feed dereferencing logic inside the new bytecode.
 contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
     using ProposalActions for *;
@@ -38,9 +38,12 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
 
     string public constant override name = "MIP-X53";
 
-    /// @notice Suffix appended to each oracleName to register the new wrapper
-    ///         on the Addresses contract (e.g. CHAINLINK_USDC_USD_V3).
-    string internal constant V3_SUFFIX = "_V3";
+    /// @notice Canonical wrapper suffix, matching the convention established by
+    ///         MIP-X38 and MIP-X43. New wrappers are registered under
+    ///         `<oracleName>_OEV_WRAPPER`; the retired predecessor is archived
+    ///         under `<oracleName>_OEV_WRAPPER_DEPRECATED_V3`.
+    string internal constant OEV_WRAPPER_SUFFIX = "_OEV_WRAPPER";
+    string internal constant DEPRECATED_SUFFIX = "_OEV_WRAPPER_DEPRECATED_V3";
 
     /// @notice Snapshot of pre-upgrade Morpho wrapper proxy state, captured in
     ///         afterDeploy() and asserted in validate() to prove the proxy
@@ -69,7 +72,7 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
 
     /// @notice Per-chain, per-mTokenKey snapshot of the full
     ///         `ChainlinkOracle.getUnderlyingPrice(mToken)` resolution path
-    ///         captured pre-simulation. Validated within ±2% post-upgrade.
+    ///         captured pre-simulation. Validated within +-2% post-upgrade.
     mapping(uint256 => mapping(string => uint256)) internal _underlyingPricePre;
 
     /// @notice Per-chain, ordered list of unique oracleNames identified as
@@ -140,7 +143,7 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
 
         // Base only: deploy the new ChainlinkOEVMorphoWrapper implementation.
         // The proxy upgrade itself is queued in build() and executed via
-        // governance — this just deploys the impl bytecode for it to point at.
+        // governance - this just deploys the impl bytecode for it to point at.
         vm.selectFork(BASE_FORK_ID);
         if (
             !addresses.isAddressSet("CHAINLINK_WELL_USD_ORACLE_PROXY_IMPL_V2")
@@ -172,11 +175,12 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
         for (uint256 i = 0; i < configs.length; i++) {
             OracleConfig memory config = configs[i];
 
-            // Dedupe: skip if this oracleName has already been processed in
-            // this chain's loop (e.g. CHAINLINK_USDC_USD covers USDC + USDBC).
+            // Dedupe: skip if already processed in this loop (e.g.
+            // CHAINLINK_USDC_USD covers USDC + USDBC). A completed entry will
+            // have its deprecated slot filled.
             if (
                 addresses.isAddressSet(
-                    string.concat(config.oracleName, V3_SUFFIX)
+                    string.concat(config.oracleName, DEPRECATED_SUFFIX)
                 )
             ) {
                 continue;
@@ -204,30 +208,65 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
             }
 
             // Capture the existing wrapper's full configuration so the new
-            // wrapper can mirror it exactly. Using the live wrapper as the
-            // source of truth (rather than addresses.getAddress(<name>_OEV_WRAPPER))
-            // is robust to historical naming inconsistencies.
+            // wrapper can mirror it exactly.
             WrapperParams memory params = _captureParams(registered);
             _capturedParams[chainId][config.oracleName] = params;
 
-            vm.startBroadcast();
-            ChainlinkOEVWrapper newWrapper = new ChainlinkOEVWrapper(
-                params.priceFeed,
-                params.owner,
-                params.chainlinkOracle,
-                params.feeRecipient,
-                params.liquidatorFeeBps,
-                params.maxRoundDelay,
-                params.maxDecrements
+            _deployAndRegisterWrapper(
+                addresses,
+                chainId,
+                config.oracleName,
+                params
             );
-            vm.stopBroadcast();
-
-            addresses.addAddress(
-                string.concat(config.oracleName, V3_SUFFIX),
-                address(newWrapper)
-            );
-            _upgradedOracleNames[chainId].push(config.oracleName);
         }
+    }
+
+    /// @notice Deploy a new ChainlinkOEVWrapper and register it under the
+    ///         canonical `_OEV_WRAPPER` name, archiving the previous wrapper
+    ///         under `_OEV_WRAPPER_DEPRECATED_V3`. Extracted to avoid stack-
+    ///         too-deep in `_deployForChain`.
+    function _deployAndRegisterWrapper(
+        Addresses addresses,
+        uint256 chainId,
+        string memory oracleName,
+        WrapperParams memory params
+    ) internal {
+        vm.startBroadcast();
+        ChainlinkOEVWrapper newWrapper = new ChainlinkOEVWrapper(
+            params.priceFeed,
+            params.owner,
+            params.chainlinkOracle,
+            params.feeRecipient,
+            params.liquidatorFeeBps,
+            params.maxRoundDelay,
+            params.maxDecrements
+        );
+        vm.stopBroadcast();
+
+        string memory canonicalName = string.concat(
+            oracleName,
+            OEV_WRAPPER_SUFFIX
+        );
+        string memory deprecatedName = string.concat(
+            oracleName,
+            DEPRECATED_SUFFIX
+        );
+
+        // Archive the pre-existing canonical wrapper under the deprecated slot,
+        // then promote the new wrapper to the canonical name.
+        // This mirrors the MIP-X43 convention:
+        //   <name>_OEV_WRAPPER_DEPRECATED_V3 -> old wrapper (X43-era)
+        //   <name>_OEV_WRAPPER               -> new wrapper (this proposal)
+        if (addresses.isAddressSet(canonicalName)) {
+            addresses.addAddress(
+                deprecatedName,
+                addresses.getAddress(canonicalName)
+            );
+            addresses.changeAddress(canonicalName, address(newWrapper), true);
+        } else {
+            addresses.addAddress(canonicalName, address(newWrapper));
+        }
+        _upgradedOracleNames[chainId].push(oracleName);
     }
 
     /// @notice Snapshot the pre-upgrade Morpho wrapper proxy state on Base so
@@ -291,10 +330,10 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
             OracleConfig memory config = configs[i];
             if (
                 !addresses.isAddressSet(
-                    string.concat(config.oracleName, V3_SUFFIX)
+                    string.concat(config.oracleName, DEPRECATED_SUFFIX)
                 )
             ) {
-                // Not upgraded — was either skipped (raw feed) or no symbol.
+                // Not upgraded by this proposal.
                 continue;
             }
 
@@ -329,14 +368,14 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
     }
 
     /// @notice Queue the on-chain governance actions: setFeed for every
-    ///         upgraded wrapper × every symbol that maps to it, plus the
+    ///         upgraded wrapper x every symbol that maps to it, plus the
     ///         Morpho proxy upgrade on Base.
     function build(Addresses addresses) public override {
         _buildForChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
         _buildForChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
 
         // Base only: upgrade the ChainlinkOEVMorphoWrapper proxy. No
-        // reinitializer — storage layout is preserved across the swap.
+        // reinitializer - storage layout is preserved across the swap.
         vm.selectFork(BASE_FORK_ID);
         _pushAction(
             addresses.getAddress("CHAINLINK_ORACLE_PROXY_ADMIN"),
@@ -361,13 +400,23 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
 
         for (uint256 i = 0; i < configs.length; i++) {
             OracleConfig memory config = configs[i];
-            string memory v3Name = string.concat(config.oracleName, V3_SUFFIX);
-            if (!addresses.isAddressSet(v3Name)) continue;
+
+            // Only wire feeds for wrappers deployed by this proposal.
+            if (
+                !addresses.isAddressSet(
+                    string.concat(config.oracleName, DEPRECATED_SUFFIX)
+                )
+            ) continue;
+
+            string memory wrapperName = string.concat(
+                config.oracleName,
+                OEV_WRAPPER_SUFFIX
+            );
 
             (bool ok, string memory symbol) = _readSymbol(addresses, config);
             if (!ok) continue;
 
-            address newWrapper = addresses.getAddress(v3Name);
+            address newWrapper = addresses.getAddress(wrapperName);
             _pushAction(
                 chainlinkOracle,
                 abi.encodeWithSignature(
@@ -378,7 +427,7 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
                 string.concat(
                     "ChainlinkOracle.setFeed(",
                     symbol,
-                    ", new ChainlinkOEVWrapper V3 for ",
+                    ", new ChainlinkOEVWrapper for ",
                     config.oracleName,
                     ")"
                 )
@@ -397,7 +446,7 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
             "Optimism"
         );
 
-        // Morpho proxy upgrade — Base only, strict-equality block.
+        // Morpho proxy upgrade - Base only, strict-equality block.
         vm.selectFork(BASE_FORK_ID);
         _validateMorphoWrapperState(addresses);
         _validatePricePreserved(
@@ -443,10 +492,19 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
         string memory chainName,
         OracleConfig memory config
     ) internal view {
-        string memory v3Name = string.concat(config.oracleName, V3_SUFFIX);
-        if (!addresses.isAddressSet(v3Name)) return;
+        // Only validate oracles upgraded by this proposal.
+        // Upgraded oracles have their predecessor archived under DEPRECATED_SUFFIX.
+        if (
+            !addresses.isAddressSet(
+                string.concat(config.oracleName, DEPRECATED_SUFFIX)
+            )
+        ) return;
 
-        address newWrapperAddr = addresses.getAddress(v3Name);
+        string memory wrapperName = string.concat(
+            config.oracleName,
+            OEV_WRAPPER_SUFFIX
+        );
+        address newWrapperAddr = addresses.getAddress(wrapperName);
 
         // (1) Wiring check: oracle.getFeed(symbol) == new wrapper.
         (bool ok, string memory symbol) = _readSymbol(addresses, config);
@@ -485,7 +543,7 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
             );
         }
 
-        // (4) Full-resolution path within ±2%.
+        // (4) Full-resolution path within +-2%.
         _validateUnderlyingPrice(addresses, chainId, chainName, config);
     }
 
