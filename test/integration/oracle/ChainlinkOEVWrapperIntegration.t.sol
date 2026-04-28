@@ -1893,9 +1893,10 @@ contract ChainlinkOEVWrapperIntegrationTest is
 
     /// @notice End-to-end regression: register a MockOEVWrapperFeed under the
     ///         loan-token's symbol with a wildly wrong OUTER price, run a real
-    ///         Core liquidation through the OEV wrapper, and assert the split
-    ///         used the INNER (real) price — i.e. the wrapper's
-    ///         _resolveRawFeed deref fired during the actual liquidation path.
+    ///         Core liquidation through the OEV wrapper, and assert the resulting
+    ///         split matches the math computed from the INNER (real) price within
+    ///         0.1% tolerance (accounts for exchangeRate drift between event
+    ///         emission and post-tx read).
     /// @dev This is the missing coverage for the try-success branch of
     ///      _resolveRawFeed when the registered loan feed is itself a wrapper.
     ///      The unit tests cover the deref logic in isolation; this test
