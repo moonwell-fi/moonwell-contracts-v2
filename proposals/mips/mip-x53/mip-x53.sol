@@ -23,9 +23,12 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 ///         a fresh `ChainlinkOEVWrapper` constructor (so the loan-feed
 ///         dereference fix is baked in), then re-wires `ChainlinkOracle` to
 ///         point each market's symbol at the new wrapper. Composite-wrapped
-///         feeds and raw aggregators are left untouched. On Base the
-///         `ChainlinkOEVMorphoWrapper` proxy implementation is also upgraded
-///         to restore round-data validation parity (no reinitializer).
+///         feeds and raw aggregators are left untouched. On Base ALL THREE
+///         `ChainlinkOEVMorphoWrapper` proxy implementations are also upgraded
+///         to restore round-data validation parity (no reinitializer):
+///           - CHAINLINK_WELL_USD_ORACLE_PROXY
+///           - CHAINLINK_MAMO_USD_ORACLE_PROXY
+///           - CHAINLINK_stkWELL_USD_ORACLE_PROXY
 ///
 ///         Each redeployed wrapper preserves the existing wrapper's full
 ///         configuration (priceFeed pointer, chainlinkOracle, feeRecipient,
@@ -47,20 +50,22 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
 
     /// @notice Snapshot of pre-upgrade Morpho wrapper proxy state, captured in
     ///         afterDeploy() and asserted in validate() to prove the proxy
-    ///         upgrade preserved every storage variable. Storage on a
-    ///         proposal contract instance is reused across lifecycle hooks.
-    uint16 internal _preUpgradeLiquidatorFeeBps;
-    uint256 internal _preUpgradeMaxRoundDelay;
-    uint256 internal _preUpgradeMaxDecrements;
-    address internal _preUpgradeFeeRecipient;
-    address internal _preUpgradeOwner;
-    address internal _preUpgradePriceFeed;
-    address internal _preUpgradeChainlinkOracle;
-    uint256 internal _preUpgradeCachedRoundId;
-    address internal _preUpgradeMorphoBlue;
-    int256 internal _baseMorphoAnswerPre;
-    uint256 internal _baseMorphoUpdatedAtPre;
-    uint8 internal _baseMorphoDecimalsPre;
+    ///         upgrade preserved every storage variable. Keyed by proxy address.
+    struct MorphoSnapshot {
+        uint16 liquidatorFeeBps;
+        uint256 maxRoundDelay;
+        uint256 maxDecrements;
+        address feeRecipient;
+        address owner;
+        address priceFeed;
+        address chainlinkOracle;
+        uint256 cachedRoundId;
+        address morphoBlue;
+        uint8 decimals;
+        int256 answer;
+        uint256 updatedAt;
+    }
+    mapping(address => MorphoSnapshot) internal _morphoSnapshot;
 
     /// @notice Per-chain, per-oracleName snapshot of the raw aggregator's
     ///         answer and updatedAt captured immediately before simulation.
@@ -141,18 +146,17 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
         _deployForChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
         _deployForChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
 
-        // Base only: deploy the new ChainlinkOEVMorphoWrapper implementation.
-        // The proxy upgrade itself is queued in build() and executed via
-        // governance - this just deploys the impl bytecode for it to point at.
+        // Base only: deploy a single shared ChainlinkOEVMorphoWrapper
+        // implementation that all three proxies (WELL, MAMO, stkWELL) will
+        // point at. The proxy upgrades themselves are queued in build() and
+        // executed via governance — this just deploys the impl bytecode.
         vm.selectFork(BASE_FORK_ID);
-        if (
-            !addresses.isAddressSet("CHAINLINK_WELL_USD_ORACLE_PROXY_IMPL_V2")
-        ) {
+        if (!addresses.isAddressSet("CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2")) {
             vm.startBroadcast();
             ChainlinkOEVMorphoWrapper impl = new ChainlinkOEVMorphoWrapper();
             vm.stopBroadcast();
             addresses.addAddress(
-                "CHAINLINK_WELL_USD_ORACLE_PROXY_IMPL_V2",
+                "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2",
                 address(impl)
             );
         }
@@ -269,24 +273,45 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
         _upgradedOracleNames[chainId].push(oracleName);
     }
 
-    /// @notice Snapshot the pre-upgrade Morpho wrapper proxy state on Base so
-    ///         validate() can later assert exact equality post-upgrade. Runs
-    ///         AFTER deploy() and BEFORE build()/simulate(), per the proposal
-    ///         lifecycle.
+    /// @notice Snapshot the pre-upgrade state of ALL Morpho wrapper proxies on
+    ///         Base so validate() can later assert exact equality post-upgrade.
+    ///         Runs AFTER deploy() and BEFORE build()/simulate(), per the
+    ///         proposal lifecycle.
     function afterDeploy(Addresses addresses, address) public override {
         vm.selectFork(BASE_FORK_ID);
-        ChainlinkOEVMorphoWrapper proxy = ChainlinkOEVMorphoWrapper(
-            payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
-        );
-        _preUpgradeLiquidatorFeeBps = proxy.liquidatorFeeBps();
-        _preUpgradeMaxRoundDelay = proxy.maxRoundDelay();
-        _preUpgradeMaxDecrements = proxy.maxDecrements();
-        _preUpgradeFeeRecipient = proxy.feeRecipient();
-        _preUpgradeOwner = proxy.owner();
-        _preUpgradePriceFeed = address(proxy.priceFeed());
-        _preUpgradeChainlinkOracle = address(proxy.chainlinkOracle());
-        _preUpgradeCachedRoundId = proxy.cachedRoundId();
-        _preUpgradeMorphoBlue = address(proxy.morphoBlue());
+
+        MorphoOracleConfig[]
+            memory morphoConfigs = getMorphoOracleConfigurations(BASE_CHAIN_ID);
+
+        for (uint256 i = 0; i < morphoConfigs.length; i++) {
+            string memory proxyKey = string(
+                abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
+            );
+            if (!addresses.isAddressSet(proxyKey)) {
+                console.log(
+                    "afterDeploy: Morpho proxy not found, skipping:",
+                    proxyKey
+                );
+                continue;
+            }
+
+            address proxyAddr = addresses.getAddress(proxyKey);
+            ChainlinkOEVMorphoWrapper proxy = ChainlinkOEVMorphoWrapper(
+                payable(proxyAddr)
+            );
+
+            MorphoSnapshot storage snap = _morphoSnapshot[proxyAddr];
+            snap.liquidatorFeeBps = proxy.liquidatorFeeBps();
+            snap.maxRoundDelay = proxy.maxRoundDelay();
+            snap.maxDecrements = proxy.maxDecrements();
+            snap.feeRecipient = proxy.feeRecipient();
+            snap.owner = proxy.owner();
+            snap.priceFeed = address(proxy.priceFeed());
+            snap.chainlinkOracle = address(proxy.chainlinkOracle());
+            snap.cachedRoundId = proxy.cachedRoundId();
+            snap.morphoBlue = address(proxy.morphoBlue());
+            snap.decimals = proxy.decimals();
+        }
 
         vm.selectFork(primaryForkId());
     }
@@ -297,18 +322,40 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
         _snapshotChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
         _snapshotChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
 
-        // Base Morpho: capture proxy-side raw answer and decimals.
+        // Base Morpho: capture per-proxy raw answer and updatedAt from each
+        // proxy's priceFeed. The decimals snapshot was already taken in
+        // afterDeploy().
         vm.selectFork(BASE_FORK_ID);
         {
-            ChainlinkOEVMorphoWrapper morpho = ChainlinkOEVMorphoWrapper(
-                payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
-            );
-            (, int256 ans, , uint256 updatedAt, ) = morpho
-                .priceFeed()
-                .latestRoundData();
-            _baseMorphoAnswerPre = ans;
-            _baseMorphoUpdatedAtPre = updatedAt;
-            _baseMorphoDecimalsPre = morpho.decimals();
+            MorphoOracleConfig[]
+                memory morphoConfigs = getMorphoOracleConfigurations(
+                    BASE_CHAIN_ID
+                );
+
+            for (uint256 i = 0; i < morphoConfigs.length; i++) {
+                string memory proxyKey = string(
+                    abi.encodePacked(
+                        morphoConfigs[i].proxyName,
+                        "_ORACLE_PROXY"
+                    )
+                );
+                if (!addresses.isAddressSet(proxyKey)) continue;
+
+                address proxyAddr = addresses.getAddress(proxyKey);
+                MorphoSnapshot storage snap = _morphoSnapshot[proxyAddr];
+
+                if (snap.priceFeed != address(0)) {
+                    (
+                        ,
+                        int256 ans,
+                        ,
+                        uint256 updatedAt,
+
+                    ) = AggregatorV3Interface(snap.priceFeed).latestRoundData();
+                    snap.answer = ans;
+                    snap.updatedAt = updatedAt;
+                }
+            }
         }
 
         vm.selectFork(primaryForkId());
@@ -370,23 +417,52 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
 
     /// @notice Queue the on-chain governance actions: setFeed for every
     ///         upgraded wrapper x every symbol that maps to it, plus the
-    ///         Morpho proxy upgrade on Base.
+    ///         Morpho proxy upgrades on Base (WELL, MAMO, stkWELL).
     function build(Addresses addresses) public override {
         _buildForChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
         _buildForChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
 
-        // Base only: upgrade the ChainlinkOEVMorphoWrapper proxy. No
-        // reinitializer - storage layout is preserved across the swap.
+        // Base only: upgrade all three ChainlinkOEVMorphoWrapper proxies to
+        // the shared new implementation. No reinitializer - storage layout is
+        // preserved across the swap.
         vm.selectFork(BASE_FORK_ID);
-        _pushAction(
-            addresses.getAddress("CHAINLINK_ORACLE_PROXY_ADMIN"),
-            abi.encodeWithSignature(
-                "upgrade(address,address)",
-                addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"),
-                addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY_IMPL_V2")
-            ),
-            "Base: upgrade ChainlinkOEVMorphoWrapper proxy implementation (no reinit)"
+        address newImpl = addresses.getAddress(
+            "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2"
         );
+        address proxyAdmin = addresses.getAddress(
+            "CHAINLINK_ORACLE_PROXY_ADMIN"
+        );
+
+        MorphoOracleConfig[]
+            memory morphoConfigs = getMorphoOracleConfigurations(BASE_CHAIN_ID);
+
+        for (uint256 i = 0; i < morphoConfigs.length; i++) {
+            string memory proxyKey = string(
+                abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
+            );
+            if (!addresses.isAddressSet(proxyKey)) {
+                console.log(
+                    "build: Morpho proxy not found, skipping:",
+                    proxyKey
+                );
+                continue;
+            }
+
+            address proxy = addresses.getAddress(proxyKey);
+            _pushAction(
+                proxyAdmin,
+                abi.encodeWithSignature(
+                    "upgrade(address,address)",
+                    proxy,
+                    newImpl
+                ),
+                string.concat(
+                    "Base: upgrade ChainlinkOEVMorphoWrapper proxy ",
+                    morphoConfigs[i].proxyName,
+                    " implementation (no reinit)"
+                )
+            );
+        }
     }
 
     function _buildForChain(
@@ -447,27 +523,9 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
             "Optimism"
         );
 
-        // Morpho proxy upgrade - Base only, strict-equality block.
+        // Morpho proxy upgrades - Base only.
         vm.selectFork(BASE_FORK_ID);
-        _validateMorphoWrapperState(addresses);
-        _validatePricePreserved(
-            ChainlinkOEVMorphoWrapper(
-                payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
-            ).priceFeed(),
-            _baseMorphoAnswerPre,
-            _baseMorphoUpdatedAtPre,
-            "Base Morpho"
-        );
-        {
-            ChainlinkOEVMorphoWrapper morpho = ChainlinkOEVMorphoWrapper(
-                payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
-            );
-            assertEq(
-                morpho.decimals(),
-                _baseMorphoDecimalsPre,
-                "Base Morpho: wrapper decimals changed across upgrade"
-            );
-        }
+        _validateAllMorphoWrappers(addresses);
 
         vm.selectFork(primaryForkId());
     }
@@ -678,58 +736,157 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
         );
     }
 
-    /// @notice Strict-equality check: every Morpho wrapper proxy state value
-    ///         after the implementation swap must equal the value captured in
-    ///         afterDeploy() before the upgrade.
-    function _validateMorphoWrapperState(Addresses addresses) internal view {
+    /// @notice Loop over all Morpho oracle configs and validate that each
+    ///         proxy's storage is unchanged after the implementation upgrade.
+    ///         Also validates raw price preservation per proxy. Morpho proxies
+    ///         are not mTokens — getUnderlyingPrice does not apply to them.
+    function _validateAllMorphoWrappers(Addresses addresses) internal view {
+        MorphoOracleConfig[]
+            memory morphoConfigs = getMorphoOracleConfigurations(BASE_CHAIN_ID);
+
+        for (uint256 i = 0; i < morphoConfigs.length; i++) {
+            string memory proxyKey = string(
+                abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
+            );
+            if (!addresses.isAddressSet(proxyKey)) {
+                console.log(
+                    "validate: Morpho proxy not found, skipping:",
+                    proxyKey
+                );
+                continue;
+            }
+
+            address proxyAddr = addresses.getAddress(proxyKey);
+            MorphoSnapshot storage snap = _morphoSnapshot[proxyAddr];
+
+            console.log("Validating Morpho proxy:", morphoConfigs[i].proxyName);
+
+            _validateMorphoWrapperState(
+                proxyAddr,
+                snap,
+                morphoConfigs[i].proxyName,
+                addresses
+            );
+
+            // Raw price preservation for Morpho proxy's underlying feed.
+            if (snap.priceFeed != address(0) && snap.updatedAt != 0) {
+                _validatePricePreserved(
+                    AggregatorV3Interface(snap.priceFeed),
+                    snap.answer,
+                    snap.updatedAt,
+                    string.concat("Base Morpho ", morphoConfigs[i].proxyName)
+                );
+            }
+
+            // Decimals preservation.
+            ChainlinkOEVMorphoWrapper wrapper = ChainlinkOEVMorphoWrapper(
+                payable(proxyAddr)
+            );
+            assertEq(
+                wrapper.decimals(),
+                snap.decimals,
+                string.concat(
+                    "Base Morpho ",
+                    morphoConfigs[i].proxyName,
+                    ": decimals changed across upgrade"
+                )
+            );
+        }
+    }
+
+    /// @notice Strict-equality check: every storage variable of a single Morpho
+    ///         wrapper proxy after the implementation swap must equal the
+    ///         snapshot captured in afterDeploy().
+    function _validateMorphoWrapperState(
+        address proxyAddr,
+        MorphoSnapshot storage snap,
+        string memory proxyName,
+        Addresses addresses
+    ) internal view {
         ChainlinkOEVMorphoWrapper wrapper = ChainlinkOEVMorphoWrapper(
-            payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
+            payable(proxyAddr)
         );
 
         assertEq(
             wrapper.liquidatorFeeBps(),
-            _preUpgradeLiquidatorFeeBps,
-            "Base: Morpho wrapper liquidatorFeeBps changed by upgrade"
+            snap.liquidatorFeeBps,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " liquidatorFeeBps changed by upgrade"
+            )
         );
         assertEq(
             wrapper.maxRoundDelay(),
-            _preUpgradeMaxRoundDelay,
-            "Base: Morpho wrapper maxRoundDelay changed by upgrade"
+            snap.maxRoundDelay,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " maxRoundDelay changed by upgrade"
+            )
         );
         assertEq(
             wrapper.maxDecrements(),
-            _preUpgradeMaxDecrements,
-            "Base: Morpho wrapper maxDecrements changed by upgrade"
+            snap.maxDecrements,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " maxDecrements changed by upgrade"
+            )
         );
         assertEq(
             wrapper.feeRecipient(),
-            _preUpgradeFeeRecipient,
-            "Base: Morpho wrapper feeRecipient changed by upgrade"
+            snap.feeRecipient,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " feeRecipient changed by upgrade"
+            )
         );
         assertEq(
             wrapper.owner(),
-            _preUpgradeOwner,
-            "Base: Morpho wrapper owner changed by upgrade"
+            snap.owner,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " owner changed by upgrade"
+            )
         );
         assertEq(
             address(wrapper.priceFeed()),
-            _preUpgradePriceFeed,
-            "Base: Morpho wrapper priceFeed changed by upgrade"
+            snap.priceFeed,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " priceFeed changed by upgrade"
+            )
         );
         assertEq(
             address(wrapper.chainlinkOracle()),
-            _preUpgradeChainlinkOracle,
-            "Base: Morpho wrapper chainlinkOracle changed by upgrade"
+            snap.chainlinkOracle,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " chainlinkOracle changed by upgrade"
+            )
         );
         assertEq(
             wrapper.cachedRoundId(),
-            _preUpgradeCachedRoundId,
-            "Base: Morpho wrapper cachedRoundId changed by upgrade"
+            snap.cachedRoundId,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " cachedRoundId changed by upgrade"
+            )
         );
         assertEq(
             address(wrapper.morphoBlue()),
-            _preUpgradeMorphoBlue,
-            "Base: Morpho wrapper morphoBlue changed by upgrade"
+            snap.morphoBlue,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " morphoBlue changed by upgrade"
+            )
         );
 
         // Cross-check expected-vs-snapshot to catch a pre-existing
@@ -737,12 +894,20 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
         assertEq(
             wrapper.owner(),
             addresses.getAddress("TEMPORAL_GOVERNOR"),
-            "Base: Morpho wrapper owner should be TemporalGovernor"
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " owner should be TemporalGovernor"
+            )
         );
         assertEq(
             wrapper.feeRecipient(),
             addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"),
-            "Base: Morpho wrapper feeRecipient mismatch"
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " feeRecipient mismatch"
+            )
         );
     }
 

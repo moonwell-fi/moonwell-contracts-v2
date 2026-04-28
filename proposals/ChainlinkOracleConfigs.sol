@@ -209,10 +209,9 @@ abstract contract ChainlinkOracleConfigs is Test {
         );
 
         /// Initialize Morpho market configurations for Base
-        // WELL already activated by MIP-X38
-        // _MorphoOracleConfigs[BASE_CHAIN_ID].push(
-        //     MorphoOracleConfig("CHAINLINK_WELL_USD", "CHAINLINK_WELL_USD")
-        // );
+        _MorphoOracleConfigs[BASE_CHAIN_ID].push(
+            MorphoOracleConfig("CHAINLINK_WELL_USD", "CHAINLINK_WELL_USD")
+        );
         _MorphoOracleConfigs[BASE_CHAIN_ID].push(
             MorphoOracleConfig("CHAINLINK_MAMO_USD", "CHAINLINK_MAMO_USD")
         );
