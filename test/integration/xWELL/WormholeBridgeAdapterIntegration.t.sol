@@ -79,8 +79,16 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     // ---------------------------------------------------------------
 
     function testUpgradePreservesExistingState() public view {
-        /// gasLimit is still 300_000
-        assertEq(adapter.gasLimit(), 300_000, "gasLimit changed after upgrade");
+        /// gasLimit was bumped to 700_000 on Base + Optimism by mip-x53;
+        /// Moonbeam is untouched and stays at 300_000.
+        uint96 expectedGasLimit = block.chainid == MOONBEAM_CHAIN_ID
+            ? 300_000
+            : 700_000;
+        assertEq(
+            adapter.gasLimit(),
+            expectedGasLimit,
+            "gasLimit not at expected value after upgrade"
+        );
 
         /// wormhole() returns the core bridge address
         assertEq(
@@ -300,15 +308,24 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     }
 
     // ---------------------------------------------------------------
-    // Test 10: bridgeCost returns 0 when no executorQuoterRouter
+    // Test 10: bridgeCost is 0 on Moonbeam (no quoter) and >0 elsewhere
     // ---------------------------------------------------------------
 
-    function testBridgeCostReturnsZeroGracefully() public view {
-        /// If executorQuoterRouter is not set (e.g. Moonbeam), bridgeCost returns 0
-        /// On chains with a quoter, it returns the executor quote + message fee
+    function testBridgeCostMatchesQuoterConfig() public view {
         uint256 cost = adapter.bridgeCost(sourceWormholeChainId);
-        /// Either 0 (no quoter / quote fails) or some value — just ensure no revert
-        assertTrue(cost >= 0, "bridgeCost should not revert");
+        if (block.chainid == MOONBEAM_CHAIN_ID) {
+            /// Moonbeam has no on-chain quoter — must always return 0
+            assertEq(cost, 0, "Moonbeam: bridgeCost should be 0 (no quoter)");
+        } else {
+            /// Base + Optimism (post-V6) have an EOA quoter and a live router —
+            /// `bridgeCost` swallows quote failures and returns 0, so a strict
+            /// >0 check is the only way to surface a misconfigured quoter.
+            assertGt(
+                cost,
+                0,
+                "bridgeCost returned 0 on a chain with an on-chain quoter"
+            );
+        }
     }
 
     // ---------------------------------------------------------------
@@ -321,7 +338,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(address(0), uint256(1000e18))
+            abi.encode(address(0), uint256(1000e18), currentWormholeChainId)
         );
 
         vm.expectRevert("ERC20: mint to the zero address");

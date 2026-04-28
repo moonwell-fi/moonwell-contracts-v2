@@ -87,6 +87,35 @@ contract xWELLRouter {
         _bridgeToChain(to, amount, wormholeChainId);
     }
 
+    /// @notice bridge WELL to xWELL on the specified chain using an
+    /// off-chain signed quote from the Wormhole Executor
+    /// receiver address to receive the xWELL is msg.sender
+    /// @param amount amount of WELL to bridge
+    /// @param wormholeChainId chain id to send xWELL to
+    /// @param signedQuote signed quote obtained off-chain from the executor API
+    function bridgeToSender(
+        uint256 amount,
+        uint16 wormholeChainId,
+        bytes calldata signedQuote
+    ) external payable {
+        _bridgeToChain(msg.sender, amount, wormholeChainId, signedQuote);
+    }
+
+    /// @notice bridge WELL to xWELL on the specified chain using an
+    /// off-chain signed quote from the Wormhole Executor
+    /// @param to address to receive the xWELL
+    /// @param amount amount of WELL to bridge
+    /// @param wormholeChainId chain id to send xWELL to
+    /// @param signedQuote signed quote obtained off-chain from the executor API
+    function bridgeToRecipient(
+        address to,
+        uint256 amount,
+        uint16 wormholeChainId,
+        bytes calldata signedQuote
+    ) external payable {
+        _bridgeToChain(to, amount, wormholeChainId, signedQuote);
+    }
+
     /// @notice helper function to bridge WELL to xWELL on the specified chain
     /// @param to address to receive the xWELL
     /// @param amount amount of WELL to bridge
@@ -123,6 +152,53 @@ contract xWELLRouter {
             wormholeChainId,
             xwellAmount,
             to
+        );
+
+        if (address(this).balance != 0) {
+            (bool success, ) = msg.sender.call{value: address(this).balance}(
+                ""
+            );
+            require(success, "xWELLRouter: failed to refund excess GLMR");
+        }
+
+        emit BridgeOutSuccess(to, wormholeChainId, amount);
+    }
+
+    /// @notice helper function to bridge WELL to xWELL on the specified chain
+    /// using an off-chain signed quote. The executor fee is priced off-chain
+    /// so the router forwards the entire msg.value to the adapter and refunds
+    /// any leftover to the sender.
+    /// @param to address to receive the xWELL
+    /// @param amount amount of WELL to bridge
+    /// @param wormholeChainId chain id to send xWELL to
+    /// @param signedQuote signed quote obtained off-chain from the executor API
+    function _bridgeToChain(
+        address to,
+        uint256 amount,
+        uint16 wormholeChainId,
+        bytes calldata signedQuote
+    ) private {
+        /// transfer WELL to this contract from the sender
+        well.safeTransferFrom(msg.sender, address(this), amount);
+
+        /// approve the lockbox to spend the WELL
+        well.approve(address(lockbox), amount);
+
+        /// deposit the WELL into the lockbox, which credits the router contract the xWELL
+        lockbox.deposit(amount);
+
+        /// get the amount of xWELL credited to the lockbox
+        uint256 xwellAmount = xwell.balanceOf(address(this));
+
+        /// approve the wormhole bridge to spend the xWELL
+        xwell.approve(address(wormholeBridge), xwellAmount);
+
+        /// bridge the xWELL to the destination chain using the off-chain signed quote
+        wormholeBridge.bridge{value: msg.value}(
+            wormholeChainId,
+            xwellAmount,
+            to,
+            signedQuote
         );
 
         if (address(this).balance != 0) {
