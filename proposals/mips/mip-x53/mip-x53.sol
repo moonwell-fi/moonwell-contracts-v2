@@ -38,7 +38,7 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
 
     string public constant override name = "MIP-X53";
 
-    /// @notice Canonical wrapper suffix, matching the convention established by
+    /// @notice Canonical wrapper suffix — matches the convention established by
     ///         MIP-X38 and MIP-X43. New wrappers are registered under
     ///         `<oracleName>_OEV_WRAPPER`; the retired predecessor is archived
     ///         under `<oracleName>_OEV_WRAPPER_DEPRECATED_V3`.
@@ -333,7 +333,8 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
                     string.concat(config.oracleName, DEPRECATED_SUFFIX)
                 )
             ) {
-                // Not upgraded by this proposal.
+                // Not upgraded by this proposal — skipped (raw feed, no
+                // symbol, or already processed duplicate).
                 continue;
             }
 
@@ -492,7 +493,7 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
         string memory chainName,
         OracleConfig memory config
     ) internal view {
-        // Only validate oracles upgraded by this proposal.
+        // Only validate oracles that were upgraded by this proposal.
         // Upgraded oracles have their predecessor archived under DEPRECATED_SUFFIX.
         if (
             !addresses.isAddressSet(
@@ -601,6 +602,23 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
             string.concat(
                 chainName,
                 ": maxDecrements mismatch for ",
+                oracleName
+            )
+        );
+
+        // Defense-in-depth: the new wrapper's priceFeed MUST be a raw Chainlink
+        // aggregator, not another OEV wrapper. Catches the pathological case where
+        // the prior wrapper was misconfigured (or where a future redeploy uses a
+        // wrapped feed by mistake) and silently undoes the bounty fix.
+        (bool priceFeedIsWrapped, ) = _isOEVWrapper(
+            address(newWrapper.priceFeed())
+        );
+        require(
+            !priceFeedIsWrapped,
+            string.concat(
+                "MIP-X53: ",
+                chainName,
+                " new wrapper's priceFeed must be a raw aggregator for ",
                 oracleName
             )
         );
