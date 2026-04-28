@@ -11,15 +11,17 @@ import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// @notice Tests the xWELLRouter on Moonbeam after the V5 (Executor framework)
 ///         upgrade. Moonbeam has no on-chain quoter, so the only working
 ///         bridge-out path is the off-chain signed-quote `bridge(uint16,...)`
-///         overload. Uses PostProposalCheck so any in-development proposals
-///         are simulated before tests run.
-contract xWellRouterMoonbeamTest is PostProposalCheck {
+///         overload. Uses plain `Test` so the moonbeam-integration CI
+///         workflow (--fork-url moonbeam, only Moonbeam fork) can run it.
+contract xWellRouterMoonbeamTest is Test {
+    /// @notice address registry — read from chains/1284.json
+    Addresses public addresses;
+
     /// @notice xWELL token
     xWELL public xwell;
 
@@ -55,8 +57,8 @@ contract xWellRouterMoonbeamTest is PostProposalCheck {
         uint256 amount
     );
 
-    function setUp() public override {
-        super.setUp();
+    function setUp() public {
+        addresses = new Addresses();
 
         well = IERC20(addresses.getAddress("GOVTOKEN"));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
