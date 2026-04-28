@@ -3,40 +3,46 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
+import {IOEVWrapperFeed} from "@protocol/oracles/IOEVWrapperFeed.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {IChainlinkOracle} from "@protocol/interfaces/IChainlinkOracle.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
+import {ChainlinkOracleConfigs} from "@proposals/ChainlinkOracleConfigs.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 
-/// @title MIP-X53: Fix Chainlink OEV loan-feed desync
-/// @notice Deploys new ChainlinkOEVWrapper instances on Base and Optimism for
-///         WETH/ETH with loan-feed dereferencing, upgrades the Base
-///         ChainlinkOEVMorphoWrapper proxy to restore round-data validation
-///         parity, and re-wires the ChainlinkOracle feed for WETH to the new
-///         core wrappers on both chains.
-contract mipx53 is HybridProposal {
+/// @title MIP-X53: Fix Chainlink OEV loan-feed desync (full-coverage redeploy)
+/// @notice Redeploys every Core OEV-wrapped Chainlink feed enumerated in
+///         `ChainlinkOracleConfigs._oracleConfigs` on Base and Optimism using
+///         a fresh `ChainlinkOEVWrapper` constructor (so the loan-feed
+///         dereference fix is baked in), then re-wires `ChainlinkOracle` to
+///         point each market's symbol at the new wrapper. Composite-wrapped
+///         feeds and raw aggregators are left untouched. On Base the
+///         `ChainlinkOEVMorphoWrapper` proxy implementation is also upgraded
+///         to restore round-data validation parity (no reinitializer).
+///
+///         Each redeployed wrapper preserves the existing wrapper's full
+///         configuration (priceFeed pointer, chainlinkOracle, feeRecipient,
+///         owner, liquidatorFeeBps, maxRoundDelay, maxDecrements) — read live
+///         from on-chain state — so the only change observable post-upgrade
+///         is the loan-feed dereferencing logic inside the new bytecode.
+contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
     using ProposalActions for *;
     using ChainIds for uint256;
 
     string public constant override name = "MIP-X53";
 
-    /// @notice Liquidator fee split (bps). Matches MIP-X43 (70/30 split).
-    uint16 public constant LIQUIDATOR_FEE_BPS = 4000;
+    /// @notice Suffix appended to each oracleName to register the new wrapper
+    ///         on the Addresses contract (e.g. CHAINLINK_USDC_USD_V3).
+    string internal constant V3_SUFFIX = "_V3";
 
-    /// @notice Max round delay (seconds) — matches MIP-X38 parameters.
-    uint256 public constant MAX_ROUND_DELAY = 10;
-
-    /// @notice Max decrements — matches MIP-X38 parameters.
-    uint256 public constant MAX_DECREMENTS = 10;
-
-    /// @notice Snapshot of pre-upgrade Morpho wrapper state, captured in
+    /// @notice Snapshot of pre-upgrade Morpho wrapper proxy state, captured in
     ///         afterDeploy() and asserted in validate() to prove the proxy
     ///         upgrade preserved every storage variable. Storage on a
     ///         proposal contract instance is reused across lifecycle hooks.
@@ -49,29 +55,41 @@ contract mipx53 is HybridProposal {
     address internal _preUpgradeChainlinkOracle;
     uint256 internal _preUpgradeCachedRoundId;
     address internal _preUpgradeMorphoBlue;
-
-    /// @notice Snapshot of the price returned by the OLD WETH feed wrapper on
-    ///         each chain, captured in beforeSimulationHook() and asserted
-    ///         in validate() against the price returned by the NEW wrapper.
-    ///         Both wrappers must wrap the same raw aggregator, so their
-    ///         underlying answer at the same block state must be identical.
-    int256 internal _baseWethAnswerPre;
-    uint256 internal _baseWethUpdatedAtPre;
-    int256 internal _opWethAnswerPre;
-    uint256 internal _opWethUpdatedAtPre;
     int256 internal _baseMorphoAnswerPre;
     uint256 internal _baseMorphoUpdatedAtPre;
-
-    /// @notice Pre-upgrade ChainlinkOracle.getUnderlyingPrice(MOONWELL_WETH)
-    ///         captures the full price-resolution path (wrapper scaling + OEV
-    ///         logic) as seen by consumers. Validated post-upgrade within ±2%
-    ///         to catch any decimal-scaling regression in the new wrapper.
-    uint256 internal _baseGetUnderlyingPricePre;
-    uint256 internal _opGetUnderlyingPricePre;
-
-    /// @notice Pre-upgrade decimals() on the Base Morpho wrapper, used to
-    ///         confirm the upgrade does not change the returned precision.
     uint8 internal _baseMorphoDecimalsPre;
+
+    /// @notice Per-chain, per-oracleName snapshot of the raw aggregator's
+    ///         answer and updatedAt captured immediately before simulation.
+    ///         Used by validate() to prove the new wrapper points at the
+    ///         same raw feed as the old one (block state is unchanged across
+    ///         simulate, so a diff means a different aggregator was wired).
+    mapping(uint256 => mapping(string => int256)) internal _rawAnswerPre;
+    mapping(uint256 => mapping(string => uint256)) internal _rawUpdatedAtPre;
+
+    /// @notice Per-chain, per-mTokenKey snapshot of the full
+    ///         `ChainlinkOracle.getUnderlyingPrice(mToken)` resolution path
+    ///         captured pre-simulation. Validated within ±2% post-upgrade.
+    mapping(uint256 => mapping(string => uint256)) internal _underlyingPricePre;
+
+    /// @notice Per-chain, ordered list of unique oracleNames identified as
+    ///         live OEV wrappers in deploy(). Iterated in build()/validate().
+    mapping(uint256 => string[]) internal _upgradedOracleNames;
+
+    /// @notice Per-chain, per-oracleName snapshot of the existing wrapper's
+    ///         constructor parameters, captured in deploy() so validate()
+    ///         can assert exact mirroring on the new wrapper.
+    struct WrapperParams {
+        address priceFeed;
+        address owner;
+        address chainlinkOracle;
+        address feeRecipient;
+        uint16 liquidatorFeeBps;
+        uint256 maxRoundDelay;
+        uint256 maxDecrements;
+    }
+    mapping(uint256 => mapping(string => WrapperParams))
+        internal _capturedParams;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -114,32 +132,16 @@ contract mipx53 is HybridProposal {
         return MOONBEAM_FORK_ID;
     }
 
+    /// @notice Enumerate every Core OEV wrapper on the given chain and deploy
+    ///         a fresh `ChainlinkOEVWrapper` mirroring its on-chain params.
     function deploy(Addresses addresses, address) public override {
-        /// -------------------------------------------------------
-        /// Base: new ChainlinkOEVWrapper for ETH/USD and new
-        ///       ChainlinkOEVMorphoWrapper implementation
-        /// -------------------------------------------------------
+        _deployForChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
+        _deployForChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
 
+        // Base only: deploy the new ChainlinkOEVMorphoWrapper implementation.
+        // The proxy upgrade itself is queued in build() and executed via
+        // governance — this just deploys the impl bytecode for it to point at.
         vm.selectFork(BASE_FORK_ID);
-
-        if (!addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER_V3")) {
-            vm.startBroadcast();
-            ChainlinkOEVWrapper wrapper = new ChainlinkOEVWrapper(
-                addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                addresses.getAddress("CHAINLINK_ORACLE"),
-                addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"),
-                LIQUIDATOR_FEE_BPS,
-                MAX_ROUND_DELAY,
-                MAX_DECREMENTS
-            );
-            vm.stopBroadcast();
-            addresses.addAddress(
-                "CHAINLINK_ETH_USD_OEV_WRAPPER_V3",
-                address(wrapper)
-            );
-        }
-
         if (
             !addresses.isAddressSet("CHAINLINK_WELL_USD_ORACLE_PROXY_IMPL_V2")
         ) {
@@ -152,31 +154,80 @@ contract mipx53 is HybridProposal {
             );
         }
 
-        /// -------------------------------------------------------
-        /// Optimism: new ChainlinkOEVWrapper for ETH/USD
-        /// -------------------------------------------------------
+        vm.selectFork(primaryForkId());
+    }
 
-        vm.selectFork(OPTIMISM_FORK_ID);
+    function _deployForChain(
+        Addresses addresses,
+        uint256 forkId,
+        uint256 chainId
+    ) internal {
+        vm.selectFork(forkId);
 
-        if (!addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER_V3")) {
+        OracleConfig[] memory configs = getOracleConfigurations(chainId);
+        IChainlinkOracle oracle = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+
+        for (uint256 i = 0; i < configs.length; i++) {
+            OracleConfig memory config = configs[i];
+
+            // Dedupe: skip if this oracleName has already been processed in
+            // this chain's loop (e.g. CHAINLINK_USDC_USD covers USDC + USDBC).
+            if (
+                addresses.isAddressSet(
+                    string.concat(config.oracleName, V3_SUFFIX)
+                )
+            ) {
+                continue;
+            }
+
+            // Resolve the live wrapper via the registry: whatever address is
+            // currently wired under the market's actual ERC20 symbol.
+            (bool ok, string memory symbol) = _readSymbol(addresses, config);
+            if (!ok) {
+                console.log(
+                    "Skipping (no symbol resolvable):",
+                    config.oracleName
+                );
+                continue;
+            }
+
+            address registered = address(oracle.getFeed(symbol));
+            (bool isWrapped, ) = _isOEVWrapper(registered);
+            if (!isWrapped) {
+                console.log(
+                    "Skipping (registered feed is not an OEV wrapper):",
+                    config.oracleName
+                );
+                continue;
+            }
+
+            // Capture the existing wrapper's full configuration so the new
+            // wrapper can mirror it exactly. Using the live wrapper as the
+            // source of truth (rather than addresses.getAddress(<name>_OEV_WRAPPER))
+            // is robust to historical naming inconsistencies.
+            WrapperParams memory params = _captureParams(registered);
+            _capturedParams[chainId][config.oracleName] = params;
+
             vm.startBroadcast();
-            ChainlinkOEVWrapper wrapper = new ChainlinkOEVWrapper(
-                addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                addresses.getAddress("CHAINLINK_ORACLE"),
-                addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"),
-                LIQUIDATOR_FEE_BPS,
-                MAX_ROUND_DELAY,
-                MAX_DECREMENTS
+            ChainlinkOEVWrapper newWrapper = new ChainlinkOEVWrapper(
+                params.priceFeed,
+                params.owner,
+                params.chainlinkOracle,
+                params.feeRecipient,
+                params.liquidatorFeeBps,
+                params.maxRoundDelay,
+                params.maxDecrements
             );
             vm.stopBroadcast();
-            addresses.addAddress(
-                "CHAINLINK_ETH_USD_OEV_WRAPPER_V3",
-                address(wrapper)
-            );
-        }
 
-        vm.selectFork(primaryForkId());
+            addresses.addAddress(
+                string.concat(config.oracleName, V3_SUFFIX),
+                address(newWrapper)
+            );
+            _upgradedOracleNames[chainId].push(config.oracleName);
+        }
     }
 
     /// @notice Snapshot the pre-upgrade Morpho wrapper proxy state on Base so
@@ -201,30 +252,14 @@ contract mipx53 is HybridProposal {
         vm.selectFork(primaryForkId());
     }
 
-    /// @notice Snapshot the raw underlying aggregator price on each chain
-    ///         immediately before simulation executes the proposal actions.
-    ///         The hook runs inside `simulate()` BEFORE the on-chain effects
-    ///         (`setFeed` re-wire on Base/Optimism, Morpho proxy upgrade on
-    ///         Base) — capturing the answer here lets `validate()` prove the
-    ///         new wrapper, when read through the same underlying raw feed,
-    ///         returns an identical price for the same block state.
+    /// @notice Snapshot pre-simulation state for every upgrade target so
+    ///         validate() can assert price preservation across the upgrade.
     function beforeSimulationHook(Addresses addresses) public override {
-        // Base: capture the raw feed answer through the OLD wrapper's
-        // priceFeed pointer (which is the canonical raw ETH/USD aggregator).
-        vm.selectFork(BASE_FORK_ID);
-        {
-            ChainlinkOEVWrapper oldWrapper = ChainlinkOEVWrapper(
-                payable(addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"))
-            );
-            (, int256 ans, , uint256 updatedAt, ) = oldWrapper
-                .priceFeed()
-                .latestRoundData();
-            _baseWethAnswerPre = ans;
-            _baseWethUpdatedAtPre = updatedAt;
-        }
+        _snapshotChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
+        _snapshotChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
 
-        // Base Morpho: capture the proxy's underlying priceFeed answer and
-        // the wrapper's decimals() so validate() can assert exact parity.
+        // Base Morpho: capture proxy-side raw answer and decimals.
+        vm.selectFork(BASE_FORK_ID);
         {
             ChainlinkOEVMorphoWrapper morpho = ChainlinkOEVMorphoWrapper(
                 payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
@@ -237,66 +272,72 @@ contract mipx53 is HybridProposal {
             _baseMorphoDecimalsPre = morpho.decimals();
         }
 
-        // Base: capture the full getUnderlyingPrice path for MOONWELL_WETH.
-        if (addresses.isAddressSet("MOONWELL_WETH")) {
-            IChainlinkOracle oracle = IChainlinkOracle(
-                addresses.getAddress("CHAINLINK_ORACLE")
-            );
-            _baseGetUnderlyingPricePre = oracle.getUnderlyingPrice(
-                MToken(addresses.getAddress("MOONWELL_WETH"))
-            );
-        } else {
-            console.log(
-                "Base: MOONWELL_WETH not set, skipping getUnderlyingPrice snapshot"
-            );
-        }
-
-        // Optimism: capture the raw feed answer and getUnderlyingPrice path.
-        vm.selectFork(OPTIMISM_FORK_ID);
-        {
-            ChainlinkOEVWrapper oldWrapper = ChainlinkOEVWrapper(
-                payable(addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"))
-            );
-            (, int256 ans, , uint256 updatedAt, ) = oldWrapper
-                .priceFeed()
-                .latestRoundData();
-            _opWethAnswerPre = ans;
-            _opWethUpdatedAtPre = updatedAt;
-        }
-
-        if (addresses.isAddressSet("MOONWELL_WETH")) {
-            IChainlinkOracle oracle = IChainlinkOracle(
-                addresses.getAddress("CHAINLINK_ORACLE")
-            );
-            _opGetUnderlyingPricePre = oracle.getUnderlyingPrice(
-                MToken(addresses.getAddress("MOONWELL_WETH"))
-            );
-        } else {
-            console.log(
-                "Optimism: MOONWELL_WETH not set, skipping getUnderlyingPrice snapshot"
-            );
-        }
-
         vm.selectFork(primaryForkId());
     }
 
-    function build(Addresses addresses) public override {
-        /// -------------------------------------------------------
-        /// Base: re-wire WETH feed + upgrade Morpho wrapper proxy
-        /// -------------------------------------------------------
+    function _snapshotChain(
+        Addresses addresses,
+        uint256 forkId,
+        uint256 chainId
+    ) internal {
+        vm.selectFork(forkId);
 
-        vm.selectFork(BASE_FORK_ID);
-
-        _pushAction(
-            addresses.getAddress("CHAINLINK_ORACLE"),
-            abi.encodeWithSignature(
-                "setFeed(string,address)",
-                "WETH",
-                addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER_V3")
-            ),
-            "Base: ChainlinkOracle.setFeed(WETH, new ChainlinkOEVWrapper V3)"
+        OracleConfig[] memory configs = getOracleConfigurations(chainId);
+        IChainlinkOracle oracle = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
         );
 
+        for (uint256 i = 0; i < configs.length; i++) {
+            OracleConfig memory config = configs[i];
+            if (
+                !addresses.isAddressSet(
+                    string.concat(config.oracleName, V3_SUFFIX)
+                )
+            ) {
+                // Not upgraded — was either skipped (raw feed) or no symbol.
+                continue;
+            }
+
+            // Snapshot raw aggregator answer/updatedAt once per oracleName.
+            if (_rawUpdatedAtPre[chainId][config.oracleName] == 0) {
+                address rawFeed = _capturedParams[chainId][config.oracleName]
+                    .priceFeed;
+                if (rawFeed != address(0)) {
+                    (
+                        ,
+                        int256 ans,
+                        ,
+                        uint256 updatedAt,
+
+                    ) = AggregatorV3Interface(rawFeed).latestRoundData();
+                    _rawAnswerPre[chainId][config.oracleName] = ans;
+                    _rawUpdatedAtPre[chainId][config.oracleName] = updatedAt;
+                }
+            }
+
+            // Per-symbol snapshot of getUnderlyingPrice for the mTokenKey.
+            if (
+                bytes(config.mTokenKey).length > 0 &&
+                addresses.isAddressSet(config.mTokenKey)
+            ) {
+                _underlyingPricePre[chainId][config.mTokenKey] = oracle
+                    .getUnderlyingPrice(
+                        MToken(addresses.getAddress(config.mTokenKey))
+                    );
+            }
+        }
+    }
+
+    /// @notice Queue the on-chain governance actions: setFeed for every
+    ///         upgraded wrapper × every symbol that maps to it, plus the
+    ///         Morpho proxy upgrade on Base.
+    function build(Addresses addresses) public override {
+        _buildForChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
+        _buildForChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
+
+        // Base only: upgrade the ChainlinkOEVMorphoWrapper proxy. No
+        // reinitializer — storage layout is preserved across the swap.
+        vm.selectFork(BASE_FORK_ID);
         _pushAction(
             addresses.getAddress("CHAINLINK_ORACLE_PROXY_ADMIN"),
             abi.encodeWithSignature(
@@ -306,45 +347,59 @@ contract mipx53 is HybridProposal {
             ),
             "Base: upgrade ChainlinkOEVMorphoWrapper proxy implementation (no reinit)"
         );
+    }
 
-        /// -------------------------------------------------------
-        /// Optimism: re-wire WETH feed
-        /// -------------------------------------------------------
+    function _buildForChain(
+        Addresses addresses,
+        uint256 forkId,
+        uint256 chainId
+    ) internal {
+        vm.selectFork(forkId);
 
-        vm.selectFork(OPTIMISM_FORK_ID);
+        OracleConfig[] memory configs = getOracleConfigurations(chainId);
+        address chainlinkOracle = addresses.getAddress("CHAINLINK_ORACLE");
 
-        _pushAction(
-            addresses.getAddress("CHAINLINK_ORACLE"),
-            abi.encodeWithSignature(
-                "setFeed(string,address)",
-                "WETH",
-                addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER_V3")
-            ),
-            "Optimism: ChainlinkOracle.setFeed(WETH, new ChainlinkOEVWrapper V3)"
-        );
+        for (uint256 i = 0; i < configs.length; i++) {
+            OracleConfig memory config = configs[i];
+            string memory v3Name = string.concat(config.oracleName, V3_SUFFIX);
+            if (!addresses.isAddressSet(v3Name)) continue;
+
+            (bool ok, string memory symbol) = _readSymbol(addresses, config);
+            if (!ok) continue;
+
+            address newWrapper = addresses.getAddress(v3Name);
+            _pushAction(
+                chainlinkOracle,
+                abi.encodeWithSignature(
+                    "setFeed(string,address)",
+                    symbol,
+                    newWrapper
+                ),
+                string.concat(
+                    "ChainlinkOracle.setFeed(",
+                    symbol,
+                    ", new ChainlinkOEVWrapper V3 for ",
+                    config.oracleName,
+                    ")"
+                )
+            );
+        }
     }
 
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
-        /// -------------------------------------------------------
-        /// Base validation
-        /// -------------------------------------------------------
-
-        vm.selectFork(BASE_FORK_ID);
-        _validateCoreWrapper(addresses, "Base");
-        _validateFeedWired(addresses, "Base");
-        _validateMorphoWrapperState(addresses);
-        _validatePricePreserved(
-            ChainlinkOEVWrapper(
-                payable(
-                    addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER_V3")
-                )
-            ).priceFeed(),
-            _baseWethAnswerPre,
-            _baseWethUpdatedAtPre,
-            "Base WETH"
+        _validateChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID, "Base");
+        _validateChain(
+            addresses,
+            OPTIMISM_FORK_ID,
+            OPTIMISM_CHAIN_ID,
+            "Optimism"
         );
+
+        // Morpho proxy upgrade — Base only, strict-equality block.
+        vm.selectFork(BASE_FORK_ID);
+        _validateMorphoWrapperState(addresses);
         _validatePricePreserved(
             ChainlinkOEVMorphoWrapper(
                 payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
@@ -353,17 +408,6 @@ contract mipx53 is HybridProposal {
             _baseMorphoUpdatedAtPre,
             "Base Morpho"
         );
-
-        // Full price-resolution path: assert getUnderlyingPrice is within ±2%
-        // of the pre-upgrade value. Catches decimal-scaling bugs in the new
-        // wrapper that the raw-feed equality check above would miss.
-        _validateGetUnderlyingPriceWithinTolerance(
-            addresses,
-            "Base",
-            _baseGetUnderlyingPricePre
-        );
-
-        // Morpho wrapper decimals must be unchanged across the proxy upgrade.
         {
             ChainlinkOEVMorphoWrapper morpho = ChainlinkOEVMorphoWrapper(
                 payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
@@ -375,41 +419,170 @@ contract mipx53 is HybridProposal {
             );
         }
 
-        /// -------------------------------------------------------
-        /// Optimism validation
-        /// -------------------------------------------------------
-
-        vm.selectFork(OPTIMISM_FORK_ID);
-        _validateCoreWrapper(addresses, "Optimism");
-        _validateFeedWired(addresses, "Optimism");
-        _validatePricePreserved(
-            ChainlinkOEVWrapper(
-                payable(
-                    addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER_V3")
-                )
-            ).priceFeed(),
-            _opWethAnswerPre,
-            _opWethUpdatedAtPre,
-            "Optimism WETH"
-        );
-
-        // Full price-resolution path: assert getUnderlyingPrice is within ±2%
-        // of the pre-upgrade value on Optimism.
-        _validateGetUnderlyingPriceWithinTolerance(
-            addresses,
-            "Optimism",
-            _opGetUnderlyingPricePre
-        );
-
         vm.selectFork(primaryForkId());
+    }
+
+    function _validateChain(
+        Addresses addresses,
+        uint256 forkId,
+        uint256 chainId,
+        string memory chainName
+    ) internal {
+        vm.selectFork(forkId);
+
+        OracleConfig[] memory configs = getOracleConfigurations(chainId);
+
+        for (uint256 i = 0; i < configs.length; i++) {
+            _validateConfig(addresses, chainId, chainName, configs[i]);
+        }
+    }
+
+    function _validateConfig(
+        Addresses addresses,
+        uint256 chainId,
+        string memory chainName,
+        OracleConfig memory config
+    ) internal view {
+        string memory v3Name = string.concat(config.oracleName, V3_SUFFIX);
+        if (!addresses.isAddressSet(v3Name)) return;
+
+        address newWrapperAddr = addresses.getAddress(v3Name);
+
+        // (1) Wiring check: oracle.getFeed(symbol) == new wrapper.
+        (bool ok, string memory symbol) = _readSymbol(addresses, config);
+        if (ok) {
+            IChainlinkOracle oracle = IChainlinkOracle(
+                addresses.getAddress("CHAINLINK_ORACLE")
+            );
+            assertEq(
+                address(oracle.getFeed(symbol)),
+                newWrapperAddr,
+                string.concat(
+                    chainName,
+                    ": feed not wired to new wrapper for ",
+                    symbol
+                )
+            );
+        }
+
+        // (2) Param-mirroring check.
+        _validateWrapperParams(
+            ChainlinkOEVWrapper(payable(newWrapperAddr)),
+            _capturedParams[chainId][config.oracleName],
+            chainName,
+            config.oracleName
+        );
+
+        // (3) Raw aggregator price preservation.
+        if (_rawUpdatedAtPre[chainId][config.oracleName] != 0) {
+            _validatePricePreserved(
+                AggregatorV3Interface(
+                    _capturedParams[chainId][config.oracleName].priceFeed
+                ),
+                _rawAnswerPre[chainId][config.oracleName],
+                _rawUpdatedAtPre[chainId][config.oracleName],
+                string.concat(chainName, " ", config.oracleName)
+            );
+        }
+
+        // (4) Full-resolution path within ±2%.
+        _validateUnderlyingPrice(addresses, chainId, chainName, config);
+    }
+
+    function _validateWrapperParams(
+        ChainlinkOEVWrapper newWrapper,
+        WrapperParams memory captured,
+        string memory chainName,
+        string memory oracleName
+    ) internal view {
+        assertEq(
+            address(newWrapper.priceFeed()),
+            captured.priceFeed,
+            string.concat(chainName, ": priceFeed mismatch for ", oracleName)
+        );
+        assertEq(
+            newWrapper.owner(),
+            captured.owner,
+            string.concat(chainName, ": owner mismatch for ", oracleName)
+        );
+        assertEq(
+            address(newWrapper.chainlinkOracle()),
+            captured.chainlinkOracle,
+            string.concat(
+                chainName,
+                ": chainlinkOracle mismatch for ",
+                oracleName
+            )
+        );
+        assertEq(
+            newWrapper.feeRecipient(),
+            captured.feeRecipient,
+            string.concat(chainName, ": feeRecipient mismatch for ", oracleName)
+        );
+        assertEq(
+            newWrapper.liquidatorFeeBps(),
+            captured.liquidatorFeeBps,
+            string.concat(
+                chainName,
+                ": liquidatorFeeBps mismatch for ",
+                oracleName
+            )
+        );
+        assertEq(
+            newWrapper.maxRoundDelay(),
+            captured.maxRoundDelay,
+            string.concat(
+                chainName,
+                ": maxRoundDelay mismatch for ",
+                oracleName
+            )
+        );
+        assertEq(
+            newWrapper.maxDecrements(),
+            captured.maxDecrements,
+            string.concat(
+                chainName,
+                ": maxDecrements mismatch for ",
+                oracleName
+            )
+        );
+    }
+
+    function _validateUnderlyingPrice(
+        Addresses addresses,
+        uint256 chainId,
+        string memory chainName,
+        OracleConfig memory config
+    ) internal view {
+        if (
+            bytes(config.mTokenKey).length == 0 ||
+            !addresses.isAddressSet(config.mTokenKey)
+        ) {
+            return;
+        }
+        uint256 capturedPrice = _underlyingPricePre[chainId][config.mTokenKey];
+        if (capturedPrice == 0) return;
+
+        IChainlinkOracle oracle = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+        uint256 postPrice = oracle.getUnderlyingPrice(
+            MToken(addresses.getAddress(config.mTokenKey))
+        );
+        assertApproxEqRel(
+            postPrice,
+            capturedPrice,
+            2e16, // 2%
+            string.concat(
+                chainName,
+                ": getUnderlyingPrice diverged for ",
+                config.mTokenKey
+            )
+        );
     }
 
     /// @notice Asserts that the raw aggregator behind the post-upgrade wrapper
     ///         returns the same answer/updatedAt captured pre-simulation.
-    ///         Block state is unchanged across the simulation, so the raw
-    ///         aggregator's `latestRoundData` is invariant — any mismatch
-    ///         means the new wrapper points at a DIFFERENT raw feed than
-    ///         the old wrapper did, which would silently distort liquidations.
     function _validatePricePreserved(
         AggregatorV3Interface rawFeed,
         int256 expectedAnswer,
@@ -429,74 +602,9 @@ contract mipx53 is HybridProposal {
         );
     }
 
-    /// @notice Validate the new ChainlinkOEVWrapper constructor parameters on
-    ///         the currently selected fork.
-    function _validateCoreWrapper(
-        Addresses addresses,
-        string memory chainName
-    ) internal view {
-        ChainlinkOEVWrapper wrapper = ChainlinkOEVWrapper(
-            payable(addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER_V3"))
-        );
-
-        assertEq(
-            wrapper.liquidatorFeeBps(),
-            LIQUIDATOR_FEE_BPS,
-            string.concat(chainName, ": liquidatorFeeBps mismatch")
-        );
-        assertEq(
-            wrapper.maxRoundDelay(),
-            MAX_ROUND_DELAY,
-            string.concat(chainName, ": maxRoundDelay mismatch")
-        );
-        assertEq(
-            wrapper.maxDecrements(),
-            MAX_DECREMENTS,
-            string.concat(chainName, ": maxDecrements mismatch")
-        );
-        assertEq(
-            wrapper.owner(),
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            string.concat(chainName, ": owner should be TemporalGovernor")
-        );
-        assertEq(
-            wrapper.feeRecipient(),
-            addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"),
-            string.concat(chainName, ": feeRecipient mismatch")
-        );
-        assertEq(
-            address(wrapper.chainlinkOracle()),
-            addresses.getAddress("CHAINLINK_ORACLE"),
-            string.concat(chainName, ": chainlinkOracle mismatch")
-        );
-        assertEq(
-            address(wrapper.priceFeed()),
-            addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
-            string.concat(chainName, ": priceFeed should be raw ETH/USD feed")
-        );
-    }
-
-    /// @notice Validate that ChainlinkOracle has WETH wired to the new wrapper
-    ///         on the currently selected fork.
-    function _validateFeedWired(
-        Addresses addresses,
-        string memory chainName
-    ) internal view {
-        IChainlinkOracle oracle = IChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
-        );
-        assertEq(
-            address(oracle.getFeed("WETH")),
-            addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER_V3"),
-            string.concat(chainName, ": WETH feed not wired to new wrapper")
-        );
-    }
-
     /// @notice Strict-equality check: every Morpho wrapper proxy state value
     ///         after the implementation swap must equal the value captured in
-    ///         afterDeploy() before the upgrade. Catches any subtle storage
-    ///         shift or accidental reinitialization that a `> 0` sanity
-    ///         check would miss.
+    ///         afterDeploy() before the upgrade.
     function _validateMorphoWrapperState(Addresses addresses) internal view {
         ChainlinkOEVMorphoWrapper wrapper = ChainlinkOEVMorphoWrapper(
             payable(addresses.getAddress("CHAINLINK_WELL_USD_ORACLE_PROXY"))
@@ -548,9 +656,8 @@ contract mipx53 is HybridProposal {
             "Base: Morpho wrapper morphoBlue changed by upgrade"
         );
 
-        // Cross-check against current expected addresses to catch a
-        // pre-existing misconfiguration that the snapshot would otherwise
-        // mask (the snapshot only proves "no change", not "correct value").
+        // Cross-check expected-vs-snapshot to catch a pre-existing
+        // misconfiguration the snapshot would otherwise mask.
         assertEq(
             wrapper.owner(),
             addresses.getAddress("TEMPORAL_GOVERNOR"),
@@ -563,43 +670,49 @@ contract mipx53 is HybridProposal {
         );
     }
 
-    /// @notice Reads ChainlinkOracle.getUnderlyingPrice(MOONWELL_WETH)
-    ///         post-upgrade and asserts it is within ±2% of the pre-upgrade
-    ///         value captured in beforeSimulationHook(). If MOONWELL_WETH is
-    ///         not registered on the current fork the check is skipped with a
-    ///         log — this guards against future chain additions.
-    ///
-    ///         The 2% tolerance absorbs OEV-delay-cache-state differences
-    ///         (different cachedRoundId values can cause walk-back vs
-    ///         current-round selection on the same block) while being tight
-    ///         enough to catch any decimal-scaling bug (off by ≥10x).
-    function _validateGetUnderlyingPriceWithinTolerance(
+    /// @notice Detects whether an address is an OEV wrapper by probing for
+    ///         the `priceFeed()` selector. Returns (false, zero) for raw
+    ///         aggregators, address(0), or wrappers whose inner pointer is 0.
+    function _isOEVWrapper(
+        address registryEntry
+    ) internal view returns (bool, AggregatorV3Interface raw) {
+        if (registryEntry == address(0))
+            return (false, AggregatorV3Interface(address(0)));
+        try IOEVWrapperFeed(registryEntry).priceFeed() returns (
+            AggregatorV3Interface inner
+        ) {
+            if (address(inner) != address(0)) {
+                return (true, inner);
+            }
+        } catch {}
+        return (false, AggregatorV3Interface(address(0)));
+    }
+
+    /// @notice Capture the constructor-mirroring parameters of a live
+    ///         `ChainlinkOEVWrapper`-shaped contract.
+    function _captureParams(
+        address wrapperAddr
+    ) internal view returns (WrapperParams memory params) {
+        ChainlinkOEVWrapper w = ChainlinkOEVWrapper(payable(wrapperAddr));
+        params.priceFeed = address(w.priceFeed());
+        params.owner = w.owner();
+        params.chainlinkOracle = address(w.chainlinkOracle());
+        params.feeRecipient = w.feeRecipient();
+        params.liquidatorFeeBps = w.liquidatorFeeBps();
+        params.maxRoundDelay = w.maxRoundDelay();
+        params.maxDecrements = w.maxDecrements();
+    }
+
+    /// @notice Resolve the on-chain ERC20 symbol for the config's token key.
+    ///         Returns (false, "") if the token key is not registered on the
+    ///         current fork (skip with log).
+    function _readSymbol(
         Addresses addresses,
-        string memory chainName,
-        uint256 capturedPrice
-    ) internal view {
-        if (!addresses.isAddressSet("MOONWELL_WETH")) {
-            console.log(
-                string.concat(
-                    chainName,
-                    ": MOONWELL_WETH not set, skipping getUnderlyingPrice tolerance check"
-                )
-            );
-            return;
+        OracleConfig memory config
+    ) internal view returns (bool, string memory) {
+        if (!addresses.isAddressSet(config.symbol)) {
+            return (false, "");
         }
-
-        IChainlinkOracle oracle = IChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
-        );
-        uint256 postPrice = oracle.getUnderlyingPrice(
-            MToken(addresses.getAddress("MOONWELL_WETH"))
-        );
-
-        assertApproxEqRel(
-            postPrice,
-            capturedPrice,
-            2e16, // 2% — 2e16 / 1e18 = 0.02
-            string.concat(chainName, ": getUnderlyingPrice diverged")
-        );
+        return (true, ERC20(addresses.getAddress(config.symbol)).symbol());
     }
 }

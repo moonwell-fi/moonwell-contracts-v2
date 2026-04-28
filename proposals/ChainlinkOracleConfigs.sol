@@ -45,10 +45,9 @@ abstract contract ChainlinkOracleConfigs is Test {
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_USDC_USD", "USDBC", "MOONWELL_USDBC")
         );
-        // WETH already activated by MIP-X38
-        // _oracleConfigs[BASE_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_ETH_USD_FEED", "WETH", "MOONWELL_WETH")
-        // );
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_ETH_USD_FEED", "WETH", "MOONWELL_WETH")
+        );
         // cbETH uses cbETH_COMPOSITE_ORACLE (reverted from cbETHETH_ORACLE in MIP-B57)
         // Now handled via _compositeOracleConfigs below
         _oracleConfigs[BASE_CHAIN_ID].push(
@@ -147,10 +146,9 @@ abstract contract ChainlinkOracleConfigs is Test {
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_DAI_USD", "DAI", "MOONWELL_DAI")
         );
-        // WETH already activated by MIP-X38
-        // _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_ETH_USD_FEED", "WETH", "MOONWELL_WETH")
-        // );
+        _oracleConfigs[OPTIMISM_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_ETH_USD_FEED", "WETH", "MOONWELL_WETH")
+        );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_WBTC_USD", "WBTC", "MOONWELL_WBTC")
         );
