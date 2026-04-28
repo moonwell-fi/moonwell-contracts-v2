@@ -135,8 +135,12 @@ abstract contract ChainlinkOracleConfigs is Test {
         );
 
         /// Initialize oracle configurations for Optimism
-        /// Note: CHAINLINK_WELL_USD OEV wrapper was not upgraded on Optimism
-        /// (no _DEPRECATED variant exists on chain 10). See mip-x14 _getWrapperName.
+        /// Note: CHAINLINK_WELL_USD_OEV_WRAPPER exists on Optimism (it was never
+        /// rotated/deprecated by mip-x14, so no _DEPRECATED suffix). The bounty-desync
+        /// fix in mip-x53 applies here the same as any other OEV wrapper.
+        _oracleConfigs[OPTIMISM_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_WELL_USD", "xWELL_PROXY", "MOONWELL_WELL")
+        );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_USDC_USD", "USDC", "MOONWELL_USDC")
         );
