@@ -201,13 +201,6 @@ contract xWELLRouter {
             signedQuote
         );
 
-        if (address(this).balance != 0) {
-            (bool success, ) = msg.sender.call{value: address(this).balance}(
-                ""
-            );
-            require(success, "xWELLRouter: failed to refund excess GLMR");
-        }
-
         emit BridgeOutSuccess(to, wormholeChainId, amount);
     }
 }

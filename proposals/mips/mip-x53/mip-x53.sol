@@ -100,6 +100,16 @@ contract mipx53 is HybridProposal {
 
     function build(Addresses addresses) public override {
         /// -------------------------------------------------------
+        /// Moonbeam: setGasLimit
+        /// -------------------------------------------------------
+
+        _pushAction(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            abi.encodeWithSignature("setGasLimit(uint96)", NEW_GAS_LIMIT),
+            "Bump executor gas limit on Moonbeam WormholeBridgeAdapter to 700k"
+        );
+
+        /// -------------------------------------------------------
         /// Base: upgrade impl, then setQuoterAddress + setGasLimit
         /// -------------------------------------------------------
 
@@ -159,6 +169,16 @@ contract mipx53 is HybridProposal {
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
+        // Moonbeam
+        WormholeBridgeAdapter adapter = WormholeBridgeAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+        assertEq(
+            adapter.gasLimit(),
+            NEW_GAS_LIMIT,
+            "Moonbeam: gasLimit not bumped to 700k"
+        );
+
         vm.selectFork(BASE_FORK_ID);
         _validateAdapterV6(addresses, "Base", _BASE_DST_WH_ID);
 
