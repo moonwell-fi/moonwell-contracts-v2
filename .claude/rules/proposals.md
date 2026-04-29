@@ -32,3 +32,15 @@
 - For Morpho oracle wrapper proxies, the ProxyAdmin is
   `CHAINLINK_ORACLE_PROXY_ADMIN` (not `MRD_PROXY_ADMIN` — that one is for mToken
   markets)
+- Two OEV wrapper types with different upgrade patterns: `*_OEV_WRAPPER` keys
+  are non-upgradeable `ChainlinkOEVWrapper` (Core mToken markets) — to upgrade,
+  redeploy + rewire via `setFeed`. `*_ORACLE_PROXY` keys are upgradeable
+  `ChainlinkOEVMorphoWrapper` (Morpho-Blue) — upgrade impl behind the proxy via
+  `ProxyAdmin.upgrade`.
+- For wrapper redeploys, follow MIP-X43's archive-then-promote pattern:
+  `addAddress("<name>_OEV_WRAPPER_DEPRECATED_VN", oldAddr)` then
+  `changeAddress("<name>_OEV_WRAPPER", newAddr, true)` to atomically swap the
+  canonical name. MIRROR live wrapper params via getters (`liquidatorFeeBps`,
+  `maxRoundDelay`, `maxDecrements`, `feeRecipient`, `owner`, `priceFeed`) rather
+  than hardcoding — found 4000→3000 bps drift between MIP-X38 era and MIP-X43
+  era when hardcoding.

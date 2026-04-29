@@ -6,8 +6,15 @@
 - Integration tests: `test/integration/`
 - Fuzz tests: `test/fuzzing/`
 - Formal verification: `test/certora/`
-- Use `PRIMARY_FORK_ID=1` for mainnet fork tests (1=Moonbeam, 8453=Base,
-  10=Optimism)
+- `PRIMARY_FORK_ID` is the foundry FORK INDEX, not a chain ID. Forks are created
+  in order in `PostProposalCheck.setUp`: 0=Moonbeam, 1=Base, 2=Optimism,
+  3=Ethereum. CI uses `PRIMARY_FORK_ID=1` for Base jobs and `PRIMARY_FORK_ID=2`
+  for Optimism jobs (per `.github/workflows/*-integration.yml`).
+- `PostProposalCheck.setUp` simulates every MIP with `id:0` in `mips.json`
+  before tests run. If a pending MIP mutates registry state (e.g.
+  `ChainlinkOracle.setFeed`), tests must resolve via the live registry (e.g.,
+  `oracle.getFeed(symbol)`) rather than hardcoded `*_OEV_WRAPPER` address-keys —
+  otherwise they break post-simulate.
 - For proposal-specific tests, inherit from `PostProposalCheck`
 - CI profile: `FOUNDRY_PROFILE=ci forge test` (1000 fuzz runs)
 - Integration tests inheriting from `PostProposalCheck` fork all chains in
