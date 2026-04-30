@@ -82,7 +82,7 @@
         "seizeShare": 0.03e18,
         "supplyCap": 0,
         "borrowCap": 0,
-        "priceFeedName": "CHAINLINK_ETH_USD_FEED",
+        "priceFeedName": "CHAINLINK_ETH_USD",
         "tokenAddressName": "WETH",
         "name": "Moonwell WETH",
         "symbol": "mWETH",

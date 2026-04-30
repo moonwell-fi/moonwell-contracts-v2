@@ -22,7 +22,7 @@ contract DeployCompositeOracle is Script {
 
         vm.startBroadcast();
         ChainlinkCompositeOracle clco = new ChainlinkCompositeOracle(
-            addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
+            addresses.getAddress("CHAINLINK_ETH_USD"),
             addresses.getAddress("CHAINLINK_WEETH_ORACLE"),
             address(0) /// only 2 oracles for this composite oracle
         );

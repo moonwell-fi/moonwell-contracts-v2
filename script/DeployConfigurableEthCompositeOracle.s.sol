@@ -34,7 +34,7 @@ contract DeployConfigurableEthCompositeOracle is Script {
     function run() public returns (ChainlinkCompositeOracle) {
         vm.startBroadcast();
         ChainlinkCompositeOracle clco = new ChainlinkCompositeOracle(
-            addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
+            addresses.getAddress("CHAINLINK_ETH_USD"),
             addresses.getAddress(vm.envString("COMPOSITE_ORACLE")),
             address(0) /// only 2 oracles for this composite oracle
         );

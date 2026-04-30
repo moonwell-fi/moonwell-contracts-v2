@@ -33,7 +33,7 @@ contract mipo12 is HybridProposal {
             !addresses.isAddressSet("CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED")
         ) {
             // new version of deploy script not compatiblw with old wrapper
-            //deployChainlinkOEVWrapper(addresses, "CHAINLINK_ETH_USD_FEED");
+            //deployChainlinkOEVWrapper(addresses, "CHAINLINK_ETH_USD");
         }
     }
 
@@ -67,7 +67,7 @@ contract mipo12 is HybridProposal {
         // Validate feed address
         assertEq(
             address(wrapper.originalFeed()),
-            addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
+            addresses.getAddress("CHAINLINK_ETH_USD"),
             "Wrong original feed"
         );
 

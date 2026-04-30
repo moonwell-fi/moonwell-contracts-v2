@@ -17,7 +17,7 @@ import {ChainlinkOracleConfigs} from "@proposals/ChainlinkOracleConfigs.sol";
 import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 
-/// @title MIP-X53: Fix Chainlink OEV loan-feed desync (full-coverage redeploy)
+/// @title MIP-X54: Fix Chainlink OEV loan-feed desync (full-coverage redeploy)
 /// @notice Redeploys every Core OEV-wrapped Chainlink feed enumerated in
 ///         `ChainlinkOracleConfigs._oracleConfigs` on Base and Optimism using
 ///         a fresh `ChainlinkOEVWrapper` constructor (so the loan-feed
@@ -35,11 +35,11 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 ///         owner, liquidatorFeeBps, maxRoundDelay, maxDecrements) - read live
 ///         from on-chain state - so the only change observable post-upgrade
 ///         is the loan-feed dereferencing logic inside the new bytecode.
-contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
+contract mipx54 is HybridProposal, ChainlinkOracleConfigs {
     using ProposalActions for *;
     using ChainIds for uint256;
 
-    string public constant override name = "MIP-X53";
+    string public constant override name = "MIP-X54";
 
     /// @notice Canonical wrapper suffix — matches the convention established by
     ///         MIP-X38 and MIP-X43. New wrappers are registered under
@@ -101,7 +101,7 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-x53/x53.md")
+            vm.readFile("./proposals/mips/mip-x54/x54.md")
         );
         _setProposalDescription(proposalDescription);
     }
@@ -674,7 +674,7 @@ contract mipx53 is HybridProposal, ChainlinkOracleConfigs {
         require(
             !priceFeedIsWrapped,
             string.concat(
-                "MIP-X53: ",
+                "MIP-X54: ",
                 chainName,
                 " new wrapper's priceFeed must be a raw aggregator for ",
                 oracleName

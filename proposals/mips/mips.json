@@ -1,9 +1,9 @@
 [
     {
-        "envpath": "proposals/mips/mip-x53/x53.sh",
+        "envpath": "proposals/mips/mip-x54/x54.sh",
         "governor": "MultichainGovernor",
         "id": 0,
-        "path": "mip-x53.sol/mipx53.json",
+        "path": "mip-x54.sol/mipx54.json",
         "proposalType": "HybridProposal"
     },
     {

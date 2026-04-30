@@ -83,9 +83,7 @@ contract mipx36 is HybridProposal {
         if (!addresses.isAddressSet("CHAINLINK_wrsETH_COMPOSITE_ORACLE")) {
             vm.startBroadcast();
 
-            address baseEthUsdFeed = addresses.getAddress(
-                "CHAINLINK_ETH_USD_FEED"
-            );
+            address baseEthUsdFeed = addresses.getAddress("CHAINLINK_ETH_USD");
             address baseWrsethEthExchangeRateFeed = addresses.getAddress(
                 "CHAINLINK_wrsETH_ETH_EXCHANGE_RATE"
             );
@@ -115,7 +113,7 @@ contract mipx36 is HybridProposal {
             vm.startBroadcast();
 
             address optimismEthUsdFeed = addresses.getAddress(
-                "CHAINLINK_ETH_USD_FEED"
+                "CHAINLINK_ETH_USD"
             );
             address optimismWrsethEthExchangeRateFeed = addresses.getAddress(
                 "CHAINLINK_wrsETH_ETH_EXCHANGE_RATE"

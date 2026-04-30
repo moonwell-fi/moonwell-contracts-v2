@@ -12,7 +12,7 @@
         "market": "MOONWELL_DAI"
     },
     {
-        "chainlinkFeed": "CHAINLINK_ETH_USD_FEED",
+        "chainlinkFeed": "CHAINLINK_ETH_USD",
         "market": "MOONWELL_WETH"
     },
     {

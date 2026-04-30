@@ -80,7 +80,7 @@ contract mipb25 is HybridProposal, Configs {
                 "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE",
                 address(
                     new ChainlinkCompositeOracle(
-                        addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
+                        addresses.getAddress("CHAINLINK_ETH_USD"),
                         addresses.getAddress("CHAINLINK_WEETH_ORACLE"),
                         address(0)
                     )
@@ -587,7 +587,7 @@ contract mipb25 is HybridProposal, Configs {
             (, int256 compositePrice, , , ) = oracle.latestRoundData();
 
             int256 ethPrice = oracle.getPriceAndScale(
-                addresses.getAddress("CHAINLINK_ETH_USD_FEED"),
+                addresses.getAddress("CHAINLINK_ETH_USD"),
                 18
             );
             assertGt(

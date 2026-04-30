@@ -12,7 +12,7 @@
     {
         "addr": "0x61Ec26aA57019C486B10502285c5A3D4A4750AD7",
         "isContract": true,
-        "name": "CHAINLINK_ETH_USD_FEED"
+        "name": "CHAINLINK_ETH_USD"
     },
     {
         "addr": "0x119784b4b2A1D536db6C43E932675A1dA37E8EEE",
