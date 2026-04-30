@@ -1980,19 +1980,26 @@ contract ChainlinkOEVWrapperIntegrationTest is
         uint8 innerLoanDecimals = realLoanFeed.decimals();
 
         // Wrap the loan feed: outer's priceFeed() -> realLoanFeed.
-        // The OUTER's own latestRoundData() returns 1 ($1e-8) — a wildly
-        // wrong value. If the wrapper code reads the OUTER directly, the
-        // split math would treat USDC as nearly worthless and the protocol
-        // fee would be ~all the seized collateral. The deref must redirect
-        // to the real inner feed and produce the same split as if no
-        // wrapping had occurred.
+        // The OUTER reports 2× the real USDC price — high enough to keep the
+        // comptroller's underwater check valid (debt valuation stays in the
+        // ballpark) yet far enough off to make split math computed off OUTER
+        // visibly diverge from split math computed off INNER. The deref must
+        // redirect to the real inner feed; if it does not, the resulting
+        // liquidator/protocol split will be ~2× off — well above the 0.1%
+        // tolerance asserted below.
         MockOEVWrapperFeed mockWrapper = new MockOEVWrapperFeed(
             address(realLoanFeed),
             innerLoanDecimals,
             "MOCK_USDC_WRAPPER",
             1
         );
-        mockWrapper.setLatestRound(1, 1, 1, block.timestamp, 1);
+        mockWrapper.setLatestRound(
+            1,
+            innerLoanAnswer * 2,
+            1,
+            block.timestamp,
+            1
+        );
 
         vm.prank(oracle.admin());
         oracle.setFeed("USDC", address(mockWrapper));
@@ -2079,12 +2086,12 @@ contract ChainlinkOEVWrapperIntegrationTest is
             );
         }
 
-        // The mockWrapper's outer price was never consumed; its r_answer
-        // should still be the wildly-wrong 1 we set. Sanity for the test
-        // setup itself.
+        // The mockWrapper's outer price was never written to by the wrapper
+        // itself; its r_answer should still be the skewed value we configured.
+        // Sanity for the test setup itself.
         assertEq(
             mockWrapper.r_answer(),
-            1,
+            innerLoanAnswer * 2,
             "mock outer answer should remain untouched"
         );
     }
