@@ -43,6 +43,8 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
 
     event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
 
+    event QuoterAddressUpdated(address oldQuoter, address newQuoter);
+
     /// state variables
     address to;
     uint256 amount;
@@ -309,6 +311,27 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.setGasLimit(newGasLimit);
 
         assertEq(wormholeBridgeAdapterProxy.gasLimit(), newGasLimit);
+    }
+
+    function testSetQuoterAddressNonOwnerFails() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        wormholeBridgeAdapterProxy.setQuoterAddress(address(0xa54008));
+    }
+
+    function testSetQuoterAddressOwnerSucceeds(address newQuoter) public {
+        address oldQuoter = wormholeBridgeAdapterProxy.quoterAddress();
+        vm.prank(owner);
+        vm.expectEmit(
+            true,
+            true,
+            true,
+            true,
+            address(wormholeBridgeAdapterProxy)
+        );
+        emit QuoterAddressUpdated(oldQuoter, newQuoter);
+        wormholeBridgeAdapterProxy.setQuoterAddress(newQuoter);
+
+        assertEq(wormholeBridgeAdapterProxy.quoterAddress(), newQuoter);
     }
 
     function testRemoveTrustedSendersOwnerSucceeds() public {

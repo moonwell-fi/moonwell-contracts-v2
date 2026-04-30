@@ -52,44 +52,21 @@ contract xWellIntegrationTest is Test {
         _upgradeAdapterToV5();
     }
 
-    /// @notice Deploy V5 impl and upgrade via proxy admin
+    /// @notice Deploy a fresh impl and swap it onto the proxy. The live
+    ///         proxy on Base/Optimism is already V5-initialized after
+    ///         mip-x52, so we use plain `upgrade()` (no init data) to avoid
+    ///         "Initializable: contract is already initialized".
     function _upgradeAdapterToV5() internal {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
         address proxy = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
 
         WormholeBridgeAdapter newImpl = new WormholeBridgeAdapter();
 
-        /// Try to get executor addresses — they may or may not be in chain config
-        address executorAddr;
-        address quoterRouterAddr;
-        address quoterAddr;
-        try addresses.getAddress("WORMHOLE_EXECUTOR") returns (address a) {
-            executorAddr = a;
-        } catch {
-            executorAddr = address(new MockExecutorQuoterRouter());
-        }
-        try addresses.getAddress("WORMHOLE_QUOTER_ROUTER") returns (address a) {
-            quoterRouterAddr = a;
-        } catch {
-            quoterRouterAddr = address(new MockExecutorQuoterRouter());
-        }
-        try addresses.getAddress("WORMHOLE_QUOTER") returns (address a) {
-            quoterAddr = a;
-        } catch {
-            quoterAddr = address(new MockExecutorQuoterRouter());
-        }
-
         address proxyAdminOwner = ProxyAdmin(proxyAdmin).owner();
         vm.prank(proxyAdminOwner);
-        ProxyAdmin(proxyAdmin).upgradeAndCall(
+        ProxyAdmin(proxyAdmin).upgrade(
             ITransparentUpgradeableProxy(proxy),
-            address(newImpl),
-            abi.encodeWithSignature(
-                "initializeV5(address,address,address)",
-                executorAddr,
-                quoterRouterAddr,
-                quoterAddr
-            )
+            address(newImpl)
         );
     }
 
