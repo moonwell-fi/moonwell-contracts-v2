@@ -875,6 +875,62 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
         assertTrue(success, "eth transfer failed");
     }
 
+    function testRecoverETHNonGovernorFails() public {
+        address payable recipient = payable(address(0x123));
+
+        vm.expectRevert(IMultichainGovernorV2.OnlyGovernor.selector);
+        governor.recoverETH(recipient);
+    }
+
+    function testRecoverETHGovernorSucceeds() public {
+        uint256 sendAmount = 5 ether;
+        address payable recipient = payable(address(0x456));
+
+        vm.deal(address(this), sendAmount);
+        (bool success, ) = address(governor).call{value: sendAmount}("");
+        assertTrue(success, "eth transfer to governor failed");
+
+        assertEq(
+            address(governor).balance,
+            sendAmount,
+            "governor did not receive eth"
+        );
+
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        vm.prank(address(governor));
+        governor.recoverETH(recipient);
+
+        assertEq(
+            address(governor).balance,
+            0,
+            "governor should have zero balance after recovery"
+        );
+        assertEq(
+            recipient.balance,
+            recipientBalanceBefore + sendAmount,
+            "recipient did not receive recovered eth"
+        );
+    }
+
+    function testRecoverETHWithZeroBalance() public {
+        address payable recipient = payable(address(0x789));
+
+        assertEq(address(governor).balance, 0);
+
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        vm.prank(address(governor));
+        governor.recoverETH(recipient);
+
+        assertEq(address(governor).balance, 0);
+        assertEq(
+            recipient.balance,
+            recipientBalanceBefore,
+            "recipient balance should not change"
+        );
+    }
+
     // VIEW FUNCTIONS
 
     function testVoteCollectorIsTrustedSender() public {
