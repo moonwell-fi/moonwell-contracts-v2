@@ -209,7 +209,7 @@ contract MultichainProposalIntegrationV2 is
 
         _acceptIfPending(bridgeAdapter, temporalGovernor);
 
-        // VotingPowerAggregator on Moonbeam uses Ownable2Step. mip-x52 proposal
+        // VotingPowerAggregator on Moonbeam uses Ownable2Step. mip-x56 proposal
         // set pendingOwner=TemporalGovernor; simulate the first Ethereum
         // follow-up proposal relaying a Wormhole message → TemporalGovernor
         // calling acceptOwnership().
@@ -336,7 +336,7 @@ contract MultichainProposalIntegrationV2 is
         acceptOwnershipXWell(xWellProxy);
         acceptOwnershipBridgeAdapter(bridgeAdapterProxy);
 
-        /// VotingPowerAggregator uses Ownable2Step; mip-x52 afterDeploy only
+        /// VotingPowerAggregator uses Ownable2Step; mip-x56 afterDeploy only
         /// set pendingOwner=governorV2. Simulate the first Ethereum follow-up
         /// proposal action: governor accepts.
         if (ethereumVotingPower.pendingOwner() == address(governorV2)) {
@@ -2899,7 +2899,7 @@ contract MultichainProposalIntegrationV2 is
         governorV2.executeBreakGlass(targets, calldatas);
     }
 
-    /// @notice Exhaustively verify every break-glass calldata that mip-x52 whitelists
+    /// @notice Exhaustively verify every break-glass calldata that mip-x56 whitelists
     /// is reachable via `isWhitelistedCalldata`. Prevents silent drift where a new
     /// calldata is added to the proposal but not wired into the governor whitelist.
     function testAllBreakGlassCalldatasAreWhitelisted() public {
@@ -2907,7 +2907,7 @@ contract MultichainProposalIntegrationV2 is
 
         address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
 
-        // Each calldata mirrors the set produced by mip-x52._buildBreakGlassCalldatas
+        // Each calldata mirrors the set produced by mip-x56._buildBreakGlassCalldatas
         // (publishMessage payloads are chain-specific and covered by the proposal
         // validation; here we focus on the admin-transfer category).
         bytes[] memory expected = new bytes[](5);

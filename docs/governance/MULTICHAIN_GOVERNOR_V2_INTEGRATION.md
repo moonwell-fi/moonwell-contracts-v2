@@ -27,7 +27,7 @@ existing V1 signature and semantics. The companion design doc
 
 ## 2. Deployed contracts
 
-Addresses will be filled in after mip-x52 executes. Resolve by label:
+Addresses will be filled in after mip-x56 executes. Resolve by label:
 
 | Label                          | Chain                              | Notes                                         |
 | ------------------------------ | ---------------------------------- | --------------------------------------------- |
@@ -115,7 +115,7 @@ each chain.
 - `getCurrentVotes(address account) returns (uint256)` — live weight.
 - `isSnapshotSource(address source) returns (bool)`
 - `xWell() returns (address)`
-- `owner() returns (address)` — governor after mip-x52.
+- `owner() returns (address)` — governor after mip-x56.
 
 **Permissioned (owner = governor):**
 

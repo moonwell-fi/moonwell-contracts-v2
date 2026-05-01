@@ -1,4 +1,4 @@
-# Moonwell Governance Migration: MIP-X45 + MIP-X52 Audit Brief
+# Moonwell Governance Migration: MIP-X45 + MIP-X56 Audit Brief
 
 ## Overview
 
@@ -19,8 +19,8 @@ For details on the smart contract changes for MultichainGovernorV2, read
 | 0    | `DeployXWellEthereum.s.sol`          | Deployer   | Ethereum                           |
 | 1    | `mip-x45.sol` — deploy + submit      | Deployer   | Moonbeam, Base, OP, Ethereum       |
 | 2    | `mip-x45.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
-| 3    | `mip-x52.sol` — deploy + afterDeploy | Deployer   | All 4 chains                       |
-| 4    | `mip-x52.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
+| 3    | `mip-x56.sol` — deploy + afterDeploy | Deployer   | All 4 chains                       |
+| 4    | `mip-x56.sol` — proposal executes    | Governance | Moonbeam → Base, OP (via Wormhole) |
 | 5    | `PostDeployEthereumXWell.s.sol`      | Deployer   | Ethereum                           |
 
 Step 0 is already complete (xWELL, stkWELL, WormholeBridgeAdapter, ProxyAdmin,
@@ -74,7 +74,7 @@ finality.
 
 ---
 
-## MIP-X52: Governance Migration
+## MIP-X56: Governance Migration
 
 ### Purpose
 
@@ -134,7 +134,7 @@ The MultichainGovernorV2 itself is already fully initialized at the end of
 
 ### Build-time precondition
 
-`mip-x52.build()` reverts if any proposal is `Active` or in
+`mip-x56.build()` reverts if any proposal is `Active` or in
 `CrossChainVoteCollection` on the Moonbeam governor. `initializeV3()` on Base/OP
 removes the legacy Moonbeam governor as a trusted sender, which would strand
 in-flight satellite votes — so the deployer must wait for live proposals to
@@ -249,7 +249,7 @@ instructions.
 
 ## Follow-Up Items (Require Separate Proposal)
 
-These actions cannot be completed during MIP-X45/X52 and must be handled via a
+These actions cannot be completed during MIP-X45/X56 and must be handled via a
 subsequent governance proposal from the new Ethereum MultichainGovernorV2:
 
 ### 1. First Ethereum Proposal: Accept Ownership + addTrustedSenders
@@ -266,7 +266,7 @@ MultichainGovernorV2 calls `acceptOwnership()` on:
 - **WormholeBridgeAdapter** (Ownable2Step — pendingOwner is set by
   PostDeployEthereumXWell)
 - **VotingPowerAggregator (Ethereum)** (Ownable2Step — pendingOwner is set by
-  MIP-X52 `afterDeploy`)
+  MIP-X56 `afterDeploy`)
 
 Until these calls are made, ownership transfer is incomplete (deployer is still
 current owner for xWELL/WormholeBridgeAdapter; Moonbeam governor still effective
@@ -274,7 +274,7 @@ owner for the aggregator until acceptance).
 
 The same proposal should also relay a Wormhole message to Moonbeam
 TemporalGovernor to call `acceptOwnership()` on the **Moonbeam
-VotingPowerAggregator** (pendingOwner set during MIP-X52 Moonbeam execution).
+VotingPowerAggregator** (pendingOwner set during MIP-X56 Moonbeam execution).
 
 **Step 2 — addTrustedSenders on all chains:**
 
@@ -298,20 +298,20 @@ governor.
 
 **Step 3 — \_acceptAdmin() on Moonbeam contracts:**
 
-MIP-X52 calls `_setPendingAdmin(temporalGovernor)` on Moonbeam mTokens and
+MIP-X56 calls `_setPendingAdmin(temporalGovernor)` on Moonbeam mTokens and
 Unitroller. To complete the admin transfer, TemporalGovernor must call
 `_acceptAdmin()` on each contract. This is sent as a Wormhole message from the
 Ethereum governor → Moonbeam TemporalGovernor → `_acceptAdmin()`.
 
-**Why this can't be in MIP-X52:** `_acceptAdmin()` requires
+**Why this can't be in MIP-X56:** `_acceptAdmin()` requires
 `msg.sender == pendingAdmin` (TemporalGovernor). TemporalGovernor can only
 execute via Wormhole from the Ethereum governor, which has no proposals yet
-during MIP-X52 execution.
+during MIP-X56 execution.
 
 ### 2. VotingPowerAggregator ownership (Ethereum and Moonbeam)
 
 The VotingPowerAggregator uses `Ownable2StepUpgradeable` (matching
-MultichainVoteCollectionV2) so misconfigured transfers are reversible. MIP-X52
+MultichainVoteCollectionV2) so misconfigured transfers are reversible. MIP-X56
 only sets `pendingOwner` on the Ethereum and Moonbeam aggregators; the first
 Ethereum follow-up proposal must:
 
@@ -322,7 +322,7 @@ Ethereum follow-up proposal must:
 
 Base and Optimism VotingPowerAggregators are initialized with TemporalGovernor
 as owner via `_transferOwnership` in the initializer, so they are already fully
-owned on-chain after MIP-X52 deployment — no follow-up needed for those chains.
+owned on-chain after MIP-X56 deployment — no follow-up needed for those chains.
 
 ---
 
@@ -339,7 +339,7 @@ owned on-chain after MIP-X52 deployment — no follow-up needed for those chains
    ownership to PAUSE_GUARDIAN multisig across all chains.
 
 4. **Single Ethereum ProxyAdmin:** There is one shared ProxyAdmin on Ethereum,
-   deployed in Step 0 (`DeployXWellEthereum.s.sol`). MIP-X52 reuses it for the
+   deployed in Step 0 (`DeployXWellEthereum.s.sol`). MIP-X56 reuses it for the
    MultichainGovernorV2 and VotingPowerAggregator proxies (skips deployment if
    `PROXY_ADMIN` is already set in the addresses registry). ProxyAdmin ownership
    is transferred to MultichainGovernorV2 via PostDeployEthereumXWell.
@@ -370,7 +370,7 @@ owned on-chain after MIP-X52 deployment — no follow-up needed for those chains
 
 - **Wormhole dependency:** All cross-chain communication relies on Wormhole. If
   Wormhole is unavailable, satellite chain governance execution is delayed.
-- **Deployer trust window:** Between MIP-X52 execution and
+- **Deployer trust window:** Between MIP-X56 execution and
   PostDeployEthereumXWell completion, the deployer still controls Ethereum xWELL
   ecosystem contracts. This window should be minimized.
 - **Two-step ownership gap:** Until the follow-up proposal calls
@@ -383,6 +383,6 @@ owned on-chain after MIP-X52 deployment — no follow-up needed for those chains
 - **Deployer Ethereum-nonce stability:** The atomic governor proxy deploy relies
   on the deployer's Ethereum nonce being unchanged between the address
   prediction step and the final proxy deployment. The deployer must not send any
-  other Ethereum transactions while `mip-x52.deploy()` is in flight. The script
+  other Ethereum transactions while `mip-x56.deploy()` is in flight. The script
   asserts deployed address == predicted and reverts if the nonce shifted, so a
   bad outcome surfaces as a clean revert rather than an uninitialized proxy.
