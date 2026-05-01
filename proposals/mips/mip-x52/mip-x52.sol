@@ -145,31 +145,6 @@ contract mipx52 is HybridProposal {
             ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
         }
 
-        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
-            address governorV2Impl = addresses.getAddress(
-                "MULTICHAIN_GOVERNOR_V2_IMPL"
-            );
-
-            vm.startBroadcast();
-
-            address governorV2Proxy = address(
-                new TransparentUpgradeableProxy(
-                    governorV2Impl,
-                    ethereumProxyAdmin,
-                    ""
-                )
-            );
-
-            vm.stopBroadcast();
-
-            addresses.addAddress(
-                "MULTICHAIN_GOVERNOR_V2_PROXY",
-                governorV2Proxy
-            );
-
-            addresses.addAddress("EMISSIONS_ADMIN", governorV2Proxy);
-        }
-
         // Deploy VotingPowerAggregator on Ethereum
         if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR")) {
             address xWellAddress = addresses.getAddress("xWELL_PROXY");
@@ -202,6 +177,23 @@ contract mipx52 is HybridProposal {
                 votingPowerImpl
             );
             addresses.addAddress("VOTING_POWER_AGGREGATOR", votingPowerProxy);
+        }
+
+        // Pre-compute the governor proxy CREATE address so Moonbeam contracts
+        // can use it as a trusted sender before the proxy itself is deployed.
+        // The proxy is deployed and initialized atomically at the end of deploy().
+        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
+            (, address deployer, ) = vm.readCallers();
+            address predictedGovernorProxy = vm.computeCreateAddress(
+                deployer,
+                vm.getNonce(deployer)
+            );
+
+            addresses.addAddress(
+                "MULTICHAIN_GOVERNOR_V2_PROXY",
+                predictedGovernorProxy
+            );
+            addresses.addAddress("EMISSIONS_ADMIN", predictedGovernorProxy);
         }
 
         // ============ MOONBEAM DEPLOYMENTS ============
@@ -486,28 +478,48 @@ contract mipx52 is HybridProposal {
                 voteCollectionV2Impl
             );
         }
+
+        // Deploy + initialize the Ethereum governor proxy atomically as the last
+        // step of deploy(). Asserts the deployed address matches the prediction.
+        _deployAndInitializeGovernorV2(addresses);
     }
 
-    function afterDeploy(Addresses addresses, address) public override {
-        // Read proposal count from Moonbeam MultichainGovernor to continue the sequence
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamMultichainGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-        uint256 startingProposalCount = MultichainGovernor(
-            payable(moonbeamMultichainGovernor)
-        ).proposalCount();
-
-        // Initialize MultichainGovernorV2 on Ethereum
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        address governorV2Proxy = addresses.getAddress(
+    /// @notice Atomically deploy and initialize the Ethereum MultichainGovernorV2 proxy.
+    /// @dev Init data is encoded for the proxy constructor so initialize() runs
+    /// in the same transaction as proxy creation.
+    function _deployAndInitializeGovernorV2(Addresses addresses) internal {
+        address registeredProxy = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_V2_PROXY"
         );
 
-        // Build InitializeData struct with proposal count from Moonbeam
-        // NOTE: We add 1 because this proposal (mip-x52) will become proposal N+1 on Moonbeam,
-        // and we want Ethereum to start counting from that same number (so both chains stay in sync)
+        // Idempotent: if the proxy is already deployed, nothing to do.
+        vm.selectFork(ETHEREUM_FORK_ID);
+        if (registeredProxy.code.length != 0) {
+            return;
+        }
+
+        // startingProposalCount = moonbeam.proposalCount + 1 keeps proposal IDs
+        // sequential across the migration.
+        vm.selectFork(MOONBEAM_FORK_ID);
+        uint256 startingProposalCount = MultichainGovernor(
+            payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
+        ).proposalCount();
+        address moonbeamVoteCollection = addresses.getAddress(
+            "VOTE_COLLECTION_V2_PROXY"
+        );
+
+        vm.selectFork(BASE_FORK_ID);
+        address baseVoteCollection = addresses.getAddress(
+            "VOTE_COLLECTION_PROXY"
+        );
+
+        vm.selectFork(OPTIMISM_FORK_ID);
+        address optimismVoteCollection = addresses.getAddress(
+            "VOTE_COLLECTION_PROXY"
+        );
+
+        vm.selectFork(ETHEREUM_FORK_ID);
+
         MultichainGovernorV2.InitializeData memory initData;
         initData.votingPower = addresses.getAddress("VOTING_POWER_AGGREGATOR");
         initData.proposalThreshold = PROPOSAL_THRESHOLD;
@@ -523,63 +535,67 @@ contract mipx52 is HybridProposal {
         );
         initData.wormholeCore = addresses.getAddress("WORMHOLE_CORE");
 
-        // Build trusted senders array (vote collection contracts)
         WormholeTrustedSender.TrustedSender[]
             memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 3
             );
-
-        // Moonbeam vote collection
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_V2_PROXY"
-        );
-
         trustedSenders[0] = WormholeTrustedSender.TrustedSender({
             chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
             addr: moonbeamVoteCollection
         });
-
-        // Base vote collection (existing, will be upgraded)
-        vm.selectFork(BASE_FORK_ID);
-        address baseVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY"
-        );
-
         trustedSenders[1] = WormholeTrustedSender.TrustedSender({
             chainId: BASE_WORMHOLE_CHAIN_ID,
             addr: baseVoteCollection
         });
-
-        // Optimism vote collection (existing, will be upgraded)
-        vm.selectFork(OPTIMISM_FORK_ID);
-        address optimismVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY"
-        );
-
         trustedSenders[2] = WormholeTrustedSender.TrustedSender({
             chainId: OPTIMISM_WORMHOLE_CHAIN_ID,
             addr: optimismVoteCollection
         });
 
-        // Initialize governor on Ethereum
-        vm.selectFork(ETHEREUM_FORK_ID);
-
         bytes[] memory whitelistedCalldatas = _buildBreakGlassCalldatas(
             addresses
         );
+        // _buildBreakGlassCalldatas switches forks during construction, restore Ethereum
+        vm.selectFork(ETHEREUM_FORK_ID);
 
-        vm.startBroadcast();
-
-        MultichainGovernorV2(payable(governorV2Proxy)).initialize(
+        bytes memory initCallData = abi.encodeWithSelector(
+            MultichainGovernorV2.initialize.selector,
             initData,
             trustedSenders,
             whitelistedCalldatas
         );
 
-        // Configure Ethereum VotingPowerAggregator (separate function to avoid stack too deep)
-        _configureEthereumVotingPower(addresses, governorV2Proxy);
+        address governorV2Impl = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_V2_IMPL"
+        );
+        address ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
 
+        vm.startBroadcast();
+        address actualProxy = address(
+            new TransparentUpgradeableProxy(
+                governorV2Impl,
+                ethereumProxyAdmin,
+                initCallData
+            )
+        );
+        vm.stopBroadcast();
+
+        require(
+            actualProxy == registeredProxy,
+            "governor proxy address mismatch; deployer nonce shifted"
+        );
+    }
+
+    function afterDeploy(Addresses addresses, address) public override {
+        vm.selectFork(ETHEREUM_FORK_ID);
+
+        address governorV2Proxy = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_V2_PROXY"
+        );
+
+        // Add stkWELL snapshot source and transfer aggregator ownership to the governor.
+        vm.startBroadcast();
+        _configureEthereumVotingPower(addresses, governorV2Proxy);
         vm.stopBroadcast();
 
         // Transfer Ethereum ProxyAdmin ownership to MultichainGovernorV2 (current owner is deployer)
@@ -1249,6 +1265,11 @@ contract mipx52 is HybridProposal {
         // This proposal (mip-x52) is executed by the old Moonbeam MultichainGovernor, so it cannot
         // execute actions on the Ethereum MultichainGovernorV2 which doesn't have any proposals yet.
 
+        // initializeV3() on Base/OP removes the legacy Moonbeam governor as a
+        // trusted sender; in-flight Moonbeam proposals would have their satellite
+        // votes stranded. Block construction until they drain.
+        _assertNoLiveMoonbeamProposals(addresses);
+
         // Build Moonbeam actions
         _buildMoonbeam(addresses);
 
@@ -1261,6 +1282,26 @@ contract mipx52 is HybridProposal {
         // Build Base and Optimism actions
         _buildBase(addresses, ethereumGovernorV2);
         _buildOptimism(addresses, ethereumGovernorV2);
+    }
+
+    /// @notice Reverts if the Moonbeam MultichainGovernor has any Active or
+    /// CrossChainVoteCollection proposals.
+    function _assertNoLiveMoonbeamProposals(Addresses addresses) internal {
+        uint256 currentForkId = vm.activeFork();
+        vm.selectFork(MOONBEAM_FORK_ID);
+
+        address moonbeamGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
+        uint256[] memory live = MultichainGovernor(payable(moonbeamGovernor))
+            .liveProposals();
+
+        require(
+            live.length == 0,
+            "Moonbeam governor has live proposals; wait for them to drain"
+        );
+
+        vm.selectFork(currentForkId);
     }
 
     function teardown(Addresses addresses, address) public pure override {}

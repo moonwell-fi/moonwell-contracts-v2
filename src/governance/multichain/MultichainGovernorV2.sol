@@ -352,7 +352,8 @@ contract MultichainGovernorV2 is
                 if (
                     proposalsState == ProposalState.Init ||
                     proposalsState == ProposalState.Active ||
-                    proposalsState == ProposalState.CrossChainVoteCollection
+                    proposalsState == ProposalState.CrossChainVoteCollection ||
+                    proposalsState == ProposalState.Succeeded
                 ) {
                     totalLiveProposals++;
                 }
@@ -624,7 +625,7 @@ contract MultichainGovernorV2 is
 
         if (
             msg.sender != proposals[proposalId].proposer &&
-            votingPower.getCurrentVotes(proposals[proposalId].proposer) >
+            votingPower.getCurrentVotes(proposals[proposalId].proposer) >=
             proposalThreshold
         ) {
             revert UnauthorizedCancel();

@@ -85,17 +85,23 @@ ownership from the Moonbeam MultichainGovernor to the new system.
 
 **Ethereum:**
 
-- Deploy MultichainGovernorV2 (impl + proxy via ProxyAdmin)
-- Deploy VotingPowerAggregator (impl + proxy via ProxyAdmin)
+- Reuse the existing ProxyAdmin (already deployed in Step 0)
+- Deploy MultichainGovernorV2 implementation
+- Deploy VotingPowerAggregator (impl + proxy via ProxyAdmin) — initialized
+  atomically with deployer as owner
+- Deploy MultichainGovernorV2 proxy with `initialize(...)` encoded in the proxy
+  constructor's `_data`, so creation and initialization happen in the same
+  transaction (no uninitialized window).
 - Set EMISSIONS_ADMIN = MultichainGovernorV2 proxy
 
 **Moonbeam:**
 
+- Deploy MultichainGovernor v1.1 implementation (adds `recoverETH()`)
 - Deploy TemporalGovernor (non-upgradeable) — trusted sender: Ethereum
   MultichainGovernorV2
 - Deploy VotingPowerAggregator (impl + proxy via MOONBEAM_PROXY_ADMIN)
 - Deploy MultichainVoteCollectionMoonbeam (impl + proxy via
-  MOONBEAM_PROXY_ADMIN)
+  MOONBEAM_PROXY_ADMIN) — trusted sender: Ethereum MultichainGovernorV2
 
 **Base:**
 
@@ -107,20 +113,32 @@ ownership from the Moonbeam MultichainGovernor to the new system.
 
 - Same as Base
 
+The MultichainGovernorV2 init payload includes:
+`startingProposalCount = moonbeam.proposalCount + 1`, the trusted senders
+(Moonbeam VoteCollectionV2, Base VoteCollection, OP VoteCollection), and the 8
+break-glass whitelisted calldatas (3 publishMessage + 5 admin functions). All of
+these are read or built during `deploy()` from already-deployed contracts on the
+relevant chains.
+
 ### afterDeploy Phase (deployer-run)
 
 **Ethereum:**
 
-- Read `proposalCount` from Moonbeam MultichainGovernor
-- Initialize MultichainGovernorV2 with
-  `startingProposalCount = moonbeam.proposalCount + 1`
-- Configure trusted senders: Moonbeam VoteCollectionV2, Base VoteCollection, OP
-  VoteCollection
-- Configure break glass guardian with 8 whitelisted calldatas (3
-  publishMessage + 5 admin functions)
-- Configure VotingPowerAggregator: `setXWell`, `addSnapshotSource(stkWELL)`,
-  transfer ownership to governor (Ownable2Step — only sets `pendingOwner`; see
-  Follow-Up Items)
+- Configure VotingPowerAggregator: `addSnapshotSource(stkWELL)`, transfer
+  ownership to governor (Ownable2Step — only sets `pendingOwner`; see Follow-Up
+  Items)
+- Transfer Ethereum ProxyAdmin ownership to MultichainGovernorV2
+
+The MultichainGovernorV2 itself is already fully initialized at the end of
+`deploy()`; no separate `initialize()` call is needed in afterDeploy.
+
+### Build-time precondition
+
+`mip-x52.build()` reverts if any proposal is `Active` or in
+`CrossChainVoteCollection` on the Moonbeam governor. `initializeV3()` on Base/OP
+removes the legacy Moonbeam governor as a trusted sender, which would strand
+in-flight satellite votes — so the deployer must wait for live proposals to
+drain (or cancel them) before submitting this migration.
 
 ### Proposal Actions (executed by old Moonbeam MultichainGovernor)
 
@@ -141,8 +159,8 @@ ownership from the Moonbeam MultichainGovernor to the new system.
 
 **Base (via Wormhole from Moonbeam):**
 
-1. Upgrade MultichainVoteCollection proxy to V2 implementation
-2. Call `initializeV2(votingPowerAggregator, ethChainId, ethGovernorV2)` — sets
+1. Upgrade MultichainVoteCollection proxy to V3 implementation
+2. Call `initializeV3(votingPowerAggregator, ethChainId, ethGovernorV2)` — sets
    VotingPowerAggregator, removes old Moonbeam governor as trusted sender, adds
    Ethereum governor
 3. Add stkWELL as snapshot source on Base VotingPowerAggregator
@@ -335,6 +353,17 @@ owned on-chain after MIP-X52 deployment — no follow-up needed for those chains
    actions — hence why Ethereum configuration requires the separate
    PostDeployEthereumXWell script.
 
+7. **Atomic governor proxy initialization:** The Ethereum MultichainGovernorV2
+   proxy is deployed with its `initialize(...)` payload encoded into the
+   `TransparentUpgradeableProxy` constructor `_data` argument so init runs in
+   the same transaction as proxy creation. The Moonbeam TemporalGovernor and
+   VoteCollectionMoonbeam need the Ethereum proxy address as a trusted sender at
+   deploy time, but the Ethereum proxy's own init data needs the Moonbeam
+   VoteCollection address — this circular dependency is resolved inside
+   `deploy()` by computing the Ethereum proxy's CREATE address from the
+   deployer's nonce, deploying the cross-chain dependents against it, then
+   deploying the proxy and asserting the deployed address matches.
+
 ---
 
 ## Risk Considerations
@@ -351,3 +380,9 @@ owned on-chain after MIP-X52 deployment — no follow-up needed for those chains
   Moonbeam mTokens and Unitroller have MultichainGovernor (old, now defunct) as
   admin and TemporalGovernor as pendingAdmin. The old governor can't create new
   proposals, so this state is safe but should be resolved promptly.
+- **Deployer Ethereum-nonce stability:** The atomic governor proxy deploy relies
+  on the deployer's Ethereum nonce being unchanged between the address
+  prediction step and the final proxy deployment. The deployer must not send any
+  other Ethereum transactions while `mip-x52.deploy()` is in flight. The script
+  asserts deployed address == predicted and reverts if the nonce shifted, so a
+  bad outcome surfaces as a clean revert rather than an uninitialized proxy.
