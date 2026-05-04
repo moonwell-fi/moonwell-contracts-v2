@@ -45,7 +45,13 @@ contract WstETHExchangeRateAdapter is AggregatorV3Interface {
     /// @notice Thrown when stEthPerToken exceeds int256 max
     error ExchangeRateOverflow();
 
+    /// @notice Thrown when a constructor argument is the zero address
+    error ZeroAddress();
+
     constructor(address _wstETH, address _lidoOracle) {
+        if (_wstETH == address(0) || _lidoOracle == address(0)) {
+            revert ZeroAddress();
+        }
         wstETH = IWstETH(_wstETH);
         lidoOracle = ILidoAccountingOracle(_lidoOracle);
     }

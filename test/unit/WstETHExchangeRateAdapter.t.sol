@@ -192,10 +192,14 @@ contract WstETHExchangeRateAdapterUnitTest is Test {
         ) = compositeOracle.latestRoundData();
 
         assertTrue(answer > 0, "Composite price should be positive");
-        /// ChainlinkCompositeOracle always returns block.timestamp as updatedAt,
-        /// not the underlying feeds' timestamps. The adapter's real updatedAt is
-        /// only visible when calling the adapter directly.
-        assertEq(updatedAt, block.timestamp);
+        /// After HAL-02, ChainlinkCompositeOracle propagates the minimum
+        /// `updatedAt` across all sub-feeds instead of substituting
+        /// block.timestamp. `MockChainlinkOracle` hardcodes its `_updatedAt`
+        /// to a fixed point in time that is older than the adapter's
+        /// Lido-derived timestamp, so the ETH/USD sub-feed's `updatedAt` is
+        /// the minimum and must be what the composite oracle surfaces.
+        (, , , uint256 minSubFeedUpdatedAt, ) = ethUsd.latestRoundData();
+        assertEq(updatedAt, minSubFeedUpdatedAt);
         assertEq(roundId, 0);
         assertEq(answeredInRound, 0);
 
