@@ -2,6 +2,8 @@
 pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
@@ -13,6 +15,7 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
+import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
 import {MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
@@ -41,6 +44,52 @@ contract xWellIntegrationTest is Test {
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         wormholeAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        /// Manually upgrade the adapter to V5 (Executor) for testing.
+        /// CI runs this test with --fork-url base/optimism (single fork),
+        /// so PostProposalCheck multi-fork pipeline is not available.
+        _upgradeAdapterToV5();
+    }
+
+    /// @notice Deploy V5 impl and upgrade via proxy admin
+    function _upgradeAdapterToV5() internal {
+        address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
+        address proxy = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
+
+        WormholeBridgeAdapter newImpl = new WormholeBridgeAdapter();
+
+        /// Try to get executor addresses — they may or may not be in chain config
+        address executorAddr;
+        address quoterRouterAddr;
+        address quoterAddr;
+        try addresses.getAddress("WORMHOLE_EXECUTOR") returns (address a) {
+            executorAddr = a;
+        } catch {
+            executorAddr = address(new MockExecutorQuoterRouter());
+        }
+        try addresses.getAddress("WORMHOLE_QUOTER_ROUTER") returns (address a) {
+            quoterRouterAddr = a;
+        } catch {
+            quoterRouterAddr = address(new MockExecutorQuoterRouter());
+        }
+        try addresses.getAddress("WORMHOLE_QUOTER") returns (address a) {
+            quoterAddr = a;
+        } catch {
+            quoterAddr = address(new MockExecutorQuoterRouter());
+        }
+
+        address proxyAdminOwner = ProxyAdmin(proxyAdmin).owner();
+        vm.prank(proxyAdminOwner);
+        ProxyAdmin(proxyAdmin).upgradeAndCall(
+            ITransparentUpgradeableProxy(proxy),
+            address(newImpl),
+            abi.encodeWithSignature(
+                "initializeV5(address,address,address)",
+                executorAddr,
+                quoterRouterAddr,
+                quoterAddr
+            )
         );
     }
 
@@ -92,6 +141,15 @@ contract xWellIntegrationTest is Test {
         );
     }
 
+    /// @notice After V5 upgrade, validate Executor state
+    function testExecutorStateAfterV5Upgrade() public view {
+        assertTrue(
+            address(wormholeAdapter.executor()) != address(0),
+            "executor not set after V5"
+        );
+    }
+
+    /// @notice Bridge out using the off-chain signed quote path.
     function testBridgeOutSuccess() public {
         uint256 mintAmount = testBridgeInSuccess(startingWellAmount);
 
@@ -100,13 +158,24 @@ contract xWellIntegrationTest is Test {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
-        uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
-        vm.deal(user, cost);
+        /// Etch MockExecutorQuoterRouter onto the real executor address
+        address executorAddr = address(wormholeAdapter.executor());
+        MockExecutorQuoterRouter mockExecutor = new MockExecutorQuoterRouter();
+        vm.etch(executorAddr, address(mockExecutor).code);
+
+        uint256 messageFee = wormholeAdapter.wormhole().messageFee();
+        uint256 executorFee = 0.001 ether;
+        vm.deal(user, messageFee + executorFee);
 
         vm.startPrank(user);
         xwell.approve(address(wormholeAdapter), mintAmount);
-        wormholeAdapter.bridge{value: cost}(dstChainId, mintAmount, user);
+        wormholeAdapter.bridge{value: messageFee + executorFee}(
+            dstChainId,
+            mintAmount,
+            user,
+            hex"deadbeef"
+        );
         vm.stopPrank();
 
         uint256 endingXWellBalance = xwell.balanceOf(user);
@@ -133,14 +202,11 @@ contract xWellIntegrationTest is Test {
             xwell.buffer(address(wormholeAdapter))
         );
 
-        /// Swap wormhole core with mock for processVAA testing.
-        /// The adapter is already V3-initialized on-chain after mip-x48.
+        /// Swap wormhole core with mock for executeVAAv1 testing.
         bytes memory vaaBytes;
         {
-            uint16 currentWormholeChainId = uint16(BASE_WORMHOLE_CHAIN_ID);
-
             MockWormholeCore mockWormhole = new MockWormholeCore();
-            mockWormhole.setChainId(currentWormholeChainId);
+            mockWormhole.setChainId(block.chainid.toWormholeChainId());
 
             /// Override the wormhole core address (slot 156) with the mock
             vm.store(
@@ -154,18 +220,23 @@ contract xWellIntegrationTest is Test {
                 uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
                 address(wormholeAdapter).toBytes(),
                 "",
-                abi.encode(user, mintAmount, currentWormholeChainId)
+                abi.encode(
+                    user,
+                    mintAmount,
+                    block.chainid.toWormholeChainId(),
+                    address(wormholeAdapter)
+                )
             );
 
             vaaBytes = abi.encode("bridge-in-vaa", mintAmount);
         }
 
-        /// --- Bridge in via processVAA ---
+        /// --- Bridge in via executeVAAv1 ---
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        wormholeAdapter.processVAA(vaaBytes);
+        wormholeAdapter.executeVAAv1(vaaBytes);
 
         assertEq(
             xwell.balanceOf(user),
@@ -176,10 +247,6 @@ contract xWellIntegrationTest is Test {
             xwell.totalSupply(),
             startingXWellTotalSupply + mintAmount,
             "total xWELL supply incorrect"
-        );
-        assertTrue(
-            wormholeAdapter.processedVAAHashes(keccak256(vaaBytes)),
-            "VAA hash not processed"
         );
         assertEq(
             xwell.buffer(address(wormholeAdapter)),

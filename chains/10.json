@@ -245,6 +245,21 @@
         "name": "WORMHOLE_CORE"
     },
     {
+        "addr": "0x85B704501f6AE718205C0636260768C4e72ac3e7",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
+        "addr": "0xa3B6551cCbB5Fe1dc33b71EE3590B1Df22ae75B3",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER_ROUTER"
+    },
+    {
+        "addr": "0xA25862D222Eb8343505c12d96e097e4332468D60",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER"
+    },
+    {
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_RELAYER_PROXY"
@@ -818,5 +833,10 @@
         "addr": "0x2dc66C40bb15F0470e40508B43cD64D0b4F57180",
         "isContract": true,
         "name": "VOTE_COLLECTION_IMPL_V3"
+    },
+    {
+        "addr": "0xa8A334ffaba129C07Df4740001ceE7c0D838ddB9",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"
     }
 ]

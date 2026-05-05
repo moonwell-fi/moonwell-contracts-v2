@@ -90,6 +90,11 @@
         "isContract": true
     },
     {
+        "addr": "0x85D06449C78064c2E02d787e9DC71716786F8D19",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
         "name": "WORMHOLE_BRIDGE_RELAYER_PROXY",
         "isContract": true
@@ -403,5 +408,10 @@
         "addr": "0x0EA81678E4DEb33aaD9E214dF76be3158b4209ab",
         "isContract": true,
         "name": "MULTICHAIN_GOVERNOR_IMPL_V3"
+    },
+    {
+        "addr": "0x11dbA16fb4cc80D80f371825137a6D3e2f77EbcF",
+        "isContract": true,
+        "name": "WORMHOLE_UNWRAPPER_ADAPTER_IMPL_V5"
     }
 ]
