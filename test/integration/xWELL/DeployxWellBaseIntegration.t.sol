@@ -53,11 +53,26 @@ contract xWellIntegrationTest is Test {
     }
 
     /// @notice Deploy V5 impl and upgrade via proxy admin
+    /// @dev Skips initializeV5 if the live adapter is already at V5 (mip-x52
+    /// has been executed on chain). In that case we just hot-swap the impl
+    /// to the locally compiled bytecode so tests exercise current code.
     function _upgradeAdapterToV5() internal {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
         address proxy = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
 
         WormholeBridgeAdapter newImpl = new WormholeBridgeAdapter();
+        address proxyAdminOwner = ProxyAdmin(proxyAdmin).owner();
+
+        // If the proxy already has executor set, V5 init has happened.
+        // Calling initializeV5 again would revert ("already initialized").
+        if (address(WormholeBridgeAdapter(proxy).executor()) != address(0)) {
+            vm.prank(proxyAdminOwner);
+            ProxyAdmin(proxyAdmin).upgrade(
+                ITransparentUpgradeableProxy(proxy),
+                address(newImpl)
+            );
+            return;
+        }
 
         /// Try to get executor addresses — they may or may not be in chain config
         address executorAddr;
@@ -79,7 +94,6 @@ contract xWellIntegrationTest is Test {
             quoterAddr = address(new MockExecutorQuoterRouter());
         }
 
-        address proxyAdminOwner = ProxyAdmin(proxyAdmin).owner();
         vm.prank(proxyAdminOwner);
         ProxyAdmin(proxyAdmin).upgradeAndCall(
             ITransparentUpgradeableProxy(proxy),

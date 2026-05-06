@@ -53,6 +53,12 @@ contract xWellRouterMoonbeamTest is Test {
         uint256 amount
     );
 
+    /// @notice True once mip-x52 has executed on Moonbeam (adapter is V5).
+    /// V5 disables onchain quoting on Moonbeam, so the legacy xWELLRouter's
+    /// bridge path (which uses the no-signedQuote variant) reverts. The
+    /// affected tests early-return when this flag is set.
+    bool internal _routerObsoleteOnV5;
+
     function setUp() public {
         addresses = new Addresses();
 
@@ -69,6 +75,13 @@ contract xWellRouterMoonbeamTest is Test {
             addresses.getAddress("xWELL_LOCKBOX"),
             address(wormholeAdapter)
         );
+
+        // Detect V5 on Moonbeam: executor is set during initializeV5.
+        // Moonbeam intentionally has no executorQuoterRouter so the
+        // onchain-quote bridge() path that the router calls reverts.
+        _routerObsoleteOnV5 =
+            address(wormholeAdapter.executor()) != address(0) &&
+            address(wormholeAdapter.executorQuoterRouter()) == address(0);
 
         fallbackReverts = false; /// default to not revert
     }
@@ -140,6 +153,7 @@ contract xWellRouterMoonbeamTest is Test {
     }
 
     function testBridgeOutSuccess() public {
+        if (_routerObsoleteOnV5) return;
         testBridgeOutSuccess(300_000_000 * 1e18);
     }
 
@@ -147,6 +161,7 @@ contract xWellRouterMoonbeamTest is Test {
         uint256 mintAmount,
         uint256 glmrAmount
     ) public returns (uint256) {
+        if (_routerObsoleteOnV5) return 0;
         uint256 bridgeCost = router.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
         mintAmount = _boundMintAmount(mintAmount);
@@ -213,6 +228,7 @@ contract xWellRouterMoonbeamTest is Test {
     }
 
     function testBridgeOutSuccess(uint256 mintAmount) public returns (uint256) {
+        if (_routerObsoleteOnV5) return 0;
         mintAmount = _boundMintAmount(mintAmount);
 
         uint256 startingXWellBalance = xwell.balanceOf(address(this));
@@ -276,6 +292,7 @@ contract xWellRouterMoonbeamTest is Test {
     /// @notice With bridgeCost returning 0, send excess ETH to trigger
     ///         a refund failure when caller cannot receive funds.
     function testBridgeToSenderFailsRefund() public {
+        if (_routerObsoleteOnV5) return;
         uint256 mintAmount = xwell.buffer(address(wormholeAdapter)) / 2;
 
         deal(address(well), address(this), mintAmount);
@@ -294,6 +311,7 @@ contract xWellRouterMoonbeamTest is Test {
     }
 
     function testBridgeToSenderSucceedsNoRefund() public {
+        if (_routerObsoleteOnV5) return;
         uint256 mintAmount = xwell.buffer(address(wormholeAdapter)) / 2;
 
         deal(address(well), address(this), mintAmount);
@@ -321,6 +339,7 @@ contract xWellRouterMoonbeamTest is Test {
     function testBridgeToNonBridgeAdapterWhitelistedWormholeChainIdFails()
         public
     {
+        if (_routerObsoleteOnV5) return;
         uint256 mintAmount = xwell.buffer(address(wormholeAdapter));
 
         deal(address(well), address(this), mintAmount);
