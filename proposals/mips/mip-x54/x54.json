@@ -3,19 +3,19 @@
         "markets": [
             {
                 "collateralFactor": -1,
-                "irm": "JUMP_RATE_IRM_BASE_FLAT_MIP_X55",
+                "irm": "JUMP_RATE_IRM_BASE_FLAT_MIP_X54",
                 "market": "MOONWELL_cbXRP",
                 "reserveFactor": 0.99e18
             },
             {
                 "collateralFactor": -1,
-                "irm": "JUMP_RATE_IRM_BASE_FLAT_MIP_X55",
+                "irm": "JUMP_RATE_IRM_BASE_FLAT_MIP_X54",
                 "market": "MOONWELL_cbETH",
                 "reserveFactor": 0.99e18
             },
             {
                 "collateralFactor": -1,
-                "irm": "JUMP_RATE_IRM_BASE_FLAT_MIP_X55",
+                "irm": "JUMP_RATE_IRM_BASE_FLAT_MIP_X54",
                 "market": "MOONWELL_VIRTUAL",
                 "reserveFactor": 0.99e18
             }
@@ -26,7 +26,7 @@
                 "jumpMultiplierPerYear": 0,
                 "kink": 0,
                 "multiplierPerYear": 0,
-                "name": "JUMP_RATE_IRM_BASE_FLAT_MIP_X55"
+                "name": "JUMP_RATE_IRM_BASE_FLAT_MIP_X54"
             }
         ]
     },
@@ -34,7 +34,7 @@
         "markets": [
             {
                 "collateralFactor": -1,
-                "irm": "JUMP_RATE_IRM_MOONBEAM_FLAT_MIP_X55",
+                "irm": "JUMP_RATE_IRM_MOONBEAM_FLAT_MIP_X54",
                 "market": "mGLIMMER",
                 "reserveFactor": 0.99e18
             }
@@ -45,7 +45,7 @@
                 "jumpMultiplierPerYear": 0,
                 "kink": 0,
                 "multiplierPerYear": 0,
-                "name": "JUMP_RATE_IRM_MOONBEAM_FLAT_MIP_X55"
+                "name": "JUMP_RATE_IRM_MOONBEAM_FLAT_MIP_X54"
             }
         ]
     }
