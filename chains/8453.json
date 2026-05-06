@@ -135,6 +135,11 @@
         "name": "WORMHOLE_QUOTER"
     },
     {
+        "addr": "0xa54008017941EcE968623a0Dd8Ee907E2b133596",
+        "isContract": false,
+        "name": "WORMHOLE_QUOTER_SIGNER"
+    },
+    {
         "addr": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
         "name": "USDBC",
         "isContract": true
@@ -1528,5 +1533,10 @@
         "addr": "0x78Feb72aeA00B912ac45438e0764A02213266568",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"
+    },
+    {
+        "addr": "0x2481BFB0DfA54Dc155011eF2E90ADAB9556b8D99",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V6"
     }
 ]
