@@ -1528,5 +1528,10 @@
         "addr": "0x78Feb72aeA00B912ac45438e0764A02213266568",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"
+    },
+    {
+        "addr": "0x2481BFB0DfA54Dc155011eF2E90ADAB9556b8D99",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V6"
     }
 ]
