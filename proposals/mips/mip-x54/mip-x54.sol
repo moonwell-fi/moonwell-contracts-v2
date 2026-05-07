@@ -9,6 +9,7 @@ import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol
 import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {MarketParams} from "@protocol/morpho/IMetaMorpho.sol";
 import {IOEVWrapperFeed} from "@protocol/oracles/IOEVWrapperFeed.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {IChainlinkOracle} from "@protocol/interfaces/IChainlinkOracle.sol";
@@ -36,7 +37,14 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 ///
 ///         On Base ALL THREE
 ///         `ChainlinkOEVMorphoWrapper` proxy implementations are also upgraded
-///         to restore round-data validation parity (no reinitializer):
+///         to restore round-data validation parity AND gate
+///         `updatePriceEarlyAndLiquidate` behind a per-proxy market allowlist
+///         (closes C4 #195). Each upgrade is performed via `upgradeAndCall`
+///         carrying `initializeV3([canonicalMarketId])` so the proxy is
+///         atomically seeded with the legitimate Morpho market it serves —
+///         without this seed, every legitimate liquidation would revert
+///         "market not approved" until a follow-up `setApprovedMarket` call.
+///         Proxies upgraded:
 ///           - CHAINLINK_WELL_USD_ORACLE_PROXY
 ///           - CHAINLINK_MAMO_USD_ORACLE_PROXY
 ///           - CHAINLINK_stkWELL_USD_ORACLE_PROXY
@@ -560,17 +568,108 @@ contract mipx54 is HybridProposal, ChainlinkOracleConfigs {
             }
 
             address proxy = addresses.getAddress(proxyKey);
+
+            // Seed the per-proxy market allowlist atomically with the upgrade.
+            // initializeV3 is `reinitializer(3)`, so it runs exactly once per
+            // proxy. Without seeding here every legitimate liquidation would
+            // revert "market not approved" between this upgrade and a follow-
+            // up governance call to setApprovedMarket.
+            bytes32[] memory seed = _morphoMarketSeed(
+                addresses,
+                morphoConfigs[i].proxyName
+            );
+
             _pushAction(
                 proxyAdmin,
                 abi.encodeWithSignature(
-                    "upgrade(address,address)",
+                    "upgradeAndCall(address,address,bytes)",
                     proxy,
-                    newImpl
+                    newImpl,
+                    abi.encodeCall(
+                        ChainlinkOEVMorphoWrapper.initializeV3,
+                        (seed)
+                    )
                 ),
                 string.concat(
-                    "Base: upgrade ChainlinkOEVMorphoWrapper proxy ",
+                    "Base: upgradeAndCall ChainlinkOEVMorphoWrapper proxy ",
                     morphoConfigs[i].proxyName,
-                    " implementation (no reinit)"
+                    " + initializeV3 with canonical Morpho market id"
+                )
+            );
+        }
+    }
+
+    /// @notice Build the `initializeV3` seed for a given Morpho proxy. Returns
+    ///         a single-element `bytes32[]` containing the canonical Morpho
+    ///         market id served by the proxy. Unknown proxies revert so a
+    ///         future MIP cannot accidentally upgrade an unaccounted-for
+    ///         wrapper without seeding.
+    function _morphoMarketSeed(
+        Addresses addresses,
+        string memory proxyName
+    ) internal view returns (bytes32[] memory seed) {
+        MarketParams memory market = _canonicalMorphoMarket(
+            addresses,
+            proxyName
+        );
+        seed = new bytes32[](1);
+        seed[0] = keccak256(abi.encode(market));
+    }
+
+    /// @notice Canonical Morpho market params per Base proxy. Source of truth
+    ///         is the live integration test (`testUpdatePriceEarlyAndLiquidate_*`
+    ///         in ChainlinkOEVMorphoWrapperIntegration.t.sol). All three
+    ///         proxies serve markets borrowing USDC against an asset using the
+    ///         standard `MORPHO_ADAPTIVE_CURVE_IRM`. The lltv values reflect
+    ///         the live (or test-canonical, for not-yet-enabled assets)
+    ///         deployment parameters.
+    function _canonicalMorphoMarket(
+        Addresses addresses,
+        string memory proxyName
+    ) internal view returns (MarketParams memory) {
+        address loanToken = addresses.getAddress("USDC");
+        address irm = addresses.getAddress("MORPHO_ADAPTIVE_CURVE_IRM");
+
+        bytes32 key = keccak256(bytes(proxyName));
+
+        if (key == keccak256(bytes("CHAINLINK_WELL_USD"))) {
+            return
+                MarketParams({
+                    loanToken: loanToken,
+                    collateralToken: addresses.getAddress("xWELL_PROXY"),
+                    oracle: addresses.getAddress(
+                        "MORPHO_CHAINLINK_WELL_USD_ORACLE"
+                    ),
+                    irm: irm,
+                    lltv: 0.625e18
+                });
+        } else if (key == keccak256(bytes("CHAINLINK_MAMO_USD"))) {
+            return
+                MarketParams({
+                    loanToken: loanToken,
+                    collateralToken: addresses.getAddress("MAMO"),
+                    oracle: addresses.getAddress(
+                        "MORPHO_CHAINLINK_MAMO_USD_ORACLE"
+                    ),
+                    irm: irm,
+                    lltv: 0.385e18
+                });
+        } else if (key == keccak256(bytes("CHAINLINK_stkWELL_USD"))) {
+            return
+                MarketParams({
+                    loanToken: loanToken,
+                    collateralToken: addresses.getAddress("STK_GOVTOKEN_PROXY"),
+                    oracle: addresses.getAddress(
+                        "MORPHO_CHAINLINK_stkWELL_USD_ORACLE"
+                    ),
+                    irm: irm,
+                    lltv: 0.625e18
+                });
+        } else {
+            revert(
+                string.concat(
+                    "MIP-X54: no canonical Morpho market params for proxy ",
+                    proxyName
                 )
             );
         }
@@ -1045,6 +1144,24 @@ contract mipx54 is HybridProposal, ChainlinkOracleConfigs {
                     "Base Morpho ",
                     morphoConfigs[i].proxyName,
                     ": decimals changed across upgrade"
+                )
+            );
+
+            // Allowlist seeding: the canonical Morpho market id wired by
+            // initializeV3 in build() must be approved post-upgrade. Catches
+            // the case where the seed was malformed (wrong addresses, wrong
+            // lltv) and silently produced a non-canonical id.
+            MarketParams memory canonicalMarket = _canonicalMorphoMarket(
+                addresses,
+                morphoConfigs[i].proxyName
+            );
+            bytes32 canonicalId = keccak256(abi.encode(canonicalMarket));
+            require(
+                wrapper.approvedMarkets(canonicalId),
+                string.concat(
+                    "Base Morpho ",
+                    morphoConfigs[i].proxyName,
+                    ": canonical market id not seeded by initializeV3"
                 )
             );
         }
