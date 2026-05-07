@@ -39,11 +39,12 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 ///         `ChainlinkOEVMorphoWrapper` proxy implementations are also upgraded
 ///         to restore round-data validation parity AND gate
 ///         `updatePriceEarlyAndLiquidate` behind a per-proxy market allowlist
-///         (closes C4 #195). Each upgrade is performed via `upgradeAndCall`
-///         carrying `initializeV3([canonicalMarketId])` so the proxy is
-///         atomically seeded with the legitimate Morpho market it serves —
-///         without this seed, every legitimate liquidation would revert
-///         "market not approved" until a follow-up `setApprovedMarket` call.
+///         (closes C4 #195). Each upgrade is split into two governance
+///         actions queued in the same proposal: plain `upgrade(proxy, newImpl)`
+///         followed by `setApprovedMarket(canonicalId, true)`. Both run
+///         atomically within one proposal execution, so the gate is never
+///         live without the canonical market seeded. setApprovedMarket is
+///         `onlyOwner`-gated (TEMPORAL_GOVERNOR), unfront-runnable.
 ///         Proxies upgraded:
 ///           - CHAINLINK_WELL_USD_ORACLE_PROXY
 ///           - CHAINLINK_MAMO_USD_ORACLE_PROXY
@@ -569,51 +570,47 @@ contract mipx54 is HybridProposal, ChainlinkOracleConfigs {
 
             address proxy = addresses.getAddress(proxyKey);
 
-            // Seed the per-proxy market allowlist atomically with the upgrade.
-            // initializeV3 is `reinitializer(3)`, so it runs exactly once per
-            // proxy. Without seeding here every legitimate liquidation would
-            // revert "market not approved" between this upgrade and a follow-
-            // up governance call to setApprovedMarket.
-            bytes32[] memory seed = _morphoMarketSeed(
-                addresses,
-                morphoConfigs[i].proxyName
-            );
-
+            // Two-step queueing inside one governance proposal:
+            //   1) plain `upgrade(proxy, newImpl)` — flips impl, no init
+            //   2) `setApprovedMarket(canonicalId, true)` — onlyOwner-gated
+            // Both actions execute atomically as part of the same proposal,
+            // so there is no window in which the gate is live but the
+            // canonical market is unapproved. A separate `initializeV3` on
+            // the wrapper is intentionally NOT used: a public initializer
+            // can be front-run with an empty seed, burning the reinitializer
+            // slot. setApprovedMarket carries onlyOwner enforcement and is
+            // re-callable, so this remains correct under any future re-seed.
             _pushAction(
                 proxyAdmin,
                 abi.encodeWithSignature(
-                    "upgradeAndCall(address,address,bytes)",
+                    "upgrade(address,address)",
                     proxy,
-                    newImpl,
-                    abi.encodeCall(
-                        ChainlinkOEVMorphoWrapper.initializeV3,
-                        (seed)
-                    )
+                    newImpl
                 ),
                 string.concat(
-                    "Base: upgradeAndCall ChainlinkOEVMorphoWrapper proxy ",
-                    morphoConfigs[i].proxyName,
-                    " + initializeV3 with canonical Morpho market id"
+                    "Base: upgrade ChainlinkOEVMorphoWrapper proxy ",
+                    morphoConfigs[i].proxyName
+                )
+            );
+
+            MarketParams memory canonicalMarket = _canonicalMorphoMarket(
+                addresses,
+                morphoConfigs[i].proxyName
+            );
+            bytes32 canonicalId = keccak256(abi.encode(canonicalMarket));
+            _pushAction(
+                proxy,
+                abi.encodeWithSignature(
+                    "setApprovedMarket(bytes32,bool)",
+                    canonicalId,
+                    true
+                ),
+                string.concat(
+                    "Base: setApprovedMarket(canonicalId, true) on ",
+                    morphoConfigs[i].proxyName
                 )
             );
         }
-    }
-
-    /// @notice Build the `initializeV3` seed for a given Morpho proxy. Returns
-    ///         a single-element `bytes32[]` containing the canonical Morpho
-    ///         market id served by the proxy. Unknown proxies revert so a
-    ///         future MIP cannot accidentally upgrade an unaccounted-for
-    ///         wrapper without seeding.
-    function _morphoMarketSeed(
-        Addresses addresses,
-        string memory proxyName
-    ) internal view returns (bytes32[] memory seed) {
-        MarketParams memory market = _canonicalMorphoMarket(
-            addresses,
-            proxyName
-        );
-        seed = new bytes32[](1);
-        seed[0] = keccak256(abi.encode(market));
     }
 
     /// @notice Canonical Morpho market params per Base proxy. Source of truth
