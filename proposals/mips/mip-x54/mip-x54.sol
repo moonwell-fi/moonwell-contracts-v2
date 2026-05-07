@@ -8,6 +8,7 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {IOEVWrapperFeed} from "@protocol/oracles/IOEVWrapperFeed.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {IChainlinkOracle} from "@protocol/interfaces/IChainlinkOracle.sol";
@@ -22,8 +23,18 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 ///         `ChainlinkOracleConfigs._oracleConfigs` on Base and Optimism using
 ///         a fresh `ChainlinkOEVWrapper` constructor (so the loan-feed
 ///         dereference fix is baked in), then re-wires `ChainlinkOracle` to
-///         point each market's symbol at the new wrapper. Composite-wrapped
-///         feeds and raw aggregators are left untouched. On Base ALL THREE
+///         point each market's symbol at the new wrapper. Raw aggregators are
+///         left untouched.
+///
+///         Optimism additionally redeploys two composite oracles
+///         (`CHAINLINK_WEETH_USD_COMPOSITE_OEV_WRAPPER`,
+///         `CHAINLINK_wrsETH_COMPOSITE_ORACLE`) so their `base` is the new
+///         canonical `CHAINLINK_ETH_USD_OEV_WRAPPER`, eliminating the
+///         cross-domain mismatch where weETH/wrsETH read a stale ETH source
+///         while WETH reads the OEV-gated wrapper. Closes the false-
+///         liquidation path on weETH/WETH and wrsETH/WETH borrower pairs.
+///
+///         On Base ALL THREE
 ///         `ChainlinkOEVMorphoWrapper` proxy implementations are also upgraded
 ///         to restore round-data validation parity (no reinitializer):
 ///           - CHAINLINK_WELL_USD_ORACLE_PROXY
@@ -47,6 +58,13 @@ contract mipx54 is HybridProposal, ChainlinkOracleConfigs {
     ///         under `<oracleName>_OEV_WRAPPER_DEPRECATED_V3`.
     string internal constant OEV_WRAPPER_SUFFIX = "_OEV_WRAPPER";
     string internal constant DEPRECATED_SUFFIX = "_OEV_WRAPPER_DEPRECATED_V3";
+
+    /// @notice Suffix used for the Optimism composite oracle migration. The
+    ///         canonical composite slots already include their own qualifier
+    ///         (e.g. `_COMPOSITE_OEV_WRAPPER`, `_COMPOSITE_ORACLE`), so the
+    ///         deprecated slot just appends `_DEPRECATED_V3` rather than
+    ///         re-suffixing with `_OEV_WRAPPER_DEPRECATED_V3`.
+    string internal constant COMPOSITE_DEPRECATED_SUFFIX = "_DEPRECATED_V3";
 
     /// @notice Snapshot of pre-upgrade Morpho wrapper proxy state, captured in
     ///         afterDeploy() and asserted in validate() to prove the proxy
@@ -145,6 +163,13 @@ contract mipx54 is HybridProposal, ChainlinkOracleConfigs {
     function deploy(Addresses addresses, address) public override {
         _deployForChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
         _deployForChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
+
+        // Optimism only: redeploy weETH and wrsETH composite oracles with
+        // base = the new canonical CHAINLINK_ETH_USD_OEV_WRAPPER (just promoted
+        // by _deployForChain above). Closes the cross-domain mismatch where
+        // weETH/wrsETH read from a stale ETH source while WETH read the fresh
+        // OEV-gated wrapper.
+        _deployOptimismCompositeOracles(addresses);
 
         // Base only: deploy a single shared ChainlinkOEVMorphoWrapper
         // implementation that all three proxies (WELL, MAMO, stkWELL) will
@@ -271,6 +296,88 @@ contract mipx54 is HybridProposal, ChainlinkOracleConfigs {
             addresses.addAddress(canonicalName, address(newWrapper));
         }
         _upgradedOracleNames[chainId].push(oracleName);
+    }
+
+    /// @notice Optimism only: redeploy `CHAINLINK_WEETH_USD_COMPOSITE_OEV_WRAPPER`
+    ///         and `CHAINLINK_wrsETH_COMPOSITE_ORACLE` with
+    ///         `base = CHAINLINK_ETH_USD_OEV_WRAPPER` (the new canonical ETH OEV
+    ///         wrapper just deployed by _deployForChain above), so weETH/wrsETH
+    ///         and WETH share one ETH refresh domain. Each old composite is
+    ///         archived under its `_DEPRECATED_V3` slot and the canonical name
+    ///         is updated to point at the new composite. setFeed actions are
+    ///         queued in `build()` via `_buildOptimismCompositeFeeds`.
+    ///
+    ///         Pre-existing state on Optimism (the bug being fixed):
+    ///           - weETH composite (mip-x14): plain ChainlinkCompositeOracle
+    ///             with base = CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED.
+    ///             Cross-domain mismatch with WETH (which reads the current
+    ///             OEV wrapper). Permissionless `updatePriceEarly()` on the
+    ///             deprecated wrapper enables mixed-state false liquidations.
+    ///           - wrsETH composite (mip-x36): plain ChainlinkCompositeOracle
+    ///             with base = CHAINLINK_ETH_USD (raw aggregator, no OEV
+    ///             gating). Same cross-domain shape as weETH but worse: no
+    ///             trigger payment needed — Chainlink heartbeat alone splits
+    ///             the domains.
+    function _deployOptimismCompositeOracles(Addresses addresses) internal {
+        vm.selectFork(OPTIMISM_FORK_ID);
+
+        address newEthWrapper = addresses.getAddress(
+            "CHAINLINK_ETH_USD_OEV_WRAPPER"
+        );
+
+        // weETH composite: archive existing CHAINLINK_WEETH_USD_COMPOSITE_OEV_WRAPPER
+        // (which is misnamed — it's a plain ChainlinkCompositeOracle deployed
+        // by mip-x14, not an OEV wrapper) and promote a new one.
+        _redeployCompositeOracle(
+            addresses,
+            "CHAINLINK_WEETH_USD_COMPOSITE_OEV_WRAPPER",
+            newEthWrapper,
+            addresses.getAddress("CHAINLINK_WEETH_ORACLE")
+        );
+
+        // wrsETH composite: archive existing CHAINLINK_wrsETH_COMPOSITE_ORACLE
+        // (plain composite over raw CHAINLINK_ETH_USD, deployed by mip-x36)
+        // and promote a new one over the OEV-gated ETH wrapper.
+        _redeployCompositeOracle(
+            addresses,
+            "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
+            newEthWrapper,
+            addresses.getAddress("CHAINLINK_wrsETH_ETH_EXCHANGE_RATE")
+        );
+    }
+
+    /// @notice Deploy a fresh `ChainlinkCompositeOracle` and atomically swap it
+    ///         into `canonicalName`, archiving the previous occupant under
+    ///         `<canonicalName>_DEPRECATED_V3`. Idempotent via the deprecated-
+    ///         slot guard so reruns of `deploy()` don't double-archive.
+    function _redeployCompositeOracle(
+        Addresses addresses,
+        string memory canonicalName,
+        address baseFeed,
+        address multiplierFeed
+    ) internal {
+        string memory deprecatedName = string.concat(
+            canonicalName,
+            COMPOSITE_DEPRECATED_SUFFIX
+        );
+
+        if (addresses.isAddressSet(deprecatedName)) {
+            return;
+        }
+
+        vm.startBroadcast();
+        ChainlinkCompositeOracle newComposite = new ChainlinkCompositeOracle(
+            baseFeed,
+            multiplierFeed,
+            address(0)
+        );
+        vm.stopBroadcast();
+
+        addresses.addAddress(
+            deprecatedName,
+            addresses.getAddress(canonicalName)
+        );
+        addresses.changeAddress(canonicalName, address(newComposite), true);
     }
 
     /// @notice Snapshot the pre-upgrade state of ALL Morpho wrapper proxies on
@@ -422,6 +529,10 @@ contract mipx54 is HybridProposal, ChainlinkOracleConfigs {
         _buildForChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
         _buildForChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
 
+        // Optimism only: rewire weETH and wrsETH to the new composite oracles
+        // deployed in deploy() (which read from the new ETH OEV wrapper).
+        _buildOptimismCompositeFeeds(addresses);
+
         // Base only: upgrade all three ChainlinkOEVMorphoWrapper proxies to
         // the shared new implementation. No reinitializer - storage layout is
         // preserved across the swap.
@@ -512,6 +623,56 @@ contract mipx54 is HybridProposal, ChainlinkOracleConfigs {
         }
     }
 
+    /// @notice Optimism only: queue setFeed actions for the redeployed weETH
+    ///         and wrsETH composite oracles. Skips entries whose deprecated
+    ///         slots aren't set (i.e. deploy() didn't run for them this MIP).
+    function _buildOptimismCompositeFeeds(Addresses addresses) internal {
+        vm.selectFork(OPTIMISM_FORK_ID);
+        address chainlinkOracle = addresses.getAddress("CHAINLINK_ORACLE");
+
+        _pushCompositeSetFeedIfMigrated(
+            addresses,
+            chainlinkOracle,
+            "weETH",
+            "CHAINLINK_WEETH_USD_COMPOSITE_OEV_WRAPPER"
+        );
+        _pushCompositeSetFeedIfMigrated(
+            addresses,
+            chainlinkOracle,
+            "wrsETH",
+            "CHAINLINK_wrsETH_COMPOSITE_ORACLE"
+        );
+    }
+
+    function _pushCompositeSetFeedIfMigrated(
+        Addresses addresses,
+        address chainlinkOracle,
+        string memory symbol,
+        string memory canonicalName
+    ) internal {
+        if (
+            !addresses.isAddressSet(
+                string.concat(canonicalName, COMPOSITE_DEPRECATED_SUFFIX)
+            )
+        ) return;
+
+        _pushAction(
+            chainlinkOracle,
+            abi.encodeWithSignature(
+                "setFeed(string,address)",
+                symbol,
+                addresses.getAddress(canonicalName)
+            ),
+            string.concat(
+                "Optimism: ChainlinkOracle.setFeed(",
+                symbol,
+                ", new ",
+                canonicalName,
+                " over CHAINLINK_ETH_USD_OEV_WRAPPER)"
+            )
+        );
+    }
+
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
@@ -523,11 +684,106 @@ contract mipx54 is HybridProposal, ChainlinkOracleConfigs {
             "Optimism"
         );
 
+        // Optimism composite migrations (still on Optimism fork after
+        // _validateChain above).
+        _validateOptimismCompositeFeeds(addresses);
+
         // Morpho proxy upgrades - Base only.
         vm.selectFork(BASE_FORK_ID);
         _validateAllMorphoWrappers(addresses);
 
         vm.selectFork(primaryForkId());
+    }
+
+    /// @notice Verify that:
+    ///         (a) ChainlinkOracle.getFeed(symbol) now resolves to the new
+    ///             composite address registered under canonicalName.
+    ///         (b) The new composite's `base()` is the canonical
+    ///             CHAINLINK_ETH_USD_OEV_WRAPPER (i.e. the same ETH refresh
+    ///             domain WETH uses).
+    ///         (c) The new composite's `multiplier()` is the same exchange
+    ///             rate oracle the previous composite used.
+    ///         Skips assets whose deprecated slots aren't set (deploy()
+    ///         didn't run for them).
+    function _validateOptimismCompositeFeeds(
+        Addresses addresses
+    ) internal view {
+        address chainlinkOracle = addresses.getAddress("CHAINLINK_ORACLE");
+        address newEthWrapper = addresses.getAddress(
+            "CHAINLINK_ETH_USD_OEV_WRAPPER"
+        );
+
+        _validateCompositeMigration(
+            addresses,
+            chainlinkOracle,
+            newEthWrapper,
+            "weETH",
+            "CHAINLINK_WEETH_USD_COMPOSITE_OEV_WRAPPER",
+            "CHAINLINK_WEETH_ORACLE"
+        );
+        _validateCompositeMigration(
+            addresses,
+            chainlinkOracle,
+            newEthWrapper,
+            "wrsETH",
+            "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
+            "CHAINLINK_wrsETH_ETH_EXCHANGE_RATE"
+        );
+    }
+
+    function _validateCompositeMigration(
+        Addresses addresses,
+        address chainlinkOracle,
+        address expectedBase,
+        string memory symbol,
+        string memory canonicalName,
+        string memory expectedMultiplierName
+    ) internal view {
+        if (
+            !addresses.isAddressSet(
+                string.concat(canonicalName, COMPOSITE_DEPRECATED_SUFFIX)
+            )
+        ) return;
+
+        address registered = address(
+            IChainlinkOracle(chainlinkOracle).getFeed(symbol)
+        );
+        address expected = addresses.getAddress(canonicalName);
+        require(
+            registered == expected,
+            string.concat(
+                "Optimism: getFeed(",
+                symbol,
+                ") not migrated to new composite"
+            )
+        );
+
+        ChainlinkCompositeOracle composite = ChainlinkCompositeOracle(expected);
+        require(
+            composite.base() == expectedBase,
+            string.concat(
+                "Optimism: new ",
+                canonicalName,
+                ".base() must be CHAINLINK_ETH_USD_OEV_WRAPPER"
+            )
+        );
+        require(
+            composite.multiplier() ==
+                addresses.getAddress(expectedMultiplierName),
+            string.concat(
+                "Optimism: new ",
+                canonicalName,
+                ".multiplier() preserved from prior composite"
+            )
+        );
+        require(
+            composite.secondMultiplier() == address(0),
+            string.concat(
+                "Optimism: new ",
+                canonicalName,
+                ".secondMultiplier() must remain unset"
+            )
+        );
     }
 
     function _validateChain(
