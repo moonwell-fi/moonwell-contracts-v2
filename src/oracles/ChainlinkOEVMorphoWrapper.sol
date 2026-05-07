@@ -174,22 +174,6 @@ contract ChainlinkOEVMorphoWrapper is
     }
 
     /**
-     * @notice Seed the market allowlist atomically with the upgrade that introduces the gate
-     * @dev Must be called as part of the same upgrade that activates the allowlist gate in
-     *      `updatePriceEarlyAndLiquidate`, otherwise legitimate liquidations would revert
-     *      between the upgrade and the first `setApprovedMarket` call.
-     * @param _approvedMarkets The list of canonical Morpho market ids to approve at upgrade time
-     */
-    function initializeV3(
-        bytes32[] calldata _approvedMarkets
-    ) external reinitializer(3) {
-        for (uint256 i = 0; i < _approvedMarkets.length; i++) {
-            approvedMarkets[_approvedMarkets[i]] = true;
-            emit MarketApproved(_approvedMarkets[i], true);
-        }
-    }
-
-    /**
      * @notice Returns the number of decimals in the price feed
      * @return The number of decimals
      */

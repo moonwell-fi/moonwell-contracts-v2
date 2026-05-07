@@ -60,28 +60,6 @@ contract ChainlinkOEVMorphoWrapperAllowlistUnitTest is Test {
         p.lltv = 0.625e18;
     }
 
-    function testInitializeV3SeedsAllowlistAndEmits() public {
-        bytes32[] memory ids = new bytes32[](2);
-        ids[0] = bytes32(uint256(0xAAAA));
-        ids[1] = bytes32(uint256(0xBBBB));
-
-        vm.expectEmit(true, false, false, true, address(wrapper));
-        emit MarketApproved(ids[0], true);
-        vm.expectEmit(true, false, false, true, address(wrapper));
-        emit MarketApproved(ids[1], true);
-        wrapper.initializeV3(ids);
-
-        assertTrue(wrapper.approvedMarkets(ids[0]));
-        assertTrue(wrapper.approvedMarkets(ids[1]));
-    }
-
-    function testInitializeV3CanOnlyBeCalledOnce() public {
-        bytes32[] memory ids = new bytes32[](0);
-        wrapper.initializeV3(ids);
-        vm.expectRevert("Initializable: contract is already initialized");
-        wrapper.initializeV3(ids);
-    }
-
     function testSetApprovedMarketOnlyOwner() public {
         bytes32 id = bytes32(uint256(0x1234));
         vm.expectRevert("Ownable: caller is not the owner");
