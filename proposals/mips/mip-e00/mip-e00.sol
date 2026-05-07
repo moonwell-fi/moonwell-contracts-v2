@@ -364,8 +364,6 @@ contract mipe00 is HybridProposalV2, Configs {
     }
 
     function build(Addresses addresses) public override {
-        _setMTokenConfiguration("proposals/mips/mip-e00/mTokens.json");
-
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
         /// Unitroller configuration
