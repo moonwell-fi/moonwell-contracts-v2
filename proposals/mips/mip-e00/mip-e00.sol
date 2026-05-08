@@ -20,7 +20,7 @@ import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-/// MultichainGovernorV2 is deployed by initProposal() via MIP-X52 on Ethereum as the governance hub
+/// MultichainGovernorV2 is deployed by initProposal() via MIP-X56 on Ethereum as the governance hub
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -28,7 +28,7 @@ import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol"
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ChainIds, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
-import {mipx52} from "@proposals/mips/mip-x52/mip-x52.sol";
+import {mipx56} from "@proposals/mips/mip-x56/mip-x56.sol";
 
 contract mipe00 is HybridProposalV2, Configs {
     using Address for address;
@@ -58,27 +58,28 @@ contract mipe00 is HybridProposalV2, Configs {
         return ETHEREUM_FORK_ID;
     }
 
-    /// @notice Run MIP-X52 to deploy MultichainGovernorV2 before MIP-E00 deployment
+    /// @notice Run MIP-X56 to deploy MultichainGovernorV2 before MIP-E00 deployment
     function initProposal(Addresses addresses) public override {
-        /// Skip if MIP-X52 has already been executed (e.g. in integration tests
-        /// where mip-x52 runs as its own dev proposal before mip-e00). Re-running
-        /// x52.afterDeploy would attempt to re-initialize the MultichainGovernorV2
+        /// Skip if MIP-X56 has already been executed (e.g. in integration tests
+        /// where mip-x56 runs as its own dev proposal before mip-e00). Re-running
+        /// x56.afterDeploy would attempt to re-initialize the MultichainGovernorV2
         /// proxy and revert with "Initializable: contract is already initialized".
         if (addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
             vm.selectFork(ETHEREUM_FORK_ID);
             return;
         }
 
-        /// Deploy MultichainGovernorV2 via MIP-X52
-        mipx52 x52 = new mipx52();
+        /// Deploy MultichainGovernorV2 + cross-chain governance contracts via MIP-X56
+        mipx56 x56 = new mipx56();
 
         /// Get deployer address
         (, address deployerAddress, ) = vm.readCallers();
 
-        /// Run x52 deploy and afterDeploy to set up MultichainGovernorV2
+        /// Run x56 deploy and afterDeploy to set up MultichainGovernorV2 and the
+        /// per-chain VotingPowerAggregator / VoteCollection contracts.
         /// Note: These functions switch between forks internally
-        x52.deploy(addresses, deployerAddress);
-        x52.afterDeploy(addresses, deployerAddress);
+        x56.deploy(addresses, deployerAddress);
+        x56.afterDeploy(addresses, deployerAddress);
 
         /// Switch back to Ethereum fork for MIP-E00 deployment
         vm.selectFork(ETHEREUM_FORK_ID);
