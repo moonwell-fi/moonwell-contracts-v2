@@ -79,8 +79,16 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     // ---------------------------------------------------------------
 
     function testUpgradePreservesExistingState() public view {
-        /// gasLimit is still 300_000
-        assertEq(adapter.gasLimit(), 300_000, "gasLimit changed after upgrade");
+        /// gasLimit was bumped to 700_000 on Base + Optimism by mip-x53;
+        /// Moonbeam is untouched and stays at 300_000.
+        uint96 expectedGasLimit = block.chainid == MOONBEAM_CHAIN_ID
+            ? 300_000
+            : 700_000;
+        assertEq(
+            adapter.gasLimit(),
+            expectedGasLimit,
+            "gasLimit not at expected value after upgrade"
+        );
 
         /// wormhole() returns the core bridge address
         assertEq(
@@ -283,6 +291,79 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     }
 
     // ---------------------------------------------------------------
+    // On-chain quote bridge tests (the bridge(uint256,uint256,address)
+    // overload). After mip-x53 fixes quoterAddress on Base + Optimism,
+    // bridgeCost > 0 and the on-chain-quote path becomes usable. Moonbeam
+    // has no on-chain quoter — the path always reverts up front there.
+    // ---------------------------------------------------------------
+
+    function testBridgeOnchainQuoteFailsZeroValue() public {
+        address user = address(0xBEEF);
+        uint256 amount = 1e18;
+        deal(address(xwellProxy), user, amount);
+
+        vm.startPrank(user);
+        xwellProxy.approve(address(adapter), amount);
+
+        if (block.chainid == MOONBEAM_CHAIN_ID) {
+            vm.expectRevert(
+                "WormholeBridge: onchain quoting not available, use bridge with signedQuote"
+            );
+        } else {
+            vm.expectRevert("WormholeBridge: cost not equal to quote");
+        }
+        adapter.bridge{value: 0}(uint256(sourceWormholeChainId), amount, user);
+        vm.stopPrank();
+    }
+
+    function testBridgeOnchainQuoteSucceeds() public {
+        if (block.chainid == MOONBEAM_CHAIN_ID) {
+            // Moonbeam has no on-chain quoter — covered by the failure test
+            return;
+        }
+
+        address user = address(0xBEEF);
+        uint256 amount = 1e18;
+        deal(address(xwellProxy), user, amount);
+
+        // Etch a mock router onto the live ExecutorQuoterRouter so
+        // requestExecution succeeds without going to the real Wormhole network.
+        address routerAddr = address(adapter.executorQuoterRouter());
+        MockExecutorQuoterRouter mockRouter = new MockExecutorQuoterRouter();
+        vm.etch(routerAddr, address(mockRouter).code);
+        // Force a non-zero quote so the require(msg.value == cost) path runs
+        MockExecutorQuoterRouter(routerAddr).setQuote(0.001 ether);
+
+        uint256 cost = adapter.bridgeCost(sourceWormholeChainId);
+        assertGt(cost, 0, "expected non-zero on-chain quote post-mip-x53");
+
+        vm.deal(user, cost);
+
+        uint256 supplyBefore = xwellProxy.totalSupply();
+        uint256 balanceBefore = xwellProxy.balanceOf(user);
+
+        vm.startPrank(user);
+        xwellProxy.approve(address(adapter), amount);
+        adapter.bridge{value: cost}(
+            uint256(sourceWormholeChainId),
+            amount,
+            user
+        );
+        vm.stopPrank();
+
+        assertEq(
+            balanceBefore - xwellProxy.balanceOf(user),
+            amount,
+            "user xWELL not burned"
+        );
+        assertEq(
+            supplyBefore - xwellProxy.totalSupply(),
+            amount,
+            "totalSupply did not drop"
+        );
+    }
+
+    // ---------------------------------------------------------------
     // Test 9: Wormhole core rejection propagates through executeVAAv1
     // ---------------------------------------------------------------
 
@@ -300,15 +381,24 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     }
 
     // ---------------------------------------------------------------
-    // Test 10: bridgeCost returns 0 when no executorQuoterRouter
+    // Test 10: bridgeCost is 0 on Moonbeam (no quoter) and >0 elsewhere
     // ---------------------------------------------------------------
 
-    function testBridgeCostReturnsZeroGracefully() public view {
-        /// If executorQuoterRouter is not set (e.g. Moonbeam), bridgeCost returns 0
-        /// On chains with a quoter, it returns the executor quote + message fee
+    function testBridgeCostMatchesQuoterConfig() public view {
         uint256 cost = adapter.bridgeCost(sourceWormholeChainId);
-        /// Either 0 (no quoter / quote fails) or some value — just ensure no revert
-        assertTrue(cost >= 0, "bridgeCost should not revert");
+        if (block.chainid == MOONBEAM_CHAIN_ID) {
+            /// Moonbeam has no on-chain quoter — must always return 0
+            assertEq(cost, 0, "Moonbeam: bridgeCost should be 0 (no quoter)");
+        } else {
+            /// Base + Optimism (post-V6) have an EOA quoter and a live router —
+            /// `bridgeCost` swallows quote failures and returns 0, so a strict
+            /// >0 check is the only way to surface a misconfigured quoter.
+            assertGt(
+                cost,
+                0,
+                "bridgeCost returned 0 on a chain with an on-chain quoter"
+            );
+        }
     }
 
     // ---------------------------------------------------------------
@@ -321,7 +411,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(address(0), uint256(1000e18))
+            abi.encode(address(0), uint256(1000e18), currentWormholeChainId)
         );
 
         vm.expectRevert("ERC20: mint to the zero address");
