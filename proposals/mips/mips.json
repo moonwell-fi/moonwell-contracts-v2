@@ -15,17 +15,17 @@
     },
     {
         "envpath": "",
-        "governor": "MultichainGovernor",
-        "id": 0,
-        "path": "mip-x56.sol/mipx56.json",
-        "proposalType": "HybridProposal"
-    },
-    {
-        "envpath": "",
         "governor": "MultichainGovernorV2",
         "id": 0,
         "path": "mip-e00.sol/mipe00.json",
         "proposalType": "HybridProposalV2"
+    },
+    {
+        "envpath": "",
+        "governor": "MultichainGovernor",
+        "id": 0,
+        "path": "mip-x56.sol/mipx56.json",
+        "proposalType": "HybridProposal"
     },
     {
         "envpath": "",
