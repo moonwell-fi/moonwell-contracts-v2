@@ -260,11 +260,6 @@
         "name": "WORMHOLE_QUOTER"
     },
     {
-        "addr": "0xa54008017941EcE968623a0Dd8Ee907E2b133596",
-        "isContract": false,
-        "name": "WORMHOLE_QUOTER_SIGNER"
-    },
-    {
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_RELAYER_PROXY"
@@ -843,10 +838,5 @@
         "addr": "0xa8A334ffaba129C07Df4740001ceE7c0D838ddB9",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"
-    },
-    {
-        "addr": "0xb46b3856f87305Aa76DC59349de0b518368e318b",
-        "isContract": true,
-        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V6"
     }
 ]

@@ -95,11 +95,6 @@
         "name": "WORMHOLE_QUOTER"
     },
     {
-        "addr": "0xa54008017941EcE968623a0Dd8Ee907E2b133596",
-        "isContract": false,
-        "name": "WORMHOLE_QUOTER_SIGNER"
-    },
-    {
         "addr": "0x2dc66C40bb15F0470e40508B43cD64D0b4F57180",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V2"
