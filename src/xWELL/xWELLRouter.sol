@@ -166,8 +166,7 @@ contract xWELLRouter {
 
     /// @notice helper function to bridge WELL to xWELL on the specified chain
     /// using an off-chain signed quote. The executor fee is priced off-chain
-    /// so the router forwards the entire msg.value to the adapter and refunds
-    /// any leftover to the sender.
+    /// so the router forwards the entire msg.value to the adapter.
     /// @param to address to receive the xWELL
     /// @param amount amount of WELL to bridge
     /// @param wormholeChainId chain id to send xWELL to
