@@ -24,8 +24,12 @@ list (CRITICAL / HIGH / MEDIUM / LOW).
 
 - New proposals MUST have `id: 0` (in-development sentinel). A non-zero id on an
   unmerged proposal breaks `PostProposalCheck` integration tests.
-- The `envpath` must match the proposal folder
-  (`proposals/mips/mip-{chain}{number}/{number}.sh`).
+- The `envpath` must match the proposal folder. Convention is
+  `proposals/mips/mip-{chain}{number}{suffix?}/{chain}{number}{suffix?}.sh` —
+  the basename of the `.sh` mirrors the folder name with the `mip-` prefix
+  stripped (e.g. `mip-b59` → `b59.sh`, `mip-x47` → `x47.sh`, `mip-x51a` →
+  `x51a.sh`). Some entries leave `envpath: ""` (proposals with no shell script —
+  only `.sol` + `.md`); that is also valid.
 - The `path` must match the compiled artifact under `artifacts/foundry/` (NOT
   `out/`).
 

@@ -26,10 +26,15 @@ If no argument is provided, list every entry in `proposals/mips/mips.json` with
 ### 1. Resolve paths
 
 - Folder: `proposals/mips/<arg>/`
-- Shell script: `proposals/mips/<arg>/<chain-letter><number>.sh` (e.g.
-  `x51a.sh`)
+- Shell script: `proposals/mips/<arg>/<basename>.sh`, where `<basename>` is the
+  folder name with the `mip-` prefix stripped (e.g. `mip-b59` → `b59.sh`,
+  `mip-x47` → `x47.sh`, `mip-x51a` → `x51a.sh`). Suffix letters are preserved
+  verbatim.
 - If the folder doesn't exist, list folders under `proposals/mips/` that start
   with the same prefix and ask the user to pick.
+- If the proposal has no `.sh` (its `mips.json` `envpath` is `""` — e.g.
+  `mip-x52/` only carries `.sol` + `.md`), skip the source step in §4 and run
+  the standalone simulation directly via the artifact path from `mips.json`.
 
 ### 2. Verify shell-script exec bit
 
@@ -43,11 +48,15 @@ Read the `.sh` to find `FOUNDRY_SCRIPT` or check `mips.json` for the `path`
 field — the artifact name maps to a template under `proposals/templates/`.
 Common cases:
 
-- `RewardsDistributionTemplate.sol` →
-  `proposals/templates/RewardsDistribution.sol`
-- `MarketUpdateTemplate.sol` → `proposals/templates/MarketUpdate.sol`
-- `MarketAddV3.sol` → `proposals/templates/MarketAddV3.sol`
-- standalone (e.g. `mip-x51a.sol`) → `proposals/mips/<arg>/<arg>.sol`
+- `RewardsDistribution.sol/RewardsDistributionTemplate.json` →
+  `proposals/templates/RewardsDistribution.sol` (contract
+  `RewardsDistributionTemplate`)
+- `MarketUpdate.sol/MarketUpdateTemplate.json` →
+  `proposals/templates/MarketUpdate.sol` (contract `MarketUpdateTemplate`)
+- `MarketAddV3.sol/MarketAddV3.json` → `proposals/templates/MarketAddV3.sol`
+- standalone (e.g. `mip-x51a.sol/mipx51a.json`) →
+  `proposals/mips/<arg>/<basename>.sol` (where `<basename>` is the folder name
+  without the `mip-` prefix)
 
 ### 4. Run the sim
 
@@ -67,8 +76,10 @@ Echo the last `validate()` block — this is what reviewers care about.
 
 ## Notes
 
-- Always pass `--ffi`. Proposal `.sh` files are sourced via `vm.ffi`; without it
-  the run reverts on `Permission denied`.
+- Always pass `--ffi`. `PostProposalCheck` invokes `vm.ffi` during `setUp` —
+  without it the run reverts with an `FFI is disabled` error. (Distinct from
+  `Permission denied`, which means the `.sh` itself is not executable; fix with
+  `chmod +x` per §2.)
 - Always use `FOUNDRY_PROFILE=ci` — matches what GitHub Actions runs (1000 fuzz
   runs, deterministic).
 - `-vvvv` shows full traces including `console.log` from inside `setUp()`;
