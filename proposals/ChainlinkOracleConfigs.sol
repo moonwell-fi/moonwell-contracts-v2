@@ -141,7 +141,7 @@ abstract contract ChainlinkOracleConfigs is Test {
         /// implement the AggregatorV3Interface (priceFeed(), decimals(), and
         /// latestRoundData() all revert). It was never properly rotated onto a
         /// real ChainlinkOEVWrapper, so it is intentionally NOT enumerated
-        /// here — mip-x54 cannot upgrade what is not a real wrapper.
+        /// here — mip-x55 cannot upgrade what is not a real wrapper.
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_USDC_USD", "USDC", "MOONWELL_USDC")
         );
