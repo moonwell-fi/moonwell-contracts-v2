@@ -1,5 +1,10 @@
 [
     {
+        "addr": "0xDcB85eCF9746302aC59d4BA565dc322BB0b173B3",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONBEAM_FLAT_MIP_X55"
+    },
+    {
         "addr": "0x091608f4e4a15335145be0A279483C0f8E4c7955",
         "name": "mGLIMMER",
         "isContract": true
@@ -175,7 +180,7 @@
         "isContract": true
     },
     {
-        "addr": "0xb84543e036054E2cD5394A9D99fa701Eef666df4",
+        "addr": "0x78c504b6c0ea2adbf6a58b208c9888f3692db169",
         "name": "xWELL_ROUTER",
         "isContract": true
     },
