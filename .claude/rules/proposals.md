@@ -14,3 +14,9 @@
 - Duration calculations: always show math explicitly for user verification
 - To run a proposal simulation:
   `source proposals/mips/mip-xxx/xxx.sh && DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=false forge script proposals/templates/Template.sol`
+- For rewards-distribution MIPs (template-only or subclass), run
+  `make audit-rewards PROPOSAL=mip-xNN` before opening the PR. This verifies
+  worker-generated numbers balance across chains (TG flow conservation, MRD
+  budget = Σ speeds × duration, safety-module budget = stkEPS × duration,
+  Moonbeam bridge fan-out, no negative amounts, 4-week epoch). Deterministic,
+  ~1s, no LLM. The same check runs in CI via `proposal-summary.yml`.

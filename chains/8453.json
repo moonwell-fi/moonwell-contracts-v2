@@ -1,5 +1,10 @@
 [
     {
+        "addr": "0x9c4b2B98b24F36f906517139F5f9bAca732a3cF0",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_BASE_FLAT_MIP_X55"
+    },
+    {
         "addr": "0x4DdD7968113A037e84034eDDEc4524497B77d200",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_USDC_EURC_MIP_X50"
@@ -113,6 +118,26 @@
         "addr": "0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6",
         "name": "WORMHOLE_CORE",
         "isContract": true
+    },
+    {
+        "addr": "0x9E1936E91A4a5AE5A5F75fFc472D6cb8e93597ea",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
+        "addr": "0x265fd0500a430d65d6D79Cd8707F24C048604658",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER_ROUTER"
+    },
+    {
+        "addr": "0xA25862D222Eb8343505c12d96e097e4332468D60",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER"
+    },
+    {
+        "addr": "0xa54008017941EcE968623a0Dd8Ee907E2b133596",
+        "isContract": false,
+        "name": "WORMHOLE_QUOTER_SIGNER"
     },
     {
         "addr": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
@@ -1503,5 +1528,15 @@
         "addr": "0x3fBB877C8d5cF56b30FD29D21E865cA58f127472",
         "isContract": true,
         "name": "VOTE_COLLECTION_IMPL_V3"
+    },
+    {
+        "addr": "0x78Feb72aeA00B912ac45438e0764A02213266568",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"
+    },
+    {
+        "addr": "0x2481BFB0DfA54Dc155011eF2E90ADAB9556b8D99",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V6"
     }
 ]

@@ -1070,7 +1070,70 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
         governor.cancel(phantomCount + 1);
     }
 
-    function testCancelSucceedsWhenProposerVotesEqualThreshold() public {
+    /// Succeeded proposals (still within the execution window) must count toward
+    /// the per-user cap, otherwise a proposer can bypass _maxUserProposalCount.
+    function testSucceededProposalsCountTowardUserLimit() public {
+        address user1 = address(0x1);
+        // Give voter quorum so all proposals pass YES
+        _delegateVoteAmountForUser(address(xwell), user1, governor.quorum());
+
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = _getUpdateProposalThresholdData();
+
+        uint256[] memory proposalIds = new uint256[](MAX_USER_PROPOSAL_COUNT);
+        for (uint256 i = 0; i < MAX_USER_PROPOSAL_COUNT; i++) {
+            uint256 bridgeCostLoop = governor.bridgeCostAll();
+            vm.deal(address(this), bridgeCostLoop);
+            proposalIds[i] = governor.propose{value: bridgeCostLoop}(
+                targets,
+                values,
+                calldatas,
+                string(
+                    abi.encodePacked(DESCRIPTION_URI, "succeed", vm.toString(i))
+                ),
+                true
+            );
+            _castVotes(proposalIds[i], Constants.VOTE_VALUE_YES, user1);
+        }
+
+        _warpPastProposalEnd(proposalIds[0]);
+
+        for (uint256 i = 0; i < MAX_USER_PROPOSAL_COUNT; i++) {
+            assertEq(
+                uint256(governor.state(proposalIds[i])),
+                uint256(IMultichainGovernorV2.ProposalState.Succeeded),
+                "proposal should be Succeeded"
+            );
+        }
+
+        // succeeded proposals are live until they expire or execute
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            MAX_USER_PROPOSAL_COUNT,
+            "succeeded proposals should count toward live limit"
+        );
+
+        uint256 bridgeCostFinal = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCostFinal);
+
+        // Attempting to create another proposal must revert because the
+        // proposer is already at MAX_USER_PROPOSAL_COUNT (all Succeeded).
+        vm.expectRevert(IMultichainGovernorV2.TooManyLiveProposals.selector);
+        governor.propose{value: bridgeCostFinal}(
+            targets,
+            values,
+            calldatas,
+            string(abi.encodePacked(DESCRIPTION_URI, "overflow")),
+            true
+        );
+    }
+
+    /// Third-party cancel must revert at exactly proposalThreshold. propose()
+    /// allows creation at >= threshold, so cancel must be symmetric.
+    function testCancelRevertsWhenProposerVotesEqualThreshold() public {
         // Setup: Create a user with exactly proposalThreshold voting power
         address proposer = address(0x456);
         uint256 threshold = governor.proposalThreshold();
@@ -1114,14 +1177,15 @@ contract MultichainGovernorV2VotingUnitTest is MultichainBaseTestV2 {
             "proposal should be active"
         );
 
-        // Another user can cancel since proposer votes equal to threshold (rather than > threshold)
+        // Third-party cancellation must revert at == threshold
         vm.prank(address(0x789));
+        vm.expectRevert(IMultichainGovernorV2.UnauthorizedCancel.selector);
         governor.cancel(proposalId);
 
         assertEq(
             uint256(governor.state(proposalId)),
-            uint256(IMultichainGovernorV2.ProposalState.Canceled),
-            "proposal should be canceled"
+            uint256(IMultichainGovernorV2.ProposalState.Active),
+            "proposal should still be active after rejected cancel"
         );
     }
 

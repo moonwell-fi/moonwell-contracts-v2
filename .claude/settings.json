@@ -7,6 +7,10 @@
                     {
                         "type": "command",
                         "command": "if echo \"$CC_EDIT_FILE_PATH\" | grep -q '\\.sol$'; then forge build 2>&1 | tail -5; elif echo \"$CC_EDIT_FILE_PATH\" | grep -q '\\.ts$'; then npx tsc --noEmit 2>&1 | tail -10; fi"
+                    },
+                    {
+                        "type": "command",
+                        "command": "if echo \"$CC_EDIT_FILE_PATH\" | grep -qE 'proposals/mips/mip-[xbmo][0-9]+[a-z]?/'; then echo '↳ rewards/mip edit detected — remember: make audit-rewards PROPOSAL=$(echo \"$CC_EDIT_FILE_PATH\" | grep -oE \"mip-[xbmo][0-9]+[a-z]?\" | head -1) before opening the PR'; fi"
                     }
                 ]
             },
@@ -16,6 +20,10 @@
                     {
                         "type": "command",
                         "command": "if echo \"$CC_WRITE_FILE_PATH\" | grep -q '\\.sol$'; then forge build 2>&1 | tail -5; elif echo \"$CC_WRITE_FILE_PATH\" | grep -q '\\.ts$'; then npx tsc --noEmit 2>&1 | tail -10; fi"
+                    },
+                    {
+                        "type": "command",
+                        "command": "if echo \"$CC_WRITE_FILE_PATH\" | grep -qE 'proposals/mips/mip-[xbmo][0-9]+[a-z]?/'; then echo '↳ rewards/mip edit detected — remember: make audit-rewards PROPOSAL=$(echo \"$CC_WRITE_FILE_PATH\" | grep -oE \"mip-[xbmo][0-9]+[a-z]?\" | head -1) before opening the PR'; fi"
                     }
                 ]
             }
@@ -27,6 +35,24 @@
                     {
                         "type": "command",
                         "command": "if echo \"$CC_BASH_COMMAND\" | grep -qE 'git (commit|push)'; then echo \"Current branch: $(git branch --show-current)\"; fi"
+                    }
+                ]
+            },
+            {
+                "matcher": "EditTool",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "case \"$CC_EDIT_FILE_PATH\" in *Addresses.sol|*chains/*.json) echo '⚠️  Editing multi-chain registry — verify chain ID and live on-chain state (cast call) before saving';; esac"
+                    }
+                ]
+            },
+            {
+                "matcher": "WriteTool",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "case \"$CC_WRITE_FILE_PATH\" in *Addresses.sol|*chains/*.json) echo '⚠️  Editing multi-chain registry — verify chain ID and live on-chain state (cast call) before saving';; esac"
                     }
                 ]
             }

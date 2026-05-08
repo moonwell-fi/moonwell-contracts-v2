@@ -16,6 +16,7 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
+import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {Address} from "@utils/Address.sol";
 
@@ -35,7 +36,7 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
     /// @notice wormhole bridge adapter contract
     WormholeBridgeAdapter public wormholeAdapter;
 
-    /// @notice mock wormhole core for processVAA tests
+    /// @notice mock wormhole core for executeVAAv1 tests
     MockWormholeCore public mockWormholeCore;
 
     /// @notice user address for testing
@@ -56,7 +57,7 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
 
-        /// Set up MockWormholeCore for processVAA tests.
+        /// Set up MockWormholeCore for executeVAAv1 tests.
         /// Override the wormhole address via vm.store since adapter is
         /// already V3-initialized after x48+x49 execution.
         mockWormholeCore = new MockWormholeCore();
@@ -136,6 +137,25 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
         );
     }
 
+    /// @notice After x51, validate V5 Executor state on Moonbeam unwrapper
+    function testExecutorStateAfterV5Upgrade() public view {
+        assertTrue(
+            address(wormholeAdapter.executor()) != address(0),
+            "Moonbeam: executor not set after V5"
+        );
+        /// Moonbeam has no on-chain quoter
+        assertEq(
+            address(wormholeAdapter.executorQuoterRouter()),
+            address(0),
+            "Moonbeam: executorQuoterRouter should be zero"
+        );
+        assertEq(
+            wormholeAdapter.bridgeCost(0),
+            0,
+            "Moonbeam: bridgeCost should be 0 (no quoter)"
+        );
+    }
+
     function testMintViaLockbox(
         uint96 mintAmount
     ) public returns (uint256 minted) {
@@ -204,6 +224,8 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
         );
     }
 
+    /// @notice Bridge out using off-chain signed quote path.
+    ///         Moonbeam has no on-chain quoter, so we mock the executor.
     function testBridgeOutSuccess() public {
         uint256 burnAmount = testMintViaLockbox(uint96(startingWellAmount));
 
@@ -212,13 +234,24 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         uint16 dstChainId = block.chainid.toBaseWormholeChainId();
-        uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
-        vm.deal(user, cost);
+        /// Etch mock executor so requestExecution succeeds
+        address executorAddr = address(wormholeAdapter.executor());
+        MockExecutorQuoterRouter mockExecutor = new MockExecutorQuoterRouter();
+        vm.etch(executorAddr, address(mockExecutor).code);
+
+        uint256 messageFee = wormholeAdapter.wormhole().messageFee();
+        uint256 executorFee = 0.001 ether;
+        vm.deal(user, messageFee + executorFee);
 
         vm.startPrank(user);
         xwell.approve(address(wormholeAdapter), burnAmount);
-        wormholeAdapter.bridge{value: cost}(dstChainId, burnAmount, user);
+        wormholeAdapter.bridge{value: messageFee + executorFee}(
+            dstChainId,
+            burnAmount,
+            user,
+            hex"deadbeef" // off-chain signed quote
+        );
         vm.stopPrank();
 
         uint256 endingXWellBalance = xwell.balanceOf(user);
@@ -239,7 +272,7 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
     }
 
     /// @notice After x49, the adapter is WormholeUnwrapperAdapter with lockbox
-    ///         restored. processVAA mints xWELL then unwraps to WELL via lockbox.
+    ///         restored. executeVAAv1 mints xWELL then unwraps to WELL via lockbox.
     function testBridgeInSuccess(uint256 mintAmount) public {
         mintAmount = _bound(
             mintAmount,
@@ -259,7 +292,12 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
             wormholeBaseChainid,
             address(wormholeAdapter).toBytes(),
             "",
-            abi.encode(user, mintAmount, uint16(MOONBEAM_WORMHOLE_CHAIN_ID))
+            abi.encode(
+                user,
+                mintAmount,
+                uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
+                address(wormholeAdapter)
+            )
         );
 
         bytes memory vaaBytes = abi.encode(
@@ -267,7 +305,7 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
             mintAmount,
             block.timestamp
         );
-        wormholeAdapter.processVAA(vaaBytes);
+        wormholeAdapter.executeVAAv1(vaaBytes);
 
         uint256 endingWellBalance = well.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
@@ -283,10 +321,6 @@ contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
             endingXWellTotalSupply,
             startingXWellTotalSupply,
             "total xWELL supply changed"
-        );
-        assertTrue(
-            wormholeAdapter.processedVAAHashes(keccak256(vaaBytes)),
-            "VAA hash not processed"
         );
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
         assertEq(

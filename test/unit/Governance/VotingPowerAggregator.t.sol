@@ -726,4 +726,64 @@ contract VotingPowerAggregatorUnitTest is Test {
             "current and historical votes should match when set to same values"
         );
     }
+
+    /// A reverting snapshot source contributes 0 votes; remaining sources still
+    /// aggregate so governance is not deadlocked.
+    function testRevertingSnapshotSourceDoesNotDeadlockGetCurrentVotes()
+        public
+    {
+        RevertingSnapshotSource bad = new RevertingSnapshotSource();
+        votingPowerAggregator.addSnapshotSource(address(source1));
+        votingPowerAggregator.addSnapshotSource(address(bad));
+        votingPowerAggregator.addSnapshotSource(address(source2));
+
+        uint256 votes1 = 1_000_000 * 1e18;
+        uint256 votes2 = 500_000 * 1e18;
+        uint256 xwellVotes = 250_000 * 1e18;
+
+        source1.setCurrentVotes(user1, votes1);
+        source2.setCurrentVotes(user1, votes2);
+        xwell.setVotes(user1, xwellVotes);
+
+        // bad source must contribute 0; remaining sources aggregate normally
+        uint256 total = votingPowerAggregator.getCurrentVotes(user1);
+
+        assertEq(
+            total,
+            votes1 + votes2 + xwellVotes,
+            "reverting source should contribute 0; rest should aggregate"
+        );
+    }
+
+    function testRevertingSnapshotSourceDoesNotDeadlockGetVotes() public {
+        RevertingSnapshotSource bad = new RevertingSnapshotSource();
+        votingPowerAggregator.addSnapshotSource(address(source1));
+        votingPowerAggregator.addSnapshotSource(address(bad));
+
+        uint256 votes1 = 100_000 * 1e18;
+        uint256 xwellVotes = 50_000 * 1e18;
+        uint256 timestamp = 12345;
+
+        source1.setPriorVotes(user1, timestamp, votes1);
+        xwell.setPastVotes(user1, timestamp, xwellVotes);
+
+        uint256 total = votingPowerAggregator.getVotes(user1, timestamp);
+
+        assertEq(
+            total,
+            votes1 + xwellVotes,
+            "reverting source should contribute 0 in historical lookup"
+        );
+    }
+}
+
+/// @notice Test-only snapshot source whose vote getters always revert.
+contract RevertingSnapshotSource {
+    function getCurrentVotes(address) external pure returns (uint256) {
+        revert("RevertingSnapshotSource: intentional revert");
+    }
+
+    function getPriorVotes(address, uint256) external pure returns (uint256) {
+        revert("RevertingSnapshotSource: intentional revert");
+    }
 }

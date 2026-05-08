@@ -63,9 +63,8 @@ contract VotingPowerAggregator is
         return _snapshotSources.contains(source);
     }
 
-    /// @notice returns the total voting power for an address at a given block number and timestamp
-    /// @param account The address of the account to check
-    /// @param timestamp The unix timestamp in seconds to check the balance at
+    /// @notice total voting power for an address at a historical timestamp
+    /// @dev a reverting snapshot source contributes 0 votes so it cannot deadlock governance
     function getVotes(
         address account,
         uint256 timestamp
@@ -74,10 +73,11 @@ contract VotingPowerAggregator is
         address[] memory sources = _snapshotSources.values();
 
         for (uint256 i = 0; i < sources.length; ) {
-            totalVotes += SnapshotInterface(sources[i]).getPriorVotes(
-                account,
-                timestamp
-            );
+            try
+                SnapshotInterface(sources[i]).getPriorVotes(account, timestamp)
+            returns (uint256 sourceVotes) {
+                totalVotes += sourceVotes;
+            } catch {}
             unchecked {
                 i++;
             }
@@ -88,16 +88,18 @@ contract VotingPowerAggregator is
         return totalVotes;
     }
 
-    /// @notice returns the current voting power for an address across well, xWell, stkWell and distributor
-    /// @param account The address of the account to check
+    /// @notice current voting power for an address across xWell + snapshot sources
+    /// @dev a reverting snapshot source contributes 0 votes so it cannot deadlock governance
     function getCurrentVotes(address account) external view returns (uint256) {
         uint256 totalVotes = 0;
         address[] memory sources = _snapshotSources.values();
 
         for (uint256 i = 0; i < sources.length; ) {
-            totalVotes += SnapshotInterface(sources[i]).getCurrentVotes(
-                account
-            );
+            try SnapshotInterface(sources[i]).getCurrentVotes(account) returns (
+                uint256 sourceVotes
+            ) {
+                totalVotes += sourceVotes;
+            } catch {}
             unchecked {
                 i++;
             }

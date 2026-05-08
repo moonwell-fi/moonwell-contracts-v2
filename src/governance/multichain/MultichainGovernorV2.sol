@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
+import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
@@ -20,6 +21,7 @@ contract MultichainGovernorV2 is
     WormholeBridgeBase
 {
     using EnumerableSet for EnumerableSet.UintSet;
+    using Address for address payable;
 
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
@@ -352,7 +354,8 @@ contract MultichainGovernorV2 is
                 if (
                     proposalsState == ProposalState.Init ||
                     proposalsState == ProposalState.Active ||
-                    proposalsState == ProposalState.CrossChainVoteCollection
+                    proposalsState == ProposalState.CrossChainVoteCollection ||
+                    proposalsState == ProposalState.Succeeded
                 ) {
                     totalLiveProposals++;
                 }
@@ -624,7 +627,7 @@ contract MultichainGovernorV2 is
 
         if (
             msg.sender != proposals[proposalId].proposer &&
-            votingPower.getCurrentVotes(proposals[proposalId].proposer) >
+            votingPower.getCurrentVotes(proposals[proposalId].proposer) >=
             proposalThreshold
         ) {
             revert UnauthorizedCancel();
@@ -878,6 +881,13 @@ contract MultichainGovernorV2 is
         /// remove all canceled and now inactive proposals from all proposals,
         /// and remove from inactive proposals from user list
         _syncTotalLiveProposals();
+    }
+
+    /// @notice Recovers ETH held by this contract
+    /// @dev Only callable by the governor
+    /// @param recipient The address to send the ETH to
+    function recoverETH(address payable recipient) external onlyGovernor {
+        recipient.sendValue(address(this).balance);
     }
 
     /// --------------------------------------------------------- ///

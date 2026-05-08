@@ -1,5 +1,10 @@
 [
     {
+        "addr": "0xDcB85eCF9746302aC59d4BA565dc322BB0b173B3",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONBEAM_FLAT_MIP_X55"
+    },
+    {
         "addr": "0x091608f4e4a15335145be0A279483C0f8E4c7955",
         "name": "mGLIMMER",
         "isContract": true
@@ -90,6 +95,11 @@
         "isContract": true
     },
     {
+        "addr": "0x85D06449C78064c2E02d787e9DC71716786F8D19",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
         "name": "WORMHOLE_BRIDGE_RELAYER_PROXY",
         "isContract": true
@@ -170,7 +180,7 @@
         "isContract": true
     },
     {
-        "addr": "0xb84543e036054E2cD5394A9D99fa701Eef666df4",
+        "addr": "0x78c504b6c0ea2adbf6a58b208c9888f3692db169",
         "name": "xWELL_ROUTER",
         "isContract": true
     },
@@ -403,5 +413,10 @@
         "addr": "0x0EA81678E4DEb33aaD9E214dF76be3158b4209ab",
         "isContract": true,
         "name": "MULTICHAIN_GOVERNOR_IMPL_V3"
+    },
+    {
+        "addr": "0x11dbA16fb4cc80D80f371825137a6D3e2f77EbcF",
+        "isContract": true,
+        "name": "WORMHOLE_UNWRAPPER_ADAPTER_IMPL_V5"
     }
 ]
