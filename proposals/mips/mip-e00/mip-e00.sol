@@ -26,7 +26,8 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {ChainIds, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ChainIds, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
 import {mipx52} from "@proposals/mips/mip-x52/mip-x52.sol";
 
 contract mipe00 is HybridProposalV2, Configs {
@@ -371,6 +372,64 @@ contract mipe00 is HybridProposalV2, Configs {
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "MultichainGovernorV2 accepts admin on Unitroller"
+        );
+
+        /// ------------ ACCEPT OWNERSHIP (Ownable2Step) ------------
+        /// MIP-X56 sets pendingOwner on these contracts; the new
+        /// MultichainGovernorV2 (Ethereum) and TemporalGovernor (other chains)
+        /// must accept ownership in MIP-E00 to complete the transfer.
+
+        /// Ethereum: WormholeBridgeAdapter — MultichainGovernorV2 accepts
+        _pushAction(
+            addresses.getAddress(
+                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                ETHEREUM_CHAIN_ID
+            ),
+            abi.encodeWithSignature("acceptOwnership()"),
+            "MultichainGovernorV2 accepts ownership of WormholeBridgeAdapter on Ethereum"
+        );
+
+        /// Moonbeam: WormholeBridgeAdapter — TemporalGovernor accepts
+        _pushAction(
+            addresses.getAddress(
+                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                MOONBEAM_CHAIN_ID
+            ),
+            abi.encodeWithSignature("acceptOwnership()"),
+            "TemporalGovernor accepts ownership of WormholeBridgeAdapter on Moonbeam",
+            ActionType.Moonbeam
+        );
+
+        /// Moonbeam: MultichainVoteCollectionMoonbeam — TemporalGovernor accepts
+        _pushAction(
+            addresses.getAddress("VOTE_COLLECTION_V2_PROXY", MOONBEAM_CHAIN_ID),
+            abi.encodeWithSignature("acceptOwnership()"),
+            "TemporalGovernor accepts ownership of MultichainVoteCollectionMoonbeam on Moonbeam",
+            ActionType.Moonbeam
+        );
+
+        /// Moonbeam: VotingPowerAggregator — TemporalGovernor accepts
+        _pushAction(
+            addresses.getAddress("VOTING_POWER_AGGREGATOR", MOONBEAM_CHAIN_ID),
+            abi.encodeWithSignature("acceptOwnership()"),
+            "TemporalGovernor accepts ownership of VotingPowerAggregator on Moonbeam",
+            ActionType.Moonbeam
+        );
+
+        /// Base: VotingPowerAggregator — TemporalGovernor accepts
+        _pushAction(
+            addresses.getAddress("VOTING_POWER_AGGREGATOR", BASE_CHAIN_ID),
+            abi.encodeWithSignature("acceptOwnership()"),
+            "TemporalGovernor accepts ownership of VotingPowerAggregator on Base",
+            ActionType.Base
+        );
+
+        /// Optimism: VotingPowerAggregator — TemporalGovernor accepts
+        _pushAction(
+            addresses.getAddress("VOTING_POWER_AGGREGATOR", OPTIMISM_CHAIN_ID),
+            abi.encodeWithSignature("acceptOwnership()"),
+            "TemporalGovernor accepts ownership of VotingPowerAggregator on Optimism",
+            ActionType.Optimism
         );
 
         Configs.CTokenConfiguration[]
