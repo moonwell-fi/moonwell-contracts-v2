@@ -23,9 +23,9 @@ import {ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, 
       Optimism peers (addTrustedSenders + setTargetAddresses), skipping any
       peer already configured so the script is idempotent.
    3. Transfers ownership of WormholeBridgeAdapter + xWELL to
-      FOUNDATION_MULTISIG.
+      PAUSE_GUARDIAN.
 
- The multisig completes the handover by submitting two Safe transactions
+ The pauseGuardian completes the handover by submitting two Safe transactions
  calling `acceptOwnership()` on each proxy (Ownable2Step).
 
  to simulate (no broadcast):
@@ -52,7 +52,7 @@ contract EnableEthereumXWellBridging is Script {
         Addresses addresses = new Addresses();
 
         address deployer = addresses.getAddress("MOONWELL_DEPLOYER");
-        address multisig = addresses.getAddress("FOUNDATION_MULTISIG");
+        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
 
         xWELL xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         WormholeBridgeAdapter adapter = WormholeBridgeAdapter(
@@ -105,14 +105,14 @@ contract EnableEthereumXWellBridging is Script {
             adapter.setTargetAddresses(peersToSetTarget);
         }
 
-        // 4. Hand off ownership to the multisig (Ownable2Step → multisig must
+        // 4. Hand off ownership to the pauseGuardian (Ownable2Step → pauseGuardian must
         //    later call acceptOwnership on both proxies).
-        adapter.transferOwnership(multisig);
-        xwell.transferOwnership(multisig);
+        adapter.transferOwnership(pauseGuardian);
+        xwell.transferOwnership(pauseGuardian);
 
         vm.stopBroadcast();
 
-        _validate(adapter, xwell, allPeers, multisig);
+        _validate(adapter, xwell, allPeers, pauseGuardian);
 
         console.log(
             "Ethereum WormholeBridgeAdapter wired to Moonbeam/Base/Optimism"
@@ -130,7 +130,7 @@ contract EnableEthereumXWellBridging is Script {
             adapter.pendingOwner()
         );
         console.log(
-            "Next step: FOUNDATION_MULTISIG must call acceptOwnership() on both proxies."
+            "Next step: PAUSE_GUARDIAN must call acceptOwnership() on both proxies."
         );
     }
 
@@ -219,7 +219,7 @@ contract EnableEthereumXWellBridging is Script {
         WormholeBridgeAdapter adapter,
         xWELL xwell,
         WormholeTrustedSender.TrustedSender[] memory peers,
-        address multisig
+        address pauseGuardian
     ) internal view {
         // Bridge must be registered on xWELL or every mint/burn reverts.
         require(
@@ -242,12 +242,12 @@ contract EnableEthereumXWellBridging is Script {
             );
         }
         require(
-            adapter.pendingOwner() == multisig,
-            "Adapter: pendingOwner not multisig"
+            adapter.pendingOwner() == pauseGuardian,
+            "Adapter: pendingOwner not pauseGuardian"
         );
         require(
-            xwell.pendingOwner() == multisig,
-            "xWELL: pendingOwner not multisig"
+            xwell.pendingOwner() == pauseGuardian,
+            "xWELL: pendingOwner not pauseGuardian"
         );
     }
 }
