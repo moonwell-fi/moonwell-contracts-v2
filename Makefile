@@ -69,3 +69,31 @@ test-unit:
 audit-rewards:
 	@./script/rewards/check-rewards-math.sh $(PROPOSAL)
 
+# Migration harness: full mip-x56 + mip-e00 end-to-end run against persistent
+# Tenderly VNets. The VNet bootstrap lives in
+# ../defender-migration/moonwell-tenderly and writes per-chain RPC URLs to
+# .env.migration-vnets using the same env-var names foundry.toml's
+# [rpc_endpoints] block already references.
+TENDERLY_DIR ?= ../defender-migration/moonwell-tenderly
+
+migration-vnets-up:
+	cd $(TENDERLY_DIR) && bun run setup-migration-vnets
+
+migration-vnets-down:
+	cd $(TENDERLY_DIR) && bun run setup-migration-vnets -- --teardown
+
+migration-harness: migration-vnets-up
+	set -a; \
+	  . $(TENDERLY_DIR)/.env.migration-vnets; \
+	  set +a; \
+	  forge test --mc MigrationHarness --ffi -vv; \
+	  status=$$?; \
+	  $(MAKE) migration-vnets-down; \
+	  exit $$status
+
+migration-harness-keep: migration-vnets-up
+	set -a; \
+	  . $(TENDERLY_DIR)/.env.migration-vnets; \
+	  set +a; \
+	  forge test --mc MigrationHarness --ffi -vv
+
