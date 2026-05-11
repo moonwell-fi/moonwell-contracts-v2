@@ -18,7 +18,7 @@ import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.
 
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, ETHEREUM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 
@@ -74,6 +74,14 @@ contract mipx56 is HybridProposal {
 
     // Moonbeam contracts that should have ownership transferred to the new TemporalGovernor
     string[] private contractsToValidateOwnership;
+
+    /// @notice Ethereum deployer nonce captured at proxy address prediction
+    /// time. Re-applied via vm.setNonce immediately before the real proxy
+    /// deployment so foundry's cross-fork broadcast counter — which inflates
+    /// the deployer nonce as broadcasts run on satellite chains — does not
+    /// shift the CREATE address away from the prediction. No-op in real
+    /// broadcasts where the on-chain Ethereum nonce naturally matches.
+    uint64 private _predictedDeployerNonce;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -184,10 +192,22 @@ contract mipx56 is HybridProposal {
         // The proxy is deployed and initialized atomically at the end of deploy().
         if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
             (, address deployer, ) = vm.readCallers();
+            uint256 predictedNonce = vm.getNonce(deployer);
             address predictedGovernorProxy = vm.computeCreateAddress(
                 deployer,
-                vm.getNonce(deployer)
+                predictedNonce
             );
+            _predictedDeployerNonce = uint64(predictedNonce);
+
+            // The Addresses registry rejects addAddress for an isContract=true
+            // entry whose target has no bytecode on the active chain. Etch a
+            // single placeholder byte so the check passes; the real proxy
+            // deployment at the end of deploy() overwrites this bytecode at
+            // the same address. vm.etch is local-only — under broadcast it
+            // is a no-op on-chain.
+            if (predictedGovernorProxy.code.length == 0) {
+                vm.etch(predictedGovernorProxy, hex"00");
+            }
 
             addresses.addAddress(
                 "MULTICHAIN_GOVERNOR_V2_PROXY",
@@ -488,12 +508,25 @@ contract mipx56 is HybridProposal {
     /// @dev Init data is encoded for the proxy constructor so initialize() runs
     /// in the same transaction as proxy creation.
     function _deployAndInitializeGovernorV2(Addresses addresses) internal {
+        // Pull the predicted proxy address from the chain-1 registry while
+        // still on a non-Ethereum fork so the bytecode check is bypassed
+        // (the proxy is not deployed yet at this point).
         address registeredProxy = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY"
+            "MULTICHAIN_GOVERNOR_V2_PROXY",
+            ETHEREUM_CHAIN_ID
         );
 
-        // Idempotent: if the proxy is already deployed, nothing to do.
         vm.selectFork(ETHEREUM_FORK_ID);
+
+        // Clear the single-byte placeholder etched during deploy() so the
+        // idempotency check below can distinguish between the etched stub
+        // and the real proxy bytecode. No-op when no placeholder is present
+        // (e.g., on a real broadcast or after a partial earlier run).
+        if (registeredProxy.code.length == 1) {
+            vm.etch(registeredProxy, "");
+        }
+
+        // Idempotent: if the proxy is already deployed, nothing to do.
         if (registeredProxy.code.length != 0) {
             return;
         }
@@ -569,6 +602,21 @@ contract mipx56 is HybridProposal {
             "MULTICHAIN_GOVERNOR_V2_IMPL"
         );
         address ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
+
+        // Foundry shares the broadcast deployer's nonce across forks: every
+        // satellite-chain deployment between the prediction (in deploy()) and
+        // this point bumps the same counter, so by now the Ethereum nonce
+        // would land far past predicted. Reset it to the predicted value so
+        // the CREATE matches the registered address. vm.setNonce is local-
+        // only — in real broadcasts the on-chain nonce is unaffected and
+        // already matches because no Ethereum txs happened in between.
+        (, address deployerNow, ) = vm.readCallers();
+        if (vm.getNonce(deployerNow) != _predictedDeployerNonce) {
+            // vm.setNonce rejects decreases; setNonceUnsafe allows lowering.
+            // We need to lower because the cross-fork broadcast counter has
+            // run past the predicted nonce.
+            vm.setNonceUnsafe(deployerNow, _predictedDeployerNonce);
+        }
 
         vm.startBroadcast();
         address actualProxy = address(

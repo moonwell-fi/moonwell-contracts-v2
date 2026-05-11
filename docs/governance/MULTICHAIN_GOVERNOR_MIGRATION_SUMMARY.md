@@ -184,7 +184,7 @@ drain (or cancel them) before submitting this migration.
 
 ---
 
-## PostDeployEthereumXWell: Ethereum Configuration
+## PostDeployEthereumXWell: Ethereum Configuration [TODO: this changes once we have the interim proposal to enable xwell on ethereum and transfer its ownership to a multisig]
 
 ### Purpose
 
@@ -247,7 +247,7 @@ instructions.
 
 ---
 
-## Follow-Up Items (Require Separate Proposal)
+## Follow-Up Items (Require Separate Proposal) [TODO: xwell on ethereum is being enabled on the next moonbeam proposal, addTrustedSenders]
 
 These actions cannot be completed during MIP-X45/X56 and must be handled via a
 subsequent governance proposal from the new Ethereum MultichainGovernorV2:
@@ -336,7 +336,9 @@ owned on-chain after MIP-X56 deployment — no follow-up needed for those chains
    never overlap.
 
 3. **Break glass guardian:** 8 whitelisted calldatas allow emergency rollback of
-   ownership to PAUSE_GUARDIAN multisig across all chains.
+   ownership to PAUSE_GUARDIAN multisig across all chains. [TODO: these
+   calldatas need to unwind the ownership transfers on moonbeam and trusted
+   senders on moonbeam/base/op]
 
 4. **Single Ethereum ProxyAdmin:** There is one shared ProxyAdmin on Ethereum,
    deployed in Step 0 (`DeployXWellEthereum.s.sol`). MIP-X56 reuses it for the
@@ -372,10 +374,12 @@ owned on-chain after MIP-X56 deployment — no follow-up needed for those chains
   Wormhole is unavailable, satellite chain governance execution is delayed.
 - **Deployer trust window:** Between MIP-X56 execution and
   PostDeployEthereumXWell completion, the deployer still controls Ethereum xWELL
-  ecosystem contracts. This window should be minimized.
+  ecosystem contracts. This window should be minimized. [TODO: this changes when
+  the xwell setup is done as the interim proposal script]
 - **Two-step ownership gap:** Until the follow-up proposal calls
   `acceptOwnership()`, xWELL and WormholeBridgeAdapter on Ethereum have the
-  deployer as actual owner and MultichainGovernorV2 as pending owner.
+  deployer as actual owner and MultichainGovernorV2 as pending owner. [TODO:
+  same, but the owner will be a multisig until we transfer ownership]
 - **Moonbeam admin gap:** Until the follow-up proposal calls `_acceptAdmin()`,
   Moonbeam mTokens and Unitroller have MultichainGovernor (old, now defunct) as
   admin and TemporalGovernor as pendingAdmin. The old governor can't create new
