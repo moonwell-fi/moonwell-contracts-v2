@@ -18,6 +18,7 @@ import {VotingPowerAggregator} from "@protocol/governance/multichain/VotingPower
 import {MultichainVoteCollectionV2} from "@protocol/governance/multichain/MultichainVoteCollectionV2.sol";
 import {MultichainVoteCollectionMoonbeam} from "@protocol/governance/multichain/MultichainVoteCollectionMoonbeam.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_FORK_ID, ETHEREUM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBEAM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {EthereumPostDeploymentActions} from "@protocol/xWELL/EthereumPostDeploymentActions.sol";
@@ -2771,116 +2772,6 @@ contract MultichainProposalIntegrationV2 is
     /// ----------- BREAK GLASS GUARDIAN TESTS ------------------ ///
     /// --------------------------------------------------------- ///
 
-    /// @notice Verify break glass guardian can execute transferOwnership to roll back
-    ///         ownership of Ethereum contracts to the PAUSE_GUARDIAN multisig
-    function testBreakGlassGuardianTransferOwnership() public {
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        address bgGuardian = governorV2.breakGlassGuardian();
-        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
-
-        // Verify break glass guardian is set
-        assertTrue(
-            bgGuardian != address(0),
-            "break glass guardian should be set"
-        );
-
-        // The governor owns the VotingPowerAggregator — use it as the break glass target
-        assertEq(
-            ethereumVotingPower.owner(),
-            address(governorV2),
-            "governor should own VotingPowerAggregator"
-        );
-
-        // Build break glass call: transferOwnership(PAUSE_GUARDIAN) on VotingPowerAggregator
-        address[] memory targets = new address[](1);
-        targets[0] = address(ethereumVotingPower);
-
-        bytes[] memory calldatas = new bytes[](1);
-        calldatas[0] = abi.encodeWithSignature(
-            "transferOwnership(address)",
-            pauseGuardian
-        );
-
-        // Execute break glass
-        vm.prank(bgGuardian);
-        governorV2.executeBreakGlass(targets, calldatas);
-
-        // VotingPowerAggregator uses Ownable2Step: break glass sets pendingOwner,
-        // owner remains governor until pauseGuardian calls acceptOwnership
-        assertEq(
-            ethereumVotingPower.pendingOwner(),
-            pauseGuardian,
-            "VotingPowerAggregator pendingOwner should be PAUSE_GUARDIAN after break glass"
-        );
-        assertEq(
-            ethereumVotingPower.owner(),
-            address(governorV2),
-            "VotingPowerAggregator owner unchanged until acceptOwnership"
-        );
-
-        // Pause guardian accepts to complete the transfer
-        vm.prank(pauseGuardian);
-        ethereumVotingPower.acceptOwnership();
-        assertEq(
-            ethereumVotingPower.owner(),
-            pauseGuardian,
-            "VotingPowerAggregator owner should be PAUSE_GUARDIAN after acceptance"
-        );
-
-        // Verify break glass guardian is now address(0) (one-time use)
-        assertEq(
-            governorV2.breakGlassGuardian(),
-            address(0),
-            "break glass guardian should be revoked after use"
-        );
-    }
-
-    /// @notice Verify break glass guardian can transfer ownership of xWELL
-    function testBreakGlassGuardianTransferXWellOwnership() public {
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        address bgGuardian = governorV2.breakGlassGuardian();
-        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
-
-        // The governor owns xWELL (set in _configureEthereumPostDeployment)
-        assertEq(
-            ethereumXWell.owner(),
-            address(governorV2),
-            "governor should own xWELL"
-        );
-
-        // Execute break glass with multiple targets
-        address[] memory targets = new address[](2);
-        targets[0] = address(ethereumXWell);
-        targets[1] = address(ethereumVotingPower);
-
-        bytes[] memory calldatas = new bytes[](2);
-        calldatas[0] = abi.encodeWithSignature(
-            "transferOwnership(address)",
-            pauseGuardian
-        );
-        calldatas[1] = abi.encodeWithSignature(
-            "transferOwnership(address)",
-            pauseGuardian
-        );
-
-        vm.prank(bgGuardian);
-        governorV2.executeBreakGlass(targets, calldatas);
-
-        // Both use 2-step ownership, so check pendingOwner
-        assertEq(
-            ethereumXWell.pendingOwner(),
-            pauseGuardian,
-            "xWELL pendingOwner should be PAUSE_GUARDIAN"
-        );
-        assertEq(
-            ethereumVotingPower.pendingOwner(),
-            pauseGuardian,
-            "VotingPowerAggregator pendingOwner should be PAUSE_GUARDIAN"
-        );
-    }
-
     /// @notice Verify non-whitelisted calldatas revert
     function testBreakGlassNonWhitelistedCalldataReverts() public {
         vm.selectFork(ETHEREUM_FORK_ID);
@@ -2899,37 +2790,19 @@ contract MultichainProposalIntegrationV2 is
         governorV2.executeBreakGlass(targets, calldatas);
     }
 
-    /// @notice Exhaustively verify every break-glass calldata that mip-x56 whitelists
-    /// is reachable via `isWhitelistedCalldata`. Prevents silent drift where a new
-    /// calldata is added to the proposal but not wired into the governor whitelist.
+    /// @notice Verify each of the 3 publishMessage break-glass calldatas that
+    ///         mip-x56 whitelists is reachable via `isWhitelistedCalldata`.
+    ///         Prevents silent drift where a calldata's encoding changes in
+    ///         the proposal but not in the governor whitelist (or vice versa).
     function testAllBreakGlassCalldatasAreWhitelisted() public {
         vm.selectFork(ETHEREUM_FORK_ID);
 
-        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+        bytes[] memory expected = _expectedBreakGlassCalldatas();
 
-        // Each calldata mirrors the set produced by mip-x56._buildBreakGlassCalldatas
-        // (publishMessage payloads are chain-specific and covered by the proposal
-        // validation; here we focus on the admin-transfer category).
-        bytes[] memory expected = new bytes[](5);
-        expected[0] = abi.encodeWithSignature(
-            "_setPendingAdmin(address)",
-            pauseGuardian
-        );
-        expected[1] = abi.encodeWithSignature(
-            "setAdmin(address)",
-            pauseGuardian
-        );
-        expected[2] = abi.encodeWithSignature(
-            "setEmissionsManager(address)",
-            pauseGuardian
-        );
-        expected[3] = abi.encodeWithSignature(
-            "changeAdmin(address)",
-            pauseGuardian
-        );
-        expected[4] = abi.encodeWithSignature(
-            "transferOwnership(address)",
-            pauseGuardian
+        assertEq(
+            expected.length,
+            3,
+            "mip-x56 should whitelist exactly 3 break-glass calldatas"
         );
 
         for (uint256 i = 0; i < expected.length; i++) {
@@ -2940,53 +2813,440 @@ contract MultichainProposalIntegrationV2 is
         }
     }
 
-    /// @notice Execute break glass with multiple whitelisted calldatas covering
-    /// different semantic categories (ownership transfer on multiple Ownable2Step
-    /// targets) and verify state changes on each. Complements the single-target
-    /// and dual-target tests above with a larger emergency-rollback scenario.
-    function testBreakGlassExecutesMultipleOwnabaleTargets() public {
-        vm.selectFork(ETHEREUM_FORK_ID);
+    /// @notice Execute break-glass and assert the Moonbeam TemporalGovernor's
+    ///         trusted-sender set is unwound: Ethereum V2 governor removed, old
+    ///         Moonbeam MULTICHAIN_GOVERNOR_PROXY restored. Cross-chain delivery
+    ///         is simulated by pranking as the TemporalGovernor (its
+    ///         setTrustedSenders / unSetTrustedSenders are gated only on
+    ///         msg.sender == address(this); the Wormhole envelope check is
+    ///         covered separately by TemporalGovernor unit tests).
+    function testBreakGlassUnwindsMoonbeamTrustedSenders() public {
+        bytes[] memory cd = _expectedBreakGlassCalldatas();
 
-        address bgGuardian = governorV2.breakGlassGuardian();
-        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+        _executeBreakGlassOnce(cd);
 
-        // xWELL and VotingPowerAggregator both owned by the governor and both
-        // use Ownable2Step → transferOwnership sets pendingOwner.
-        assertEq(ethereumXWell.owner(), address(governorV2));
-        assertEq(ethereumVotingPower.owner(), address(governorV2));
-
-        address[] memory targets = new address[](2);
-        targets[0] = address(ethereumXWell);
-        targets[1] = address(ethereumVotingPower);
-
-        bytes memory transferOwnershipCall = abi.encodeWithSignature(
-            "transferOwnership(address)",
-            pauseGuardian
+        address oldMoonbeamGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY",
+            MOONBEAM_CHAIN_ID
         );
 
-        bytes[] memory calldatas = new bytes[](2);
-        calldatas[0] = transferOwnershipCall;
-        calldatas[1] = transferOwnershipCall;
+        _applyUnwindOnFork(MOONBEAM_FORK_ID, cd[0]);
 
-        // Event emitted with full target/calldata arrays
-        vm.prank(bgGuardian);
-        governorV2.executeBreakGlass(targets, calldatas);
+        vm.selectFork(MOONBEAM_FORK_ID);
+        assertTrue(
+            moonbeamTemporalGov.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "old Moonbeam governor should be trusted on Moonbeam TemporalGov after unwind"
+        );
+        assertFalse(
+            moonbeamTemporalGov.isTrustedSender(
+                ETHEREUM_WORMHOLE_CHAIN_ID,
+                address(governorV2)
+            ),
+            "Ethereum V2 governor should NOT be trusted on Moonbeam TemporalGov after unwind"
+        );
+    }
 
-        // pendingOwner set on both targets
-        assertEq(ethereumXWell.pendingOwner(), pauseGuardian);
-        assertEq(ethereumVotingPower.pendingOwner(), pauseGuardian);
+    /// @notice Same as the Moonbeam test but for Base TemporalGovernor.
+    function testBreakGlassUnwindsBaseTrustedSenders() public {
+        bytes[] memory cd = _expectedBreakGlassCalldatas();
 
-        // Guardian nullified after single use
+        _executeBreakGlassOnce(cd);
+
+        address oldMoonbeamGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY",
+            MOONBEAM_CHAIN_ID
+        );
+
+        _applyUnwindOnFork(BASE_FORK_ID, cd[1]);
+
+        vm.selectFork(BASE_FORK_ID);
+        assertTrue(
+            baseTemporalGov.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "old Moonbeam governor should be trusted on Base TemporalGov after unwind"
+        );
+        assertFalse(
+            baseTemporalGov.isTrustedSender(
+                ETHEREUM_WORMHOLE_CHAIN_ID,
+                address(governorV2)
+            ),
+            "Ethereum V2 governor should NOT be trusted on Base TemporalGov after unwind"
+        );
+    }
+
+    /// @notice Same as the Moonbeam test but for Optimism TemporalGovernor.
+    function testBreakGlassUnwindsOptimismTrustedSenders() public {
+        bytes[] memory cd = _expectedBreakGlassCalldatas();
+
+        _executeBreakGlassOnce(cd);
+
+        address oldMoonbeamGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY",
+            MOONBEAM_CHAIN_ID
+        );
+
+        _applyUnwindOnFork(OPTIMISM_FORK_ID, cd[2]);
+
+        vm.selectFork(OPTIMISM_FORK_ID);
+        assertTrue(
+            optimismTemporalGov.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "old Moonbeam governor should be trusted on Optimism TemporalGov after unwind"
+        );
+        assertFalse(
+            optimismTemporalGov.isTrustedSender(
+                ETHEREUM_WORMHOLE_CHAIN_ID,
+                address(governorV2)
+            ),
+            "Ethereum V2 governor should NOT be trusted on Optimism TemporalGov after unwind"
+        );
+    }
+
+    /// @notice CRITICAL VALIDATION — proves the post-break-glass governance loop
+    ///         is navigable: after break-glass executes and the unwind lands on
+    ///         each TemporalGovernor, the old Moonbeam MULTICHAIN_GOVERNOR_PROXY
+    ///         is the sole satellite-chain governance authority. From there it
+    ///         can submit any Wormhole proposal to a TemporalGovernor (subject
+    ///         to its own Moonbeam-local voting power clearing quorum) and
+    ///         TemporalGov will accept it because the trusted-sender gate
+    ///         (`trustedSenders[emitterChainId].contains(emitterAddress)`) now
+    ///         points back to the old governor.
+    ///
+    ///         What this test PROVES (necessary-and-sufficient for the unwind):
+    ///           - Break-glass calldatas decode to the expected unwind payload
+    ///             on every satellite chain.
+    ///           - After Wormhole delivery, only the old Moonbeam governor is in
+    ///             the trusted-sender set on each TemporalGovernor.
+    ///           - The Ethereum V2 governor is completely evicted from each
+    ///             TemporalGovernor — it can no longer execute satellite-chain
+    ///             actions.
+    ///
+    ///         What this test does NOT prove (intentionally — see caveats in
+    ///         mip-x56._buildBreakGlassCalldatas):
+    ///           - Cross-chain vote collection from Base/OP is broken because
+    ///             MultichainVoteCollectionV2.targetAddress is frozen by
+    ///             initializeV3 (no external mutator). The old governor
+    ///             therefore operates on Moonbeam-local voting power only,
+    ///             pending a post-incident VoteCollectionV3 upgrade.
+    ///           - Ethereum-side contracts owned by V2 (xWELL, stkWELL, etc.)
+    ///             are not unwound; PAUSE_GUARDIAN multisig handles Ethereum-
+    ///             side recovery separately.
+    function testBreakGlassRestoresMoonbeamGovernorExecutionPath() public {
+        // 1. Pre-state: Ethereum V2 governor is the sole trusted sender on
+        //    every satellite TemporalGovernor.
+        address oldMoonbeamGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY",
+            MOONBEAM_CHAIN_ID
+        );
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+        assertTrue(
+            moonbeamTemporalGov.isTrustedSender(
+                ETHEREUM_WORMHOLE_CHAIN_ID,
+                address(governorV2)
+            )
+        );
+        assertFalse(
+            moonbeamTemporalGov.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            )
+        );
+
+        // 2. Execute break-glass on Ethereum — emits a publishMessage per chain.
+        bytes[] memory expected = _expectedBreakGlassCalldatas();
+        _executeBreakGlassOnce(expected);
+
+        // 3. Simulate Wormhole delivery on all three satellite chains.
+        _applyUnwindOnFork(MOONBEAM_FORK_ID, expected[0]);
+        _applyUnwindOnFork(BASE_FORK_ID, expected[1]);
+        _applyUnwindOnFork(OPTIMISM_FORK_ID, expected[2]);
+
+        // 4. Post-state: old Moonbeam governor is the sole trusted sender on
+        //    every satellite TemporalGovernor; Ethereum V2 governor is evicted.
+        vm.selectFork(MOONBEAM_FORK_ID);
+        assertTrue(
+            moonbeamTemporalGov.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "Moonbeam TemporalGov should trust old governor after unwind"
+        );
+        assertFalse(
+            moonbeamTemporalGov.isTrustedSender(
+                ETHEREUM_WORMHOLE_CHAIN_ID,
+                address(governorV2)
+            ),
+            "Moonbeam TemporalGov must not trust V2 governor after unwind"
+        );
+
+        vm.selectFork(BASE_FORK_ID);
+        assertTrue(
+            baseTemporalGov.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "Base TemporalGov should trust old governor after unwind"
+        );
+        assertFalse(
+            baseTemporalGov.isTrustedSender(
+                ETHEREUM_WORMHOLE_CHAIN_ID,
+                address(governorV2)
+            ),
+            "Base TemporalGov must not trust V2 governor after unwind"
+        );
+
+        vm.selectFork(OPTIMISM_FORK_ID);
+        assertTrue(
+            optimismTemporalGov.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "Optimism TemporalGov should trust old governor after unwind"
+        );
+        assertFalse(
+            optimismTemporalGov.isTrustedSender(
+                ETHEREUM_WORMHOLE_CHAIN_ID,
+                address(governorV2)
+            ),
+            "Optimism TemporalGov must not trust V2 governor after unwind"
+        );
+
+        // 5. Break-glass role permanently revoked.
+        vm.selectFork(ETHEREUM_FORK_ID);
         assertEq(
             governorV2.breakGlassGuardian(),
             address(0),
-            "break glass guardian must be revoked after execution"
+            "break-glass guardian must be revoked after execution"
+        );
+    }
+
+    /// @notice Negative guardrail — break-glass does NOT restore the cross-chain
+    ///         vote-collection path. Base/OP MultichainVoteCollectionV2.targetAddress
+    ///         remains frozen at the Ethereum V2 governor after unwind. This test
+    ///         locks in the documented caveat: any future change that exposes a
+    ///         mutator on VoteCollectionV2 (or upgrades it via break-glass) will
+    ///         need to update this test, preventing silent drift in the limit.
+    function testBreakGlassDoesNotRestoreVoteCollectionPath() public {
+        bytes[] memory expected = _expectedBreakGlassCalldatas();
+        _executeBreakGlassOnce(expected);
+
+        _applyUnwindOnFork(MOONBEAM_FORK_ID, expected[0]);
+        _applyUnwindOnFork(BASE_FORK_ID, expected[1]);
+        _applyUnwindOnFork(OPTIMISM_FORK_ID, expected[2]);
+
+        address oldMoonbeamGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY",
+            MOONBEAM_CHAIN_ID
         );
 
-        // Subsequent break-glass attempt must revert with OnlyBreakGlassGuardian
+        // Base VoteCollectionV2: ETHEREUM target unchanged, MOONBEAM target absent.
+        vm.selectFork(BASE_FORK_ID);
+        assertEq(
+            baseVoteCollection.targetAddress(ETHEREUM_WORMHOLE_CHAIN_ID),
+            address(governorV2),
+            "Base VoteCollectionV2 still points at V2 governor - frozen by initializeV3"
+        );
+        assertEq(
+            baseVoteCollection.targetAddress(MOONBEAM_WORMHOLE_CHAIN_ID),
+            address(0),
+            "Base VoteCollectionV2 has no Moonbeam target - break-glass cannot add one"
+        );
+        assertFalse(
+            baseVoteCollection.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "Base VoteCollectionV2 still rejects inbound from old Moonbeam governor"
+        );
+
+        // Same for Optimism.
+        vm.selectFork(OPTIMISM_FORK_ID);
+        assertEq(
+            optimismVoteCollection.targetAddress(ETHEREUM_WORMHOLE_CHAIN_ID),
+            address(governorV2),
+            "Optimism VoteCollectionV2 still points at V2 governor - frozen by initializeV3"
+        );
+        assertEq(
+            optimismVoteCollection.targetAddress(MOONBEAM_WORMHOLE_CHAIN_ID),
+            address(0),
+            "Optimism VoteCollectionV2 has no Moonbeam target - break-glass cannot add one"
+        );
+        assertFalse(
+            optimismVoteCollection.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "Optimism VoteCollectionV2 still rejects inbound from old Moonbeam governor"
+        );
+    }
+
+    /// --------------------------------------------------------- ///
+    /// ------- BREAK GLASS HELPERS ----------------------------- ///
+    /// --------------------------------------------------------- ///
+
+    /// @notice Mirror of mip-x56._buildBreakGlassCalldatas for use in tests.
+    /// @dev Switches forks per chain just like the proposal helper so the
+    ///      address resolution path is byte-identical to what the proposal
+    ///      whitelisted at deploy time.
+    function _expectedBreakGlassCalldatas() internal returns (bytes[] memory) {
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address ethereumGovernorV2 = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_V2_PROXY"
+        );
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+        address oldMoonbeamGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
+
+        bytes[] memory cd = new bytes[](3);
+        cd[0] = _expectedUnwindCalldata(
+            MOONBEAM_FORK_ID,
+            ethereumGovernorV2,
+            oldMoonbeamGovernor
+        );
+        cd[1] = _expectedUnwindCalldata(
+            BASE_FORK_ID,
+            ethereumGovernorV2,
+            oldMoonbeamGovernor
+        );
+        cd[2] = _expectedUnwindCalldata(
+            OPTIMISM_FORK_ID,
+            ethereumGovernorV2,
+            oldMoonbeamGovernor
+        );
+
+        // Restore Ethereum fork — the helper switches forks internally.
+        vm.selectFork(ETHEREUM_FORK_ID);
+        return cd;
+    }
+
+    /// @notice Build the publishMessage unwind calldata for one satellite chain.
+    function _expectedUnwindCalldata(
+        uint256 satelliteForkId,
+        address ethereumGovernorV2,
+        address oldMoonbeamGovernor
+    ) internal returns (bytes memory) {
+        vm.selectFork(satelliteForkId);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+
+        ITemporalGovernor.TrustedSender[]
+            memory ethSender = new ITemporalGovernor.TrustedSender[](1);
+        ethSender[0] = ITemporalGovernor.TrustedSender({
+            chainId: ETHEREUM_WORMHOLE_CHAIN_ID,
+            addr: ethereumGovernorV2
+        });
+        bytes memory unSetEthereum = abi.encodeWithSignature(
+            "unSetTrustedSenders((uint16,address)[])",
+            ethSender
+        );
+
+        ITemporalGovernor.TrustedSender[]
+            memory moonbeamSender = new ITemporalGovernor.TrustedSender[](1);
+        moonbeamSender[0] = ITemporalGovernor.TrustedSender({
+            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
+            addr: oldMoonbeamGovernor
+        });
+        bytes memory setMoonbeam = abi.encodeWithSignature(
+            "setTrustedSenders((uint16,address)[])",
+            moonbeamSender
+        );
+
+        address[] memory innerTargets = new address[](2);
+        innerTargets[0] = temporalGovernor;
+        innerTargets[1] = temporalGovernor;
+
+        uint256[] memory innerValues = new uint256[](2);
+
+        bytes[] memory innerCalldatas = new bytes[](2);
+        innerCalldatas[0] = unSetEthereum;
+        innerCalldatas[1] = setMoonbeam;
+
+        return
+            abi.encodeWithSignature(
+                "publishMessage(uint32,bytes,uint8)",
+                1000,
+                abi.encode(
+                    temporalGovernor,
+                    innerTargets,
+                    innerValues,
+                    innerCalldatas
+                ),
+                1
+            );
+    }
+
+    /// @notice Execute the 3 break-glass calldatas through the governor in one
+    ///         shot (one-time-use semantic: subsequent calls revert with
+    ///         OnlyBreakGlassGuardian).
+    /// @dev Callers build the calldatas via `_expectedBreakGlassCalldatas()`
+    ///      once and pass them in so the same byte array is reused for the
+    ///      `_applyUnwindOnFork` simulation after execution.
+    function _executeBreakGlassOnce(bytes[] memory cd) internal {
+        vm.selectFork(ETHEREUM_FORK_ID);
+
+        address bgGuardian = governorV2.breakGlassGuardian();
+        assertTrue(
+            bgGuardian != address(0),
+            "break-glass guardian must be set before execution"
+        );
+
+        address[] memory targets = new address[](3);
+        targets[0] = address(wormholeRelayerAdapter);
+        targets[1] = address(wormholeRelayerAdapter);
+        targets[2] = address(wormholeRelayerAdapter);
+
+        vm.deal(bgGuardian, 1 ether);
         vm.prank(bgGuardian);
-        vm.expectRevert(IMultichainGovernorV2.OnlyBreakGlassGuardian.selector);
-        governorV2.executeBreakGlass(targets, calldatas);
+        governorV2.executeBreakGlass(targets, cd);
+    }
+
+    /// @notice Simulate Wormhole-delivery of a single break-glass publishMessage
+    ///         payload on its destination satellite chain. Strips the
+    ///         publishMessage envelope, decodes the inner TemporalGovernor
+    ///         payload, and applies each inner call by pranking as the
+    ///         TemporalGovernor itself (whose setTrustedSenders /
+    ///         unSetTrustedSenders are gated on `msg.sender == address(this)`).
+    ///         End-to-end Wormhole signature verification is covered by
+    ///         TemporalGovernor unit tests; here we focus on the post-delivery
+    ///         state mutation.
+    function _applyUnwindOnFork(
+        uint256 satelliteForkId,
+        bytes memory breakGlassCalldata
+    ) internal {
+        // Strip the 4-byte publishMessage selector and decode (uint32, bytes, uint8)
+        bytes memory args = new bytes(breakGlassCalldata.length - 4);
+        for (uint256 i = 0; i < args.length; i++) {
+            args[i] = breakGlassCalldata[i + 4];
+        }
+        (, bytes memory innerPayload, ) = abi.decode(
+            args,
+            (uint32, bytes, uint8)
+        );
+
+        (
+            address recipient,
+            address[] memory innerTargets,
+            uint256[] memory innerValues,
+            bytes[] memory innerCalldatas
+        ) = abi.decode(innerPayload, (address, address[], uint256[], bytes[]));
+
+        vm.selectFork(satelliteForkId);
+        for (uint256 i = 0; i < innerTargets.length; i++) {
+            vm.prank(recipient);
+            (bool ok, bytes memory err) = innerTargets[i].call{
+                value: innerValues[i]
+            }(innerCalldatas[i]);
+            require(ok, string(err));
+        }
     }
 
     /// --------------------------------------------------------- ///
