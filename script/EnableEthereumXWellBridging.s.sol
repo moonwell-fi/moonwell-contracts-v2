@@ -5,6 +5,7 @@ import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -16,12 +17,15 @@ import {ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, 
  Runs on Ethereum mainnet as MOONWELL_DEPLOYER (current owner of xWELL_PROXY
  and WORMHOLE_BRIDGE_ADAPTER_PROXY). In one broadcast it:
 
-   1. Wires the Ethereum WormholeBridgeAdapter to recognize Moonbeam / Base /
-      Optimism peers (addTrustedSenders + setTargetAddresses).
-   2. Transfers ownership of WormholeBridgeAdapter + xWELL to
+   1. Ensures the Ethereum WormholeBridgeAdapter is a registered minter/burner
+      on xWELL with the canonical bufferCap + rateLimitPerSecond.
+   2. Wires the Ethereum WormholeBridgeAdapter to recognize Moonbeam / Base /
+      Optimism peers (addTrustedSenders + setTargetAddresses), skipping any
+      peer already configured so the script is idempotent.
+   3. Transfers ownership of WormholeBridgeAdapter + xWELL to
       FOUNDATION_MULTISIG.
 
- The multisig must complete the handover by submitting two Safe transactions
+ The multisig completes the handover by submitting two Safe transactions
  calling `acceptOwnership()` on each proxy (Ownable2Step).
 
  to simulate (no broadcast):
@@ -34,6 +38,11 @@ import {ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, 
        --private-key $DEPLOYER_PRIVATE_KEY
 */
 contract EnableEthereumXWellBridging is Script {
+    /// @notice Canonical Ethereum xWELL bridge rate-limit params
+    ///         (mirrors `DeployXWellEthereum.s.sol` and `mip-x45.sol`).
+    uint112 public constant ETH_XWELL_BUFFER_CAP = 100_000_000 * 1e18;
+    uint128 public constant ETH_XWELL_RATE_LIMIT_PER_SECOND = 1158 * 1e18; // ~19m/day
+
     function run() public {
         require(
             block.chainid == ETHEREUM_CHAIN_ID,
@@ -59,29 +68,58 @@ contract EnableEthereumXWellBridging is Script {
             "WORMHOLE_BRIDGE_ADAPTER_PROXY not owned by MOONWELL_DEPLOYER"
         );
 
-        WormholeTrustedSender.TrustedSender[] memory peers = _buildPeers(
+        WormholeTrustedSender.TrustedSender[] memory allPeers = _buildPeers(
             addresses
         );
 
+        // Compute the subset of peers that aren't already wired so re-runs
+        // don't revert in EnumerableSet.add.
+        WormholeTrustedSender.TrustedSender[]
+            memory peersToAddSender = _filterMissingSenders(adapter, allPeers);
+        WormholeTrustedSender.TrustedSender[]
+            memory peersToSetTarget = _filterMissingTargets(adapter, allPeers);
+
         vm.startBroadcast(deployer);
 
-        // 1. Allow inbound VAAs from Moonbeam / Base / Optimism.
-        adapter.addTrustedSenders(peers);
+        // 1. Register the adapter as a bridge on xWELL if not already done.
+        //    Without a bufferCap > 0, every mint/burn through this adapter
+        //    reverts in `_depleteBuffer`/`_replenishBuffer` (MintLimits.sol).
+        if (xwell.bufferCap(address(adapter)) == 0) {
+            MintLimits.RateLimitMidPointInfo[]
+                memory limits = new MintLimits.RateLimitMidPointInfo[](1);
+            limits[0] = MintLimits.RateLimitMidPointInfo({
+                bridge: address(adapter),
+                rateLimitPerSecond: ETH_XWELL_RATE_LIMIT_PER_SECOND,
+                bufferCap: ETH_XWELL_BUFFER_CAP
+            });
+            xwell.addBridges(limits);
+        }
 
-        // 2. Route outbound bridge() calls to the same peers on each chain.
-        adapter.setTargetAddresses(peers);
+        // 2. Allow inbound VAAs from any peer not yet trusted.
+        if (peersToAddSender.length > 0) {
+            adapter.addTrustedSenders(peersToAddSender);
+        }
 
-        // 3. Hand off ownership to the multisig (Ownable2Step → multisig must
+        // 3. Route outbound bridge() calls for any peer missing a target.
+        if (peersToSetTarget.length > 0) {
+            adapter.setTargetAddresses(peersToSetTarget);
+        }
+
+        // 4. Hand off ownership to the multisig (Ownable2Step → multisig must
         //    later call acceptOwnership on both proxies).
         adapter.transferOwnership(multisig);
         xwell.transferOwnership(multisig);
 
         vm.stopBroadcast();
 
-        _validate(adapter, xwell, peers, multisig);
+        _validate(adapter, xwell, allPeers, multisig);
 
         console.log(
             "Ethereum WormholeBridgeAdapter wired to Moonbeam/Base/Optimism"
+        );
+        console.log(
+            "xWELL bridge bufferCap:                    ",
+            xwell.bufferCap(address(adapter))
         );
         console.log(
             "xWELL_PROXY pendingOwner:                  ",
@@ -127,12 +165,72 @@ contract EnableEthereumXWellBridging is Script {
         });
     }
 
+    function _filterMissingSenders(
+        WormholeBridgeAdapter adapter,
+        WormholeTrustedSender.TrustedSender[] memory peers
+    )
+        internal
+        view
+        returns (WormholeTrustedSender.TrustedSender[] memory missing)
+    {
+        uint256 count;
+        bool[] memory keep = new bool[](peers.length);
+        for (uint256 i = 0; i < peers.length; i++) {
+            if (!adapter.isTrustedSender(peers[i].chainId, peers[i].addr)) {
+                keep[i] = true;
+                count++;
+            }
+        }
+        missing = new WormholeTrustedSender.TrustedSender[](count);
+        uint256 j;
+        for (uint256 i = 0; i < peers.length; i++) {
+            if (keep[i]) {
+                missing[j++] = peers[i];
+            }
+        }
+    }
+
+    function _filterMissingTargets(
+        WormholeBridgeAdapter adapter,
+        WormholeTrustedSender.TrustedSender[] memory peers
+    )
+        internal
+        view
+        returns (WormholeTrustedSender.TrustedSender[] memory missing)
+    {
+        uint256 count;
+        bool[] memory keep = new bool[](peers.length);
+        for (uint256 i = 0; i < peers.length; i++) {
+            if (adapter.targetAddress(peers[i].chainId) != peers[i].addr) {
+                keep[i] = true;
+                count++;
+            }
+        }
+        missing = new WormholeTrustedSender.TrustedSender[](count);
+        uint256 j;
+        for (uint256 i = 0; i < peers.length; i++) {
+            if (keep[i]) {
+                missing[j++] = peers[i];
+            }
+        }
+    }
+
     function _validate(
         WormholeBridgeAdapter adapter,
         xWELL xwell,
         WormholeTrustedSender.TrustedSender[] memory peers,
         address multisig
     ) internal view {
+        // Bridge must be registered on xWELL or every mint/burn reverts.
+        require(
+            xwell.bufferCap(address(adapter)) > 0,
+            "xWELL: adapter has zero bufferCap (not a registered bridge)"
+        );
+        require(
+            xwell.rateLimitPerSecond(address(adapter)) > 0,
+            "xWELL: adapter has zero rateLimitPerSecond"
+        );
+
         for (uint256 i = 0; i < peers.length; i++) {
             require(
                 adapter.isTrustedSender(peers[i].chainId, peers[i].addr),
