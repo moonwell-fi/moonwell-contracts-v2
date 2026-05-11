@@ -943,7 +943,19 @@ abstract contract HybridProposalV2 is
             payloads[i] = proposalActions[i].data;
         }
 
-        checkBaseOptimismActions(proposalActions);
+        // V2 routes Moonbeam, Base, and Optimism through _runExtChain. The
+        // base/optimism check requires `block.chainid != MOONBEAM`, so it
+        // reverts on the Moonbeam fork. Dispatch to checkMoonbeamActions
+        // when running on Moonbeam so e00 (which has Moonbeam acceptOwnership
+        // actions added by commit f5269589) can simulate end-to-end.
+        if (
+            block.chainid == MOONBEAM_CHAIN_ID ||
+            block.chainid == MOONBASE_CHAIN_ID
+        ) {
+            checkMoonbeamActions(targets);
+        } else {
+            checkBaseOptimismActions(proposalActions);
+        }
 
         bytes memory payload = abi.encode(
             addresses.getAddress("TEMPORAL_GOVERNOR"),

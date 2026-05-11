@@ -16,10 +16,12 @@ import {MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGo
 
 import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
 import {mipx56} from "@proposals/mips/mip-x56/mip-x56.sol";
 import {mipe00} from "@proposals/mips/mip-e00/mip-e00.sol";
 
 import {EthMarketUpdateSmoke} from "@test/integration/proposals/EthMarketUpdateSmoke.sol";
+import {BaseMarketUpdateSmoke} from "@test/integration/proposals/BaseMarketUpdateSmoke.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 
 import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_FORK_ID, ETHEREUM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
@@ -182,72 +184,119 @@ contract MigrationHarness is Test {
         e00.initProposal(addresses);
         e00.deploy(addresses, deployer);
         e00.afterDeploy(addresses, deployer);
+        e00.build(addresses);
 
-        // Skip e00.build/simulate/validate.
-        //
-        // e00.beforeSimulationHook calls forge-std `deal()` to pre-fund the
-        // governor with each underlying token. For USDT, deal() probes slots
-        // via stdStorage; USDT's delegateContract pattern at slot 10 makes
-        // balanceOf revert during the probe, and stdStorage gives up.
-        //
-        // The migration aspects this skip omits (initial-mint + admin
-        // accepts) are simulated by direct pranks in
-        // _phaseC2_acceptEthAdminFromGovernor below. The smoke test (Phase E)
-        // only mutates reserveFactor — it doesn't need initial-mint state to
-        // succeed, so this is a safe reduction in scope.
-        _phaseC2_acceptEthAdminFromGovernor();
+        // Pre-fund the governor with each underlying token via
+        // _phaseC1_dealUnderlyings instead of e00.beforeSimulationHook —
+        // forge-std `deal()` trips USDT's delegateContract probe in
+        // stdStorage. The helper uses direct vm.store for USDT and
+        // forge-std deal for the others (WETH, USDC, cbBTC).
+        _phaseC1_dealUnderlyings(e00);
+
+        // e00.build (commit f5269589) pushes acceptOwnership() for three
+        // satellite-side contracts that mip-x56 already initialized with
+        // TemporalGovernor as the *direct* owner (Ownable2StepUpgradeable's
+        // `_transferOwnership` skips pendingOwner). Without prepping these,
+        // acceptOwnership reverts with "caller is not the new owner".
+        // Prank TG into calling transferOwnership(TG) on each — sets
+        // pendingOwner=TG — so e00.simulate's accepts succeed.
+        _phaseC2_prepPendingOwnersForE00();
+
+        // e00.simulate executes the proposal through MultichainGovernorV2,
+        // running every _acceptAdmin() / acceptOwnership() / mint action
+        // as a real governor-driven tx — no pranks.
+        e00.simulate(addresses, deployer);
+        e00.validate(addresses, deployer);
     }
 
-    /// @notice Skipping e00.build/simulate means the governor never executed
-    ///         the `_acceptAdmin()` actions that flip every Eth mToken and
-    ///         the Unitroller into governor-controlled state. Stub them in
-    ///         via vm.prank(governorV2). The migration summary's TODO #4 is
-    ///         the Moonbeam-side equivalent — handled separately by
-    ///         _moonbeamAcceptAdminStubs.
-    function _phaseC2_acceptEthAdminFromGovernor() internal {
+    /// @notice Three contracts that e00.build expects to accept ownership
+    ///         on are already directly owned by TemporalGovernor (init'd
+    ///         that way by mip-x56 — Ownable2StepUpgradeable._transferOwnership
+    ///         bypasses pendingOwner). For acceptOwnership to succeed, we
+    ///         pre-set pendingOwner = TG by having TG transfer to itself.
+    function _phaseC2_prepPendingOwnersForE00() internal {
+        _prepPendingOwner(
+            MOONBEAM_FORK_ID,
+            MOONBEAM_CHAIN_ID,
+            "VOTE_COLLECTION_V2_PROXY"
+        );
+        _prepPendingOwner(
+            BASE_FORK_ID,
+            BASE_CHAIN_ID,
+            "VOTING_POWER_AGGREGATOR"
+        );
+        _prepPendingOwner(
+            OPTIMISM_FORK_ID,
+            OPTIMISM_CHAIN_ID,
+            "VOTING_POWER_AGGREGATOR"
+        );
         vm.selectFork(ETHEREUM_FORK_ID);
-        address gov = addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY");
+    }
 
-        Comptroller mc = Comptroller(addresses.getAddress("UNITROLLER"));
-        // Comptroller.getAllMarkets() returns markets supported via
-        // _supportMarket — populated in e00.deploy() before this point.
-        MToken[] memory markets = mc.getAllMarkets();
-        for (uint256 i = 0; i < markets.length; i++) {
-            address mtoken = address(markets[i]);
-            (bool ok, bytes memory data) = mtoken.staticcall(
-                abi.encodeWithSignature("pendingAdmin()")
-            );
-            if (!ok || data.length < 32) continue;
-            if (abi.decode(data, (address)) != gov) continue;
-            vm.prank(gov);
-            (bool acceptOk, ) = mtoken.call(
-                abi.encodeWithSignature("_acceptAdmin()")
-            );
-            require(acceptOk, "Eth mToken _acceptAdmin stub failed");
-        }
-
-        address unitroller = addresses.getAddress("UNITROLLER");
-        (bool uOk, bytes memory uData) = unitroller.staticcall(
-            abi.encodeWithSignature("pendingAdmin()")
+    function _prepPendingOwner(
+        uint256 forkId,
+        uint256 chainId,
+        string memory addressKey
+    ) internal {
+        vm.selectFork(forkId);
+        require(block.chainid == chainId, "fork/chain mismatch");
+        address target = addresses.getAddress(addressKey);
+        address tg = addresses.getAddress("TEMPORAL_GOVERNOR");
+        // Read current owner — sanity check it's TG, otherwise the prank
+        // would not match the contract's auth.
+        (bool ok, bytes memory data) = target.staticcall(
+            abi.encodeWithSignature("owner()")
         );
-        if (uOk && uData.length >= 32 && abi.decode(uData, (address)) == gov) {
-            vm.prank(gov);
-            (bool acceptOk, ) = unitroller.call(
-                abi.encodeWithSignature("_acceptAdmin()")
-            );
-            require(acceptOk, "Eth Unitroller _acceptAdmin stub failed");
-        }
-
-        // Eth WormholeBridgeAdapter is also part of e00.build()'s accept
-        // list (Ownable2Step pendingOwner = governorV2). Without
-        // e00.simulate, accept it directly here.
-        WormholeBridgeAdapter bridge = WormholeBridgeAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        if (!ok || data.length < 32) return;
+        if (abi.decode(data, (address)) != tg) return;
+        vm.prank(tg);
+        (bool sent, ) = target.call(
+            abi.encodeWithSignature("transferOwnership(address)", tg)
         );
-        if (bridge.pendingOwner() == gov) {
-            vm.prank(gov);
-            bridge.acceptOwnership();
+        require(sent, "transferOwnership prep failed");
+    }
+
+    /// @notice Pre-fund the new MultichainGovernorV2 with each Eth market's
+    ///         underlying token at the initialMintAmount declared in
+    ///         mip-e00/mTokens.json. Replaces `e00.beforeSimulationHook` so
+    ///         USDT — whose deprecation/delegateContract pattern at slot 10
+    ///         makes forge-std `deal()` fail during stdStorage's probe —
+    ///         can still be funded via a direct storage write to its
+    ///         TetherToken `balances` mapping at base slot 2.
+    function _phaseC1_dealUnderlyings(mipe00 e00) internal {
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY");
+        address usdt = addresses.getAddress("USDT", ETHEREUM_CHAIN_ID);
+
+        Configs.CTokenConfiguration[] memory cfgs = e00.getCTokenConfigurations(
+            ETHEREUM_CHAIN_ID
+        );
+
+        for (uint256 i = 0; i < cfgs.length; i++) {
+            address token = addresses.getAddress(cfgs[i].tokenAddressName);
+            uint256 amount = cfgs[i].initialMintAmount;
+            if (token == usdt) {
+                _dealUSDT(token, governor, amount);
+            } else {
+                deal(token, governor, amount);
+            }
         }
+    }
+
+    /// @notice Set TetherToken.balances[to] = amount and bump _totalSupply
+    ///         by `amount`. TetherToken's storage layout has balances at
+    ///         base slot 2 and _totalSupply at slot 5 — both fixed by the
+    ///         original (immutable) USDT contract source.
+    function _dealUSDT(address usdt, address to, uint256 amount) internal {
+        bytes32 balanceSlot = keccak256(abi.encode(to, uint256(2)));
+        vm.store(usdt, balanceSlot, bytes32(amount));
+
+        // Track totalSupply so any contract that reads it sees a value
+        // consistent with the new balance. We add to the existing
+        // totalSupply rather than overwrite so the deal isn't visible as
+        // a net change in supply other than the delta we introduced.
+        uint256 prev = uint256(vm.load(usdt, bytes32(uint256(5))));
+        vm.store(usdt, bytes32(uint256(5)), bytes32(prev + amount));
     }
 
     /// --------------------------------------------------------------------
@@ -699,6 +748,43 @@ contract MigrationHarness is Test {
             mWETH.reserveFactorMantissa(),
             initialReserveFactor,
             "reserve factor should have been bumped"
+        );
+    }
+
+    /// --------------------------------------------------------------------
+    /// PHASE F — END-TO-END CROSS-CHAIN SMOKE TEST
+    /// --------------------------------------------------------------------
+
+    /// @notice Proves the new Ethereum MultichainGovernorV2 can hop through
+    ///         Wormhole to the Base TemporalGovernor and execute an action
+    ///         that mutates a live Base mToken parameter.
+    ///         The proposal is Eth-native at construction (HybridProposalV2),
+    ///         but the action type is ActionType.Base so simulate() routes
+    ///         it via Wormhole: governorV2.execute → publishMessage →
+    ///         (mock VAA) → Base TG.queueProposal → vm.warp past TG's
+    ///         proposalDelay (24h) → Base TG.executeProposal → reserve
+    ///         factor change lands on Base USDC.
+    function testPhaseF_smokeProposalChangesBaseMarket() public {
+        vm.selectFork(BASE_FORK_ID);
+        MToken baseUSDC = MToken(addresses.getAddress("MOONWELL_USDC"));
+        uint256 initialReserveFactor = baseUSDC.reserveFactorMantissa();
+
+        BaseMarketUpdateSmoke smoke = new BaseMarketUpdateSmoke();
+        vm.makePersistent(address(smoke));
+
+        smoke.build(addresses);
+        smoke.simulate(addresses, address(0));
+        smoke.validate(addresses, address(0));
+
+        vm.selectFork(BASE_FORK_ID);
+        assertEq(
+            baseUSDC.reserveFactorMantissa(),
+            smoke.NEW_RESERVE_FACTOR(),
+            "Base USDC reserve factor change did not land"
+        );
+        assertTrue(
+            baseUSDC.reserveFactorMantissa() != initialReserveFactor,
+            "Base USDC reserve factor unchanged"
         );
     }
 }
