@@ -243,6 +243,20 @@ contract WormholeRelayerAdapter {
         shouldRevertPublishMessage = _shouldRevert;
     }
 
+    /// @notice External helper so the (uint16, address, bytes) decode in
+    ///         publishMessage can be wrapped in try/catch. Marked external so
+    ///         the call crosses the EVM boundary; otherwise Solidity won't
+    ///         allow catching an abi.decode revert.
+    function decodeTargetChain(
+        bytes calldata payload
+    ) external pure returns (uint16) {
+        (uint16 targetChain, , ) = abi.decode(
+            payload,
+            (uint16, address, bytes)
+        );
+        return targetChain;
+    }
+
     function publishMessage(
         uint32,
         bytes memory payload,
@@ -253,16 +267,17 @@ contract WormholeRelayerAdapter {
             "WormholeRelayerAdapter: publishMessage revert"
         );
 
-        /// Decode target chain from the payload envelope to support per-chain reverts.
-        /// The payload is abi.encode(targetChain, targetAddress, innerPayload).
-        (uint16 targetChain, , ) = abi.decode(
-            payload,
-            (uint16, address, bytes)
-        );
-        require(
-            !shouldRevertAtChain[targetChain],
-            "WormholeRelayerAdapter: publishMessage revert for chain"
-        );
+        /// Per-chain reverts only apply to the V2 governor's _bridgeOutAll
+        /// envelope shape (uint16 targetChain, address targetAddress, bytes
+        /// innerPayload). For other shapes (e.g. mip-x56 break-glass payloads
+        /// encoded as (address, address[], uint256[], bytes[])), skip the
+        /// check gracefully instead of reverting on a shape mismatch.
+        try this.decodeTargetChain(payload) returns (uint16 targetChain) {
+            require(
+                !shouldRevertAtChain[targetChain],
+                "WormholeRelayerAdapter: publishMessage revert for chain"
+            );
+        } catch {}
 
         lastPublishedPayload = payload;
         lastPublisher = msg.sender;
