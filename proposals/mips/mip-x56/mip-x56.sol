@@ -18,7 +18,7 @@ import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.
 
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, ETHEREUM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 
@@ -74,6 +74,14 @@ contract mipx56 is HybridProposal {
 
     // Moonbeam contracts that should have ownership transferred to the new TemporalGovernor
     string[] private contractsToValidateOwnership;
+
+    /// @notice Ethereum deployer nonce captured at proxy address prediction
+    /// time. Re-applied via vm.setNonce immediately before the real proxy
+    /// deployment so foundry's cross-fork broadcast counter — which inflates
+    /// the deployer nonce as broadcasts run on satellite chains — does not
+    /// shift the CREATE address away from the prediction. No-op in real
+    /// broadcasts where the on-chain Ethereum nonce naturally matches.
+    uint64 private _predictedDeployerNonce;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -184,10 +192,22 @@ contract mipx56 is HybridProposal {
         // The proxy is deployed and initialized atomically at the end of deploy().
         if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
             (, address deployer, ) = vm.readCallers();
+            uint256 predictedNonce = vm.getNonce(deployer);
             address predictedGovernorProxy = vm.computeCreateAddress(
                 deployer,
-                vm.getNonce(deployer)
+                predictedNonce
             );
+            _predictedDeployerNonce = uint64(predictedNonce);
+
+            // The Addresses registry rejects addAddress for an isContract=true
+            // entry whose target has no bytecode on the active chain. Etch a
+            // single placeholder byte so the check passes; the real proxy
+            // deployment at the end of deploy() overwrites this bytecode at
+            // the same address. vm.etch is local-only — under broadcast it
+            // is a no-op on-chain.
+            if (predictedGovernorProxy.code.length == 0) {
+                vm.etch(predictedGovernorProxy, hex"00");
+            }
 
             addresses.addAddress(
                 "MULTICHAIN_GOVERNOR_V2_PROXY",
@@ -488,12 +508,25 @@ contract mipx56 is HybridProposal {
     /// @dev Init data is encoded for the proxy constructor so initialize() runs
     /// in the same transaction as proxy creation.
     function _deployAndInitializeGovernorV2(Addresses addresses) internal {
+        // Pull the predicted proxy address from the chain-1 registry while
+        // still on a non-Ethereum fork so the bytecode check is bypassed
+        // (the proxy is not deployed yet at this point).
         address registeredProxy = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY"
+            "MULTICHAIN_GOVERNOR_V2_PROXY",
+            ETHEREUM_CHAIN_ID
         );
 
-        // Idempotent: if the proxy is already deployed, nothing to do.
         vm.selectFork(ETHEREUM_FORK_ID);
+
+        // Clear the single-byte placeholder etched during deploy() so the
+        // idempotency check below can distinguish between the etched stub
+        // and the real proxy bytecode. No-op when no placeholder is present
+        // (e.g., on a real broadcast or after a partial earlier run).
+        if (registeredProxy.code.length == 1) {
+            vm.etch(registeredProxy, "");
+        }
+
+        // Idempotent: if the proxy is already deployed, nothing to do.
         if (registeredProxy.code.length != 0) {
             return;
         }
@@ -570,6 +603,21 @@ contract mipx56 is HybridProposal {
         );
         address ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
 
+        // Foundry shares the broadcast deployer's nonce across forks: every
+        // satellite-chain deployment between the prediction (in deploy()) and
+        // this point bumps the same counter, so by now the Ethereum nonce
+        // would land far past predicted. Reset it to the predicted value so
+        // the CREATE matches the registered address. vm.setNonce is local-
+        // only — in real broadcasts the on-chain nonce is unaffected and
+        // already matches because no Ethereum txs happened in between.
+        (, address deployerNow, ) = vm.readCallers();
+        if (vm.getNonce(deployerNow) != _predictedDeployerNonce) {
+            // vm.setNonce rejects decreases; setNonceUnsafe allows lowering.
+            // We need to lower because the cross-fork broadcast counter has
+            // run past the predicted nonce.
+            vm.setNonceUnsafe(deployerNow, _predictedDeployerNonce);
+        }
+
         vm.startBroadcast();
         address actualProxy = address(
             new TransparentUpgradeableProxy(
@@ -633,87 +681,89 @@ contract mipx56 is HybridProposal {
         votingPower.transferOwnership(governorV2Proxy);
     }
 
-    /// @notice Build whitelisted calldatas for the break glass guardian
-    /// @dev These calldatas are the exact bytes the break glass guardian is allowed to execute.
-    ///      Modeled after BreakGlass.s.sol but adapted for V2 (Ethereum-based governor, PAUSE_GUARDIAN
-    ///      as the rollback address instead of Artemis Timelock).
+    /// @notice Build whitelisted calldatas for the break glass guardian.
+    /// @dev Three publishMessage calldatas — one per satellite chain — that
+    ///      together unwind mip-x56's cross-chain trust topology. Each calldata,
+    ///      when executed via `MultichainGovernorV2.executeBreakGlass(targets,
+    ///      calldatas)` with `targets[i] = WORMHOLE_CORE` (Ethereum), emits a
+    ///      Wormhole message to the corresponding TemporalGovernor whose
+    ///      payload calls:
+    ///        inner[0]: TemporalGovernor.unSetTrustedSenders([{ETHEREUM, MULTICHAIN_GOVERNOR_V2_PROXY}])
+    ///        inner[1]: TemporalGovernor.setTrustedSenders([{MOONBEAM, MULTICHAIN_GOVERNOR_PROXY}])
     ///
-    ///      The break glass guardian can call executeBreakGlass(targets, calldatas) where each
-    ///      calldata must be in this whitelist. This allows emergency rollback of ownership/admin
-    ///      to the PAUSE_GUARDIAN multisig.
+    ///      Index table:
+    ///        [0] publishMessage → Moonbeam TemporalGovernor  — restore old governor as trusted sender
+    ///        [1] publishMessage → Base     TemporalGovernor  — restore old governor as trusted sender
+    ///        [2] publishMessage → Optimism TemporalGovernor  — restore old governor as trusted sender
     ///
-    ///      Whitelisted calldatas:
-    ///        [0] publishMessage — add PAUSE_GUARDIAN as trusted sender on Base TemporalGovernor
-    ///        [1] publishMessage — add PAUSE_GUARDIAN as trusted sender on Optimism TemporalGovernor
-    ///        [2] publishMessage — add PAUSE_GUARDIAN as trusted sender on Moonbeam TemporalGovernor
-    ///        [3] _setPendingAdmin(address) — for mToken admin transfer
-    ///        [4] setAdmin(address) — for chainlink oracle admin
-    ///        [5] setEmissionsManager(address) — for stkWELL emissions manager
-    ///        [6] changeAdmin(address) — for stkWELL admin
-    ///        [7] transferOwnership(address) — for Ownable contracts (xWELL, bridge adapter, etc.)
+    ///      After break-glass executes, the old Moonbeam MULTICHAIN_GOVERNOR_PROXY
+    ///      (v1.1) regains a Wormhole *execution* path into each TemporalGovernor
+    ///      and can reverse the ~75 Moonbeam ownership/admin transfers (and any
+    ///      Base/OP follow-up) through normal governance.
+    ///
+    ///      Why publishMessage everywhere (no direct admin calls):
+    ///      MultichainGovernorV2 lives on Ethereum, so executeBreakGlass's
+    ///      `_functionCallWithValue(targets[i], calldatas[i], 0)` only reaches
+    ///      Ethereum-side contracts directly. Every satellite-chain mutation
+    ///      must therefore route through Wormhole → TemporalGovernor.
+    ///
+    ///      KNOWN CAVEATS — intentionally not addressed by break-glass:
+    ///      (i) Cross-chain vote collection remains broken after the unwind.
+    ///          mip-x56's `MultichainVoteCollectionV2.initializeV3` (gated by
+    ///          `reinitializer(3)`, no external mutator on V2) hardcodes
+    ///          `targetAddress[ETHEREUM_WORMHOLE_CHAIN_ID] = ethereumGovernorV2`
+    ///          on Base/OP VoteCollectionV2. The trusted-sender flip restores
+    ///          OUTBOUND messaging (old governor → TemporalGovernor) but does
+    ///          NOT restore INBOUND vote collection — `emitVotes` still bridges
+    ///          to the V2 governor only, and the trusted-sender check on
+    ///          VoteCollectionV2 still rejects inbound proposal broadcasts from
+    ///          the old governor. The old governor therefore operates on
+    ///          Moonbeam-local voting power (xWELL + stkWELL + WELL + distributor
+    ///          on Moonbeam) until a separate emergency upgrade deploys a
+    ///          MultichainVoteCollectionV3 that exposes target-address mutators
+    ///          (e.g. `addTargetAddress`/`removeTargetAddress` as `onlyOwner`)
+    ///          and upgrades via `MRD_PROXY_ADMIN` through the restored Wormhole
+    ///          path. This is an acknowledged post-incident emergency-response
+    ///          path, not a break-glass-time action.
+    ///      (ii) Ethereum-side contracts owned by the V2 governor (xWELL,
+    ///           stkWELL, WormholeBridgeAdapter, VotingPowerAggregator,
+    ///           ProxyAdmin) are not unwound by break-glass. PAUSE_GUARDIAN
+    ///           multisig coordinates Ethereum-side recovery separately.
     function _buildBreakGlassCalldatas(
         Addresses addresses
     ) internal returns (bytes[] memory) {
-        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
-
-        // 8 whitelisted calldatas: 3 publishMessage (one per satellite chain) + 5 admin functions
-        bytes[] memory calldatas = new bytes[](8);
-
-        // --- publishMessage calldatas for each satellite chain's TemporalGovernor ---
-        // Each adds PAUSE_GUARDIAN as a trusted sender on the respective TemporalGovernor
-        // via Wormhole publishMessage → TemporalGovernor.setTrustedSenders()
-
-        calldatas[0] = _buildPublishMessageCalldata(
-            addresses,
-            BASE_FORK_ID,
-            ETHEREUM_WORMHOLE_CHAIN_ID,
-            pauseGuardian
+        // Capture cross-chain addresses up front; helper switches forks per chain.
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address ethereumGovernorV2 = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_V2_PROXY"
         );
 
-        calldatas[1] = _buildPublishMessageCalldata(
-            addresses,
-            OPTIMISM_FORK_ID,
-            ETHEREUM_WORMHOLE_CHAIN_ID,
-            pauseGuardian
+        vm.selectFork(MOONBEAM_FORK_ID);
+        address moonbeamMultichainGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
         );
 
-        calldatas[2] = _buildPublishMessageCalldata(
+        bytes[] memory calldatas = new bytes[](3);
+
+        calldatas[0] = _buildUnwindPublishMessageCalldata(
             addresses,
             MOONBEAM_FORK_ID,
-            ETHEREUM_WORMHOLE_CHAIN_ID,
-            pauseGuardian
+            ethereumGovernorV2,
+            moonbeamMultichainGovernor
         );
 
-        // --- Standard admin transfer calldatas ---
-
-        /// for mTokens: _setPendingAdmin(address)
-        calldatas[3] = abi.encodeWithSignature(
-            "_setPendingAdmin(address)",
-            pauseGuardian
+        calldatas[1] = _buildUnwindPublishMessageCalldata(
+            addresses,
+            BASE_FORK_ID,
+            ethereumGovernorV2,
+            moonbeamMultichainGovernor
         );
 
-        /// for chainlink oracle: setAdmin(address)
-        calldatas[4] = abi.encodeWithSignature(
-            "setAdmin(address)",
-            pauseGuardian
-        );
-
-        /// for stkWELL: setEmissionsManager(address)
-        calldatas[5] = abi.encodeWithSignature(
-            "setEmissionsManager(address)",
-            pauseGuardian
-        );
-
-        /// for stkWELL: changeAdmin(address)
-        calldatas[6] = abi.encodeWithSignature(
-            "changeAdmin(address)",
-            pauseGuardian
-        );
-
-        /// for Ownable contracts (xWELL, bridge adapter, etc.): transferOwnership(address)
-        calldatas[7] = abi.encodeWithSignature(
-            "transferOwnership(address)",
-            pauseGuardian
+        calldatas[2] = _buildUnwindPublishMessageCalldata(
+            addresses,
+            OPTIMISM_FORK_ID,
+            ethereumGovernorV2,
+            moonbeamMultichainGovernor
         );
 
         // Restore Ethereum fork since callers expect it
@@ -722,43 +772,60 @@ contract mipx56 is HybridProposal {
         return calldatas;
     }
 
-    /// @notice Build a publishMessage calldata that adds a trusted sender on a satellite chain's TemporalGovernor
+    /// @notice Build a publishMessage calldata that unwinds the satellite
+    ///         chain's TemporalGovernor trusted-sender state — remove the new
+    ///         Ethereum V2 governor and restore the old Moonbeam
+    ///         MultichainGovernor (v1.1) as a trusted sender.
     /// @param addresses The address registry
-    /// @param satelliteForkId Fork ID of the satellite chain
-    /// @param trustedSenderChainId Wormhole chain ID of the chain the trusted sender is on (Ethereum)
-    /// @param trustedSenderAddr Address to add as trusted sender (PAUSE_GUARDIAN)
-    function _buildPublishMessageCalldata(
+    /// @param satelliteForkId Fork ID of the satellite chain whose TemporalGovernor we are unwinding
+    /// @param ethereumGovernorV2 Ethereum MultichainGovernorV2 proxy to remove from trusted senders
+    /// @param moonbeamMultichainGovernor Old Moonbeam MultichainGovernor proxy to restore as trusted sender
+    function _buildUnwindPublishMessageCalldata(
         Addresses addresses,
         uint256 satelliteForkId,
-        uint16 trustedSenderChainId,
-        address trustedSenderAddr
+        address ethereumGovernorV2,
+        address moonbeamMultichainGovernor
     ) internal returns (bytes memory) {
         vm.selectFork(satelliteForkId);
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
-        // Build the setTrustedSenders calldata for the TemporalGovernor
+        // Inner call 0: remove the new Ethereum V2 governor as a trusted sender
         ITemporalGovernor.TrustedSender[]
-            memory trustedSenders = new ITemporalGovernor.TrustedSender[](1);
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedSenderChainId,
-            addr: trustedSenderAddr
+            memory ethereumSender = new ITemporalGovernor.TrustedSender[](1);
+        ethereumSender[0] = ITemporalGovernor.TrustedSender({
+            chainId: ETHEREUM_WORMHOLE_CHAIN_ID,
+            addr: ethereumGovernorV2
         });
-
-        bytes memory setTrustedSendersCalldata = abi.encodeWithSignature(
-            "setTrustedSenders((uint16,address)[])",
-            trustedSenders
+        bytes memory unSetEthereumCalldata = abi.encodeWithSignature(
+            "unSetTrustedSenders((uint16,address)[])",
+            ethereumSender
         );
 
-        // Build the Wormhole publishMessage payload
-        // The payload is consumed by TemporalGovernor._executeProposal which expects:
-        //   abi.encode(intendedRecipient, targets[], values[], calldatas[])
-        address[] memory targets = new address[](1);
-        targets[0] = temporalGovernor;
+        // Inner call 1: restore the old Moonbeam MultichainGovernor as a trusted sender
+        ITemporalGovernor.TrustedSender[]
+            memory moonbeamSender = new ITemporalGovernor.TrustedSender[](1);
+        moonbeamSender[0] = ITemporalGovernor.TrustedSender({
+            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
+            addr: moonbeamMultichainGovernor
+        });
+        bytes memory setMoonbeamCalldata = abi.encodeWithSignature(
+            "setTrustedSenders((uint16,address)[])",
+            moonbeamSender
+        );
 
-        uint256[] memory values = new uint256[](1);
+        // Build the TemporalGovernor._executeProposal-shaped payload with two
+        // inner calls, both targeting TemporalGovernor itself (its
+        // setTrustedSenders/unSetTrustedSenders are gated on
+        // msg.sender == address(this)).
+        address[] memory innerTargets = new address[](2);
+        innerTargets[0] = temporalGovernor;
+        innerTargets[1] = temporalGovernor;
 
-        bytes[] memory innerCalldatas = new bytes[](1);
-        innerCalldatas[0] = setTrustedSendersCalldata;
+        uint256[] memory innerValues = new uint256[](2);
+
+        bytes[] memory innerCalldatas = new bytes[](2);
+        innerCalldatas[0] = unSetEthereumCalldata;
+        innerCalldatas[1] = setMoonbeamCalldata;
 
         return
             abi.encodeWithSignature(
@@ -766,11 +833,11 @@ contract mipx56 is HybridProposal {
                 1000,
                 abi.encode(
                     temporalGovernor, // intendedRecipient
-                    targets,
-                    values,
+                    innerTargets,
+                    innerValues,
                     innerCalldatas
                 ),
-                1 // finalized
+                1 // consistency: finalized
             );
     }
 
@@ -1603,9 +1670,11 @@ contract mipx56 is HybridProposal {
             "wormhole not set correctly on MultichainGovernorV2"
         );
 
-        // 8b. Validate all 8 break-glass whitelisted calldatas were stored correctly.
-        // These encode publishMessage / admin-transfer payloads used for emergency
-        // rollback — any ABI/chainId/target mismatch would make break glass inoperable.
+        // 8b. Validate all 3 break-glass whitelisted calldatas were stored correctly.
+        // Each is a publishMessage payload that unwinds one satellite chain's
+        // TemporalGovernor trusted-sender state (remove Ethereum V2 governor,
+        // restore old Moonbeam MULTICHAIN_GOVERNOR_PROXY). Any ABI / chainId /
+        // target mismatch here would make break glass inoperable.
         bytes[] memory expectedCalldatas = _buildBreakGlassCalldatas(addresses);
         // _buildBreakGlassCalldatas switches forks; re-select Ethereum where the governor lives
         vm.selectFork(ETHEREUM_FORK_ID);
