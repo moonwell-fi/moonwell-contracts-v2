@@ -14,7 +14,7 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {Address} from "@utils/Address.sol";
-import {MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, BASE_CHAIN_ID, BASE_FORK_ID, OPTIMISM_CHAIN_ID, OPTIMISM_FORK_ID, ETHEREUM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import {MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// @title WormholeBridgeAdapter V4 Integration Tests (Executor framework)
 /// @notice Run with PRIMARY_FORK_ID env var to test on different chains:
@@ -93,23 +93,11 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         // mocked VAAs is any chain other than the current one; we pick a peer
         // that's actually wired so executeVAAv1 doesn't bail on "sender not
         // trusted" before mint/burn can run.
-        //
-        // Inline the chain-id-to-wormhole-id mapping because
-        // ChainIds.toWormholeChainId currently reverts on Ethereum mainnet.
-        if (block.chainid == MOONBEAM_CHAIN_ID) {
-            currentWormholeChainId = MOONBEAM_WORMHOLE_CHAIN_ID;
+        currentWormholeChainId = block.chainid.toWormholeChainId();
+        if (currentWormholeChainId == MOONBEAM_WORMHOLE_CHAIN_ID) {
             sourceWormholeChainId = BASE_WORMHOLE_CHAIN_ID;
-        } else if (block.chainid == BASE_CHAIN_ID) {
-            currentWormholeChainId = BASE_WORMHOLE_CHAIN_ID;
-            sourceWormholeChainId = MOONBEAM_WORMHOLE_CHAIN_ID;
-        } else if (block.chainid == OPTIMISM_CHAIN_ID) {
-            currentWormholeChainId = OPTIMISM_WORMHOLE_CHAIN_ID;
-            sourceWormholeChainId = MOONBEAM_WORMHOLE_CHAIN_ID;
-        } else if (block.chainid == ETHEREUM_CHAIN_ID) {
-            currentWormholeChainId = ETHEREUM_WORMHOLE_CHAIN_ID;
-            sourceWormholeChainId = MOONBEAM_WORMHOLE_CHAIN_ID;
         } else {
-            revert("unsupported PRIMARY_FORK_ID");
+            sourceWormholeChainId = MOONBEAM_WORMHOLE_CHAIN_ID;
         }
 
         // On Ethereum, MIP-X55's deployer-side wiring is not a proposal — it
@@ -208,14 +196,14 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             chainId: BASE_WORMHOLE_CHAIN_ID,
             addr: addresses.getAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                BASE_CHAIN_ID
+                block.chainid.toBaseChainId()
             )
         });
         peers[2] = WormholeTrustedSender.TrustedSender({
             chainId: OPTIMISM_WORMHOLE_CHAIN_ID,
             addr: addresses.getAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                OPTIMISM_CHAIN_ID
+                block.chainid.toOptimismChainId()
             )
         });
 
