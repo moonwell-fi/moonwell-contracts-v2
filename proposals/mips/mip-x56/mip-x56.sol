@@ -518,16 +518,9 @@ contract mipx56 is HybridProposal {
 
         vm.selectFork(ETHEREUM_FORK_ID);
 
-        // Clear the single-byte placeholder etched during deploy() so the
-        // idempotency check below can distinguish between the etched stub
-        // and the real proxy bytecode. No-op when no placeholder is present
-        // (e.g., on a real broadcast or after a partial earlier run).
-        if (registeredProxy.code.length == 1) {
-            vm.etch(registeredProxy, "");
-        }
-
-        // Idempotent: if the proxy is already deployed, nothing to do.
-        if (registeredProxy.code.length != 0) {
+        // Idempotent: if a real proxy is already deployed (code longer than
+        // the 1-byte placeholder), nothing to do.
+        if (registeredProxy.code.length > 1) {
             return;
         }
 
@@ -602,6 +595,11 @@ contract mipx56 is HybridProposal {
             "MULTICHAIN_GOVERNOR_V2_IMPL"
         );
         address ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
+
+        // Clear the single-byte placeholder etched during deploy().
+        if (registeredProxy.code.length == 1) {
+            vm.etch(registeredProxy, "");
+        }
 
         // Foundry shares the broadcast deployer's nonce across forks: every
         // satellite-chain deployment between the prediction (in deploy()) and
