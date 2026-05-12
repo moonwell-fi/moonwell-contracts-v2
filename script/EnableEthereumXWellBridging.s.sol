@@ -96,11 +96,16 @@ contract EnableEthereumXWellBridging is Script {
         }
 
         // 2. Allow inbound VAAs from any peer not yet trusted.
+        //    addTrustedSenders uses `EnumerableSet.add` under the hood, which
+        //    reverts on duplicates. The filtered array passed in only contains
+        //    peers not currently present, so this is safe on re-runs.
         if (peersToAddSender.length > 0) {
             adapter.addTrustedSenders(peersToAddSender);
         }
 
         // 3. Route outbound bridge() calls for any peer missing a target.
+        //    setTargetAddresses overwrites unconditionally; passing only the
+        //    missing entries keeps the calldata minimal and intent obvious.
         if (peersToSetTarget.length > 0) {
             adapter.setTargetAddresses(peersToSetTarget);
         }

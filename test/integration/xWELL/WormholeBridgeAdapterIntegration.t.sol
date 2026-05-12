@@ -100,19 +100,27 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         // 1. Register the adapter on xWELL if its bufferCap is zero.
         //    Without this, mint/burn through the adapter reverts in
         //    `_depleteBuffer`/`_replenishBuffer` (MintLimits.sol:99).
+        //
+        //    Numbers below mirror the canonical Ethereum params in
+        //    `script/EnableEthereumXWellBridging.s.sol`
+        //    (`ETH_XWELL_BUFFER_CAP`, `ETH_XWELL_RATE_LIMIT_PER_SECOND`).
+        //    Keep in sync if the script's constants change.
         if (xwellProxy.bufferCap(address(adapter)) == 0) {
             MintLimits.RateLimitMidPointInfo[]
                 memory limits = new MintLimits.RateLimitMidPointInfo[](1);
             limits[0] = MintLimits.RateLimitMidPointInfo({
                 bridge: address(adapter),
-                rateLimitPerSecond: 1158 * 1e18,
-                bufferCap: 100_000_000 * 1e18
+                rateLimitPerSecond: 1158 * 1e18, // ~19m WELL / day
+                bufferCap: 100_000_000 * 1e18 // 100m WELL
             });
             vm.prank(deployer);
             xwellProxy.addBridges(limits);
         }
 
         // 2. Build the three remote peers and add any that are missing.
+        //    `toBaseChainId`/`toOptimismChainId` are constant-returning helpers
+        //    in the `ChainIds` library — they map any supported source chain
+        //    (incl. Ethereum) to `BASE_CHAIN_ID` / `OPTIMISM_CHAIN_ID`.
         WormholeTrustedSender.TrustedSender[]
             memory peers = new WormholeTrustedSender.TrustedSender[](3);
         peers[0] = WormholeTrustedSender.TrustedSender({
@@ -214,18 +222,30 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         );
 
         /// owner preserved. On Moonbeam the governor owns the adapter; on
-        /// Base/Optimism the TemporalGovernor owns it; on Ethereum ownership
-        /// is still held by the deployer (handover to FOUNDATION_MULTISIG is
-        /// the second-half of MIP-X55, executed off-chain after this test).
-        address expectedOwner;
+        /// Base/Optimism the TemporalGovernor owns it. On Ethereum ownership
+        /// hands over from MOONWELL_DEPLOYER → PAUSE_GUARDIAN as part of
+        /// MIP-X55's off-chain script (transferOwnership + acceptOwnership),
+        /// so we accept either depending on whether the handover has run.
         if (block.chainid == MOONBEAM_CHAIN_ID) {
-            expectedOwner = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+            assertEq(
+                adapter.owner(),
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+                "owner changed after upgrade"
+            );
         } else if (block.chainid == ETHEREUM_CHAIN_ID) {
-            expectedOwner = addresses.getAddress("MOONWELL_DEPLOYER");
+            address owner = adapter.owner();
+            assertTrue(
+                owner == addresses.getAddress("MOONWELL_DEPLOYER") ||
+                    owner == addresses.getAddress("PAUSE_GUARDIAN"),
+                "Ethereum owner is neither deployer nor PAUSE_GUARDIAN"
+            );
         } else {
-            expectedOwner = addresses.getAddress("TEMPORAL_GOVERNOR");
+            assertEq(
+                adapter.owner(),
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                "owner changed after upgrade"
+            );
         }
-        assertEq(adapter.owner(), expectedOwner, "owner changed after upgrade");
 
         /// trusted senders still include the adapter for a cross-chain source
         assertTrue(
