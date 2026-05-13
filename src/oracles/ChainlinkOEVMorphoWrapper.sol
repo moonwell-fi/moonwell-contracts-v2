@@ -61,12 +61,21 @@ contract ChainlinkOEVMorphoWrapper is
     /// @dev Market id is `keccak256(abi.encode(MarketParams))` — the canonical Morpho Blue id
     mapping(bytes32 => bool) public approvedMarkets;
 
+    /// @notice Maximum age of a Chainlink round (seconds) tolerated by
+    ///         `_validateRoundData`. Zero disables the check (gracefully
+    ///         degraded until owner seeds it via `setMaxStaleness`).
+    uint256 public maxStaleness;
+
+    /// @notice Manual reentrancy guard status. 0 = uninitialized / not entered,
+    ///         1 = not entered (post first call), 2 = entered.
+    /// @dev Implemented inline rather than via `ReentrancyGuardUpgradeable`
+    ///      to avoid shifting all existing storage slots — inheriting that
+    ///      parent would prepend 50 slots and break the upgradeable layout.
+    uint256 private _reentrancyStatus;
+
     /// @notice Storage gap for future-proofing upgradeable storage layout.
-    /// @dev Reserves slots so that future implementations can add state
-    ///      variables without breaking layout. Reduce this gap (and only
-    ///      this gap) when adding new state. Shrunk from 50 → 49 to account
-    ///      for `approvedMarkets` (1 slot for the mapping base).
-    uint256[49] private __gap;
+    /// @dev Shrunk 50 → 49 (approvedMarkets) → 47 (maxStaleness, _reentrancyStatus).
+    uint256[47] private __gap;
 
     /// @notice Emitted when the fee recipient is changed
     event FeeRecipientChanged(address oldFeeRecipient, address newFeeRecipient);
@@ -92,6 +101,9 @@ contract ChainlinkOEVMorphoWrapper is
     /// @notice Emitted when a Morpho market is approved or unapproved for early liquidation
     event MarketApproved(bytes32 indexed id, bool approved);
 
+    /// @notice Emitted when the max staleness window is changed
+    event MaxStalenessChanged(uint256 oldMaxStaleness, uint256 newMaxStaleness);
+
     /// @notice Emitted when the price is updated early and liquidated
     event PriceUpdatedEarlyAndLiquidated(
         address indexed borrower,
@@ -100,6 +112,18 @@ contract ChainlinkOEVMorphoWrapper is
         uint256 protocolFee,
         uint256 liquidatorFee
     );
+
+    /// @notice Inline reentrancy guard. See `_reentrancyStatus` for the
+    ///         rationale on avoiding `ReentrancyGuardUpgradeable` inheritance.
+    modifier nonReentrant() {
+        require(
+            _reentrancyStatus != 2,
+            "ChainlinkOEVMorphoWrapper: reentrant call"
+        );
+        _reentrancyStatus = 2;
+        _;
+        _reentrancyStatus = 1;
+    }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -352,8 +376,23 @@ contract ChainlinkOEVMorphoWrapper is
      * @param approved Whether the market is approved
      */
     function setApprovedMarket(bytes32 id, bool approved) external onlyOwner {
+        require(
+            approvedMarkets[id] != approved,
+            "ChainlinkOEVMorphoWrapper: market approval unchanged"
+        );
         approvedMarkets[id] = approved;
         emit MarketApproved(id, approved);
+    }
+
+    /**
+     * @notice Sets the max staleness window (seconds) for Chainlink round
+     *         data. Zero disables the check.
+     * @param _maxStaleness The new staleness threshold
+     */
+    function setMaxStaleness(uint256 _maxStaleness) external onlyOwner {
+        uint256 oldMaxStaleness = maxStaleness;
+        maxStaleness = _maxStaleness;
+        emit MaxStalenessChanged(oldMaxStaleness, _maxStaleness);
     }
 
     /**
@@ -380,10 +419,17 @@ contract ChainlinkOEVMorphoWrapper is
         int256 answer,
         uint256 updatedAt,
         uint80 answeredInRound
-    ) internal pure {
+    ) internal view {
         require(answer > 0, "Chainlink price cannot be lower or equal to 0");
         require(updatedAt != 0, "Round is in incompleted state");
         require(answeredInRound >= roundId, "Stale price");
+        uint256 _maxStaleness = maxStaleness;
+        if (_maxStaleness != 0) {
+            require(
+                block.timestamp <= updatedAt + _maxStaleness,
+                "Chainlink price exceeds max staleness"
+            );
+        }
     }
 
     /**
@@ -400,7 +446,7 @@ contract ChainlinkOEVMorphoWrapper is
         address borrower,
         uint256 seizedAssets,
         uint256 maxRepayAmount
-    ) external {
+    ) external nonReentrant {
         // ensure the borrower is not the zero address
         require(
             borrower != address(0),
@@ -468,7 +514,10 @@ contract ChainlinkOEVMorphoWrapper is
                 maxRepayAmount
             );
 
-            loanToken.approve(address(morphoBlue), maxRepayAmount);
+            IERC20(address(loanToken)).forceApprove(
+                address(morphoBlue),
+                maxRepayAmount
+            );
             (actualSeizedAssets, actualRepaidAssets) = morphoBlue.liquidate(
                 marketParams,
                 borrower,
@@ -476,19 +525,23 @@ contract ChainlinkOEVMorphoWrapper is
                 0,
                 ""
             );
+            // HAL-08: zero out the residual allowance so a future caller can't
+            // skip a fresh approval for the leftover (maxRepay - actualRepaid).
+            IERC20(address(loanToken)).forceApprove(address(morphoBlue), 0);
 
             require(
                 actualRepaidAssets <= maxRepayAmount,
                 "ChainlinkOEVMorphoWrapper: repaid amount exceeds maximum"
             );
 
-            // return any excess loan tokens to the liquidator
+            // HAL-03: return excess via safeTransfer so void-return tokens
+            // (e.g. USDT-class) on permissionless Morpho markets don't brick
+            // the refund path.
             uint256 excessLoanTokens = maxRepayAmount - actualRepaidAssets;
             if (excessLoanTokens > 0) {
-                bool success = loanToken.transfer(msg.sender, excessLoanTokens);
-                require(
-                    success,
-                    "ChainlinkOEVMorphoWrapper: excess loan tokens transfer failed"
+                IERC20(address(loanToken)).safeTransfer(
+                    msg.sender,
+                    excessLoanTokens
                 );
             }
         }

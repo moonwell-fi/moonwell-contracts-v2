@@ -93,6 +93,13 @@ contract mipx55 is HybridProposal, ChainlinkOracleConfigs {
     ///         live OEV wrappers in deploy(). Iterated in build()/validate().
     mapping(uint256 => string[]) internal _upgradedOracleNames;
 
+    /// @notice Per-chain set marking which oracleNames were redeployed by
+    ///         this proposal. Source of truth for build/snapshot/validate
+    ///         gating — independent of the `_OEV_WRAPPER_DEPRECATED_V3`
+    ///         registry slot, which is only created when the canonical
+    ///         `_OEV_WRAPPER` key was already present locally (HAL-06).
+    mapping(uint256 => mapping(string => bool)) internal _isUpgraded;
+
     /// @notice Per-chain, per-oracleName snapshot of the existing wrapper's
     ///         constructor parameters, captured in deploy() so validate()
     ///         can assert exact mirroring on the new wrapper.
@@ -189,13 +196,11 @@ contract mipx55 is HybridProposal, ChainlinkOracleConfigs {
             OracleConfig memory config = configs[i];
 
             // Dedupe: skip if already processed in this loop (e.g.
-            // CHAINLINK_USDC_USD covers USDC + USDBC). A completed entry will
-            // have its deprecated slot filled.
-            if (
-                addresses.isAddressSet(
-                    string.concat(config.oracleName, DEPRECATED_SUFFIX)
-                )
-            ) {
+            // CHAINLINK_USDC_USD covers USDC + USDBC). HAL-06: rely on the
+            // explicit `_isUpgraded` set rather than the deprecated-suffix
+            // registry slot, which can be absent when the canonical
+            // `_OEV_WRAPPER` key was missing locally.
+            if (_isUpgraded[chainId][config.oracleName]) {
                 continue;
             }
 
@@ -280,6 +285,7 @@ contract mipx55 is HybridProposal, ChainlinkOracleConfigs {
             addresses.addAddress(canonicalName, address(newWrapper));
         }
         _upgradedOracleNames[chainId].push(oracleName);
+        _isUpgraded[chainId][oracleName] = true;
     }
 
     /// @notice Snapshot the pre-upgrade state of ALL Morpho wrapper proxies on
@@ -384,13 +390,11 @@ contract mipx55 is HybridProposal, ChainlinkOracleConfigs {
 
         for (uint256 i = 0; i < configs.length; i++) {
             OracleConfig memory config = configs[i];
-            if (
-                !addresses.isAddressSet(
-                    string.concat(config.oracleName, DEPRECATED_SUFFIX)
-                )
-            ) {
+            if (!_isUpgraded[chainId][config.oracleName]) {
                 // Not upgraded by this proposal — skipped (raw feed, no
-                // symbol, or already processed duplicate).
+                // symbol, or already processed duplicate). HAL-06: use the
+                // explicit `_isUpgraded` set rather than the deprecated-suffix
+                // registry slot.
                 continue;
             }
 
@@ -569,11 +573,8 @@ contract mipx55 is HybridProposal, ChainlinkOracleConfigs {
             OracleConfig memory config = configs[i];
 
             // Only wire feeds for wrappers deployed by this proposal.
-            if (
-                !addresses.isAddressSet(
-                    string.concat(config.oracleName, DEPRECATED_SUFFIX)
-                )
-            ) continue;
+            // HAL-06: explicit set instead of deprecated-suffix inference.
+            if (!_isUpgraded[chainId][config.oracleName]) continue;
 
             string memory wrapperName = string.concat(
                 config.oracleName,
@@ -642,12 +643,8 @@ contract mipx55 is HybridProposal, ChainlinkOracleConfigs {
         OracleConfig memory config
     ) internal view {
         // Only validate oracles that were upgraded by this proposal.
-        // Upgraded oracles have their predecessor archived under DEPRECATED_SUFFIX.
-        if (
-            !addresses.isAddressSet(
-                string.concat(config.oracleName, DEPRECATED_SUFFIX)
-            )
-        ) return;
+        // HAL-06: explicit set instead of deprecated-suffix inference.
+        if (!_isUpgraded[chainId][config.oracleName]) return;
 
         string memory wrapperName = string.concat(
             config.oracleName,
@@ -826,13 +823,21 @@ contract mipx55 is HybridProposal, ChainlinkOracleConfigs {
         );
     }
 
+    /// @notice EIP-1967 implementation slot:
+    ///         `bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)`
+    bytes32 internal constant _EIP1967_IMPL_SLOT =
+        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+
     /// @notice Loop over all Morpho oracle configs and validate that each
     ///         proxy's storage is unchanged after the implementation upgrade.
     ///         Also validates raw price preservation per proxy. Morpho proxies
     ///         are not mTokens — getUnderlyingPrice does not apply to them.
-    function _validateAllMorphoWrappers(Addresses addresses) internal view {
+    function _validateAllMorphoWrappers(Addresses addresses) internal {
         MorphoOracleConfig[]
             memory morphoConfigs = getMorphoOracleConfigurations(BASE_CHAIN_ID);
+        address expectedImpl = addresses.getAddress(
+            "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2"
+        );
 
         for (uint256 i = 0; i < morphoConfigs.length; i++) {
             string memory proxyKey = string(
@@ -850,6 +855,23 @@ contract mipx55 is HybridProposal, ChainlinkOracleConfigs {
             MorphoSnapshot storage snap = _morphoSnapshot[proxyAddr];
 
             console.log("Validating Morpho proxy:", morphoConfigs[i].proxyName);
+
+            // HAL-10: assert the EIP-1967 implementation slot actually points
+            // at the new implementation. Storage-equivalence checks below
+            // can't distinguish "upgrade landed" from "upgrade silently
+            // skipped" if the old impl shared the same getters.
+            address actualImpl = address(
+                uint160(uint256(vm.load(proxyAddr, _EIP1967_IMPL_SLOT)))
+            );
+            assertEq(
+                actualImpl,
+                expectedImpl,
+                string.concat(
+                    "Base Morpho ",
+                    morphoConfigs[i].proxyName,
+                    ": EIP-1967 impl slot does not point at V2 implementation"
+                )
+            );
 
             _validateMorphoWrapperState(
                 proxyAddr,
