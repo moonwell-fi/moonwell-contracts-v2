@@ -693,4 +693,142 @@ contract MigrationHarness is Test {
             "Base USDC reserve factor unchanged"
         );
     }
+
+    /// --------------------------------------------------------------------
+    /// PHASE G — BREAK-GLASS EXECUTION PATH
+    /// --------------------------------------------------------------------
+    /// Proves the migration is reversible: the breakGlassGuardian set during
+    /// mip-x56 init can pull ownership of governor-controlled Eth contracts
+    /// back to PAUSE_GUARDIAN by executing a whitelisted calldata through
+    /// MultichainGovernorV2.executeBreakGlass.
+    ///
+    /// Coverage:
+    ///   - testPhaseG_breakGlassUnwindsEthOwnership: positive path. State
+    ///     mutates; breakGlassGuardian role is one-shot (zeroed afterwards).
+    ///   - testPhaseG_breakGlassRejectsNonWhitelistedCalldata: whitelist
+    ///     enforcement.
+    ///   - testPhaseG_breakGlassRejectsNonGuardianCaller: auth enforcement.
+
+    function testPhaseG_breakGlassUnwindsEthOwnership() public {
+        vm.selectFork(ETHEREUM_FORK_ID);
+
+        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+        address bgGuardian = governorV2.breakGlassGuardian();
+
+        // Pre-state: guardian role still active; bridge adapter owned by
+        // governor (mip-e00.simulate accepted in Phase C).
+        assertTrue(
+            bgGuardian != address(0),
+            "break-glass guardian already revoked pre-test"
+        );
+        assertEq(
+            ethereumBridgeAdapter.owner(),
+            address(governorV2),
+            "bridge adapter not owned by governor pre-break-glass"
+        );
+
+        // Whitelisted calldata #7 from mip-x56: transferOwnership(PAUSE_GUARDIAN).
+        // x56 stored this exact byte string in the whitelist at deploy time.
+        bytes memory transferToPauseGuardian = abi.encodeWithSignature(
+            "transferOwnership(address)",
+            pauseGuardian
+        );
+        assertTrue(
+            governorV2.isWhitelistedCalldata(transferToPauseGuardian),
+            "transferOwnership(PAUSE_GUARDIAN) not whitelisted - x56 did not seed correctly"
+        );
+
+        // Execute break-glass against the Eth WormholeBridgeAdapter.
+        address[] memory targets = new address[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        targets[0] = address(ethereumBridgeAdapter);
+        calldatas[0] = transferToPauseGuardian;
+
+        vm.prank(bgGuardian);
+        governorV2.executeBreakGlass(targets, calldatas);
+
+        // Post-state: WormholeBridgeAdapter is Ownable2Step, so
+        // transferOwnership sets pendingOwner — the actual transfer
+        // completes when PAUSE_GUARDIAN later calls acceptOwnership.
+        assertEq(
+            ethereumBridgeAdapter.pendingOwner(),
+            pauseGuardian,
+            "pendingOwner not pauseGuardian after break-glass"
+        );
+
+        // One-shot: the guardian role is revoked.
+        assertEq(
+            governorV2.breakGlassGuardian(),
+            address(0),
+            "break-glass guardian not zeroed (one-shot property broken)"
+        );
+
+        // Re-invocation as the (now revoked) guardian must revert.
+        vm.prank(bgGuardian);
+        vm.expectRevert();
+        governorV2.executeBreakGlass(targets, calldatas);
+    }
+
+    function testPhaseG_breakGlassRejectsNonWhitelistedCalldata() public {
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address bgGuardian = governorV2.breakGlassGuardian();
+        address attacker = address(0xBADC0DE);
+
+        // transferOwnership(attacker) is NOT whitelisted; only
+        // transferOwnership(PAUSE_GUARDIAN) is.
+        bytes memory badCalldata = abi.encodeWithSignature(
+            "transferOwnership(address)",
+            attacker
+        );
+        assertFalse(
+            governorV2.isWhitelistedCalldata(badCalldata),
+            "attacker-target calldata wrongly whitelisted"
+        );
+
+        address[] memory targets = new address[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        targets[0] = address(ethereumBridgeAdapter);
+        calldatas[0] = badCalldata;
+
+        vm.prank(bgGuardian);
+        vm.expectRevert();
+        governorV2.executeBreakGlass(targets, calldatas);
+
+        // No state change: bridge adapter still owned by governor; pending
+        // owner unchanged.
+        assertEq(
+            ethereumBridgeAdapter.owner(),
+            address(governorV2),
+            "bridge adapter owner changed despite reverted break-glass"
+        );
+    }
+
+    function testPhaseG_breakGlassRejectsNonGuardianCaller() public {
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+
+        address[] memory targets = new address[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        targets[0] = address(ethereumBridgeAdapter);
+        calldatas[0] = abi.encodeWithSignature(
+            "transferOwnership(address)",
+            pauseGuardian
+        );
+
+        address notGuardian = address(0xDEADBEEF);
+        require(
+            notGuardian != governorV2.breakGlassGuardian(),
+            "test sentinel address collides with guardian"
+        );
+
+        vm.prank(notGuardian);
+        vm.expectRevert();
+        governorV2.executeBreakGlass(targets, calldatas);
+
+        // Guardian role still intact (not revoked by the failed call).
+        assertTrue(
+            governorV2.breakGlassGuardian() != address(0),
+            "guardian role unexpectedly revoked by reverted call"
+        );
+    }
 }

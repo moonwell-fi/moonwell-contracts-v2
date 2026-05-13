@@ -83,9 +83,23 @@ For a single setup run, the harness chains together:
    past TG's `proposalDelay` (24h) → `BaseTemporalGovernor.executeProposal` →
    reserve factor change lands on the live Base USDC market.
 
-The test methods are named `testPhaseA/C/D/E/F_…` and each asserts the
+9. **Phase G (break-glass execution path)** — Three tests:
+   - `testPhaseG_breakGlassUnwindsEthOwnership`: invokes
+     `governorV2.executeBreakGlass` with the `transferOwnership(PAUSE_GUARDIAN)`
+     calldata (whitelist entry #7, seeded by mip-x56). Verifies the Eth
+     `WormholeBridgeAdapter.pendingOwner` flips to PAUSE_GUARDIAN, and that
+     `breakGlassGuardian` becomes `address(0)` (one-shot property).
+   - `testPhaseG_breakGlassRejectsNonWhitelistedCalldata`: shows that
+     `executeBreakGlass` reverts on a calldata targeting an attacker address
+     (only `transferOwnership(PAUSE_GUARDIAN)` is whitelisted, not
+     `transferOwnership(<arbitrary>)`).
+   - `testPhaseG_breakGlassRejectsNonGuardianCaller`: confirms the
+     `onlyBreakGlassGuardian` modifier rejects calls from non-guardians.
+
+The test methods are named `testPhaseA/C/D/E/F/G_…` and each asserts the
 post-phase invariants. Phase E + Phase F are the loop-closers: Eth-native state
-mutation and cross-chain state mutation via the new governor.
+mutation and cross-chain state mutation via the new governor. Phase G proves the
+migration is reversible via the seeded break-glass calldatas.
 
 ## Files
 
@@ -172,7 +186,10 @@ A clean run looks like:
 [PASS] testPhaseD_postMigrationStubsApplied()
 [PASS] testPhaseE_smokeProposalChangesEthMarket()
 [PASS] testPhaseF_smokeProposalChangesBaseMarket()
-Suite result: ok. 5 passed; 0 failed; 0 skipped
+[PASS] testPhaseG_breakGlassUnwindsEthOwnership()
+[PASS] testPhaseG_breakGlassRejectsNonWhitelistedCalldata()
+[PASS] testPhaseG_breakGlassRejectsNonGuardianCaller()
+Suite result: ok. 8 passed; 0 failed; 0 skipped
 ```
 
 Phase E + F are the loop-closers that prove end-to-end correctness. The other
@@ -189,7 +206,7 @@ refactored and stops calling acceptOwnership on the Eth bridge adapter,
 | mip-x56 Moonbeam ownership transfers                    | HIGH       | Real governance proposal execution + validate                          |
 | mip-x56 Wormhole hops to Base/OP TGs                    | HIGH       | Mock auto-delivers; VC upgrade + initializeV3 asserted                 |
 | mip-x56 break-glass calldata storage                    | HIGH       | validate() asserts each whitelisted calldata exists                    |
-| mip-x56 break-glass execution path                      | LOW        | Not exercised — deferred to post-governor-PR work                      |
+| mip-x56 break-glass execution path                      | **HIGH**   | **Phase G executes break-glass + tests whitelist/auth enforcement**    |
 | mip-e00 Eth deploys produce the right contracts         | HIGH       | Real deploy + afterDeploy                                              |
 | mip-e00 Eth admin/ownership transfers                   | **HIGH**   | **e00.simulate runs end-to-end through governance**                    |
 | mip-e00 cross-chain accepts (TGs accept ownership)      | **HIGH**   | **e00.simulate's Wormhole hops execute against TGs**                   |

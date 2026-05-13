@@ -124,22 +124,37 @@ contract mipe01 is HybridProposalV2 {
             ETHEREUM_CHAIN_ID
         );
 
-        // Ethereum-side
+        // ---- Ethereum-side: owner + pendingOwner ----
         vm.selectFork(ETHEREUM_FORK_ID);
+
+        xWELL ethXWell = xWELL(addresses.getAddress("xWELL_PROXY"));
         assertEq(
-            xWELL(addresses.getAddress("xWELL_PROXY")).owner(),
+            ethXWell.owner(),
             governor,
             "Eth xWELL owner not MultichainGovernorV2 post-E01"
         );
+        // acceptOwnership zeroes pendingOwner — proves the accept actually ran.
         assertEq(
-            VotingPowerAggregator(
-                addresses.getAddress("VOTING_POWER_AGGREGATOR")
-            ).owner(),
+            ethXWell.pendingOwner(),
+            address(0),
+            "Eth xWELL pendingOwner not cleared - accept did not execute"
+        );
+
+        VotingPowerAggregator ethVPA = VotingPowerAggregator(
+            addresses.getAddress("VOTING_POWER_AGGREGATOR")
+        );
+        assertEq(
+            ethVPA.owner(),
             governor,
             "Eth VotingPowerAggregator owner not MultichainGovernorV2 post-E01"
         );
+        assertEq(
+            ethVPA.pendingOwner(),
+            address(0),
+            "Eth VotingPowerAggregator pendingOwner not cleared - accept did not execute"
+        );
 
-        // Moonbeam-side
+        // ---- Moonbeam-side: admin + pendingAdmin ----
         vm.selectFork(MOONBEAM_FORK_ID);
         address moonbeamTG = addresses.getAddress("TEMPORAL_GOVERNOR");
         Unitroller moonbeamUnitroller = Unitroller(
@@ -150,9 +165,16 @@ contract mipe01 is HybridProposalV2 {
             moonbeamTG,
             "Moonbeam Unitroller admin not TemporalGovernor post-E01"
         );
+        // _acceptAdmin clears pendingAdmin to address(0).
+        assertEq(
+            moonbeamUnitroller.pendingAdmin(),
+            address(0),
+            "Moonbeam Unitroller pendingAdmin not cleared - accept did not execute"
+        );
 
         Comptroller mc = Comptroller(address(moonbeamUnitroller));
         MToken[] memory markets = mc.getAllMarkets();
+        uint256 acceptedCount = 0;
         for (uint256 i = 0; i < markets.length; i++) {
             address mtoken = address(markets[i]);
             // Skip mTokens whose admin was never the old MultichainGovernor —
@@ -165,7 +187,26 @@ contract mipe01 is HybridProposalV2 {
                 moonbeamTG,
                 "Moonbeam mToken admin not TemporalGovernor post-E01"
             );
+            // _acceptAdmin clears pendingAdmin.
+            (bool ok, bytes memory data) = mtoken.staticcall(
+                abi.encodeWithSignature("pendingAdmin()")
+            );
+            require(ok && data.length >= 32, "pendingAdmin call failed");
+            assertEq(
+                abi.decode(data, (address)),
+                address(0),
+                "Moonbeam mToken pendingAdmin not cleared - accept did not execute"
+            );
+            acceptedCount++;
         }
+
+        // Ensure at least one Moonbeam mToken was actually swept by the
+        // proposal — guards against an empty-loop pass.
+        assertGt(
+            acceptedCount,
+            0,
+            "MIP-E01 did not accept admin on any Moonbeam mToken"
+        );
     }
 
     /// @notice Returns true if `target.pendingAdmin() == expected`.
