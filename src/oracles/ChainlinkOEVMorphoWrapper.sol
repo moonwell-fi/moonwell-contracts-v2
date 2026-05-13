@@ -57,11 +57,16 @@ contract ChainlinkOEVMorphoWrapper is
     /// @notice The max decrements
     uint256 public maxDecrements;
 
+    /// @notice Whether a Morpho market id is approved for early price updates and liquidations
+    /// @dev Market id is `keccak256(abi.encode(MarketParams))` — the canonical Morpho Blue id
+    mapping(bytes32 => bool) public approvedMarkets;
+
     /// @notice Storage gap for future-proofing upgradeable storage layout.
     /// @dev Reserves slots so that future implementations can add state
     ///      variables without breaking layout. Reduce this gap (and only
-    ///      this gap) when adding new state.
-    uint256[50] private __gap;
+    ///      this gap) when adding new state. Shrunk from 50 → 49 to account
+    ///      for `approvedMarkets` (1 slot for the mapping base).
+    uint256[49] private __gap;
 
     /// @notice Emitted when the fee recipient is changed
     event FeeRecipientChanged(address oldFeeRecipient, address newFeeRecipient);
@@ -83,6 +88,9 @@ contract ChainlinkOEVMorphoWrapper is
         uint256 oldMaxDecrements,
         uint256 newMaxDecrements
     );
+
+    /// @notice Emitted when a Morpho market is approved or unapproved for early liquidation
+    event MarketApproved(bytes32 indexed id, bool approved);
 
     /// @notice Emitted when the price is updated early and liquidated
     event PriceUpdatedEarlyAndLiquidated(
@@ -336,6 +344,19 @@ contract ChainlinkOEVMorphoWrapper is
     }
 
     /**
+     * @notice Approve or unapprove a Morpho market for early price updates and liquidation
+     * @dev Only approved markets may advance `cachedRoundId` via `updatePriceEarlyAndLiquidate`.
+     *      This prevents an attacker from spinning up a permissionless dust market with this
+     *      wrapper as base feed and using it to unlock the fresh price for free.
+     * @param id The canonical Morpho Blue market id (`keccak256(abi.encode(MarketParams))`)
+     * @param approved Whether the market is approved
+     */
+    function setApprovedMarket(bytes32 id, bool approved) external onlyOwner {
+        approvedMarkets[id] = approved;
+        emit MarketApproved(id, approved);
+    }
+
+    /**
      * @notice Sets the max number of decrements to search previous rounds
      * @param _maxDecrements The new max decrements (must be > 0)
      */
@@ -396,6 +417,16 @@ contract ChainlinkOEVMorphoWrapper is
         require(
             maxRepayAmount > 0,
             "ChainlinkOEVMorphoWrapper: max repay amount cannot be zero"
+        );
+
+        // gate: only approved markets may advance cachedRoundId. Without this an attacker
+        // could create a permissionless Morpho market + oracle pointing at this wrapper,
+        // self-liquidate a dust position, unlock the fresh price for shared consumers, and
+        // then liquidate real positions through Morpho Blue's native `liquidate()` at zero
+        // OEV cost. (C4 #195)
+        require(
+            approvedMarkets[keccak256(abi.encode(marketParams))],
+            "ChainlinkOEVMorphoWrapper: market not approved"
         );
 
         require(
