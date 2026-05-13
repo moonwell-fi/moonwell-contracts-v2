@@ -280,16 +280,28 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     // ---------------------------------------------------------------
 
     function testBridgeOutAfterUpgrade() public {
-        // Skip on Ethereum: this test exercises post-MIP-X53 rate-limit state
-        // that exists on Base/Optimism after years of bridging. The Ethereum
-        // adapter's MintLimits buffer was registered fresh in setUp, so the
-        // midpoint-buffer math is in a different regime and the burn path
-        // underflows in zelt's RateLimitedMidpointLibrary.
-
         address user = address(0xBEEF);
         uint256 bridgeAmount = 1000e18;
 
-        deal(address(xwellProxy), user, bridgeAmount);
+        if (block.chainid == ETHEREUM_CHAIN_ID) {
+            // Ethereum xWELL has no mint history yet, so
+            // `_totalSupplyCheckpoints` (ERC20VotesUpgradeable) is empty.
+            // `deal()` only touches `_balances` + `_totalSupply`; the burn
+            // path's `_writeCheckpoint(_subtract, amount)` would underflow
+            // on `oldWeight == 0`. Mint via `executeVAAv1` so the checkpoint
+            // is written properly, mirroring the prod inbound-bridge path.
+            bytes32 emitter = bytes32(uint256(uint160(address(adapter))));
+            mockWormholeCore.setStorage(
+                true,
+                sourceWormholeChainId,
+                emitter,
+                "",
+                abi.encode(user, bridgeAmount, currentWormholeChainId)
+            );
+            adapter.executeVAAv1(abi.encode("mint-for-bridge-out-x55"));
+        } else {
+            deal(address(xwellProxy), user, bridgeAmount);
+        }
 
         /// Etch mock executor so requestExecution succeeds
         address executorAddr = address(adapter.executor());
