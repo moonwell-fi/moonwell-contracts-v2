@@ -75,8 +75,6 @@ contract EnableEthereumXWellBridging is Script {
         // Compute the subset of peers that aren't already wired so re-runs
         // don't revert in EnumerableSet.add.
         WormholeTrustedSender.TrustedSender[]
-            memory peersToAddSender = _filterMissingSenders(adapter, allPeers);
-        WormholeTrustedSender.TrustedSender[]
             memory peersToSetTarget = _filterMissingTargets(adapter, allPeers);
 
         vm.startBroadcast(deployer);
@@ -162,31 +160,6 @@ contract EnableEthereumXWellBridging is Script {
         });
     }
 
-    function _filterMissingSenders(
-        WormholeBridgeAdapter adapter,
-        WormholeTrustedSender.TrustedSender[] memory peers
-    )
-        internal
-        view
-        returns (WormholeTrustedSender.TrustedSender[] memory missing)
-    {
-        uint256 count;
-        bool[] memory keep = new bool[](peers.length);
-        for (uint256 i = 0; i < peers.length; i++) {
-            if (!adapter.isTrustedSender(peers[i].chainId, peers[i].addr)) {
-                keep[i] = true;
-                count++;
-            }
-        }
-        missing = new WormholeTrustedSender.TrustedSender[](count);
-        uint256 j;
-        for (uint256 i = 0; i < peers.length; i++) {
-            if (keep[i]) {
-                missing[j++] = peers[i];
-            }
-        }
-    }
-
     function _filterMissingTargets(
         WormholeBridgeAdapter adapter,
         WormholeTrustedSender.TrustedSender[] memory peers
@@ -220,11 +193,12 @@ contract EnableEthereumXWellBridging is Script {
     ) internal view {
         // Bridge must be registered on xWELL or every mint/burn reverts.
         require(
-            xwell.bufferCap(address(adapter)) > 0,
+            xwell.bufferCap(address(adapter)) == ETH_XWELL_BUFFER_CAP,
             "xWELL: adapter has zero bufferCap (not a registered bridge)"
         );
         require(
-            xwell.rateLimitPerSecond(address(adapter)) > 0,
+            xwell.rateLimitPerSecond(address(adapter)) ==
+                ETH_XWELL_RATE_LIMIT_PER_SECOND,
             "xWELL: adapter has zero rateLimitPerSecond"
         );
 

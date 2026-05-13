@@ -9,10 +9,9 @@ import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {Address} from "@utils/Address.sol";
+import {EnableEthereumXWellBridging} from "@script/EnableEthereumXWellBridging.s.sol";
 import {MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// @title WormholeBridgeAdapter V4 Integration Tests (Executor framework)
@@ -20,8 +19,9 @@ import {MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETH
 ///         PRIMARY_FORK_ID=0 (Moonbeam), 1 (Base), 2 (Optimism), 3 (Ethereum)
 /// @dev    Ethereum coverage assumes MIP-X55's deployer-side bootstrap
 ///         (`script/EnableEthereumXWellBridging.s.sol`) has run. When the
-///         live adapter is not yet wired, the suite simulates the same calls
-///         in `setUp()` via `vm.prank(MOONWELL_DEPLOYER)`.
+///         live adapter is not yet wired (owner == MOONWELL_DEPLOYER),
+///         `setUp()` invokes the script directly so the adapter behaves
+///         like a fully-wired peer.
 contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     using Address for address;
     using ChainIds for uint256;
@@ -75,10 +75,15 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         }
 
         // On Ethereum, MIP-X55's deployer-side wiring is not a proposal — it
-        // runs out-of-band via `EnableEthereumXWellBridging.s.sol`. Replicate
-        // its effects in-test so the adapter behaves like a fully-wired peer.
-        if (block.chainid == ETHEREUM_CHAIN_ID) {
-            _bootstrapEthereumAdapter();
+        // runs out-of-band via `EnableEthereumXWellBridging.s.sol`. If the
+        // adapter is still owned by MOONWELL_DEPLOYER, the script hasn't been
+        // executed yet on the forked block; invoke it here so the adapter
+        // behaves like a fully-wired peer.
+        if (
+            block.chainid == ETHEREUM_CHAIN_ID &&
+            adapter.owner() == addresses.getAddress("MOONWELL_DEPLOYER")
+        ) {
+            new EnableEthereumXWellBridging().run();
         }
 
         /// etch MockWormholeCore onto the real WORMHOLE_CORE address so we
@@ -89,106 +94,6 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         vm.etch(wormholeCoreAddr, runtimeBytecode);
         mockWormholeCore = MockWormholeCore(wormholeCoreAddr);
         mockWormholeCore.setChainId(currentWormholeChainId);
-    }
-
-    /// @notice Mirror of `script/EnableEthereumXWellBridging.s.sol`'s pre-MIP-X55
-    ///         setup: register the adapter as a bridge on xWELL and add
-    ///         Moonbeam/Base/Optimism as trusted senders + outbound targets.
-    function _bootstrapEthereumAdapter() internal {
-        address deployer = addresses.getAddress("MOONWELL_DEPLOYER");
-
-        // 1. Register the adapter on xWELL if its bufferCap is zero.
-        //    Without this, mint/burn through the adapter reverts in
-        //    `_depleteBuffer`/`_replenishBuffer` (MintLimits.sol:99).
-        //
-        //    Numbers below mirror the canonical Ethereum params in
-        //    `script/EnableEthereumXWellBridging.s.sol`
-        //    (`ETH_XWELL_BUFFER_CAP`, `ETH_XWELL_RATE_LIMIT_PER_SECOND`).
-        //    Keep in sync if the script's constants change.
-        if (xwellProxy.bufferCap(address(adapter)) == 0) {
-            MintLimits.RateLimitMidPointInfo[]
-                memory limits = new MintLimits.RateLimitMidPointInfo[](1);
-            limits[0] = MintLimits.RateLimitMidPointInfo({
-                bridge: address(adapter),
-                rateLimitPerSecond: 1158 * 1e18, // ~19m WELL / day
-                bufferCap: 100_000_000 * 1e18 // 100m WELL
-            });
-            vm.prank(deployer);
-            xwellProxy.addBridges(limits);
-        }
-
-        // 2. Build the three remote peers and add any that are missing.
-        //    `toBaseChainId`/`toOptimismChainId` are constant-returning helpers
-        //    in the `ChainIds` library — they map any supported source chain
-        //    (incl. Ethereum) to `BASE_CHAIN_ID` / `OPTIMISM_CHAIN_ID`.
-        WormholeTrustedSender.TrustedSender[]
-            memory peers = new WormholeTrustedSender.TrustedSender[](3);
-        peers[0] = WormholeTrustedSender.TrustedSender({
-            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
-            addr: addresses.getAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                MOONBEAM_CHAIN_ID
-            )
-        });
-        peers[1] = WormholeTrustedSender.TrustedSender({
-            chainId: BASE_WORMHOLE_CHAIN_ID,
-            addr: addresses.getAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                block.chainid.toBaseChainId()
-            )
-        });
-        peers[2] = WormholeTrustedSender.TrustedSender({
-            chainId: OPTIMISM_WORMHOLE_CHAIN_ID,
-            addr: addresses.getAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                block.chainid.toOptimismChainId()
-            )
-        });
-
-        WormholeTrustedSender.TrustedSender[]
-            memory missingSenders = _filterMissing(peers, true);
-        if (missingSenders.length > 0) {
-            vm.prank(deployer);
-            adapter.addTrustedSenders(missingSenders);
-        }
-
-        WormholeTrustedSender.TrustedSender[]
-            memory missingTargets = _filterMissing(peers, false);
-        if (missingTargets.length > 0) {
-            vm.prank(deployer);
-            adapter.setTargetAddresses(missingTargets);
-        }
-    }
-
-    /// @notice Returns the subset of `peers` not yet present on the adapter.
-    ///         `senders=true` filters by `isTrustedSender`; otherwise by
-    ///         `targetAddress`.
-    function _filterMissing(
-        WormholeTrustedSender.TrustedSender[] memory peers,
-        bool senders
-    )
-        internal
-        view
-        returns (WormholeTrustedSender.TrustedSender[] memory missing)
-    {
-        uint256 count;
-        bool[] memory keep = new bool[](peers.length);
-        for (uint256 i = 0; i < peers.length; i++) {
-            bool present = senders
-                ? adapter.isTrustedSender(peers[i].chainId, peers[i].addr)
-                : adapter.targetAddress(peers[i].chainId) == peers[i].addr;
-            if (!present) {
-                keep[i] = true;
-                count++;
-            }
-        }
-        missing = new WormholeTrustedSender.TrustedSender[](count);
-        uint256 j;
-        for (uint256 i = 0; i < peers.length; i++) {
-            if (keep[i]) {
-                missing[j++] = peers[i];
-            }
-        }
     }
 
     // ---------------------------------------------------------------
