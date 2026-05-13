@@ -197,67 +197,11 @@ contract MigrationHarness is Test {
         // forge-std deal for the others (WETH, USDC, cbBTC).
         _phaseC1_dealUnderlyings(e00);
 
-        // e00.build (commit f5269589) pushes acceptOwnership() for three
-        // satellite-side contracts that mip-x56 already initialized with
-        // TemporalGovernor as the *direct* owner (Ownable2StepUpgradeable's
-        // `_transferOwnership` skips pendingOwner). Without prepping these,
-        // acceptOwnership reverts with "caller is not the new owner".
-        // Prank TG into calling transferOwnership(TG) on each — sets
-        // pendingOwner=TG — so e00.simulate's accepts succeed.
-        _phaseC2_prepPendingOwnersForE00();
-
         // e00.simulate executes the proposal through MultichainGovernorV2,
         // running every _acceptAdmin() / acceptOwnership() / mint action
         // as a real governor-driven tx — no pranks.
         e00.simulate(addresses, deployer);
         e00.validate(addresses, deployer);
-    }
-
-    /// @notice Three contracts that e00.build expects to accept ownership
-    ///         on are already directly owned by TemporalGovernor (init'd
-    ///         that way by mip-x56 — Ownable2StepUpgradeable._transferOwnership
-    ///         bypasses pendingOwner). For acceptOwnership to succeed, we
-    ///         pre-set pendingOwner = TG by having TG transfer to itself.
-    function _phaseC2_prepPendingOwnersForE00() internal {
-        _prepPendingOwner(
-            MOONBEAM_FORK_ID,
-            MOONBEAM_CHAIN_ID,
-            "VOTE_COLLECTION_V2_PROXY"
-        );
-        _prepPendingOwner(
-            BASE_FORK_ID,
-            BASE_CHAIN_ID,
-            "VOTING_POWER_AGGREGATOR"
-        );
-        _prepPendingOwner(
-            OPTIMISM_FORK_ID,
-            OPTIMISM_CHAIN_ID,
-            "VOTING_POWER_AGGREGATOR"
-        );
-        vm.selectFork(ETHEREUM_FORK_ID);
-    }
-
-    function _prepPendingOwner(
-        uint256 forkId,
-        uint256 chainId,
-        string memory addressKey
-    ) internal {
-        vm.selectFork(forkId);
-        require(block.chainid == chainId, "fork/chain mismatch");
-        address target = addresses.getAddress(addressKey);
-        address tg = addresses.getAddress("TEMPORAL_GOVERNOR");
-        // Read current owner — sanity check it's TG, otherwise the prank
-        // would not match the contract's auth.
-        (bool ok, bytes memory data) = target.staticcall(
-            abi.encodeWithSignature("owner()")
-        );
-        if (!ok || data.length < 32) return;
-        if (abi.decode(data, (address)) != tg) return;
-        vm.prank(tg);
-        (bool sent, ) = target.call(
-            abi.encodeWithSignature("transferOwnership(address)", tg)
-        );
-        require(sent, "transferOwnership prep failed");
     }
 
     /// @notice Pre-fund the new MultichainGovernorV2 with each Eth market's

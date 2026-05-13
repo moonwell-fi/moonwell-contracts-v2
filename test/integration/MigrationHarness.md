@@ -44,12 +44,6 @@ For a single setup run, the harness chains together:
      `delegateContract` probe in stdStorage, so the harness writes the balance
      directly to `TetherToken.balances[governor]` at base slot 2 and bumps
      `_totalSupply` at slot 5. WETH/USDC/cbBTC use `deal()` as normal.
-   - **Phase C.2** — Three Moonbeam/Base/Optimism contracts are initialized by
-     mip-x56 with TG as the _direct_ owner (not pending), so `e00.build`'s
-     `acceptOwnership` would revert with "caller is not the new owner". The
-     harness pranks TG into `transferOwnership(TG)` on each (Moonbeam
-     `VOTE_COLLECTION_V2_PROXY`, Base + Optimism `VOTING_POWER_AGGREGATOR`),
-     setting `pendingOwner = TG` so e00's accepts succeed.
 
 5. **Phase D** — Runs **`mip-e01` (First Ethereum Proposal)** through governance
    via `HybridProposalV2.simulate`. The new `MultichainGovernorV2` proposes,
