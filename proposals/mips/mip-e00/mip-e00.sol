@@ -401,36 +401,23 @@ contract mipe00 is HybridProposalV2, Configs {
             ActionType.Moonbeam
         );
 
-        /// Moonbeam: MultichainVoteCollectionMoonbeam — TemporalGovernor accepts
-        _pushAction(
-            addresses.getAddress("VOTE_COLLECTION_V2_PROXY", MOONBEAM_CHAIN_ID),
-            abi.encodeWithSignature("acceptOwnership()"),
-            "TemporalGovernor accepts ownership of MultichainVoteCollectionMoonbeam on Moonbeam",
-            ActionType.Moonbeam
-        );
-
-        /// Moonbeam: VotingPowerAggregator — TemporalGovernor accepts
+        /// Moonbeam: VotingPowerAggregator — TemporalGovernor accepts.
+        /// This is the only Ownable2Step pending-owner accept needed in E00:
+        /// MIP-X56 calls the public `transferOwnership` on the Moonbeam VPA,
+        /// which sets `pendingOwner = TemporalGovernor` and requires the new
+        /// owner to call `acceptOwnership()` here to complete the transfer.
+        ///
+        /// The Moonbeam VC and Base/Optimism VPAs are intentionally NOT
+        /// included: they are initialized in MIP-X56 with the TemporalGovernor
+        /// as their direct owner (via `_transferOwnership` inside `initialize`,
+        /// see MultichainVoteCollectionMoonbeam.sol:59 and
+        /// VotingPowerAggregator.sol:36), so `pendingOwner` is `address(0)` on
+        /// all three — calling `acceptOwnership()` would revert.
         _pushAction(
             addresses.getAddress("VOTING_POWER_AGGREGATOR", MOONBEAM_CHAIN_ID),
             abi.encodeWithSignature("acceptOwnership()"),
             "TemporalGovernor accepts ownership of VotingPowerAggregator on Moonbeam",
             ActionType.Moonbeam
-        );
-
-        /// Base: VotingPowerAggregator — TemporalGovernor accepts
-        _pushAction(
-            addresses.getAddress("VOTING_POWER_AGGREGATOR", BASE_CHAIN_ID),
-            abi.encodeWithSignature("acceptOwnership()"),
-            "TemporalGovernor accepts ownership of VotingPowerAggregator on Base",
-            ActionType.Base
-        );
-
-        /// Optimism: VotingPowerAggregator — TemporalGovernor accepts
-        _pushAction(
-            addresses.getAddress("VOTING_POWER_AGGREGATOR", OPTIMISM_CHAIN_ID),
-            abi.encodeWithSignature("acceptOwnership()"),
-            "TemporalGovernor accepts ownership of VotingPowerAggregator on Optimism",
-            ActionType.Optimism
         );
 
         Configs.CTokenConfiguration[]
