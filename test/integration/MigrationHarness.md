@@ -51,17 +51,19 @@ For a single setup run, the harness chains together:
      `VOTE_COLLECTION_V2_PROXY`, Base + Optimism `VOTING_POWER_AGGREGATOR`),
      setting `pendingOwner = TG` so e00's accepts succeed.
 
-5. **Phase D** — Stubs the migration-summary follow-up items that no on-chain
-   proposal performs today:
+5. **Phase D** — Runs **`mip-e01` (First Ethereum Proposal)** through governance
+   via `HybridProposalV2.simulate`. The new `MultichainGovernorV2` proposes,
+   votes, and executes — no pranks:
 
-   - Eth `xWELL` and `VotingPowerAggregator` `acceptOwnership` (via governor
-     prank) — TODOs #1 and #2 in
-     `docs/governance/MULTICHAIN_GOVERNOR_MIGRATION_SUMMARY.md`.
-   - Moonbeam mTokens + Unitroller `_acceptAdmin` (via TG prank) — TODO #4.
+   - Eth: `xWELL.acceptOwnership()` (TODO #1)
+   - Eth: `VotingPowerAggregator.acceptOwnership()` (TODO #2)
+   - Moonbeam (Wormhole → TG): `Unitroller._acceptAdmin()` + per-mToken
+     `_acceptAdmin()` for every market whose `pendingAdmin == TG` (TODO #4)
 
-   (The previously-stubbed Moonbeam VC + Moonbeam/Base/OP VPA accepts are now
-   executed for real by e00.simulate; Phase D no-ops them via idempotency
-   check.)
+   `mip-e01.build()` enumerates Moonbeam mTokens via
+   `Comptroller.getAllMarkets()` at build time and only pushes `_acceptAdmin`
+   for markets that x56 actually set `pendingAdmin = TG` on — automatically
+   filters out markets with admins other than the old `MultichainGovernor`.
 
 6. **Phase 0** — Stubs xWELL bridging activation by calling `addTrustedSenders`
    on every chain's `WormholeBridgeAdapter` for the other three chains' adapters
@@ -90,6 +92,8 @@ mutation and cross-chain state mutation via the new governor.
 | Path                                                   | Purpose                                  |
 | ------------------------------------------------------ | ---------------------------------------- |
 | `test/integration/MigrationHarness.t.sol`              | The harness contract (5 tests)           |
+| `proposals/mips/mip-e01/mip-e01.sol`                   | First Ethereum Proposal (Phase D)        |
+| `proposals/mips/mip-e01/MIP-E01.md`                    | mip-e01 description                      |
 | `test/integration/proposals/EthMarketUpdateSmoke.sol`  | Phase E smoke proposal (Eth-native)      |
 | `test/integration/proposals/BaseMarketUpdateSmoke.sol` | Phase F smoke proposal (cross-chain)     |
 | `proposals/mips/mip-x56/mip-x56.sol`                   | Includes test-mode nonce fix (see below) |
@@ -127,20 +131,16 @@ Each test in the suite re-runs `setUp()`, so a full pass invokes mip-x56
 
 ## Deliberate scope reductions
 
-The harness still uses pranks for two of the four follow-up items in
-`docs/governance/MULTICHAIN_GOVERNOR_MIGRATION_SUMMARY.md` that no proposal
-currently performs:
+The harness now runs every TODO from
+`docs/governance/MULTICHAIN_GOVERNOR_MIGRATION_SUMMARY.md` through real
+governance **except** xWELL bridging activation:
 
-1. **Eth `xWELL` and `VotingPowerAggregator` `acceptOwnership`** — These require
-   `msg.sender == governorV2`, which on-chain only a governor-executed proposal
-   can satisfy. The harness pranks `governorV2`. The migration summary's "First
-   Ethereum Proposal" will eventually do these for real.
-2. **xWELL bridging activation** — Pre-migration setup that would run on the
-   _old_ Moonbeam governor before mip-x56 executes. The harness simulates this
-   post-migration via direct prank of the bridge adapter owners.
-3. **Moonbeam mTokens + Unitroller `_acceptAdmin`** — Wormhole-routed action
-   from the new Eth governor to Moonbeam TG. Could be a fresh real-proposal
-   smoke (similar to Phase F's Base market update) but we use a prank for now.
+- **xWELL bridging activation (TODO #3)** — Pre-migration setup that would run
+  on the _old_ Moonbeam governor before mip-x56 executes, so xWELL voting power
+  can reach Ethereum before the new governor goes live. Tested in a separate
+  in-flight Moonbeam-governor proposal — the harness simulates the
+  post-migration end-state via Phase 0's direct prank of the bridge adapter
+  owners.
 
 ## Patches required for the harness to run
 
@@ -183,20 +183,20 @@ refactored and stops calling acceptOwnership on the Eth bridge adapter,
 
 ## Confidence by area
 
-| What's being validated                                  | Confidence | Evidence                                                 |
-| ------------------------------------------------------- | ---------- | -------------------------------------------------------- |
-| mip-x56 deploys produce the right contracts             | HIGH       | Real deploy + ~50 validate assertions                    |
-| mip-x56 Moonbeam ownership transfers                    | HIGH       | Real governance proposal execution + validate            |
-| mip-x56 Wormhole hops to Base/OP TGs                    | HIGH       | Mock auto-delivers; VC upgrade + initializeV3 asserted   |
-| mip-x56 break-glass calldata storage                    | HIGH       | validate() asserts each whitelisted calldata exists      |
-| mip-x56 break-glass execution path                      | LOW        | Not exercised — deferred to post-governor-PR work        |
-| mip-e00 Eth deploys produce the right contracts         | HIGH       | Real deploy + afterDeploy                                |
-| mip-e00 Eth admin/ownership transfers                   | **HIGH**   | **e00.simulate runs end-to-end through governance**      |
-| mip-e00 cross-chain accepts (TGs accept ownership)      | **HIGH**   | **e00.simulate's Wormhole hops execute against TGs**     |
-| mip-e00 initial-mint of every market                    | HIGH       | USDT-safe deal + e00.simulate mint actions execute       |
-| New governor can propose                                | HIGH       | Phase E + F do this                                      |
-| New governor can vote (xWELL delegation + getPastVotes) | HIGH       | Phase E + F do this                                      |
-| New governor can execute Eth-native actions             | HIGH       | Phase E asserts state change on freshly-deployed market  |
-| **New governor can execute cross-chain actions**        | **HIGH**   | **Phase F mutates Base USDC reserve factor end-to-end**  |
-| xWELL bridging activation                               | MEDIUM     | Phase 0 stub configures trusted senders; no bridge tx    |
-| Follow-Up "First Ethereum Proposal" path                | MEDIUM     | Eth-side accepts pranked; could be a real fresh proposal |
+| What's being validated                                  | Confidence | Evidence                                                               |
+| ------------------------------------------------------- | ---------- | ---------------------------------------------------------------------- |
+| mip-x56 deploys produce the right contracts             | HIGH       | Real deploy + ~50 validate assertions                                  |
+| mip-x56 Moonbeam ownership transfers                    | HIGH       | Real governance proposal execution + validate                          |
+| mip-x56 Wormhole hops to Base/OP TGs                    | HIGH       | Mock auto-delivers; VC upgrade + initializeV3 asserted                 |
+| mip-x56 break-glass calldata storage                    | HIGH       | validate() asserts each whitelisted calldata exists                    |
+| mip-x56 break-glass execution path                      | LOW        | Not exercised — deferred to post-governor-PR work                      |
+| mip-e00 Eth deploys produce the right contracts         | HIGH       | Real deploy + afterDeploy                                              |
+| mip-e00 Eth admin/ownership transfers                   | **HIGH**   | **e00.simulate runs end-to-end through governance**                    |
+| mip-e00 cross-chain accepts (TGs accept ownership)      | **HIGH**   | **e00.simulate's Wormhole hops execute against TGs**                   |
+| mip-e00 initial-mint of every market                    | HIGH       | USDT-safe deal + e00.simulate mint actions execute                     |
+| New governor can propose                                | HIGH       | Phase E + F do this                                                    |
+| New governor can vote (xWELL delegation + getPastVotes) | HIGH       | Phase E + F do this                                                    |
+| New governor can execute Eth-native actions             | HIGH       | Phase E asserts state change on freshly-deployed market                |
+| **New governor can execute cross-chain actions**        | **HIGH**   | **Phase F mutates Base USDC reserve factor end-to-end**                |
+| xWELL bridging activation                               | MEDIUM     | Phase 0 stub configures trusted senders; no bridge tx                  |
+| Follow-Up "First Ethereum Proposal" path                | **HIGH**   | **mip-e01 executes through governance; all 4 TODOs cleared except #3** |

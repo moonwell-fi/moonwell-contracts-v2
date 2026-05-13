@@ -19,6 +19,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {mipx56} from "@proposals/mips/mip-x56/mip-x56.sol";
 import {mipe00} from "@proposals/mips/mip-e00/mip-e00.sol";
+import {mipe01} from "@proposals/mips/mip-e01/mip-e01.sol";
 
 import {EthMarketUpdateSmoke} from "@test/integration/proposals/EthMarketUpdateSmoke.sol";
 import {BaseMarketUpdateSmoke} from "@test/integration/proposals/BaseMarketUpdateSmoke.sol";
@@ -95,11 +96,14 @@ contract MigrationHarness is Test {
 
         _loadHandles();
 
-        // Phase D first: process all the post-migration acceptOwnership/
-        // _acceptAdmin calls. These need to complete BEFORE Phase 0 because
-        // Phase 0 pranks as the bridge adapters' owners — which on the
-        // satellite chains is the TemporalGovernor only after it accepts.
-        _phaseDPostMigrationAcceptsStub();
+        // Phase D first: run mip-e01 (First Ethereum Proposal) through
+        // governance — completes acceptOwnership/_acceptAdmin for items
+        // mip-x56 + mip-e00 didn't cover (Eth xWELL/VPA, Moonbeam
+        // Unitroller + mTokens). Must run before Phase 0 because Phase 0
+        // pranks as the bridge adapters' owners — which on satellite
+        // chains is the TemporalGovernor only after it accepts the
+        // ownership transfers e00 queued.
+        _phaseD_runMipE01();
 
         // Phase 0: xWELL bridging activation stub (now TG owns the bridge
         // adapters on Moonbeam/Base/Op).
@@ -437,122 +441,24 @@ contract MigrationHarness is Test {
         }
     }
 
-    /// @notice Stubs for everything e00.simulate() would have done plus the
-    ///         four migration-summary TODOs that aren't in either proposal.
-    ///         We skipped e00.simulate() because forge-std `deal()` can't
-    ///         probe USDT's storage (its delegateContract pattern at slot 10
-    ///         makes balanceOf revert during stdStorage's probe).
-    function _phaseDPostMigrationAcceptsStub() internal {
-        // ---- Accepts that e00.build() pushes as actions ----
+    /// @notice Phase D: run mip-e01 (the First Ethereum Proposal) through
+    ///         governance. mip-e01 completes the ownership/admin transfers
+    ///         that mip-x56 + mip-e00 leave in a half-transferred state:
+    ///           - Eth xWELL acceptOwnership (TODO #1)
+    ///           - Eth VotingPowerAggregator acceptOwnership (TODO #2)
+    ///           - Moonbeam Unitroller + mTokens _acceptAdmin (TODO #4)
+    ///         The previous prank-based stubs are replaced with a real
+    ///         HybridProposalV2 propose → vote → execute cycle on
+    ///         MultichainGovernorV2.
+    ///         xWELL bridging activation (TODO #3) is out of scope here —
+    ///         tested in a separate in-flight Moonbeam-governor proposal.
+    function _phaseD_runMipE01() internal {
+        mipe01 e01 = new mipe01();
+        vm.makePersistent(address(e01));
 
-        // Moonbeam: WormholeBridgeAdapter (TG acceptOwnership)
-        _acceptOwnershipPrank(
-            MOONBEAM_FORK_ID,
-            addresses.getAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                MOONBEAM_CHAIN_ID
-            ),
-            addresses.getAddress("TEMPORAL_GOVERNOR", MOONBEAM_CHAIN_ID)
-        );
-
-        // Moonbeam: MultichainVoteCollectionMoonbeam (TG acceptOwnership)
-        _acceptOwnershipPrank(
-            MOONBEAM_FORK_ID,
-            addresses.getAddress("VOTE_COLLECTION_V2_PROXY", MOONBEAM_CHAIN_ID),
-            addresses.getAddress("TEMPORAL_GOVERNOR", MOONBEAM_CHAIN_ID)
-        );
-
-        // Moonbeam: VotingPowerAggregator (TG acceptOwnership)
-        _acceptOwnershipPrank(
-            MOONBEAM_FORK_ID,
-            addresses.getAddress("VOTING_POWER_AGGREGATOR", MOONBEAM_CHAIN_ID),
-            addresses.getAddress("TEMPORAL_GOVERNOR", MOONBEAM_CHAIN_ID)
-        );
-
-        // Base: VotingPowerAggregator (TG acceptOwnership)
-        _acceptOwnershipPrank(
-            BASE_FORK_ID,
-            addresses.getAddress("VOTING_POWER_AGGREGATOR", BASE_CHAIN_ID),
-            addresses.getAddress("TEMPORAL_GOVERNOR", BASE_CHAIN_ID)
-        );
-
-        // Optimism: VotingPowerAggregator (TG acceptOwnership)
-        _acceptOwnershipPrank(
-            OPTIMISM_FORK_ID,
-            addresses.getAddress("VOTING_POWER_AGGREGATOR", OPTIMISM_CHAIN_ID),
-            addresses.getAddress("TEMPORAL_GOVERNOR", OPTIMISM_CHAIN_ID)
-        );
-
-        // ---- Migration-summary TODOs that aren't in either proposal ----
-
-        // TODO #1: Eth xWELL acceptOwnership(governorV2)
-        vm.selectFork(ETHEREUM_FORK_ID);
-        if (ethereumXWell.pendingOwner() == address(governorV2)) {
-            vm.prank(address(governorV2));
-            ethereumXWell.acceptOwnership();
-        }
-
-        // TODO #2: Eth VotingPowerAggregator acceptOwnership(governorV2)
-        if (ethereumVotingPower.pendingOwner() == address(governorV2)) {
-            vm.prank(address(governorV2));
-            ethereumVotingPower.acceptOwnership();
-        }
-
-        // TODO #4: Moonbeam mTokens + Unitroller _acceptAdmin(TG)
-        _moonbeamAcceptAdminStubs();
-    }
-
-    function _acceptOwnershipPrank(
-        uint256 forkId,
-        address target,
-        address pendingOwnerExpected
-    ) internal {
-        vm.selectFork(forkId);
-        (bool ok, bytes memory data) = target.staticcall(
-            abi.encodeWithSignature("pendingOwner()")
-        );
-        if (!ok || data.length < 32) return;
-        if (abi.decode(data, (address)) != pendingOwnerExpected) return;
-        vm.prank(pendingOwnerExpected);
-        (bool acceptOk, ) = target.call(
-            abi.encodeWithSignature("acceptOwnership()")
-        );
-        require(acceptOk, "_acceptOwnershipPrank failed");
-    }
-
-    function _moonbeamAcceptAdminStubs() internal {
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address tg = addresses.getAddress("TEMPORAL_GOVERNOR");
-
-        Comptroller mc = Comptroller(addresses.getAddress("UNITROLLER"));
-        MToken[] memory markets = mc.getAllMarkets();
-        for (uint256 i = 0; i < markets.length; i++) {
-            address mtoken = address(markets[i]);
-            (bool ok, bytes memory data) = mtoken.staticcall(
-                abi.encodeWithSignature("pendingAdmin()")
-            );
-            if (!ok || data.length < 32) continue;
-            if (abi.decode(data, (address)) != tg) continue;
-
-            vm.prank(tg);
-            (bool acceptOk, ) = mtoken.call(
-                abi.encodeWithSignature("_acceptAdmin()")
-            );
-            require(acceptOk, "Moonbeam mToken _acceptAdmin stub failed");
-        }
-
-        // Unitroller has its own pendingAdmin / _acceptAdmin pair.
-        address unitroller = addresses.getAddress("UNITROLLER");
-        (bool uOk, bytes memory uData) = unitroller.staticcall(
-            abi.encodeWithSignature("pendingAdmin()")
-        );
-        if (uOk && uData.length >= 32 && abi.decode(uData, (address)) == tg) {
-            vm.prank(tg);
-            (bool acceptOk, ) = unitroller.call(
-                abi.encodeWithSignature("_acceptAdmin()")
-            );
-            require(acceptOk, "Moonbeam Unitroller _acceptAdmin stub failed");
-        }
+        e01.build(addresses);
+        e01.simulate(addresses, address(0));
+        e01.validate(addresses, address(0));
 
         vm.selectFork(ETHEREUM_FORK_ID);
     }
