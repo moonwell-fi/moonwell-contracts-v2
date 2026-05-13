@@ -1041,7 +1041,7 @@ contract ChainlinkOEVWrapperIntegrationTest is
     function testUpdatePriceEarlyAndLiquidate_RevertLiquidationFailed() public {
         // Use ETH/WETH for this test. Resolve the wrapper dynamically through
         // the live ChainlinkOracle registry so the test works regardless of
-        // which OEV wrapper version is currently wired (MIP-X55 swaps the
+        // which OEV wrapper version is currently wired (MIP-X56 swaps the
         // canonical "WETH" feed during PostProposalCheck setUp).
         IChainlinkOracle oracleRegistry = IChainlinkOracle(
             addresses.getAddress("CHAINLINK_ORACLE")
