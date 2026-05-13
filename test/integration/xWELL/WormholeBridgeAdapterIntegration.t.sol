@@ -285,9 +285,6 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         // adapter's MintLimits buffer was registered fresh in setUp, so the
         // midpoint-buffer math is in a different regime and the burn path
         // underflows in zelt's RateLimitedMidpointLibrary.
-        if (block.chainid == ETHEREUM_CHAIN_ID) {
-            return;
-        }
 
         address user = address(0xBEEF);
         uint256 bridgeAmount = 1000e18;
