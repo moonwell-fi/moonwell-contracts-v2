@@ -57,13 +57,6 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     string internal constant OEV_WRAPPER_SUFFIX = "_OEV_WRAPPER";
     string internal constant DEPRECATED_SUFFIX = "_OEV_WRAPPER_DEPRECATED_V3";
 
-    /// @notice Default max-staleness window seeded on every redeployed Core
-    ///         wrapper and every Morpho proxy. 24h Chainlink heartbeat + 1h
-    ///         buffer — catches a dead feed within ~25h while tolerating
-    ///         normal heartbeat jitter around the 24h boundary. Matches the
-    ///         Aave V3 convention for 24h-heartbeat feeds.
-    uint256 internal constant DEFAULT_MAX_STALENESS = 90000;
-
     /// @notice Snapshot of pre-upgrade Morpho wrapper proxy state, captured in
     ///         afterDeploy() and asserted in validate() to prove the proxy
     ///         upgrade preserved every storage variable. Keyed by proxy address.
@@ -506,24 +499,6 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
                     morphoConfigs[i].proxyName
                 )
             );
-
-            // HAL-04: seed maxStaleness on the upgraded Morpho proxy. Must be
-            // queued AFTER the upgrade action — the V1 implementation has no
-            // setMaxStaleness selector. Both actions execute atomically within
-            // one proposal execution.
-            _pushAction(
-                proxy,
-                abi.encodeWithSignature(
-                    "setMaxStaleness(uint256)",
-                    DEFAULT_MAX_STALENESS
-                ),
-                string.concat(
-                    "Base: setMaxStaleness(",
-                    vm.toString(DEFAULT_MAX_STALENESS),
-                    ") on ",
-                    morphoConfigs[i].proxyName
-                )
-            );
         }
     }
 
@@ -623,22 +598,6 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
                     ", new ChainlinkOEVWrapper for ",
                     config.oracleName,
                     ")"
-                )
-            );
-
-            // HAL-04: seed maxStaleness on the freshly deployed wrapper.
-            // Default 25h (24h Chainlink heartbeat + 1h buffer).
-            _pushAction(
-                newWrapper,
-                abi.encodeWithSignature(
-                    "setMaxStaleness(uint256)",
-                    DEFAULT_MAX_STALENESS
-                ),
-                string.concat(
-                    "setMaxStaleness(",
-                    vm.toString(DEFAULT_MAX_STALENESS),
-                    ") on new ChainlinkOEVWrapper for ",
-                    config.oracleName
                 )
             );
         }
@@ -788,17 +747,6 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             string.concat(
                 chainName,
                 ": maxDecrements mismatch for ",
-                oracleName
-            )
-        );
-
-        // HAL-04: maxStaleness seed assertion.
-        assertEq(
-            newWrapper.maxStaleness(),
-            DEFAULT_MAX_STALENESS,
-            string.concat(
-                chainName,
-                ": maxStaleness not seeded for ",
                 oracleName
             )
         );
@@ -971,17 +919,6 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
                     "Base Morpho ",
                     morphoConfigs[i].proxyName,
                     ": canonical market id not seeded by setApprovedMarket"
-                )
-            );
-
-            // HAL-04: maxStaleness seed assertion on the upgraded Morpho proxy.
-            assertEq(
-                wrapper.maxStaleness(),
-                DEFAULT_MAX_STALENESS,
-                string.concat(
-                    "Base Morpho ",
-                    morphoConfigs[i].proxyName,
-                    ": maxStaleness not seeded by setMaxStaleness"
                 )
             );
         }
