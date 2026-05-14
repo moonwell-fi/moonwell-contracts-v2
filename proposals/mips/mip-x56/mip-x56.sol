@@ -122,6 +122,13 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         uint256 maxRoundDelay;
         uint256 maxDecrements;
         bool isLegacy;
+        // Legacy-only: snapshot of the legacy wrapper's own
+        // `latestRoundData()` taken at capture time. Compared against the
+        // new wrapper's `latestRoundData()` in `_validateWrapperParams`
+        // to confirm the consumer-facing price did not shift across the
+        // swap. Zero for non-legacy configs.
+        int256 legacyAnswer;
+        uint256 legacyUpdatedAt;
     }
     mapping(uint256 => mapping(string => WrapperParams))
         internal _capturedParams;
@@ -718,10 +725,34 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         // Legacy wrapper case (Optimism CHAINLINK_WELL_USD): the six
         // non-priceFeed fields were sourced canonically from a sibling,
         // not from the legacy wrapper itself. Skip strict mirror checks
-        // — post-state correctness is enforced via raw-aggregator price
-        // preservation in `_validatePricePreserved`. The defense-in-depth
-        // priceFeed-not-wrapped check below still runs.
+        // on those fields. Post-state correctness is enforced by:
+        //   (a) priceFeed equality (already asserted above)
+        //   (b) consumer-facing price preservation — the new wrapper's
+        //       latestRoundData() must match the legacy wrapper's
+        //       latestRoundData() captured pre-deploy.
+        //   (c) defense-in-depth: priceFeed must be a raw aggregator.
         if (captured.isLegacy) {
+            (, int256 newAns, , uint256 newUpdatedAt, ) = newWrapper
+                .latestRoundData();
+            assertEq(
+                newAns,
+                captured.legacyAnswer,
+                string.concat(
+                    chainName,
+                    ": legacy->new wrapper answer changed for ",
+                    oracleName
+                )
+            );
+            assertEq(
+                newUpdatedAt,
+                captured.legacyUpdatedAt,
+                string.concat(
+                    chainName,
+                    ": legacy->new wrapper updatedAt changed for ",
+                    oracleName
+                )
+            );
+
             (bool legacyPriceFeedWrapped, ) = _isOEVWrapper(
                 address(newWrapper.priceFeed())
             );
@@ -1128,6 +1159,18 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
                 IOldOEVWrapperFeed(wrapperAddr).originalFeed()
             );
             params.isLegacy = true;
+            // Snapshot the legacy wrapper's consumer-facing price now so
+            // validate() can prove the new wrapper produces the same
+            // `(answer, updatedAt)` post-swap. Read directly off the
+            // legacy wrapper (which implements AggregatorV3Interface and
+            // delegates to its `originalFeed`), not off the raw
+            // aggregator — we want to catch any decoration the legacy
+            // wrapper applies and assert the new wrapper preserves it.
+            (, int256 legacyAns, , uint256 legacyUpd, ) = AggregatorV3Interface(
+                wrapperAddr
+            ).latestRoundData();
+            params.legacyAnswer = legacyAns;
+            params.legacyUpdatedAt = legacyUpd;
             return params;
         }
 
