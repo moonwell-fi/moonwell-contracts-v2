@@ -18,6 +18,10 @@ import {ChainlinkOracleConfigs} from "@proposals/ChainlinkOracleConfigs.sol";
 import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 
+interface IOldOEVWrapperFeed {
+    function originalFeed() external view returns (AggregatorV3Interface);
+}
+
 /// @title MIP-X56: Improve OEV Fee-Split Accuracy (full-coverage redeploy)
 /// @notice Redeploys every Core OEV-wrapped Chainlink feed enumerated in
 ///         `ChainlinkOracleConfigs._oracleConfigs` on Base and Optimism using
@@ -103,6 +107,12 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     /// @notice Per-chain, per-oracleName snapshot of the existing wrapper's
     ///         constructor parameters, captured in deploy() so validate()
     ///         can assert exact mirroring on the new wrapper.
+    /// @dev    `isLegacy` is set when the registered wrapper is a legacy
+    ///         `ChainlinkFeedOEVWrapper` (Optimism CHAINLINK_WELL_USD). In
+    ///         that case `priceFeed` is captured from `originalFeed()` and
+    ///         the six remaining fields are sourced canonically from a
+    ///         sibling new-style wrapper on the same chain. Validation is
+    ///         relaxed to the priceFeed pointer + price-preservation check.
     struct WrapperParams {
         address priceFeed;
         address owner;
@@ -111,6 +121,7 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         uint16 liquidatorFeeBps;
         uint256 maxRoundDelay;
         uint256 maxDecrements;
+        bool isLegacy;
     }
     mapping(uint256 => mapping(string => WrapperParams))
         internal _capturedParams;
@@ -176,7 +187,6 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
                 address(impl)
             );
         }
-
         vm.selectFork(primaryForkId());
     }
 
@@ -228,6 +238,33 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             // Capture the existing wrapper's full configuration so the new
             // wrapper can mirror it exactly.
             WrapperParams memory params = _captureParams(registered);
+
+            // Legacy wrapper (Optimism CHAINLINK_WELL_USD): the legacy
+            // `ChainlinkFeedOEVWrapper` ABI has no analog for the six
+            // non-priceFeed fields. Source them canonically from a sibling
+            // new-style wrapper on the same chain so the redeployed WELL
+            // wrapper matches the rest of the chain's fee/staleness model.
+            // We use CHAINLINK_USDC_USD_OEV_WRAPPER because USDC is the
+            // most stable Optimism wrapper and is processed later in this
+            // loop, so its canonical-name slot still points at the live
+            // X43-era wrapper at this moment.
+            if (params.isLegacy) {
+                address sibling = addresses.getAddress(
+                    "CHAINLINK_USDC_USD_OEV_WRAPPER"
+                );
+                WrapperParams memory canon = _captureParams(sibling);
+                require(
+                    !canon.isLegacy,
+                    "MIP-X56: sibling wrapper unexpectedly legacy-shaped"
+                );
+                params.owner = canon.owner;
+                params.chainlinkOracle = canon.chainlinkOracle;
+                params.feeRecipient = canon.feeRecipient;
+                params.liquidatorFeeBps = canon.liquidatorFeeBps;
+                params.maxRoundDelay = canon.maxRoundDelay;
+                params.maxDecrements = canon.maxDecrements;
+            }
+
             _capturedParams[chainId][config.oracleName] = params;
 
             _deployAndRegisterWrapper(
@@ -261,14 +298,20 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         );
         vm.stopBroadcast();
 
-        string memory canonicalName = string.concat(
-            oracleName,
-            OEV_WRAPPER_SUFFIX
-        );
-        string memory deprecatedName = string.concat(
-            oracleName,
-            DEPRECATED_SUFFIX
-        );
+        string memory canonicalName;
+        string memory deprecatedName;
+
+        if (
+            chainId == OPTIMISM_CHAIN_ID &&
+            keccak256(abi.encodePacked(oracleName)) ==
+            keccak256(abi.encodePacked("CHAINLINK_WELL_USD"))
+        ) {
+            canonicalName = "CHAINLINK_WELL_USD_OEV_WRAPPER";
+            deprecatedName = "CHAINLINK_WELL_USD_OEV_WRAPPER_DEPRECATED";
+        } else {
+            canonicalName = string.concat(oracleName, OEV_WRAPPER_SUFFIX);
+            deprecatedName = string.concat(oracleName, DEPRECATED_SUFFIX);
+        }
 
         // Archive the pre-existing canonical wrapper under the deprecated slot,
         // then promote the new wrapper to the canonical name.
@@ -292,7 +335,7 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     ///         Base so validate() can later assert exact equality post-upgrade.
     ///         Runs AFTER deploy() and BEFORE build()/simulate(), per the
     ///         proposal lifecycle.
-    function afterDeploy(Addresses addresses, address) public override {
+    function _snapshotMorphoWrapperState(Addresses addresses) private {
         vm.selectFork(BASE_FORK_ID);
 
         MorphoOracleConfig[]
@@ -326,9 +369,12 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             snap.cachedRoundId = proxy.cachedRoundId();
             snap.morphoBlue = address(proxy.morphoBlue());
             snap.decimals = proxy.decimals();
+            (, int256 ans, , uint256 updatedAt, ) = AggregatorV3Interface(
+                snap.priceFeed
+            ).latestRoundData();
+            snap.answer = ans;
+            snap.updatedAt = updatedAt;
         }
-
-        vm.selectFork(primaryForkId());
     }
 
     /// @notice Snapshot pre-simulation state for every upgrade target so
@@ -336,43 +382,7 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     function beforeSimulationHook(Addresses addresses) public override {
         _snapshotChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
         _snapshotChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
-
-        // Base Morpho: capture per-proxy raw answer and updatedAt from each
-        // proxy's priceFeed. The decimals snapshot was already taken in
-        // afterDeploy().
-        vm.selectFork(BASE_FORK_ID);
-        {
-            MorphoOracleConfig[]
-                memory morphoConfigs = getMorphoOracleConfigurations(
-                    BASE_CHAIN_ID
-                );
-
-            for (uint256 i = 0; i < morphoConfigs.length; i++) {
-                string memory proxyKey = string(
-                    abi.encodePacked(
-                        morphoConfigs[i].proxyName,
-                        "_ORACLE_PROXY"
-                    )
-                );
-                if (!addresses.isAddressSet(proxyKey)) continue;
-
-                address proxyAddr = addresses.getAddress(proxyKey);
-                MorphoSnapshot storage snap = _morphoSnapshot[proxyAddr];
-
-                if (snap.priceFeed != address(0)) {
-                    (
-                        ,
-                        int256 ans,
-                        ,
-                        uint256 updatedAt,
-
-                    ) = AggregatorV3Interface(snap.priceFeed).latestRoundData();
-                    snap.answer = ans;
-                    snap.updatedAt = updatedAt;
-                }
-            }
-        }
-
+        _snapshotMorphoWrapperState(addresses);
         vm.selectFork(primaryForkId());
     }
 
@@ -704,6 +714,29 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             captured.priceFeed,
             string.concat(chainName, ": priceFeed mismatch for ", oracleName)
         );
+
+        // Legacy wrapper case (Optimism CHAINLINK_WELL_USD): the six
+        // non-priceFeed fields were sourced canonically from a sibling,
+        // not from the legacy wrapper itself. Skip strict mirror checks
+        // — post-state correctness is enforced via raw-aggregator price
+        // preservation in `_validatePricePreserved`. The defense-in-depth
+        // priceFeed-not-wrapped check below still runs.
+        if (captured.isLegacy) {
+            (bool legacyPriceFeedWrapped, ) = _isOEVWrapper(
+                address(newWrapper.priceFeed())
+            );
+            require(
+                !legacyPriceFeedWrapped,
+                string.concat(
+                    "MIP-X56: ",
+                    chainName,
+                    " new wrapper's priceFeed must be a raw aggregator for ",
+                    oracleName
+                )
+            );
+            return;
+        }
+
         assertEq(
             newWrapper.owner(),
             captured.owner,
@@ -1056,16 +1089,48 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
                 return (true, inner);
             }
         } catch {}
+        try IOldOEVWrapperFeed(registryEntry).originalFeed() returns (
+            AggregatorV3Interface originalFeed
+        ) {
+            if (address(originalFeed) != address(0)) {
+                return (true, originalFeed);
+            }
+        } catch {}
         return (false, AggregatorV3Interface(address(0)));
     }
 
     /// @notice Capture the constructor-mirroring parameters of a live
     ///         `ChainlinkOEVWrapper`-shaped contract.
+    /// @dev    Legacy `ChainlinkFeedOEVWrapper` (e.g. Optimism
+    ///         `CHAINLINK_WELL_USD_OEV_WRAPPER` at 0xfeA5…58f) exposes
+    ///         `originalFeed()` instead of `priceFeed()` and has no analog
+    ///         for `chainlinkOracle`, `feeRecipient`, or `liquidatorFeeBps`.
+    ///         For that case we only capture the raw aggregator pointer —
+    ///         the single field the WELL market's post-state check needs.
+    ///         `_snapshotChain` / `_validatePricePreserved` read
+    ///         `latestRoundData()` on `_capturedParams[...].priceFeed`, so
+    ///         the raw pointer is sufficient for price preservation. The
+    ///         remaining fields stay at zero; strict mirror assertions in
+    ///         `_validateWrapperParams` must therefore be relaxed for
+    ///         legacy-sourced configs by the caller.
     function _captureParams(
         address wrapperAddr
     ) internal view returns (WrapperParams memory params) {
         ChainlinkOEVWrapper w = ChainlinkOEVWrapper(payable(wrapperAddr));
-        params.priceFeed = address(w.priceFeed());
+
+        try w.priceFeed() returns (AggregatorV3Interface pf) {
+            params.priceFeed = address(pf);
+        } catch {
+            // Legacy wrapper path: mirror only the raw aggregator. The
+            // remaining six fields are sourced canonically by the caller
+            // from a sibling new-style wrapper on the same chain.
+            params.priceFeed = address(
+                IOldOEVWrapperFeed(wrapperAddr).originalFeed()
+            );
+            params.isLegacy = true;
+            return params;
+        }
+
         params.owner = w.owner();
         params.chainlinkOracle = address(w.chainlinkOracle());
         params.feeRecipient = w.feeRecipient();
