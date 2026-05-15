@@ -793,6 +793,31 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             postPrice
         );
 
+        // Strict-equality check: since this proposal only swaps wrapper
+        // bytecode (same priceFeed pointer, same raw aggregator answer),
+        // the consumer-facing mToken-scaled price should match bit-for-bit.
+        // A divergence here is a red flag even within the 2% tolerance.
+        if (postPrice == capturedPrice) {
+            console.log(
+                string.concat(
+                    "  getUnderlyingPrice(",
+                    config.mTokenKey,
+                    "): MATCH (exact)"
+                )
+            );
+        } else {
+            console.log(
+                string.concat(
+                    "  getUnderlyingPrice(",
+                    config.mTokenKey,
+                    "): DIFFERS, delta="
+                ),
+                postPrice > capturedPrice
+                    ? postPrice - capturedPrice
+                    : capturedPrice - postPrice
+            );
+        }
+
         assertApproxEqRel(
             postPrice,
             capturedPrice,
