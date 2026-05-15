@@ -205,6 +205,35 @@ contract ChainlinkOEVMorphoWrapperUnitTest is Test {
         harness.exposed_getLoanTokenPrice(mp);
     }
 
+    /// @notice Mirror of the QUOTE_FEED_2 guard for BASE_FEED_2: a non-zero
+    ///         BASE_FEED_2 means the Morpho oracle chains the base price
+    ///         through a second feed. This wrapper only reads BASE_FEED_1
+    ///         (the collateral aggregator), so chained-base markets must be
+    ///         rejected to avoid silently mispricing the loan-vs-collateral
+    ///         split.
+    function testLoanPriceRevertsWhenBaseFeed2IsSet() public {
+        MockChainlinkOracle quoteFeed = new MockChainlinkOracle(2_000e8, 8);
+        quoteFeed.set(1, 2_000e8, 1, block.timestamp, 1);
+
+        MarketParams memory mp = _makeMarketParams(
+            address(loanToken),
+            address(quoteFeed)
+        );
+
+        vm.mockCall(
+            mp.oracle,
+            abi.encodeWithSelector(
+                IMorphoChainlinkOracleV2.BASE_FEED_2.selector
+            ),
+            abi.encode(address(0xBEEF))
+        );
+
+        vm.expectRevert(
+            "ChainlinkOEVMorphoWrapper: chained base feeds unsupported"
+        );
+        harness.exposed_getLoanTokenPrice(mp);
+    }
+
     /// @notice 6-decimal loan token (USDC-like) must scale to 1e30 when fed
     ///         a 1e8 price from an 8-decimal Chainlink aggregator.
     function testLoanPriceScalesToTokenDecimals6() public {

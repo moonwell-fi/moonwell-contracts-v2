@@ -82,6 +82,31 @@ contract ChainlinkOEVMorphoWrapperAllowlistUnitTest is Test {
         assertFalse(wrapper.approvedMarkets(id));
     }
 
+    /// @notice HAL-09: setting the same value twice must revert so an owner
+    ///         doesn't accidentally re-fire MarketApproved with no state
+    ///         change (which downstream consumers might treat as a toggle).
+    function testSetApprovedMarketRevertsOnNoOpTrue() public {
+        bytes32 id = bytes32(uint256(0xBEEF));
+
+        vm.prank(owner);
+        wrapper.setApprovedMarket(id, true);
+
+        vm.prank(owner);
+        vm.expectRevert("ChainlinkOEVMorphoWrapper: market approval unchanged");
+        wrapper.setApprovedMarket(id, true);
+    }
+
+    /// @notice HAL-09: same as above but for the default `false` state — the
+    ///         very first call with `false` on a never-approved id must also
+    ///         revert because the value is already `false`.
+    function testSetApprovedMarketRevertsOnNoOpFalse() public {
+        bytes32 id = bytes32(uint256(0xC0FFEE));
+
+        vm.prank(owner);
+        vm.expectRevert("ChainlinkOEVMorphoWrapper: market approval unchanged");
+        wrapper.setApprovedMarket(id, false);
+    }
+
     /// @notice The exploit path: an attacker passes a permissionless dummy market.
     ///         With the fix, the allowlist check rejects it before any state mutation.
     function testUpdatePriceEarlyAndLiquidateRevertsForUnapprovedMarket()

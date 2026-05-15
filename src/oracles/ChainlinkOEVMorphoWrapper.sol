@@ -531,20 +531,16 @@ contract ChainlinkOEVMorphoWrapper is
                 marketParams
             );
 
-        // transfer the liquidator's payment (repayment + bonus) to the liquidator
-        bool liquidatorSuccess = EIP20Interface(marketParams.collateralToken)
-            .transfer(msg.sender, liquidatorFee);
-        require(
-            liquidatorSuccess,
-            "ChainlinkOEVMorphoWrapper: liquidator fee transfer failed"
+        // HAL-03/05: use safeTransfer for collateral distribution too, so
+        // void-return tokens (e.g. USDT-class) joining a permissionless
+        // Morpho market as collateral don't brick the fee-split path.
+        IERC20(marketParams.collateralToken).safeTransfer(
+            msg.sender,
+            liquidatorFee
         );
-
-        // transfer the remainder to the fee recipient
-        bool protocolSuccess = EIP20Interface(marketParams.collateralToken)
-            .transfer(feeRecipient, protocolFee);
-        require(
-            protocolSuccess,
-            "ChainlinkOEVMorphoWrapper: protocol fee transfer failed"
+        IERC20(marketParams.collateralToken).safeTransfer(
+            feeRecipient,
+            protocolFee
         );
 
         emit PriceUpdatedEarlyAndLiquidated(

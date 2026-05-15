@@ -306,13 +306,10 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             string memory proxyKey = string(
                 abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
             );
-            if (!addresses.isAddressSet(proxyKey)) {
-                console.log(
-                    "afterDeploy: Morpho proxy not found, skipping:",
-                    proxyKey
-                );
-                continue;
-            }
+            require(
+                addresses.isAddressSet(proxyKey),
+                string.concat("MIP-X56: missing Morpho proxy ", proxyKey)
+            );
 
             address proxyAddr = addresses.getAddress(proxyKey);
             ChainlinkOEVMorphoWrapper proxy = ChainlinkOEVMorphoWrapper(
@@ -424,13 +421,14 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             string memory proxyKey = string(
                 abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
             );
-            if (!addresses.isAddressSet(proxyKey)) {
-                console.log(
-                    "build: Morpho proxy not found, skipping:",
-                    proxyKey
-                );
-                continue;
-            }
+            // Fail loud: every configured Morpho proxy MUST exist in the
+            // registry. Silently skipping would let the proposal pass a
+            // simulation while leaving the upgrade + allowlist seed
+            // unapplied for that proxy.
+            require(
+                addresses.isAddressSet(proxyKey),
+                string.concat("MIP-X56: missing Morpho proxy ", proxyKey)
+            );
 
             address proxy = addresses.getAddress(proxyKey);
 
@@ -795,33 +793,12 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
 
         // Strict-equality check: since this proposal only swaps wrapper
         // bytecode (same priceFeed pointer, same raw aggregator answer),
-        // the consumer-facing mToken-scaled price should match bit-for-bit.
-        // A divergence here is a red flag even within the 2% tolerance.
-        if (postPrice == capturedPrice) {
-            console.log(
-                string.concat(
-                    "  getUnderlyingPrice(",
-                    config.mTokenKey,
-                    "): MATCH (exact)"
-                )
-            );
-        } else {
-            console.log(
-                string.concat(
-                    "  getUnderlyingPrice(",
-                    config.mTokenKey,
-                    "): DIFFERS, delta="
-                ),
-                postPrice > capturedPrice
-                    ? postPrice - capturedPrice
-                    : capturedPrice - postPrice
-            );
-        }
-
-        assertApproxEqRel(
+        // the consumer-facing mToken-scaled price MUST match bit-for-bit.
+        // Any divergence means the new wrapper resolves to a different
+        // raw aggregator and the bounty-fix was not applied cleanly.
+        assertEq(
             postPrice,
             capturedPrice,
-            2e16, // 2%
             string.concat(
                 chainName,
                 ": getUnderlyingPrice diverged for ",
@@ -885,13 +862,10 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             string memory proxyKey = string(
                 abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
             );
-            if (!addresses.isAddressSet(proxyKey)) {
-                console.log(
-                    "validate: Morpho proxy not found, skipping:",
-                    proxyKey
-                );
-                continue;
-            }
+            require(
+                addresses.isAddressSet(proxyKey),
+                string.concat("MIP-X56: missing Morpho proxy ", proxyKey)
+            );
 
             address proxyAddr = addresses.getAddress(proxyKey);
             MorphoSnapshot storage snap = _morphoSnapshot[proxyAddr];
