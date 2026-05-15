@@ -656,6 +656,9 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     ) internal {
         vm.selectFork(forkId);
 
+        console.log("");
+        console.log(string.concat("=== Validating ", chainName, " ==="));
+
         OracleConfig[] memory configs = getOracleConfigurations(chainId);
 
         for (uint256 i = 0; i < configs.length; i++) {
@@ -678,6 +681,10 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             OEV_WRAPPER_SUFFIX
         );
         address newWrapperAddr = addresses.getAddress(wrapperName);
+
+        console.log("");
+        console.log(string.concat("-- ", config.oracleName, " --"));
+        console.log("  new wrapper:", newWrapperAddr);
 
         // (1) Wiring check: oracle.getFeed(symbol) == new wrapper.
         //     Symbol must be resolvable at validate() time — if it
@@ -752,6 +759,20 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         if (captured.isLegacy) {
             (, int256 newAns, , uint256 newUpdatedAt, ) = newWrapper
                 .latestRoundData();
+
+            console.log("  [legacy wrapper] pre answer:");
+            console.logInt(captured.legacyAnswer);
+            console.log(
+                "  [legacy wrapper] pre updatedAt: ",
+                captured.legacyUpdatedAt
+            );
+            console.log("  [new wrapper]    post answer:");
+            console.logInt(newAns);
+            console.log(
+                "  [new wrapper]    post updatedAt:",
+                newUpdatedAt
+            );
+
             assertEq(
                 newAns,
                 captured.legacyAnswer,
@@ -872,6 +893,16 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         uint256 postPrice = oracle.getUnderlyingPrice(
             MToken(addresses.getAddress(config.mTokenKey))
         );
+
+        console.log(
+            string.concat("  getUnderlyingPrice(", config.mTokenKey, ") pre: "),
+            capturedPrice
+        );
+        console.log(
+            string.concat("  getUnderlyingPrice(", config.mTokenKey, ") post:"),
+            postPrice
+        );
+
         assertApproxEqRel(
             postPrice,
             capturedPrice,
@@ -893,6 +924,24 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         string memory label
     ) internal view {
         (, int256 ans, , uint256 updatedAt, ) = rawFeed.latestRoundData();
+
+        console.log(
+            string.concat("  [raw feed: ", label, "] pre answer:")
+        );
+        console.logInt(expectedAnswer);
+        console.log(
+            string.concat("  [raw feed: ", label, "] pre updatedAt: "),
+            expectedUpdatedAt
+        );
+        console.log(
+            string.concat("  [raw feed: ", label, "] post answer:")
+        );
+        console.logInt(ans);
+        console.log(
+            string.concat("  [raw feed: ", label, "] post updatedAt:"),
+            updatedAt
+        );
+
         assertEq(
             ans,
             expectedAnswer,
