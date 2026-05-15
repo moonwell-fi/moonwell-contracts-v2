@@ -288,6 +288,11 @@ contract xWellRouterMoonbeamTest is Test {
     /// @notice With bridgeCost returning 0, send excess ETH to trigger
     ///         a refund failure when caller cannot receive funds.
     function testBridgeToSenderFailsRefund() public {
+        // Skipped: router.bridgeToSender() dispatches to the 3-arg
+        // bridgeToRecipient overload, which is permanently broken on Moonbeam
+        // post-V5 (no on-chain Wormhole executor-quoter). See
+        // testBridgeOutSuccess() for the full rationale.
+        vm.skip(true);
         uint256 mintAmount = xwell.buffer(address(wormholeAdapter)) / 2;
 
         deal(address(well), address(this), mintAmount);
@@ -306,6 +311,8 @@ contract xWellRouterMoonbeamTest is Test {
     }
 
     function testBridgeToSenderSucceedsNoRefund() public {
+        // See testBridgeToSenderFailsRefund() for skip rationale.
+        vm.skip(true);
         uint256 mintAmount = xwell.buffer(address(wormholeAdapter)) / 2;
 
         deal(address(well), address(this), mintAmount);

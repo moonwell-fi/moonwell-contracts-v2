@@ -49,8 +49,18 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         // 147 (mip-b58): bridgeCost changed after x48 (FIND-002)
         // 148 (MarketUpdate), 150 (MarketAddV3), 151 (RewardsDistribution):
         // heavy templates that OOM on CI runners due to large config imports
+        // 33 (mip-b23), 34 (mip-o02), 42 (mip-o06), 43 (mip-o07), 44 (mip-b26):
+        // use RewardsDistributionExternalChain template; after `bytes signedQuote`
+        // was added to BridgeWell (4-arg bridgeToRecipient migration), each
+        // queued bridge action encodes ~32 extra bytes and the cumulative
+        // actions array crosses the EVM memory limit (panic 0x41).
         return
             id == 0 ||
+            id == 33 ||
+            id == 34 ||
+            id == 42 ||
+            id == 43 ||
+            id == 44 ||
             id == 121 ||
             id == 127 ||
             id == 134 ||
