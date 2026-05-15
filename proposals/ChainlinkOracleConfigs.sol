@@ -135,8 +135,14 @@ abstract contract ChainlinkOracleConfigs is Test {
         );
 
         /// Initialize oracle configurations for Optimism
+        /// On Optimism, WELL is the xWELL bridged token registered under
+        /// `xWELL_PROXY` (the plain `WELL` key exists only on Moonbeam).
+        /// `MOONWELL_WELL` is intentionally referenced even though no
+        /// Core WELL market exists on Optimism — the
+        /// `addresses.isAddressSet(mTokenKey)` gate in `_snapshotChain` /
+        /// `_validateUnderlyingPrice` handles the absence cleanly.
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-            OracleConfig("CHAINLINK_WELL_USD", "WELL", "MOONWELL_WELL")
+            OracleConfig("CHAINLINK_WELL_USD", "xWELL_PROXY", "MOONWELL_WELL")
         );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_USDC_USD", "USDC", "MOONWELL_USDC")
