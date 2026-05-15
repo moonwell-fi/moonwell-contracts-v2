@@ -223,24 +223,28 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
 
             // Resolve the live wrapper via the registry: whatever address is
             // currently wired under the market's actual ERC20 symbol.
+            // Inconsistency between the config list, the addresses
+            // registry, and the on-chain ChainlinkOracle state must
+            // surface as a hard revert — silent skips here would let
+            // proposals execute against partial coverage.
             (bool ok, string memory symbol) = _readSymbol(addresses, config);
-            if (!ok) {
-                console.log(
-                    "Skipping (no symbol resolvable):",
+            require(
+                ok,
+                string.concat(
+                    "MIP-X56: symbol not resolvable for ",
                     config.oracleName
-                );
-                continue;
-            }
+                )
+            );
 
             address registered = address(oracle.getFeed(symbol));
             (bool isWrapped, ) = _isOEVWrapper(registered);
-            if (!isWrapped) {
-                console.log(
-                    "Skipping (registered feed is not an OEV wrapper):",
+            require(
+                isWrapped,
+                string.concat(
+                    "MIP-X56: registered feed is not an OEV wrapper for ",
                     config.oracleName
-                );
-                continue;
-            }
+                )
+            );
 
             // Capture the existing wrapper's full configuration so the new
             // wrapper can mirror it exactly.
@@ -599,7 +603,13 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             );
 
             (bool ok, string memory symbol) = _readSymbol(addresses, config);
-            if (!ok) continue;
+            require(
+                ok,
+                string.concat(
+                    "MIP-X56: symbol not resolvable for ",
+                    config.oracleName
+                )
+            );
 
             address newWrapper = addresses.getAddress(wrapperName);
             _pushAction(
@@ -670,21 +680,29 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         address newWrapperAddr = addresses.getAddress(wrapperName);
 
         // (1) Wiring check: oracle.getFeed(symbol) == new wrapper.
+        //     Symbol must be resolvable at validate() time — if it
+        //     isn't, post-state can't be verified and the proposal
+        //     must fail loudly rather than silently passing.
         (bool ok, string memory symbol) = _readSymbol(addresses, config);
-        if (ok) {
-            IChainlinkOracle oracle = IChainlinkOracle(
-                addresses.getAddress("CHAINLINK_ORACLE")
-            );
-            assertEq(
-                address(oracle.getFeed(symbol)),
-                newWrapperAddr,
-                string.concat(
-                    chainName,
-                    ": feed not wired to new wrapper for ",
-                    symbol
-                )
-            );
-        }
+        require(
+            ok,
+            string.concat(
+                "MIP-X56: symbol not resolvable at validate for ",
+                config.oracleName
+            )
+        );
+        IChainlinkOracle oracle = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+        assertEq(
+            address(oracle.getFeed(symbol)),
+            newWrapperAddr,
+            string.concat(
+                chainName,
+                ": feed not wired to new wrapper for ",
+                symbol
+            )
+        );
 
         // (2) Param-mirroring check.
         _validateWrapperParams(
