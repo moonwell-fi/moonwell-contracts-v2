@@ -420,19 +420,28 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             }
 
             // Snapshot raw aggregator answer/updatedAt once per oracleName.
+            // If the raw aggregator has been retired on-chain (e.g.
+            // Optimism CHAINLINK_WELL_USD), `latestRoundData()` reverts;
+            // leave the snapshot at zero so validate() can skip the
+            // price-preservation assertion (gated on _rawUpdatedAtPre != 0).
             if (_rawUpdatedAtPre[chainId][config.oracleName] == 0) {
                 address rawFeed = _capturedParams[chainId][config.oracleName]
                     .priceFeed;
                 if (rawFeed != address(0)) {
-                    (
-                        ,
+                    try
+                        AggregatorV3Interface(rawFeed).latestRoundData()
+                    returns (
+                        uint80,
                         int256 ans,
-                        ,
+                        uint256,
                         uint256 updatedAt,
-
-                    ) = AggregatorV3Interface(rawFeed).latestRoundData();
-                    _rawAnswerPre[chainId][config.oracleName] = ans;
-                    _rawUpdatedAtPre[chainId][config.oracleName] = updatedAt;
+                        uint80
+                    ) {
+                        _rawAnswerPre[chainId][config.oracleName] = ans;
+                        _rawUpdatedAtPre[chainId][
+                            config.oracleName
+                        ] = updatedAt;
+                    } catch {}
                 }
             }
 
@@ -757,40 +766,50 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         //       latestRoundData() captured pre-deploy.
         //   (c) defense-in-depth: priceFeed must be a raw aggregator.
         if (captured.isLegacy) {
-            (, int256 newAns, , uint256 newUpdatedAt, ) = newWrapper
-                .latestRoundData();
+            // Price-preservation check is only meaningful when the legacy
+            // wrapper was readable at capture time. A dead underlying
+            // raw aggregator (e.g. retired Optimism CHAINLINK_WELL_USD)
+            // makes both pre- and post-swap `latestRoundData()` revert;
+            // we still validate the priceFeed pointer mirror and the
+            // raw-aggregator defense-in-depth check below.
+            if (captured.legacyUpdatedAt != 0) {
+                (, int256 newAns, , uint256 newUpdatedAt, ) = newWrapper
+                    .latestRoundData();
 
-            console.log("  [legacy wrapper] pre answer:");
-            console.logInt(captured.legacyAnswer);
-            console.log(
-                "  [legacy wrapper] pre updatedAt: ",
-                captured.legacyUpdatedAt
-            );
-            console.log("  [new wrapper]    post answer:");
-            console.logInt(newAns);
-            console.log(
-                "  [new wrapper]    post updatedAt:",
-                newUpdatedAt
-            );
+                console.log("  [legacy wrapper] pre answer:");
+                console.logInt(captured.legacyAnswer);
+                console.log(
+                    "  [legacy wrapper] pre updatedAt: ",
+                    captured.legacyUpdatedAt
+                );
+                console.log("  [new wrapper]    post answer:");
+                console.logInt(newAns);
+                console.log("  [new wrapper]    post updatedAt:", newUpdatedAt);
 
-            assertEq(
-                newAns,
-                captured.legacyAnswer,
-                string.concat(
-                    chainName,
-                    ": legacy->new wrapper answer changed for ",
-                    oracleName
-                )
-            );
-            assertEq(
-                newUpdatedAt,
-                captured.legacyUpdatedAt,
-                string.concat(
-                    chainName,
-                    ": legacy->new wrapper updatedAt changed for ",
-                    oracleName
-                )
-            );
+                assertEq(
+                    newAns,
+                    captured.legacyAnswer,
+                    string.concat(
+                        chainName,
+                        ": legacy->new wrapper answer changed for ",
+                        oracleName
+                    )
+                );
+                assertEq(
+                    newUpdatedAt,
+                    captured.legacyUpdatedAt,
+                    string.concat(
+                        chainName,
+                        ": legacy->new wrapper updatedAt changed for ",
+                        oracleName
+                    )
+                );
+            } else {
+                console.log(
+                    "  [legacy wrapper] dead raw feed, skipping price-preservation check for"
+                );
+                console.log(oracleName);
+            }
 
             (bool legacyPriceFeedWrapped, ) = _isOEVWrapper(
                 address(newWrapper.priceFeed())
@@ -925,17 +944,13 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     ) internal view {
         (, int256 ans, , uint256 updatedAt, ) = rawFeed.latestRoundData();
 
-        console.log(
-            string.concat("  [raw feed: ", label, "] pre answer:")
-        );
+        console.log(string.concat("  [raw feed: ", label, "] pre answer:"));
         console.logInt(expectedAnswer);
         console.log(
             string.concat("  [raw feed: ", label, "] pre updatedAt: "),
             expectedUpdatedAt
         );
-        console.log(
-            string.concat("  [raw feed: ", label, "] post answer:")
-        );
+        console.log(string.concat("  [raw feed: ", label, "] post answer:"));
         console.logInt(ans);
         console.log(
             string.concat("  [raw feed: ", label, "] post updatedAt:"),
@@ -1233,11 +1248,22 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             // delegates to its `originalFeed`), not off the raw
             // aggregator — we want to catch any decoration the legacy
             // wrapper applies and assert the new wrapper preserves it.
-            (, int256 legacyAns, , uint256 legacyUpd, ) = AggregatorV3Interface(
-                wrapperAddr
-            ).latestRoundData();
-            params.legacyAnswer = legacyAns;
-            params.legacyUpdatedAt = legacyUpd;
+            //
+            // If the underlying raw aggregator has been retired on-chain
+            // (e.g. Optimism CHAINLINK_WELL_USD raw feed reverts on
+            // latestRoundData), leave the snapshot at zero. Validation
+            // gates the price-preservation assertion on a non-zero
+            // updatedAt so a dead feed is rewrapped without false-fail.
+            try AggregatorV3Interface(wrapperAddr).latestRoundData() returns (
+                uint80,
+                int256 legacyAns,
+                uint256,
+                uint256 legacyUpd,
+                uint80
+            ) {
+                params.legacyAnswer = legacyAns;
+                params.legacyUpdatedAt = legacyUpd;
+            } catch {}
             return params;
         }
 
