@@ -458,12 +458,15 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     // ---------------------------------------------------------------
 
     function testExecuteVAAv1RevertsToZeroAddress() public {
+        // payload must encode (to, amount, targetChainId) — the 3-tuple
+        // executeVAAv1 abi.decodes. Missing fields cause an abi.decode panic
+        // with empty revert data, masking the intended OZ zero-address require.
         mockWormholeCore.setStorage(
             true,
             sourceWormholeChainId,
             address(adapter).toBytes(),
             "",
-            abi.encode(address(0), uint256(1000e18))
+            abi.encode(address(0), uint256(1000e18), currentWormholeChainId)
         );
 
         vm.expectRevert("ERC20: mint to the zero address");

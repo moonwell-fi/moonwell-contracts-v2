@@ -127,8 +127,12 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         console.log("Found onchain calldata for proposal: ", proposal.name());
     }
 
-    /// @dev Split into four batches to avoid EVM memory allocation panic (0x41).
-    /// Proposals >= 146 are excluded (heavy templates OOM even in tiny batches).
+    /// @dev Split into five batches (1a + 1b + 2-4) to avoid EVM memory
+    /// allocation panic (0x41). Proposals >= 146 are excluded (heavy
+    /// templates OOM even in tiny batches). Batch1 was halved after the
+    /// rewards-distribution template's BridgeWell gained a `bytes signedQuote`
+    /// field — each queued bridge action now encodes ~32 extra bytes, and
+    /// the cumulative actions array crossed the memory limit at id ~= 58.
     function testMultichainGovernorCalldataMatchBatch1() public {
         ProposalFields[]
             memory multichainGovernorProposals = filterByGovernorAndProposalType(
@@ -137,7 +141,20 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             );
         for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
             uint256 id = multichainGovernorProposals[i - 1].id;
-            if (_isExcludedMultichain(id) || id > 58) continue;
+            if (_isExcludedMultichain(id) || id > 30) continue;
+            _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
+        }
+    }
+
+    function testMultichainGovernorCalldataMatchBatch1b() public {
+        ProposalFields[]
+            memory multichainGovernorProposals = filterByGovernorAndProposalType(
+                "MultichainGovernor",
+                "HybridProposal"
+            );
+        for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
+            uint256 id = multichainGovernorProposals[i - 1].id;
+            if (_isExcludedMultichain(id) || id <= 30 || id > 58) continue;
             _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
         }
     }
