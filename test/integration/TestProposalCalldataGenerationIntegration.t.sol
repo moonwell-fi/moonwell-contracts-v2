@@ -46,6 +46,7 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         // 127 (mip-x34), 121 (mip-x32), 137 (mip-b55: bridgeCost is dynamic),
         // 134 (mip-x38), 141 (mip-x43), 143 (mip-b57): inherit ChainlinkOracleConfigs
         // which grows when new markets are added
+        // 118 (mip-b46): hash drift, same dynamic-bridge pattern as 137/147
         // 147 (mip-b58): bridgeCost changed after x48 (FIND-002)
         // 148 (MarketUpdate), 150 (MarketAddV3), 151 (RewardsDistribution):
         // heavy templates that OOM on CI runners due to large config imports
@@ -79,6 +80,7 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             id == 97 ||
             id == 100 ||
             id == 107 ||
+            id == 118 ||
             id == 121 ||
             id == 127 ||
             id == 134 ||
