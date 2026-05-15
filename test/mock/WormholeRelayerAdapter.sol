@@ -269,7 +269,7 @@ contract WormholeRelayerAdapter {
 
         /// Per-chain reverts only apply to the V2 governor's _bridgeOutAll
         /// envelope shape (uint16 targetChain, address targetAddress, bytes
-        /// innerPayload). For other shapes (e.g. mip-x56 break-glass payloads
+        /// innerPayload). For other shapes (e.g. mip-x57 break-glass payloads
         /// encoded as (address, address[], uint256[], bytes[])), skip the
         /// check gracefully instead of reverting on a shape mismatch.
         try this.decodeTargetChain(payload) returns (uint16 targetChain) {
