@@ -84,6 +84,7 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             id == 60 ||
             id == 68 ||
             id == 71 ||
+            id == 72 ||
             id == 81 ||
             id == 85 ||
             id == 92 ||
