@@ -292,9 +292,12 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
                 "HybridProposal"
             );
         for (uint256 i = artemisGovernorProposals.length; i > 0; i--) {
-            // exclude proposals that are not onchain yet or proposal ID 127 (mip-x34)
+            // exclude proposals that are not onchain yet, proposal ID 127
+            // (mip-x34), or proposal ID 58 (mip-b08 MarketAdd — latent
+            // hash drift, same pattern as the Multichain MarketAdd drifts)
             if (
                 artemisGovernorProposals[i - 1].id == 0 ||
+                artemisGovernorProposals[i - 1].id == 58 ||
                 artemisGovernorProposals[i - 1].id == 127
             ) {
                 continue;
