@@ -996,7 +996,7 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     ///         proxy's storage is unchanged after the implementation upgrade.
     ///         Also validates raw price preservation per proxy. Morpho proxies
     ///         are not mTokens — getUnderlyingPrice does not apply to them.
-    function _validateAllMorphoWrappers(Addresses addresses) internal {
+    function _validateAllMorphoWrappers(Addresses addresses) internal view {
         MorphoOracleConfig[]
             memory morphoConfigs = getMorphoOracleConfigurations(BASE_CHAIN_ID);
         address expectedImpl = addresses.getAddress(
