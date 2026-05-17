@@ -71,8 +71,15 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         uint256 cachedRoundId;
         address morphoBlue;
         uint8 decimals;
+        // Raw aggregator (priceFeed) latestRoundData() pre-snapshot.
         int256 answer;
         uint256 updatedAt;
+        // OEV-wrapped surface (proxy.latestRoundData()) pre-snapshot — what
+        // consumers actually see. Together with the raw pair, validate()
+        // asserts the upgrade preserved both the forwarding path and the
+        // OEV-state-machine output.
+        int256 oevAnswer;
+        uint256 oevUpdatedAt;
     }
     mapping(address => MorphoSnapshot) internal _morphoSnapshot;
 
@@ -83,6 +90,16 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     ///         simulate, so a diff means a different aggregator was wired).
     mapping(uint256 => mapping(string => int256)) internal _rawAnswerPre;
     mapping(uint256 => mapping(string => uint256)) internal _rawUpdatedAtPre;
+
+    /// @notice Per-chain, per-oracleName snapshot of the OLD OEV wrapper's
+    ///         latestRoundData() output captured immediately before
+    ///         simulation. Read through `oracle.getFeed(symbol)` while the
+    ///         on-chain wiring still points at the predecessor wrapper.
+    ///         Used together with `_rawAnswerPre` to prove the redeploy
+    ///         preserved BOTH the raw forwarding path AND the OEV-state-
+    ///         machine output.
+    mapping(uint256 => mapping(string => int256)) internal _oevAnswerPre;
+    mapping(uint256 => mapping(string => uint256)) internal _oevUpdatedAtPre;
 
     /// @notice Per-chain, per-mTokenKey snapshot of the full
     ///         `ChainlinkOracle.getUnderlyingPrice(mToken)` resolution path
@@ -332,6 +349,16 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             ).latestRoundData();
             snap.answer = ans;
             snap.updatedAt = updatedAt;
+
+            // OEV-surface snapshot: read through the proxy itself so we can
+            // assert post-upgrade output matches the pre-upgrade output of
+            // the same address (catches a state-machine change even when the
+            // raw feed is unchanged).
+            (, int256 oevAns, , uint256 oevUp, ) = AggregatorV3Interface(
+                proxyAddr
+            ).latestRoundData();
+            snap.oevAnswer = oevAns;
+            snap.oevUpdatedAt = oevUp;
         }
     }
 
@@ -380,6 +407,33 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
                     ) = AggregatorV3Interface(rawFeed).latestRoundData();
                     _rawAnswerPre[chainId][config.oracleName] = ans;
                     _rawUpdatedAtPre[chainId][config.oracleName] = updatedAt;
+                }
+            }
+
+            // Snapshot the OLD OEV wrapper's latestRoundData() output once
+            // per oracleName. At this point the on-chain wiring still points
+            // at the predecessor wrapper (setFeed actions are queued for
+            // simulate but haven't executed), so `oracle.getFeed(symbol)`
+            // returns the OLD wrapper — exactly the surface consumers see.
+            if (_oevUpdatedAtPre[chainId][config.oracleName] == 0) {
+                (bool ok, string memory symbol) = _readSymbol(
+                    addresses,
+                    config
+                );
+                if (ok) {
+                    address oldWrapperAddr = address(oracle.getFeed(symbol));
+                    if (oldWrapperAddr != address(0)) {
+                        (
+                            ,
+                            int256 oevAns,
+                            ,
+                            uint256 oevUp,
+
+                        ) = AggregatorV3Interface(oldWrapperAddr)
+                                .latestRoundData();
+                        _oevAnswerPre[chainId][config.oracleName] = oevAns;
+                        _oevUpdatedAtPre[chainId][config.oracleName] = oevUp;
+                    }
                 }
             }
 
@@ -667,17 +721,19 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             config.oracleName
         );
 
-        // (3) Raw aggregator price preservation.
-        if (_rawUpdatedAtPre[chainId][config.oracleName] != 0) {
-            _validatePricePreserved(
-                AggregatorV3Interface(
-                    _capturedParams[chainId][config.oracleName].priceFeed
-                ),
-                _rawAnswerPre[chainId][config.oracleName],
-                _rawUpdatedAtPre[chainId][config.oracleName],
-                string.concat(chainName, " ", config.oracleName)
-            );
-        }
+        // (3) OEV-wrapper price preservation: the freshly-deployed wrapper
+        //     must hand back values that match BOTH the raw aggregator's
+        //     pre-snapshot AND the predecessor wrapper's pre-snapshot. Reads
+        //     the NEW wrapper, so any broken forwarding path or OEV state-
+        //     machine regression surfaces here.
+        _validatePricePreserved(
+            AggregatorV3Interface(newWrapperAddr),
+            _rawAnswerPre[chainId][config.oracleName],
+            _rawUpdatedAtPre[chainId][config.oracleName],
+            _oevAnswerPre[chainId][config.oracleName],
+            _oevUpdatedAtPre[chainId][config.oracleName],
+            string.concat(chainName, " ", config.oracleName)
+        );
 
         // (4) Full-resolution path within +-2%.
         _validateUnderlyingPrice(addresses, chainId, chainName, config);
@@ -807,34 +863,57 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
         );
     }
 
-    /// @notice Asserts that the raw aggregator behind the post-upgrade wrapper
-    ///         returns the same answer/updatedAt captured pre-simulation.
+    /// @notice Asserts that the OEV-wrapped surface (Core wrapper or Morpho
+    ///         proxy) returns the SAME `(answer, updatedAt)` post-upgrade
+    ///         as it did pre-upgrade AND that the value matches the raw
+    ///         aggregator's pre-snapshot.
+    ///
+    ///         Two-pair assertion catches:
+    ///           - Re-wiring: post output drifts from raw pre-snapshot →
+    ///             wrapper points at a different aggregator.
+    ///           - State-machine regression: post output drifts from OEV
+    ///             pre-snapshot → upgrade changed delay/passthrough behavior.
+    ///         Both pairs hold simultaneously only when the wrapper was in
+    ///         passthrough mode at snapshot time AND the upgrade preserved
+    ///         that. A failure on either side surfaces the relevant class.
     function _validatePricePreserved(
-        AggregatorV3Interface rawFeed,
-        int256 expectedAnswer,
-        uint256 expectedUpdatedAt,
+        AggregatorV3Interface wrapper,
+        int256 expectedRawAnswer,
+        uint256 expectedRawUpdatedAt,
+        int256 expectedOevAnswer,
+        uint256 expectedOevUpdatedAt,
         string memory label
     ) internal view {
-        (, int256 ans, , uint256 updatedAt, ) = rawFeed.latestRoundData();
+        (, int256 ans, , uint256 updatedAt, ) = wrapper.latestRoundData();
 
         // Bake every value into its label via vm.toString so each log line
         // is self-contained — bare `console.logInt` calls produce orphaned
         // numeric lines that are easy to lose to stdout filters.
         console.log(
             string.concat(
-                "  [raw feed: ",
+                "  [",
                 label,
-                "] pre answer:  ",
-                vm.toString(expectedAnswer),
+                "] raw pre answer: ",
+                vm.toString(expectedRawAnswer),
                 "  updatedAt: ",
-                vm.toString(expectedUpdatedAt)
+                vm.toString(expectedRawUpdatedAt)
             )
         );
         console.log(
             string.concat(
-                "  [raw feed: ",
+                "  [",
                 label,
-                "] post answer: ",
+                "] OEV pre answer: ",
+                vm.toString(expectedOevAnswer),
+                "  updatedAt: ",
+                vm.toString(expectedOevUpdatedAt)
+            )
+        );
+        console.log(
+            string.concat(
+                "  [",
+                label,
+                "] OEV post answer: ",
                 vm.toString(ans),
                 "  updatedAt: ",
                 vm.toString(updatedAt)
@@ -843,13 +922,35 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
 
         assertEq(
             ans,
-            expectedAnswer,
-            string.concat(label, ": raw feed answer changed across upgrade")
+            expectedRawAnswer,
+            string.concat(
+                label,
+                ": OEV-wrapped answer post-upgrade != raw feed pre-snapshot"
+            )
         );
         assertEq(
             updatedAt,
-            expectedUpdatedAt,
-            string.concat(label, ": raw feed updatedAt changed across upgrade")
+            expectedRawUpdatedAt,
+            string.concat(
+                label,
+                ": OEV-wrapped updatedAt post-upgrade != raw feed pre-snapshot"
+            )
+        );
+        assertEq(
+            ans,
+            expectedOevAnswer,
+            string.concat(
+                label,
+                ": OEV-wrapped answer post-upgrade != OEV pre-snapshot"
+            )
+        );
+        assertEq(
+            updatedAt,
+            expectedOevUpdatedAt,
+            string.concat(
+                label,
+                ": OEV-wrapped updatedAt post-upgrade != OEV pre-snapshot"
+            )
         );
     }
 
@@ -907,15 +1008,19 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
                 addresses
             );
 
-            // Raw price preservation for Morpho proxy's underlying feed.
-            if (snap.priceFeed != address(0) && snap.updatedAt != 0) {
-                _validatePricePreserved(
-                    AggregatorV3Interface(snap.priceFeed),
-                    snap.answer,
-                    snap.updatedAt,
-                    string.concat("Base Morpho ", morphoConfigs[i].proxyName)
-                );
-            }
+            // OEV-proxy price preservation: post-upgrade the proxy itself
+            // must return values matching BOTH the raw aggregator's pre-
+            // snapshot AND the proxy's own pre-upgrade output. The second
+            // pair catches a state-machine change even when the raw feed
+            // is unchanged.
+            _validatePricePreserved(
+                AggregatorV3Interface(proxyAddr),
+                snap.answer,
+                snap.updatedAt,
+                snap.oevAnswer,
+                snap.oevUpdatedAt,
+                string.concat("Base Morpho ", morphoConfigs[i].proxyName)
+            );
 
             // Decimals preservation.
             ChainlinkOEVMorphoWrapper wrapper = ChainlinkOEVMorphoWrapper(
