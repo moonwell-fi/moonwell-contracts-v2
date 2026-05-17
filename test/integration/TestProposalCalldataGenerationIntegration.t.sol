@@ -252,7 +252,23 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             );
         for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
             uint256 id = multichainGovernorProposals[i - 1].id;
-            if (_isExcludedMultichain(id) || id <= 125 || id > 131) continue;
+            if (_isExcludedMultichain(id) || id <= 125 || id > 130) continue;
+            _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
+        }
+    }
+
+    /// @dev mip-x37 (id 131) uses the RewardsDistribution template with
+    /// the `bytes signedQuote` BridgeWell field; isolated in its own
+    /// batch because it OOMed when bundled with other 126-130 proposals.
+    function testMultichainGovernorCalldataMatchBatch3d() public {
+        ProposalFields[]
+            memory multichainGovernorProposals = filterByGovernorAndProposalType(
+                "MultichainGovernor",
+                "HybridProposal"
+            );
+        for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
+            uint256 id = multichainGovernorProposals[i - 1].id;
+            if (_isExcludedMultichain(id) || id != 131) continue;
             _verifyMultichainProposal(multichainGovernorProposals[i - 1]);
         }
     }
