@@ -264,24 +264,23 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     ///         canonical `_OEV_WRAPPER` name, archiving the previous wrapper
     ///         under `_OEV_WRAPPER_DEPRECATED_V3`. Extracted to avoid stack-
     ///         too-deep in `_deployForChain`.
+    ///
+    ///         Two layouts are supported:
+    ///         (1) "pre-update": chains/*.json still has canonical = OLD —
+    ///             broadcast NEW, archive OLD under DEPRECATED, promote NEW.
+    ///         (2) "post-update": chains/*.json already carries
+    ///             canonical = NEW (with `isContract: false` until on-chain
+    ///             execution flips it) AND DEPRECATED = OLD. The actual
+    ///             on-chain deployment happens off-script; this function
+    ///             becomes a no-op that lets CI print calldata referencing
+    ///             the pre-registered addresses without simulation-vs-
+    ///             on-chain deployer nonce drift.
     function _deployAndRegisterWrapper(
         Addresses addresses,
         uint256 chainId,
         string memory oracleName,
         WrapperParams memory params
     ) internal {
-        vm.startBroadcast();
-        ChainlinkOEVWrapper newWrapper = new ChainlinkOEVWrapper(
-            params.priceFeed,
-            params.owner,
-            params.chainlinkOracle,
-            params.feeRecipient,
-            params.liquidatorFeeBps,
-            params.maxRoundDelay,
-            params.maxDecrements
-        );
-        vm.stopBroadcast();
-
         string memory canonicalName = string.concat(
             oracleName,
             OEV_WRAPPER_SUFFIX
@@ -291,19 +290,50 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             DEPRECATED_SUFFIX
         );
 
-        // Archive the pre-existing canonical wrapper under the deprecated slot,
-        // then promote the new wrapper to the canonical name.
-        // This mirrors the MIP-X43 convention:
-        //   <name>_OEV_WRAPPER_DEPRECATED_V3 -> old wrapper (X43-era)
-        //   <name>_OEV_WRAPPER               -> new wrapper (this proposal)
-        if (addresses.isAddressSet(canonicalName)) {
-            addresses.addAddress(
-                deprecatedName,
-                addresses.getAddress(canonicalName)
+        if (addresses.isAddressSet(deprecatedName)) {
+            // (2) Post-update layout: trust chains/*.json. Skip the
+            // broadcast so simulation-vs-on-chain deployer-nonce drift
+            // cannot make the queued setFeed calldata reference the
+            // wrong wrapper.
+            require(
+                addresses.isAddressSet(canonicalName),
+                string.concat(
+                    "MIP-X56: DEPRECATED set but canonical missing for ",
+                    oracleName
+                )
             );
-            addresses.changeAddress(canonicalName, address(newWrapper), true);
         } else {
-            addresses.addAddress(canonicalName, address(newWrapper));
+            // (1) Pre-update layout: broadcast NEW, archive OLD, promote NEW.
+            vm.startBroadcast();
+            ChainlinkOEVWrapper newWrapper = new ChainlinkOEVWrapper(
+                params.priceFeed,
+                params.owner,
+                params.chainlinkOracle,
+                params.feeRecipient,
+                params.liquidatorFeeBps,
+                params.maxRoundDelay,
+                params.maxDecrements
+            );
+            vm.stopBroadcast();
+
+            // Archive the pre-existing canonical wrapper under the
+            // deprecated slot, then promote the new wrapper to canonical.
+            // Mirrors the MIP-X43 convention:
+            //   <name>_OEV_WRAPPER_DEPRECATED_V3 -> old wrapper
+            //   <name>_OEV_WRAPPER               -> new wrapper
+            if (addresses.isAddressSet(canonicalName)) {
+                addresses.addAddress(
+                    deprecatedName,
+                    addresses.getAddress(canonicalName)
+                );
+                addresses.changeAddress(
+                    canonicalName,
+                    address(newWrapper),
+                    true
+                );
+            } else {
+                addresses.addAddress(canonicalName, address(newWrapper));
+            }
         }
         _upgradedOracleNames[chainId].push(oracleName);
         _isUpgraded[chainId][oracleName] = true;
@@ -411,30 +441,33 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
             }
 
             // Snapshot the OLD OEV wrapper's latestRoundData() output once
-            // per oracleName. At this point the on-chain wiring still points
-            // at the predecessor wrapper (setFeed actions are queued for
-            // simulate but haven't executed), so `oracle.getFeed(symbol)`
-            // returns the OLD wrapper — exactly the surface consumers see.
+            // per oracleName. Resolved via the `_OEV_WRAPPER_DEPRECATED_V3`
+            // registry key so this works in both layouts:
+            //   - Pre-update chains/*.json: DEPRECATED is registered
+            //     in-memory by `_deployAndRegisterWrapper` (mode 1) before
+            //     beforeSimulationHook runs.
+            //   - Post-update chains/*.json: DEPRECATED is loaded directly
+            //     from chains/*.json (carries the archived OLD wrapper).
+            // Decoupled from `oracle.getFeed(symbol)` so CI can print
+            // calldata without depending on on-chain registry reads.
             if (_oevUpdatedAtPre[chainId][config.oracleName] == 0) {
-                (bool ok, string memory symbol) = _readSymbol(
-                    addresses,
-                    config
+                string memory deprecatedKey = string.concat(
+                    config.oracleName,
+                    DEPRECATED_SUFFIX
                 );
-                if (ok) {
-                    address oldWrapperAddr = address(oracle.getFeed(symbol));
-                    if (oldWrapperAddr != address(0)) {
-                        (
-                            ,
-                            int256 oevAns,
-                            ,
-                            uint256 oevUp,
-
-                        ) = AggregatorV3Interface(oldWrapperAddr)
-                                .latestRoundData();
-                        _oevAnswerPre[chainId][config.oracleName] = oevAns;
-                        _oevUpdatedAtPre[chainId][config.oracleName] = oevUp;
-                    }
-                }
+                require(
+                    addresses.isAddressSet(deprecatedKey),
+                    string.concat(
+                        "MIP-X56: missing DEPRECATED key for ",
+                        config.oracleName
+                    )
+                );
+                address oldWrapperAddr = addresses.getAddress(deprecatedKey);
+                (, int256 oevAns, , uint256 oevUp, ) = AggregatorV3Interface(
+                    oldWrapperAddr
+                ).latestRoundData();
+                _oevAnswerPre[chainId][config.oracleName] = oevAns;
+                _oevUpdatedAtPre[chainId][config.oracleName] = oevUp;
             }
 
             // Per-symbol snapshot of getUnderlyingPrice for the mTokenKey.
