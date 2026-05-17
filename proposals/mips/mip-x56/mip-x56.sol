@@ -817,17 +817,28 @@ contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     ) internal view {
         (, int256 ans, , uint256 updatedAt, ) = rawFeed.latestRoundData();
 
-        console.log(string.concat("  [raw feed: ", label, "] pre answer:"));
-        console.logInt(expectedAnswer);
+        // Bake every value into its label via vm.toString so each log line
+        // is self-contained — bare `console.logInt` calls produce orphaned
+        // numeric lines that are easy to lose to stdout filters.
         console.log(
-            string.concat("  [raw feed: ", label, "] pre updatedAt: "),
-            expectedUpdatedAt
+            string.concat(
+                "  [raw feed: ",
+                label,
+                "] pre answer:  ",
+                vm.toString(expectedAnswer),
+                "  updatedAt: ",
+                vm.toString(expectedUpdatedAt)
+            )
         );
-        console.log(string.concat("  [raw feed: ", label, "] post answer:"));
-        console.logInt(ans);
         console.log(
-            string.concat("  [raw feed: ", label, "] post updatedAt:"),
-            updatedAt
+            string.concat(
+                "  [raw feed: ",
+                label,
+                "] post answer: ",
+                vm.toString(ans),
+                "  updatedAt: ",
+                vm.toString(updatedAt)
+            )
         );
 
         assertEq(
