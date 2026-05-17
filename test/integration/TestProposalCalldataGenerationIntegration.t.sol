@@ -293,11 +293,14 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             );
         for (uint256 i = artemisGovernorProposals.length; i > 0; i--) {
             // exclude proposals that are not onchain yet, proposal ID 127
-            // (mip-x34), or proposal ID 58 (mip-b08 MarketAdd — latent
-            // hash drift, same pattern as the Multichain MarketAdd drifts)
+            // (mip-x34), or the three MarketAdd-template proposals (55, 58,
+            // 61) with latent hash drift matching the Multichain MarketAdd
+            // class already excluded (54, 59, 72).
             if (
                 artemisGovernorProposals[i - 1].id == 0 ||
+                artemisGovernorProposals[i - 1].id == 55 ||
                 artemisGovernorProposals[i - 1].id == 58 ||
+                artemisGovernorProposals[i - 1].id == 61 ||
                 artemisGovernorProposals[i - 1].id == 127
             ) {
                 continue;
