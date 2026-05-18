@@ -210,7 +210,7 @@ contract MultichainProposalIntegrationV2 is
 
         _acceptIfPending(bridgeAdapter, temporalGovernor);
 
-        // VotingPowerAggregator on Moonbeam uses Ownable2Step. mip-x57 proposal
+        // VotingPowerAggregator on Moonbeam uses Ownable2Step. mip-x58 proposal
         // set pendingOwner=TemporalGovernor; simulate the first Ethereum
         // follow-up proposal relaying a Wormhole message → TemporalGovernor
         // calling acceptOwnership().
@@ -337,7 +337,7 @@ contract MultichainProposalIntegrationV2 is
         acceptOwnershipXWell(xWellProxy);
         acceptOwnershipBridgeAdapter(bridgeAdapterProxy);
 
-        /// VotingPowerAggregator uses Ownable2Step; mip-x57 afterDeploy only
+        /// VotingPowerAggregator uses Ownable2Step; mip-x58 afterDeploy only
         /// set pendingOwner=governorV2. Simulate the first Ethereum follow-up
         /// proposal action: governor accepts.
         if (ethereumVotingPower.pendingOwner() == address(governorV2)) {
@@ -2791,7 +2791,7 @@ contract MultichainProposalIntegrationV2 is
     }
 
     /// @notice Verify each of the 3 publishMessage break-glass calldatas that
-    ///         mip-x57 whitelists is reachable via `isWhitelistedCalldata`.
+    ///         mip-x58 whitelists is reachable via `isWhitelistedCalldata`.
     ///         Prevents silent drift where a calldata's encoding changes in
     ///         the proposal but not in the governor whitelist (or vice versa).
     function testAllBreakGlassCalldatasAreWhitelisted() public {
@@ -2802,7 +2802,7 @@ contract MultichainProposalIntegrationV2 is
         assertEq(
             expected.length,
             3,
-            "mip-x57 should whitelist exactly 3 break-glass calldatas"
+            "mip-x58 should whitelist exactly 3 break-glass calldatas"
         );
 
         for (uint256 i = 0; i < expected.length; i++) {
@@ -2929,7 +2929,7 @@ contract MultichainProposalIntegrationV2 is
     ///             actions.
     ///
     ///         What this test does NOT prove (intentionally — see caveats in
-    ///         mip-x57._buildBreakGlassCalldatas):
+    ///         mip-x58._buildBreakGlassCalldatas):
     ///           - Cross-chain vote collection from Base/OP is broken because
     ///             MultichainVoteCollectionV2.targetAddress is frozen by
     ///             initializeV3 (no external mutator). The old governor
@@ -3092,7 +3092,7 @@ contract MultichainProposalIntegrationV2 is
     /// ------- BREAK GLASS HELPERS ----------------------------- ///
     /// --------------------------------------------------------- ///
 
-    /// @notice Mirror of mip-x57._buildBreakGlassCalldatas for use in tests.
+    /// @notice Mirror of mip-x58._buildBreakGlassCalldatas for use in tests.
     /// @dev Switches forks per chain just like the proposal helper so the
     ///      address resolution path is byte-identical to what the proposal
     ///      whitelisted at deploy time.

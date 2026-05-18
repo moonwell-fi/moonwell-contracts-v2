@@ -22,7 +22,7 @@ import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, ETHE
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 
-/// @title MIP-X57: MultichainGovernorV2 Migration to Ethereum Mainnet
+/// @title MIP-X58: MultichainGovernorV2 Migration to Ethereum Mainnet
 /// @author Moonwell Contributors
 /// @notice Proposal to migrate Moonwell governance from Moonbeam to Ethereum by:
 ///
@@ -54,11 +54,11 @@ import {ChainIds} from "@utils/ChainIds.sol";
 ///
 ///         Note: All VotingPowerAggregators use timestamp-based voting (no block numbers)
 ///         and only aggregate voting power from xWell + stkWell (no well/distributor).
-contract mipx57 is HybridProposal {
+contract mipx58 is HybridProposal {
     using ProposalActions for *;
     using ChainIds for uint256;
 
-    string public constant override name = "MIP-X57";
+    string public constant override name = "MIP-X58";
 
     // Governance parameters (same values as TemporalGovernor on Base)
     uint256 public constant TEMPORAL_GOVERNOR_PROPOSAL_DELAY = 86400;
@@ -85,7 +85,7 @@ contract mipx57 is HybridProposal {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-x57/x57.md")
+            vm.readFile("./proposals/mips/mip-x58/x58.md")
         );
         _setProposalDescription(proposalDescription);
     }
@@ -681,7 +681,7 @@ contract mipx57 is HybridProposal {
 
     /// @notice Build whitelisted calldatas for the break glass guardian.
     /// @dev Three publishMessage calldatas — one per satellite chain — that
-    ///      together unwind mip-x57's cross-chain trust topology. Each calldata,
+    ///      together unwind mip-x58's cross-chain trust topology. Each calldata,
     ///      when executed via `MultichainGovernorV2.executeBreakGlass(targets,
     ///      calldatas)` with `targets[i] = WORMHOLE_CORE` (Ethereum), emits a
     ///      Wormhole message to the corresponding TemporalGovernor whose
@@ -707,7 +707,7 @@ contract mipx57 is HybridProposal {
     ///
     ///      KNOWN CAVEATS — intentionally not addressed by break-glass:
     ///      (i) Cross-chain vote collection remains broken after the unwind.
-    ///          mip-x57's `MultichainVoteCollectionV2.initializeV3` (gated by
+    ///          mip-x58's `MultichainVoteCollectionV2.initializeV3` (gated by
     ///          `reinitializer(3)`, no external mutator on V2) hardcodes
     ///          `targetAddress[ETHEREUM_WORMHOLE_CHAIN_ID] = ethereumGovernorV2`
     ///          on Base/OP VoteCollectionV2. The trusted-sender flip restores
@@ -1327,7 +1327,7 @@ contract mipx57 is HybridProposal {
     function build(Addresses addresses) public override {
         // NOTE: Ethereum VotingPowerAggregator configuration (addSnapshotSource) is handled
         // in afterDeploy() by the deployer before transferring ownership to MultichainGovernorV2.
-        // This proposal (mip-x57) is executed by the old Moonbeam MultichainGovernor, so it cannot
+        // This proposal (mip-x58) is executed by the old Moonbeam MultichainGovernor, so it cannot
         // execute actions on the Ethereum MultichainGovernorV2 which doesn't have any proposals yet.
 
         // NOTE: MIP-X56 (OEV wrapper) will be inflight when this proposal is onchain, but will still execute before this one;
