@@ -48,6 +48,11 @@ script/                 # Deployment & utility scripts (~53)
 - `npm run lint` — solhint
 - `npm run prettier` — format code
 - `make base` / `make moonbeam-node` — local chain forks
+- `cast storage <addr> 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc`
+  — reads the ERC1967 implementation slot. Non-zero =
+  TransparentUpgradeableProxy/UUPS.
+- `Comptroller.getAllMarkets()` is the on-chain source of truth for live mToken
+  markets; cross-check with `chains/*.json` since they drift.
 
 ## Proposal System
 
@@ -84,6 +89,10 @@ sanity-check before committing.
 - RPC endpoints configured in `foundry.toml` for all supported chains
 - EVM target is Cancun
 - Optimizer runs: 1
+- Morpho's `IMorphoChainlinkOracleV2` carries per-market feeds: `BASE_FEED_1` =
+  collateral, `QUOTE_FEED_1` = loan. Both are raw aggregators by Morpho
+  convention — read them directly for per-market price lookups. Do NOT reach
+  into Moonwell's Core `ChainlinkOracle` registry for Morpho-side prices.
 
 ## Guardrails
 
