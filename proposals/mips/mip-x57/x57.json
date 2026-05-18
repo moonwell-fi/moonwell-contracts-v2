@@ -110,7 +110,8 @@
         ],
         "withdrawWell": [],
         "multiRewarder": [],
-        "merkleCampaigns": []
+        "merkleCampaigns": [],
+        "preStagedTG": "877006574894057915416576"
     },
     "1284": {
         "bridgeToRecipient": [],
@@ -561,7 +562,8 @@
                 "rewardToken": "xWELL_PROXY",
                 "startTimestamp": 1779456618
             }
-        ]
+        ],
+        "preStagedTG": "11856475010648212162740224"
     },
     "endTimeSTamp": 1781875818,
     "startTimeStamp": 1779456618
