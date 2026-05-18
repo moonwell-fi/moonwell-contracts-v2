@@ -113,35 +113,8 @@
         "merkleCampaigns": []
     },
     "1284": {
-        "bridgeToRecipient": [
-            {
-                "amount": 1.1856475119648211e25,
-                "nativeValue": 0,
-                "network": 8453,
-                "signedQuote": "0x",
-                "target": "TEMPORAL_GOVERNOR"
-            },
-            {
-                "amount": 8.770065948940579e23,
-                "nativeValue": 0,
-                "network": 10,
-                "signedQuote": "0x",
-                "target": "TEMPORAL_GOVERNOR"
-            }
-        ],
+        "bridgeToRecipient": [],
         "transferFrom": [
-            {
-                "amount": 1.1856475119648211e25,
-                "from": "MGLIMMER_MULTISIG",
-                "to": "MULTICHAIN_GOVERNOR_PROXY",
-                "token": "GOVTOKEN"
-            },
-            {
-                "amount": 8.77006684894058e23,
-                "from": "MGLIMMER_MULTISIG",
-                "to": "MULTICHAIN_GOVERNOR_PROXY",
-                "token": "GOVTOKEN"
-            },
             {
                 "amount": 2.0298300395433994e22,
                 "from": "MGLIMMER_MULTISIG",
