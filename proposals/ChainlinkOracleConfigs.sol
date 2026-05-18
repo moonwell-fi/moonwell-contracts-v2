@@ -45,10 +45,9 @@ abstract contract ChainlinkOracleConfigs is Test {
         _oracleConfigs[BASE_CHAIN_ID].push(
             OracleConfig("CHAINLINK_USDC_USD", "USDBC", "MOONWELL_USDBC")
         );
-        // WETH already activated by MIP-X38
-        // _oracleConfigs[BASE_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
-        // );
+        _oracleConfigs[BASE_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
+        );
         // cbETH uses cbETH_COMPOSITE_ORACLE (reverted from cbETHETH_ORACLE in MIP-B57)
         // Now handled via _compositeOracleConfigs below
         _oracleConfigs[BASE_CHAIN_ID].push(
@@ -135,9 +134,16 @@ abstract contract ChainlinkOracleConfigs is Test {
             )
         );
 
-        /// Initialize oracle configurations for Optimism
-        /// Note: CHAINLINK_WELL_USD OEV wrapper was not upgraded on Optimism
-        /// (no _DEPRECATED variant exists on chain 10). See mip-x14 _getWrapperName.
+        /// Initialize oracle configurations for Optimism.
+        ///
+        /// Optimism CHAINLINK_WELL_USD is intentionally excluded: the
+        /// underlying Chainlink proxy (0x7F102e5b...) has `aggregator() ==
+        /// address(0)` on-chain, so `latestRound()` reverts. The
+        /// ChainlinkOEVWrapper constructor calls `priceFeed.latestRound()`,
+        /// which means we cannot deploy a replacement wrapper even if we
+        /// tried. There is also no Core WELL market on Optimism that
+        /// consumes the wrapper, so the legacy wrapper at 0xfeA5…58f is
+        /// orphaned and safe to leave in place.
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_USDC_USD", "USDC", "MOONWELL_USDC")
         );
@@ -147,10 +153,9 @@ abstract contract ChainlinkOracleConfigs is Test {
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_DAI_USD", "DAI", "MOONWELL_DAI")
         );
-        // WETH already activated by MIP-X38
-        // _oracleConfigs[OPTIMISM_CHAIN_ID].push(
-        //     OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
-        // );
+        _oracleConfigs[OPTIMISM_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
+        );
         _oracleConfigs[OPTIMISM_CHAIN_ID].push(
             OracleConfig("CHAINLINK_WBTC_USD", "WBTC", "MOONWELL_WBTC")
         );
@@ -207,10 +212,9 @@ abstract contract ChainlinkOracleConfigs is Test {
         );
 
         /// Initialize Morpho market configurations for Base
-        // WELL already activated by MIP-X38
-        // _MorphoOracleConfigs[BASE_CHAIN_ID].push(
-        //     MorphoOracleConfig("CHAINLINK_WELL_USD", "CHAINLINK_WELL_USD")
-        // );
+        _MorphoOracleConfigs[BASE_CHAIN_ID].push(
+            MorphoOracleConfig("CHAINLINK_WELL_USD", "CHAINLINK_WELL_USD")
+        );
         _MorphoOracleConfigs[BASE_CHAIN_ID].push(
             MorphoOracleConfig("CHAINLINK_MAMO_USD", "CHAINLINK_MAMO_USD")
         );

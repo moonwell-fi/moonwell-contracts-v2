@@ -125,3 +125,5 @@ cache/
 proposal.sh
 
 *.local.json
+
+docs/superpowers/
