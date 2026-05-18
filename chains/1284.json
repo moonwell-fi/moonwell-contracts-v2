@@ -418,5 +418,10 @@
         "addr": "0x11dbA16fb4cc80D80f371825137a6D3e2f77EbcF",
         "isContract": true,
         "name": "WORMHOLE_UNWRAPPER_ADAPTER_IMPL_V5"
+    },
+    {
+        "addr": "0x908dF70C2EDEA165eE22fe63549af46944Ea4689",
+        "name": "TEMPORAL_GOVERNOR",
+        "isContract": true
     }
 ]

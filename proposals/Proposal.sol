@@ -119,10 +119,11 @@ abstract contract Proposal is Script, Test {
                 "\n------- Addresses added after running proposal -------"
             );
 
-            uint256[3] memory chainIdsToCheck = [
+            uint256[4] memory chainIdsToCheck = [
                 OPTIMISM_CHAIN_ID,
                 BASE_CHAIN_ID,
-                MOONBEAM_CHAIN_ID
+                MOONBEAM_CHAIN_ID,
+                ETHEREUM_CHAIN_ID
             ];
 
             for (uint256 i = 0; i < chainIdsToCheck.length; i++) {
