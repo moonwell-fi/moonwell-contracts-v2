@@ -72,6 +72,11 @@ Proposals follow a lifecycle: `deploy()` → `afterDeploy()` → `build()` →
 **Templates available:** MarketAdd (v1/v2/v3), MarketUpdate,
 RewardsDistribution, ProtocolDeployment
 
+**Rewards automation:** monthly MIP JSON + MD come from
+`https://moonwell-reward-automation.moonwell.workers.dev/?type=json|markdown&timestamp=<unix>`.
+Output can contain bugs (negative `withdrawWell` amounts, `nativeValue: 0`) —
+sanity-check before committing.
+
 ## Key Conventions
 
 - Addresses managed centrally in `proposals/Addresses.sol` + `chains/*.json`
