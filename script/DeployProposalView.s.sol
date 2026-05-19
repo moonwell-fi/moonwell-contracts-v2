@@ -33,6 +33,12 @@ forge script script/DeployProposalView.s.sol:DeployProposalView \
     --rpc-url optimism --etherscan-api-key optimism \
     --verify --broadcast --always-use-create-2-factory
 
+How to use (Ethereum):
+forge script script/DeployProposalView.s.sol:DeployProposalView \
+    -vvvv \
+    --rpc-url ethereum --etherscan-api-key ethereum \
+    --verify --broadcast --always-use-create-2-factory
+
 Omit --broadcast for a dry run (no gas spent). After a successful broadcast,
 register the deployed address in chains/<chainId>.json under PROPOSAL_VIEW.
 */
