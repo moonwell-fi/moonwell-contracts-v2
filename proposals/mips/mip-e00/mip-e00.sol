@@ -216,7 +216,8 @@ contract mipe00 is HybridProposalV2, Configs {
         /// ------- MoonwellViewsV3 (read-only views aggregator) -------
         /// impl + dedicated ProxyAdmin + initialized TransparentUpgradeableProxy.
         /// The dedicated ProxyAdmin keeps view-only upgrades out of governance.
-        /// Ethereum has no safety module (stkWELL), so _safetyModule is address(0).
+        /// On Ethereum the stkWELL safety module is registered as
+        /// STK_GOVTOKEN_PROXY (the Base key is stkWELL_PROXY).
         {
             MoonwellViewsV3 viewsImpl = new MoonwellViewsV3();
             addresses.addAddress(
@@ -234,7 +235,7 @@ contract mipe00 is HybridProposalV2, Configs {
                 "initialize(address,address,address,address,address,address)",
                 addresses.getAddress("UNITROLLER"),
                 address(0), /// tokenSaleDistributor
-                address(0), /// safetyModule - no stkWELL on Ethereum
+                addresses.getAddress("STK_GOVTOKEN_PROXY"), /// safetyModule (stkWELL)
                 addresses.getAddress("xWELL_PROXY"),
                 address(0), /// nativeMarket
                 address(0) /// governanceTokenLP
