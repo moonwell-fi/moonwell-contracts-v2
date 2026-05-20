@@ -251,9 +251,7 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
         }
 
         // Try to vote before voting starts
-        vm.expectRevert(
-            "MultichainVoteCollectionV2: Voting has not started yet"
-        );
+        vm.expectRevert("MultichainVoteCollection: Voting has not started yet");
         voteCollectionMoonbeam.castVote(proposalId, Constants.VOTE_VALUE_YES);
     }
 
@@ -263,7 +261,7 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
         // Warp past voting end time
         vm.warp(block.timestamp + votingPeriodSeconds + 2);
 
-        vm.expectRevert("MultichainVoteCollectionV2: Voting has ended");
+        vm.expectRevert("MultichainVoteCollection: Voting has ended");
         voteCollectionMoonbeam.castVote(proposalId, Constants.VOTE_VALUE_YES);
     }
 
@@ -276,7 +274,7 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
         voteCollectionMoonbeam.castVote(proposalId, Constants.VOTE_VALUE_YES);
 
         // Try to vote again
-        vm.expectRevert("MultichainVoteCollectionV2: voter already voted");
+        vm.expectRevert("MultichainVoteCollection: voter already voted");
         voteCollectionMoonbeam.castVote(proposalId, Constants.VOTE_VALUE_NO);
     }
 
@@ -294,7 +292,7 @@ contract MultichainVoteCollectionMoonbeamUnitTest is MultichainBaseTestV2 {
         _receivingFunds = true;
         vm.deal(address(this), bridgeCost);
 
-        vm.expectRevert("MultichainVoteCollectionV2: Voting has not ended");
+        vm.expectRevert("MultichainVoteCollection: Voting has not ended");
         voteCollectionMoonbeam.emitVotes{value: bridgeCost}(proposalId);
 
         _receivingFunds = false;

@@ -166,26 +166,26 @@ contract MultichainVoteCollectionMoonbeam is
         /// Check if proposal start time has passed
         require(
             proposal.votingStartTime <= block.timestamp,
-            "MultichainVoteCollectionV2: Voting has not started yet"
+            "MultichainVoteCollection: Voting has not started yet"
         );
 
         /// Check if proposal end time has not passed
         require(
             proposal.votingEndTime >= block.timestamp,
-            "MultichainVoteCollectionV2: Voting has ended"
+            "MultichainVoteCollection: Voting has ended"
         );
 
         /// Vote value must be 0, 1 or 2
         require(
             voteValue <= Constants.VOTE_VALUE_ABSTAIN,
-            "MultichainVoteCollectionV2: invalid vote value"
+            "MultichainVoteCollection: invalid vote value"
         );
 
         /// Check if user has already voted
         Receipt storage receipt = proposal.receipts[msg.sender];
         require(
             receipt.hasVoted == false,
-            "MultichainVoteCollectionV2: voter already voted"
+            "MultichainVoteCollection: voter already voted"
         );
 
         /// Get voting power
@@ -194,10 +194,7 @@ contract MultichainVoteCollectionMoonbeam is
             proposal.voteSnapshotTimestamp
         );
 
-        require(
-            userVotes != 0,
-            "MultichainVoteCollectionV2: voter has no votes"
-        );
+        require(userVotes != 0, "MultichainVoteCollection: voter has no votes");
 
         /// Effects
 
@@ -234,19 +231,19 @@ contract MultichainVoteCollectionMoonbeam is
         /// Check if proposal has votes
         require(
             votes.totalVotes > 0,
-            "MultichainVoteCollectionV2: proposal has no votes"
+            "MultichainVoteCollection: proposal has no votes"
         );
 
         /// Check if proposal end time has passed
         require(
             proposal.votingEndTime < block.timestamp,
-            "MultichainVoteCollectionV2: Voting has not ended"
+            "MultichainVoteCollection: Voting has not ended"
         );
 
         /// Check if proposal collection end time has not passed
         require(
             proposal.crossChainVoteCollectionEndTimestamp >= block.timestamp,
-            "MultichainVoteCollectionV2: Voting collection phase has ended"
+            "MultichainVoteCollection: Voting collection phase has ended"
         );
 
         _bridgeOutAll(
@@ -278,7 +275,7 @@ contract MultichainVoteCollectionMoonbeam is
         /// payload should be 5 uint256s
         require(
             payload.length == 160,
-            "MultichainVoteCollectionV2: invalid payload length"
+            "MultichainVoteCollection: invalid payload length"
         );
 
         /// Parse the payload and do the corresponding actions!
@@ -293,31 +290,31 @@ contract MultichainVoteCollectionMoonbeam is
         /// Ensure proposalId is unique
         require(
             proposals[proposalId].votingStartTime == 0,
-            "MultichainVoteCollectionV2: proposal already exists"
+            "MultichainVoteCollection: proposal already exists"
         );
 
         /// Ensure votingEndTime is in the future so there is time for users to vote
         require(
             votingEndTime > block.timestamp,
-            "MultichainVoteCollectionV2: end time must be in the future"
+            "MultichainVoteCollection: end time must be in the future"
         );
 
         /// Ensure voteSnapshotTimestamp is less than votingStartTime
         require(
             voteSnapshotTimestamp < votingStartTime,
-            "MultichainVoteCollectionV2: snapshot time must be before start time"
+            "MultichainVoteCollection: snapshot time must be before start time"
         );
 
         /// Ensure votingStartTime is less than votingEndTime
         require(
             votingStartTime < votingEndTime,
-            "MultichainVoteCollectionV2: start time must be before end time"
+            "MultichainVoteCollection: start time must be before end time"
         );
 
         /// Ensure votingStartTime is less than votingEndTime
         require(
             votingEndTime < crossChainVoteCollectionEndTimestamp,
-            "MultichainVoteCollectionV2: end time must be before vote collection end"
+            "MultichainVoteCollection: end time must be before vote collection end"
         );
 
         /// Create the proposal
