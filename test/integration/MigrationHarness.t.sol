@@ -11,6 +11,7 @@ import {Unitroller} from "@protocol/Unitroller.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {VotingPowerAggregator} from "@protocol/governance/multichain/VotingPowerAggregator.sol";
 import {MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
 
@@ -29,11 +30,11 @@ import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_FORK_ID, ETHE
 
 /// @title MigrationHarness
 /// @notice End-to-end validation harness for the Moonwell governance migration
-///         to Ethereum (mip-x56) + Ethereum core deployment (mip-e00). Runs
+///         to Ethereum (mip-x58) + Ethereum core deployment (mip-e00). Runs
 ///         against persistent Tenderly VNets — RPC URLs come from
 ///         setup-migration-vnets.ts via foundry.toml's [rpc_endpoints] block.
 ///
-///         The harness drives mip-x56 and mip-e00 directly (NOT via
+///         The harness drives mip-x58 and mip-e00 directly (NOT via
 ///         PostProposalCheck) so it doesn't pull in unrelated proposals or
 ///         require template artifacts to be built.
 ///
@@ -76,7 +77,7 @@ contract MigrationHarness is Test {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        // Phase A: run mip-x56 (governor migration)
+        // Phase A: run mip-x58 (governor migration)
         _phaseA_runMipX58();
 
         // Phase A.5: simulate PostDeployEthereumXWell.s.sol — the deployer-side
@@ -98,7 +99,7 @@ contract MigrationHarness is Test {
 
         // Phase D first: run mip-e01 (First Ethereum Proposal) through
         // governance — completes acceptOwnership/_acceptAdmin for items
-        // mip-x56 + mip-e00 didn't cover (Eth xWELL/VPA, Moonbeam
+        // mip-x58 + mip-e00 didn't cover (Eth xWELL/VPA, Moonbeam
         // Unitroller + mTokens). Must run before Phase 0 because Phase 0
         // pranks as the bridge adapters' owners — which on satellite
         // chains is the TemporalGovernor only after it accepts the
@@ -269,7 +270,7 @@ contract MigrationHarness is Test {
     }
 
     /// @notice Stub for migration-summary TODO #3: xWELL bridging activation.
-    ///         After mip-x56/mip-e00 complete, Eth bridge adapter is owned by
+    ///         After mip-x58/mip-e00 complete, Eth bridge adapter is owned by
     ///         governorV2; Moonbeam/Base/Op adapters by TemporalGovernor.
     ///         Prank as the owner to install the missing trusted senders.
     function _phase0XWellBridgingStub() internal {
@@ -387,7 +388,7 @@ contract MigrationHarness is Test {
 
     /// @notice Phase D: run mip-e01 (the First Ethereum Proposal) through
     ///         governance. mip-e01 completes the ownership/admin transfers
-    ///         that mip-x56 + mip-e00 leave in a half-transferred state:
+    ///         that mip-x58 + mip-e00 leave in a half-transferred state:
     ///           - Eth xWELL acceptOwnership (TODO #1)
     ///           - Eth VotingPowerAggregator acceptOwnership (TODO #2)
     ///           - Moonbeam Unitroller + mTokens _acceptAdmin (TODO #4)
@@ -490,7 +491,7 @@ contract MigrationHarness is Test {
     /// PHASE BOUNDARY ASSERTIONS
     /// --------------------------------------------------------------------
 
-    function testPhaseA_mipx56_postMigrationState() public {
+    function testPhaseA_mipx58_postMigrationState() public {
         vm.selectFork(ETHEREUM_FORK_ID);
         assertGt(address(governorV2).code.length, 0, "governorV2 not deployed");
 
@@ -642,7 +643,7 @@ contract MigrationHarness is Test {
     /// PHASE G — BREAK-GLASS EXECUTION PATH
     /// --------------------------------------------------------------------
     /// Proves the migration is reversible: the breakGlassGuardian set during
-    /// mip-x56 init can pull ownership of governor-controlled Eth contracts
+    /// mip-x58 init can pull ownership of governor-controlled Eth contracts
     /// back to PAUSE_GUARDIAN by executing a whitelisted calldata through
     /// MultichainGovernorV2.executeBreakGlass.
     ///
@@ -653,52 +654,46 @@ contract MigrationHarness is Test {
     ///     enforcement.
     ///   - testPhaseG_breakGlassRejectsNonGuardianCaller: auth enforcement.
 
-    function testPhaseG_breakGlassUnwindsEthOwnership() public {
+    function testPhaseG_breakGlassUnwindsSatelliteTrustedSenders() public {
         vm.selectFork(ETHEREUM_FORK_ID);
 
-        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
         address bgGuardian = governorV2.breakGlassGuardian();
-
-        // Pre-state: guardian role still active; bridge adapter owned by
-        // governor (mip-e00.simulate accepted in Phase C).
         assertTrue(
             bgGuardian != address(0),
             "break-glass guardian already revoked pre-test"
         );
-        assertEq(
-            ethereumBridgeAdapter.owner(),
-            address(governorV2),
-            "bridge adapter not owned by governor pre-break-glass"
-        );
 
-        // Whitelisted calldata #7 from mip-x56: transferOwnership(PAUSE_GUARDIAN).
-        // x56 stored this exact byte string in the whitelist at deploy time.
-        bytes memory transferToPauseGuardian = abi.encodeWithSignature(
-            "transferOwnership(address)",
-            pauseGuardian
+        // mip-x58 seeds three whitelisted publishMessage calldatas — one per
+        // satellite chain (Moonbeam, Base, Optimism). Each unwinds that
+        // chain's TemporalGovernor trusted-sender state: removes the new
+        // Ethereum V2 governor and restores the old Moonbeam
+        // MultichainGovernor. Reconstruct the Moonbeam unwind calldata here
+        // (mirroring mip-x58._buildUnwindPublishMessageCalldata exactly) so
+        // the test verifies the whitelist seed bytes match what x58 stored.
+        bytes memory unwindMoonbeamCalldata = _buildUnwindCalldataForFork(
+            MOONBEAM_FORK_ID
         );
         assertTrue(
-            governorV2.isWhitelistedCalldata(transferToPauseGuardian),
-            "transferOwnership(PAUSE_GUARDIAN) not whitelisted - x56 did not seed correctly"
+            governorV2.isWhitelistedCalldata(unwindMoonbeamCalldata),
+            "Moonbeam-unwind publishMessage calldata not whitelisted - x58 seed mismatch"
         );
 
-        // Execute break-glass against the Eth WormholeBridgeAdapter.
+        // Execute break-glass against the Eth Wormhole core. This emits a
+        // LogMessagePublished that an off-chain relayer would deliver to the
+        // Moonbeam TG; in-memory we just verify the call succeeds + the
+        // one-shot guardian property holds.
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address ethWormholeCore = addresses.getAddress(
+            "WORMHOLE_CORE",
+            ETHEREUM_CHAIN_ID
+        );
         address[] memory targets = new address[](1);
         bytes[] memory calldatas = new bytes[](1);
-        targets[0] = address(ethereumBridgeAdapter);
-        calldatas[0] = transferToPauseGuardian;
+        targets[0] = ethWormholeCore;
+        calldatas[0] = unwindMoonbeamCalldata;
 
         vm.prank(bgGuardian);
         governorV2.executeBreakGlass(targets, calldatas);
-
-        // Post-state: WormholeBridgeAdapter is Ownable2Step, so
-        // transferOwnership sets pendingOwner — the actual transfer
-        // completes when PAUSE_GUARDIAN later calls acceptOwnership.
-        assertEq(
-            ethereumBridgeAdapter.pendingOwner(),
-            pauseGuardian,
-            "pendingOwner not pauseGuardian after break-glass"
-        );
 
         // One-shot: the guardian role is revoked.
         assertEq(
@@ -713,13 +708,84 @@ contract MigrationHarness is Test {
         governorV2.executeBreakGlass(targets, calldatas);
     }
 
+    /// @notice Mirror of mip-x58._buildUnwindPublishMessageCalldata for a
+    ///         single satellite chain. Used by the break-glass positive
+    ///         test to reconstruct the exact calldata bytes x58 wrote into
+    ///         the whitelist at init time.
+    function _buildUnwindCalldataForFork(
+        uint256 satelliteForkId
+    ) internal returns (bytes memory) {
+        uint256 forkBefore = vm.activeFork();
+
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address ethereumGovernorV2 = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_V2_PROXY"
+        );
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+        address moonbeamMultichainGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
+
+        vm.selectFork(satelliteForkId);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+
+        ITemporalGovernor.TrustedSender[]
+            memory ethereumSender = new ITemporalGovernor.TrustedSender[](1);
+        ethereumSender[0] = ITemporalGovernor.TrustedSender({
+            chainId: ETHEREUM_WORMHOLE_CHAIN_ID,
+            addr: ethereumGovernorV2
+        });
+        bytes memory unSetEthereumCalldata = abi.encodeWithSignature(
+            "unSetTrustedSenders((uint16,address)[])",
+            ethereumSender
+        );
+
+        ITemporalGovernor.TrustedSender[]
+            memory moonbeamSender = new ITemporalGovernor.TrustedSender[](1);
+        moonbeamSender[0] = ITemporalGovernor.TrustedSender({
+            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
+            addr: moonbeamMultichainGovernor
+        });
+        bytes memory setMoonbeamCalldata = abi.encodeWithSignature(
+            "setTrustedSenders((uint16,address)[])",
+            moonbeamSender
+        );
+
+        address[] memory innerTargets = new address[](2);
+        innerTargets[0] = temporalGovernor;
+        innerTargets[1] = temporalGovernor;
+
+        uint256[] memory innerValues = new uint256[](2);
+
+        bytes[] memory innerCalldatas = new bytes[](2);
+        innerCalldatas[0] = unSetEthereumCalldata;
+        innerCalldatas[1] = setMoonbeamCalldata;
+
+        bytes memory result = abi.encodeWithSignature(
+            "publishMessage(uint32,bytes,uint8)",
+            uint32(1000),
+            abi.encode(
+                temporalGovernor,
+                innerTargets,
+                innerValues,
+                innerCalldatas
+            ),
+            uint8(1)
+        );
+
+        vm.selectFork(forkBefore);
+        return result;
+    }
+
     function testPhaseG_breakGlassRejectsNonWhitelistedCalldata() public {
         vm.selectFork(ETHEREUM_FORK_ID);
         address bgGuardian = governorV2.breakGlassGuardian();
         address attacker = address(0xBADC0DE);
 
-        // transferOwnership(attacker) is NOT whitelisted; only
-        // transferOwnership(PAUSE_GUARDIAN) is.
+        // Only the three publishMessage(unwind, ...) calldatas seeded by
+        // mip-x58 are whitelisted. A bare transferOwnership(attacker) is
+        // not — confirm and then verify break-glass rejects it.
         bytes memory badCalldata = abi.encodeWithSignature(
             "transferOwnership(address)",
             attacker
