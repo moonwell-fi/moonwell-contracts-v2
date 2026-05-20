@@ -669,27 +669,37 @@ contract mipx58 is HybridProposal {
             "MULTICHAIN_GOVERNOR_V2_PROXY"
         );
 
-        // Add stkWELL snapshot source and transfer aggregator ownership to the governor.
+        // Add stkWELL snapshot source and transfer aggregator ownership to the
+        // governor. Both steps are guarded so partial prior runs (e.g. a
+        // previous broadcast that succeeded for some calls) re-broadcast as
+        // no-ops instead of reverting.
         vm.startBroadcast(
             addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
         );
         _configureEthereumVotingPower(addresses, governorV2Proxy);
         vm.stopBroadcast();
 
-        // Transfer Ethereum ProxyAdmin ownership to MultichainGovernorV2 (current owner is deployer)
-        vm.startBroadcast(
-            addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+        // Transfer Ethereum ProxyAdmin ownership to MultichainGovernorV2.
+        // Idempotent: skip if the new owner is already in place from a prior
+        // run. ProxyAdmin is single-step Ownable so `owner()` flips on the
+        // initial call; no pendingOwner state to consider.
+        ProxyAdmin ethereumProxyAdmin = ProxyAdmin(
+            addresses.getAddress("PROXY_ADMIN")
         );
-
-        ProxyAdmin(addresses.getAddress("PROXY_ADMIN")).transferOwnership(
-            governorV2Proxy
-        );
-
-        vm.stopBroadcast();
+        if (ethereumProxyAdmin.owner() != governorV2Proxy) {
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
+            ethereumProxyAdmin.transferOwnership(governorV2Proxy);
+            vm.stopBroadcast();
+        }
     }
 
     /// @notice Helper function to configure Ethereum VotingPowerAggregator
-    /// @dev Separated from afterDeploy to avoid stack too deep errors
+    /// @dev Separated from afterDeploy to avoid stack too deep errors. All
+    ///      state mutations are idempotency-guarded so partial prior runs
+    ///      (e.g. a broadcast that completed addSnapshotSource but not
+    ///      transferOwnership, or vice versa) re-broadcast cleanly.
     function _configureEthereumVotingPower(
         Addresses addresses,
         address governorV2Proxy
@@ -706,11 +716,22 @@ contract mipx58 is HybridProposal {
         // xWell is already set during initialize() in deploy(); only snapshot
         // sources and ownership remain to be configured here.
 
-        // Add stkWell as snapshot source
-        votingPower.addSnapshotSource(ethereumStkWell);
+        // Add stkWell as snapshot source — skip if already registered to
+        // avoid the EnumerableSetError revert on re-broadcast.
+        if (!votingPower.isSnapshotSource(ethereumStkWell)) {
+            votingPower.addSnapshotSource(ethereumStkWell);
+        }
 
-        // Transfer ownership of VotingPowerAggregator to MultichainGovernorV2
-        votingPower.transferOwnership(governorV2Proxy);
+        // Transfer ownership of VotingPowerAggregator to MultichainGovernorV2.
+        // Ownable2Step: transferOwnership sets pendingOwner; ownership only
+        // flips when the new owner calls acceptOwnership. Skip the call if
+        // either side of the transfer is already in flight or completed.
+        if (
+            votingPower.owner() != governorV2Proxy &&
+            votingPower.pendingOwner() != governorV2Proxy
+        ) {
+            votingPower.transferOwnership(governorV2Proxy);
+        }
     }
 
     /// @notice Build whitelisted calldatas for the break glass guardian.
