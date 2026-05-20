@@ -125,11 +125,6 @@ contract WormholeBridgeAdapter is
     /// @param newGasLimit new gas limit
     event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
 
-    /// @notice emitted when the onchain quoter address is updated
-    /// @param oldQuoter old quoter
-    /// @param newQuoter new quoter
-    event QuoterAddressUpdated(address oldQuoter, address newQuoter);
-
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
     /// ---------------------- INITIALIZE -----------------------
@@ -231,16 +226,6 @@ contract WormholeBridgeAdapter is
         gasLimit = newGasLimit;
 
         emit GasLimitUpdated(oldGasLimit, newGasLimit);
-    }
-
-    /// @notice set the off-chain quoter operator's signer EOA used by the
-    /// Executor Quoter Router to price executions
-    /// @param newQuoterAddress new quoter signer address
-    function setQuoterAddress(address newQuoterAddress) external onlyOwner {
-        address oldQuoterAddress = quoterAddress;
-        quoterAddress = newQuoterAddress;
-
-        emit QuoterAddressUpdated(oldQuoterAddress, newQuoterAddress);
     }
 
     /// @notice remove trusted senders from external chains

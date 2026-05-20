@@ -3,85 +3,134 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
-import {MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
-import {ProposalView} from "@protocol/views/ProposalView.sol";
-import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
-import {VotingPowerAggregator} from "@protocol/governance/multichain/VotingPowerAggregator.sol";
-import {MultichainVoteCollectionV2} from "@protocol/governance/multichain/MultichainVoteCollectionV2.sol";
-import {MultichainVoteCollectionMoonbeam} from "@protocol/governance/multichain/MultichainVoteCollectionMoonbeam.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
+import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
+import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
+import {IOEVWrapperFeed} from "@protocol/oracles/IOEVWrapperFeed.sol";
+import {MarketParams} from "@protocol/morpho/IMetaMorpho.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {IChainlinkOracle} from "@protocol/interfaces/IChainlinkOracle.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ChainlinkOracleConfigs} from "@proposals/ChainlinkOracleConfigs.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {ChainIds} from "@utils/ChainIds.sol";
 
-/// @title MIP-X56: MultichainGovernorV2 Migration to Ethereum Mainnet
-/// @author Moonwell Contributors
-/// @notice Proposal to migrate Moonwell governance from Moonbeam to Ethereum by:
+/// @title MIP-X56: Improve OEV Fee-Split Accuracy (full-coverage redeploy)
+/// @notice Redeploys every Core OEV-wrapped Chainlink feed enumerated in
+///         `ChainlinkOracleConfigs._oracleConfigs` on Base and Optimism using
+///         a fresh `ChainlinkOEVWrapper` constructor (so the loan-feed
+///         dereference fix is baked in), then re-wires `ChainlinkOracle` to
+///         point each market's symbol at the new wrapper. Composite-wrapped
+///         feeds and raw aggregators are left untouched. On Base ALL THREE
+///         `ChainlinkOEVMorphoWrapper` proxy implementations are also upgraded
+///         to restore round-data validation parity AND gate
+///         `updatePriceEarlyAndLiquidate` behind a per-proxy market allowlist
+///         (closes C4 #195). Each upgrade is split into two governance
+///         actions queued in the same proposal: plain `upgrade(proxy, newImpl)`
+///         followed by `setApprovedMarket(canonicalId, true)`. Both run
+///         atomically within one proposal execution, so the gate is never
+///         live without the canonical market seeded. setApprovedMarket is
+///         `onlyOwner`-gated (TEMPORAL_GOVERNOR), unfront-runnable.
+///         Proxies upgraded:
+///           - CHAINLINK_WELL_USD_ORACLE_PROXY
+///           - CHAINLINK_MAMO_USD_ORACLE_PROXY
+///           - CHAINLINK_stkWELL_USD_ORACLE_PROXY
 ///
-///         DEPLOYMENT PHASE:
-///         1. Deploy MultichainGovernorV2 and VotingPowerAggregator on Ethereum
-///         2. Deploy TemporalGovernor, VotingPowerAggregator, and MultichainVoteCollectionMoonbeam on Moonbeam
-///         3. Deploy VotingPowerAggregator and MultichainVoteCollectionV2 implementation on Base and Optimism
-///
-///         POST-DEPLOYMENT CONFIGURATION (by deployer):
-///         4. Initialize MultichainGovernorV2 on Ethereum with proposal count from Moonbeam + 1
-///         5. Configure Ethereum VotingPowerAggregator (addSnapshotSource, transfer ownership to governor)
-///
-///         MOONBEAM ACTIONS (executed by old MultichainGovernor):
-///         6. Upgrade Moonbeam MultichainGovernor to v1.1 (adds recoverETH function)
-///         7. Recover stuck ETH from MultichainGovernor to WELL_FOUNDATION_MULTISIG
-///         8. Add stkWell as snapshot source to Moonbeam VotingPowerAggregator
-///         9. Transfer Moonbeam VotingPowerAggregator ownership to TemporalGovernor
-///         10. Transfer ownership of all contracts owned by MultichainGovernor to TemporalGovernor
-///
-///         BASE ACTIONS (executed by Base TemporalGovernor via cross-chain message):
-///         11. Upgrade MultichainVoteCollection to V2 on Base
-///         12. Initialize V2 (set VotingPowerAggregator, remove old Moonbeam governor, add Ethereum governor)
-///         13. Add stkWell as snapshot source to Base VotingPowerAggregator
-///         14. Add Ethereum MultichainGovernorV2 as trusted sender on Base TemporalGovernor
-///         15. Remove Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor
-///
-///         OPTIMISM ACTIONS (executed by Optimism TemporalGovernor via cross-chain message):
-///         16. Same as Base actions (11-15) but on Optimism
-///
-///         Note: All VotingPowerAggregators use timestamp-based voting (no block numbers)
-///         and only aggregate voting power from xWell + stkWell (no well/distributor).
-contract mipx56 is HybridProposal {
+///         Each redeployed wrapper preserves the existing wrapper's full
+///         configuration (priceFeed pointer, chainlinkOracle, feeRecipient,
+///         owner, liquidatorFeeBps, maxRoundDelay, maxDecrements) - read live
+///         from on-chain state - so the only change observable post-upgrade
+///         is the loan-feed dereferencing logic inside the new bytecode.
+contract mipx56 is HybridProposal, ChainlinkOracleConfigs {
     using ProposalActions for *;
     using ChainIds for uint256;
 
     string public constant override name = "MIP-X56";
 
-    // Governance parameters (same values as TemporalGovernor on Base)
-    uint256 public constant TEMPORAL_GOVERNOR_PROPOSAL_DELAY = 86400;
-    uint256 public constant TEMPORAL_GOVERNOR_PERMISSIONLESS_UNPAUSE_TIME =
-        2592000;
+    /// @notice Canonical wrapper suffix — matches the convention established by
+    ///         MIP-X38 and MIP-X43. New wrappers are registered under
+    ///         `<oracleName>_OEV_WRAPPER`; the retired predecessor is archived
+    ///         under `<oracleName>_OEV_WRAPPER_DEPRECATED_V3`.
+    string internal constant OEV_WRAPPER_SUFFIX = "_OEV_WRAPPER";
+    string internal constant DEPRECATED_SUFFIX = "_OEV_WRAPPER_DEPRECATED_V3";
 
-    // MultichainGovernorV2 parameters (from MultichainGovernor on Moonbeam)
-    uint256 public constant PROPOSAL_THRESHOLD = 1000000000000000000000000;
-    uint256 public constant VOTING_PERIOD_SECONDS = 259200;
-    uint256 public constant CROSS_CHAIN_VOTE_COLLECTION_PERIOD = 86400;
-    uint256 public constant QUORUM = 100000000000000000000000000;
-    uint128 public constant PAUSE_DURATION = 2592000;
+    /// @notice Snapshot of pre-upgrade Morpho wrapper proxy state, captured in
+    ///         afterDeploy() and asserted in validate() to prove the proxy
+    ///         upgrade preserved every storage variable. Keyed by proxy address.
+    struct MorphoSnapshot {
+        uint16 liquidatorFeeBps;
+        uint256 maxRoundDelay;
+        uint256 maxDecrements;
+        address feeRecipient;
+        address owner;
+        address priceFeed;
+        address chainlinkOracle;
+        uint256 cachedRoundId;
+        address morphoBlue;
+        uint8 decimals;
+        // Raw aggregator (priceFeed) latestRoundData() pre-snapshot.
+        int256 answer;
+        uint256 updatedAt;
+        // OEV-wrapped surface (proxy.latestRoundData()) pre-snapshot — what
+        // consumers actually see. Together with the raw pair, validate()
+        // asserts the upgrade preserved both the forwarding path and the
+        // OEV-state-machine output.
+        int256 oevAnswer;
+        uint256 oevUpdatedAt;
+    }
+    mapping(address => MorphoSnapshot) internal _morphoSnapshot;
 
-    // Moonbeam contracts that should have ownership transferred to the new TemporalGovernor
-    string[] private contractsToValidateOwnership;
+    /// @notice Per-chain, per-oracleName snapshot of the raw aggregator's
+    ///         answer and updatedAt captured immediately before simulation.
+    ///         Used by validate() to prove the new wrapper points at the
+    ///         same raw feed as the old one (block state is unchanged across
+    ///         simulate, so a diff means a different aggregator was wired).
+    mapping(uint256 => mapping(string => int256)) internal _rawAnswerPre;
+    mapping(uint256 => mapping(string => uint256)) internal _rawUpdatedAtPre;
 
-    /// @notice Ethereum deployer nonce captured at proxy address prediction
-    /// time. Re-applied via vm.setNonce immediately before the real proxy
-    /// deployment so foundry's cross-fork broadcast counter — which inflates
-    /// the deployer nonce as broadcasts run on satellite chains — does not
-    /// shift the CREATE address away from the prediction. No-op in real
-    /// broadcasts where the on-chain Ethereum nonce naturally matches.
-    uint64 private _predictedDeployerNonce;
+    /// @notice Per-chain, per-oracleName snapshot of the OLD OEV wrapper's
+    ///         latestRoundData() output captured immediately before
+    ///         simulation. Read through `oracle.getFeed(symbol)` while the
+    ///         on-chain wiring still points at the predecessor wrapper.
+    ///         Used together with `_rawAnswerPre` to prove the redeploy
+    ///         preserved BOTH the raw forwarding path AND the OEV-state-
+    ///         machine output.
+    mapping(uint256 => mapping(string => int256)) internal _oevAnswerPre;
+    mapping(uint256 => mapping(string => uint256)) internal _oevUpdatedAtPre;
+
+    /// @notice Per-chain, per-mTokenKey snapshot of the full
+    ///         `ChainlinkOracle.getUnderlyingPrice(mToken)` resolution path
+    ///         captured pre-simulation. Validated within +-2% post-upgrade.
+    mapping(uint256 => mapping(string => uint256)) internal _underlyingPricePre;
+
+    /// @notice Per-chain, ordered list of unique oracleNames identified as
+    ///         live OEV wrappers in deploy(). Iterated in build()/validate().
+    mapping(uint256 => string[]) internal _upgradedOracleNames;
+
+    /// @notice Per-chain set marking which oracleNames were redeployed by
+    ///         this proposal. Source of truth for build/snapshot/validate
+    ///         gating — independent of the `_OEV_WRAPPER_DEPRECATED_V3`
+    ///         registry slot, which is only created when the canonical
+    ///         `_OEV_WRAPPER` key was already present locally (HAL-06).
+    mapping(uint256 => mapping(string => bool)) internal _isUpgraded;
+
+    /// @notice Per-chain, per-oracleName snapshot of the existing wrapper's
+    ///         constructor parameters, captured in deploy() so validate()
+    ///         can assert exact mirroring on the new wrapper.
+    struct WrapperParams {
+        address priceFeed;
+        address owner;
+        address chainlinkOracle;
+        address feeRecipient;
+        uint16 liquidatorFeeBps;
+        uint256 maxRoundDelay;
+        uint256 maxDecrements;
+    }
+    mapping(uint256 => mapping(string => WrapperParams))
+        internal _capturedParams;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -108,7 +157,7 @@ contract mipx56 is HybridProposal {
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_VALIDATE) {
             validate(addresses, deployerAddress);
-            console2.log("Validation completed for proposal ", this.name());
+            console.log("Validation completed for proposal ", this.name());
         }
         if (DO_PRINT) {
             printProposalActionSteps();
@@ -121,2038 +170,1086 @@ contract mipx56 is HybridProposal {
     }
 
     function primaryForkId() public pure override returns (uint256) {
-        return ETHEREUM_FORK_ID;
+        return MOONBEAM_FORK_ID;
     }
 
+    /// @notice Enumerate every Core OEV wrapper on the given chain and deploy
+    ///         a fresh `ChainlinkOEVWrapper` mirroring its on-chain params.
     function deploy(Addresses addresses, address) public override {
-        // ============ ETHEREUM MAINNET DEPLOYMENTS ============
-        vm.selectFork(ETHEREUM_FORK_ID);
+        _deployForChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
+        _deployForChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
 
-        address ethereumProxyAdmin;
-
-        // 1. Deploy MultichainGovernorV2 on Ethereum
-        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_IMPL")) {
-            vm.startBroadcast();
-
-            address governorV2Impl = address(new MultichainGovernorV2());
-
-            vm.stopBroadcast();
-
-            addresses.addAddress("MULTICHAIN_GOVERNOR_V2_IMPL", governorV2Impl);
-        }
-
-        if (!addresses.isAddressSet("PROXY_ADMIN")) {
-            vm.startBroadcast();
-
-            ethereumProxyAdmin = address(new ProxyAdmin());
-
-            vm.stopBroadcast();
-
-            addresses.addAddress("PROXY_ADMIN", ethereumProxyAdmin);
-        } else {
-            ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
-        }
-
-        // Deploy VotingPowerAggregator on Ethereum
-        if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR")) {
-            address xWellAddress = addresses.getAddress("xWELL_PROXY");
-
-            vm.startBroadcast();
-
-            address votingPowerImpl = address(new VotingPowerAggregator());
-
-            // Initialize with deployer as owner so we can configure it in afterDeploy
-            // Ownership will be transferred to MultichainGovernorV2 in afterDeploy
-            (, address deployerAddress, ) = vm.readCallers();
-            bytes memory votingPowerInitData = abi.encodeWithSignature(
-                "initialize(address,address)",
-                deployerAddress,
-                xWellAddress
-            );
-
-            address votingPowerProxy = address(
-                new TransparentUpgradeableProxy(
-                    votingPowerImpl,
-                    ethereumProxyAdmin,
-                    votingPowerInitData
-                )
-            );
-
-            vm.stopBroadcast();
-
-            addresses.addAddress(
-                "VOTING_POWER_AGGREGATOR_IMPL",
-                votingPowerImpl
-            );
-            addresses.addAddress("VOTING_POWER_AGGREGATOR", votingPowerProxy);
-        }
-
-        // Pre-compute the governor proxy CREATE address so Moonbeam contracts
-        // can use it as a trusted sender before the proxy itself is deployed.
-        // The proxy is deployed and initialized atomically at the end of deploy().
-        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
-            (, address deployer, ) = vm.readCallers();
-            uint256 predictedNonce = vm.getNonce(deployer);
-            address predictedGovernorProxy = vm.computeCreateAddress(
-                deployer,
-                predictedNonce
-            );
-            _predictedDeployerNonce = uint64(predictedNonce);
-
-            // The Addresses registry rejects addAddress for an isContract=true
-            // entry whose target has no bytecode on the active chain. Etch a
-            // single placeholder byte so the check passes; the real proxy
-            // deployment at the end of deploy() overwrites this bytecode at
-            // the same address. vm.etch is local-only — under broadcast it
-            // is a no-op on-chain.
-            if (predictedGovernorProxy.code.length == 0) {
-                vm.etch(predictedGovernorProxy, hex"00");
-            }
-
-            addresses.addAddress(
-                "MULTICHAIN_GOVERNOR_V2_PROXY",
-                predictedGovernorProxy
-            );
-            addresses.addAddress("EMISSIONS_ADMIN", predictedGovernorProxy);
-        }
-
-        // ============ MOONBEAM DEPLOYMENTS ============
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        // Deploy MultichainGovernor v1.1 (with recoverETH) on Moonbeam
-        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V1_1_IMPL")) {
-            vm.startBroadcast();
-            // NOTE: it's not v2 - it's the version with recoverETH()
-            address newMultichainGovernorImpl = address(
-                new MultichainGovernor()
-            );
-            vm.stopBroadcast();
-
-            addresses.addAddress(
-                "MULTICHAIN_GOVERNOR_V1_1_IMPL",
-                newMultichainGovernorImpl
-            );
-        }
-
-        // 2. Deploy TemporalGovernor on Moonbeam
-        if (!addresses.isAddressSet("TEMPORAL_GOVERNOR", block.chainid)) {
-            address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
-            address moonbeamProxyAdmin = addresses.getAddress(
-                "MOONBEAM_PROXY_ADMIN"
-            );
-
-            // Get the newly deployed MultichainGovernorV2 address on Ethereum
-            vm.selectFork(ETHEREUM_FORK_ID);
-            address governorV2Proxy = addresses.getAddress(
-                "MULTICHAIN_GOVERNOR_V2_PROXY"
-            );
-
-            vm.selectFork(MOONBEAM_FORK_ID);
-
-            // Set up trusted sender (Ethereum MultichainGovernorV2)
-            ITemporalGovernor.TrustedSender[]
-                memory trustedSenders = new ITemporalGovernor.TrustedSender[](
-                    1
-                );
-            trustedSenders[0] = ITemporalGovernor.TrustedSender({
-                chainId: ETHEREUM_WORMHOLE_CHAIN_ID,
-                addr: governorV2Proxy
-            });
-
-            vm.startBroadcast();
-
-            // Deploy TemporalGovernor directly (not upgradeable, no proxy needed)
-            address temporalGovernor = address(
-                new TemporalGovernor(
-                    wormholeCore,
-                    TEMPORAL_GOVERNOR_PROPOSAL_DELAY,
-                    TEMPORAL_GOVERNOR_PERMISSIONLESS_UNPAUSE_TIME,
-                    trustedSenders
-                )
-            );
-
-            vm.stopBroadcast();
-
-            addresses.addAddress("TEMPORAL_GOVERNOR", temporalGovernor);
-        }
-
-        // Deploy ProposalView on Moonbeam (references TemporalGovernor)
-        if (!addresses.isAddressSet("PROPOSAL_VIEW", block.chainid)) {
-            address temporalGovernor = addresses.getAddress(
-                "TEMPORAL_GOVERNOR"
-            );
-
-            vm.startBroadcast();
-
-            address proposalView = address(
-                new ProposalView(ITemporalGovernor(temporalGovernor))
-            );
-
-            vm.stopBroadcast();
-
-            addresses.addAddress("PROPOSAL_VIEW", proposalView);
-        }
-
-        // Deploy VotingPowerAggregator on Moonbeam
-        if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR", block.chainid)) {
-            address xWell = addresses.getAddress("xWELL_PROXY");
-            address moonbeamMultichainGovernor = addresses.getAddress(
-                "MULTICHAIN_GOVERNOR_PROXY"
-            );
-            address moonbeamProxyAdmin = addresses.getAddress(
-                "MOONBEAM_PROXY_ADMIN"
-            );
-
-            vm.startBroadcast();
-
-            address votingPowerImpl = address(new VotingPowerAggregator());
-
-            // Initialize with MultichainGovernor as owner so it can execute actions
-            // Ownership will be transferred to TemporalGovernor at the end of the proposal
-            bytes memory votingPowerInitData = abi.encodeWithSignature(
-                "initialize(address,address)",
-                moonbeamMultichainGovernor,
-                xWell
-            );
-
-            address votingPowerProxy = address(
-                new TransparentUpgradeableProxy(
-                    votingPowerImpl,
-                    moonbeamProxyAdmin,
-                    votingPowerInitData
-                )
-            );
-
-            vm.stopBroadcast();
-
-            addresses.addAddress(
-                "VOTING_POWER_AGGREGATOR_IMPL",
-                votingPowerImpl
-            );
-            addresses.addAddress("VOTING_POWER_AGGREGATOR", votingPowerProxy);
-        }
-
-        // 3. Deploy MultichainVoteCollectionMoonbeam on Moonbeam
-        if (
-            !addresses.isAddressSet("VOTE_COLLECTION_V2_PROXY", block.chainid)
-        ) {
-            address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
-            address temporalGovernor = addresses.getAddress(
-                "TEMPORAL_GOVERNOR"
-            );
-            address votingPowerAggregator = addresses.getAddress(
-                "VOTING_POWER_AGGREGATOR"
-            );
-            address moonbeamProxyAdmin = addresses.getAddress(
-                "MOONBEAM_PROXY_ADMIN"
-            );
-
-            vm.selectFork(ETHEREUM_FORK_ID);
-            address ethereumGovernorV2 = addresses.getAddress(
-                "MULTICHAIN_GOVERNOR_V2_PROXY"
-            );
-
-            vm.selectFork(MOONBEAM_FORK_ID);
-
-            // Initialize MultichainVoteCollectionMoonbeam with VotingPowerAggregator
-            bytes memory initData = abi.encodeWithSignature(
-                "initialize(address,address,address,uint16,address)",
-                votingPowerAggregator,
-                ethereumGovernorV2,
-                wormholeCore,
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                temporalGovernor
-            );
-
-            vm.startBroadcast();
-
-            address voteCollectionImpl = address(
-                new MultichainVoteCollectionMoonbeam()
-            );
-
-            address voteCollectionProxy = address(
-                new TransparentUpgradeableProxy(
-                    voteCollectionImpl,
-                    moonbeamProxyAdmin,
-                    initData
-                )
-            );
-
-            vm.stopBroadcast();
-
-            addresses.addAddress("VOTE_COLLECTION_V2_IMPL", voteCollectionImpl);
-            addresses.addAddress(
-                "VOTE_COLLECTION_V2_PROXY",
-                voteCollectionProxy
-            );
-        }
-
-        // 4. Transfer ownership of the ProxyAdmin contract to the newly deployed MultichainGovernorV2
-
-        // ============ BASE DEPLOYMENTS ============
+        // Base only: deploy a single shared ChainlinkOEVMorphoWrapper
+        // implementation that all three proxies (WELL, MAMO, stkWELL) will
+        // point at. The proxy upgrades themselves are queued in build() and
+        // executed via governance — this just deploys the impl bytecode.
         vm.selectFork(BASE_FORK_ID);
-
-        // Deploy VotingPowerAggregator on Base
-        if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR", block.chainid)) {
-            address xWell = addresses.getAddress("xWELL_PROXY");
-            address baseProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
-            address temporalGovernor = addresses.getAddress(
-                "TEMPORAL_GOVERNOR"
-            );
-
+        if (!addresses.isAddressSet("CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2")) {
             vm.startBroadcast();
-
-            address votingPowerImpl = address(new VotingPowerAggregator());
-
-            bytes memory votingPowerInitData = abi.encodeWithSignature(
-                "initialize(address,address)",
-                temporalGovernor,
-                xWell
-            );
-
-            address votingPowerProxy = address(
-                new TransparentUpgradeableProxy(
-                    votingPowerImpl,
-                    baseProxyAdmin,
-                    votingPowerInitData
-                )
-            );
-
+            ChainlinkOEVMorphoWrapper impl = new ChainlinkOEVMorphoWrapper();
             vm.stopBroadcast();
-
             addresses.addAddress(
-                "VOTING_POWER_AGGREGATOR_IMPL",
-                votingPowerImpl
-            );
-            addresses.addAddress("VOTING_POWER_AGGREGATOR", votingPowerProxy);
-        }
-
-        // Deploy MultichainVoteCollectionV2 implementation on Base
-        if (!addresses.isAddressSet("VOTE_COLLECTION_V2_IMPL", block.chainid)) {
-            vm.startBroadcast();
-
-            address voteCollectionV2Impl = address(
-                new MultichainVoteCollectionV2()
-            );
-
-            vm.stopBroadcast();
-
-            addresses.addAddress(
-                "VOTE_COLLECTION_V2_IMPL",
-                voteCollectionV2Impl
+                "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2",
+                address(impl)
             );
         }
-
-        // ============ OPTIMISM DEPLOYMENTS ============
-        vm.selectFork(OPTIMISM_FORK_ID);
-
-        // Deploy VotingPowerAggregator on Optimism
-        if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR", block.chainid)) {
-            address xWell = addresses.getAddress("xWELL_PROXY");
-            address optimismProxyAdmin = addresses.getAddress(
-                "MRD_PROXY_ADMIN"
-            );
-            address temporalGovernor = addresses.getAddress(
-                "TEMPORAL_GOVERNOR"
-            );
-
-            vm.startBroadcast();
-
-            address votingPowerImpl = address(new VotingPowerAggregator());
-
-            bytes memory votingPowerInitData = abi.encodeWithSignature(
-                "initialize(address,address)",
-                temporalGovernor,
-                xWell
-            );
-
-            address votingPowerProxy = address(
-                new TransparentUpgradeableProxy(
-                    votingPowerImpl,
-                    optimismProxyAdmin,
-                    votingPowerInitData
-                )
-            );
-
-            vm.stopBroadcast();
-
-            addresses.addAddress(
-                "VOTING_POWER_AGGREGATOR_IMPL",
-                votingPowerImpl
-            );
-            addresses.addAddress("VOTING_POWER_AGGREGATOR", votingPowerProxy);
-        }
-
-        // Deploy MultichainVoteCollectionV2 implementation on Optimism
-        if (!addresses.isAddressSet("VOTE_COLLECTION_V2_IMPL", block.chainid)) {
-            vm.startBroadcast();
-
-            address voteCollectionV2Impl = address(
-                new MultichainVoteCollectionV2()
-            );
-
-            vm.stopBroadcast();
-
-            addresses.addAddress(
-                "VOTE_COLLECTION_V2_IMPL",
-                voteCollectionV2Impl
-            );
-        }
-
-        // Deploy + initialize the Ethereum governor proxy atomically as the last
-        // step of deploy(). Asserts the deployed address matches the prediction.
-        _deployAndInitializeGovernorV2(addresses);
+        vm.selectFork(primaryForkId());
     }
 
-    /// @notice Atomically deploy and initialize the Ethereum MultichainGovernorV2 proxy.
-    /// @dev Init data is encoded for the proxy constructor so initialize() runs
-    /// in the same transaction as proxy creation.
-    function _deployAndInitializeGovernorV2(Addresses addresses) internal {
-        // Pull the predicted proxy address from the chain-1 registry while
-        // still on a non-Ethereum fork so the bytecode check is bypassed
-        // (the proxy is not deployed yet at this point).
-        address registeredProxy = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY",
-            ETHEREUM_CHAIN_ID
-        );
-
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        // Idempotent: if a real proxy is already deployed (code longer than
-        // the 1-byte placeholder), nothing to do.
-        if (registeredProxy.code.length > 1) {
-            return;
-        }
-
-        // startingProposalCount = moonbeam.proposalCount + 1 keeps proposal IDs
-        // sequential across the migration.
-        vm.selectFork(MOONBEAM_FORK_ID);
-        uint256 startingProposalCount = MultichainGovernor(
-            payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
-        ).proposalCount();
-        address moonbeamVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_V2_PROXY"
-        );
-
-        vm.selectFork(BASE_FORK_ID);
-        address baseVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY"
-        );
-
-        vm.selectFork(OPTIMISM_FORK_ID);
-        address optimismVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY"
-        );
-
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        MultichainGovernorV2.InitializeData memory initData;
-        initData.votingPower = addresses.getAddress("VOTING_POWER_AGGREGATOR");
-        initData.proposalThreshold = PROPOSAL_THRESHOLD;
-        initData.votingPeriodSeconds = VOTING_PERIOD_SECONDS;
-        initData
-            .crossChainVoteCollectionPeriod = CROSS_CHAIN_VOTE_COLLECTION_PERIOD;
-        initData.quorum = QUORUM;
-        initData.pauseDuration = PAUSE_DURATION;
-        initData.startingProposalCount = uint128(startingProposalCount + 1);
-        initData.pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
-        initData.breakGlassGuardian = addresses.getAddress(
-            "BREAK_GLASS_GUARDIAN"
-        );
-        initData.wormholeCore = addresses.getAddress("WORMHOLE_CORE");
-
-        WormholeTrustedSender.TrustedSender[]
-            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                3
-            );
-        trustedSenders[0] = WormholeTrustedSender.TrustedSender({
-            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
-            addr: moonbeamVoteCollection
-        });
-        trustedSenders[1] = WormholeTrustedSender.TrustedSender({
-            chainId: BASE_WORMHOLE_CHAIN_ID,
-            addr: baseVoteCollection
-        });
-        trustedSenders[2] = WormholeTrustedSender.TrustedSender({
-            chainId: OPTIMISM_WORMHOLE_CHAIN_ID,
-            addr: optimismVoteCollection
-        });
-
-        bytes[] memory whitelistedCalldatas = _buildBreakGlassCalldatas(
-            addresses
-        );
-        // _buildBreakGlassCalldatas switches forks during construction, restore Ethereum
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        bytes memory initCallData = abi.encodeWithSelector(
-            MultichainGovernorV2.initialize.selector,
-            initData,
-            trustedSenders,
-            whitelistedCalldatas
-        );
-
-        address governorV2Impl = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_IMPL"
-        );
-        address ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
-
-        // Clear the single-byte placeholder etched during deploy().
-        if (registeredProxy.code.length == 1) {
-            vm.etch(registeredProxy, "");
-        }
-
-        // Foundry shares the broadcast deployer's nonce across forks: every
-        // satellite-chain deployment between the prediction (in deploy()) and
-        // this point bumps the same counter, so by now the Ethereum nonce
-        // would land far past predicted. Reset it to the predicted value so
-        // the CREATE matches the registered address. vm.setNonce is local-
-        // only — in real broadcasts the on-chain nonce is unaffected and
-        // already matches because no Ethereum txs happened in between.
-        (, address deployerNow, ) = vm.readCallers();
-        if (vm.getNonce(deployerNow) != _predictedDeployerNonce) {
-            // vm.setNonce rejects decreases; setNonceUnsafe allows lowering.
-            // We need to lower because the cross-fork broadcast counter has
-            // run past the predicted nonce.
-            vm.setNonceUnsafe(deployerNow, _predictedDeployerNonce);
-        }
-
-        vm.startBroadcast();
-        address actualProxy = address(
-            new TransparentUpgradeableProxy(
-                governorV2Impl,
-                ethereumProxyAdmin,
-                initCallData
-            )
-        );
-        vm.stopBroadcast();
-
-        require(
-            actualProxy == registeredProxy,
-            "governor proxy address mismatch; deployer nonce shifted"
-        );
-    }
-
-    function afterDeploy(Addresses addresses, address) public override {
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        address governorV2Proxy = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY"
-        );
-
-        // Add stkWELL snapshot source and transfer aggregator ownership to the governor.
-        vm.startBroadcast();
-        _configureEthereumVotingPower(addresses, governorV2Proxy);
-        vm.stopBroadcast();
-
-        // Transfer Ethereum ProxyAdmin ownership to MultichainGovernorV2 (current owner is deployer)
-        vm.startBroadcast(addresses.getAddress("MOONWELL_DEPLOYER"));
-
-        ProxyAdmin(addresses.getAddress("PROXY_ADMIN")).transferOwnership(
-            governorV2Proxy
-        );
-
-        vm.stopBroadcast();
-    }
-
-    /// @notice Helper function to configure Ethereum VotingPowerAggregator
-    /// @dev Separated from afterDeploy to avoid stack too deep errors
-    function _configureEthereumVotingPower(
+    function _deployForChain(
         Addresses addresses,
-        address governorV2Proxy
+        uint256 forkId,
+        uint256 chainId
     ) internal {
-        address ethereumVotingPower = addresses.getAddress(
-            "VOTING_POWER_AGGREGATOR"
-        );
-        address ethereumStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
+        vm.selectFork(forkId);
 
-        VotingPowerAggregator votingPower = VotingPowerAggregator(
-            ethereumVotingPower
+        OracleConfig[] memory configs = getOracleConfigurations(chainId);
+        IChainlinkOracle oracle = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
         );
 
-        // xWell is already set during initialize() in deploy(); only snapshot
-        // sources and ownership remain to be configured here.
+        for (uint256 i = 0; i < configs.length; i++) {
+            OracleConfig memory config = configs[i];
 
-        // Add stkWell as snapshot source
-        votingPower.addSnapshotSource(ethereumStkWell);
-
-        // Transfer ownership of VotingPowerAggregator to MultichainGovernorV2
-        votingPower.transferOwnership(governorV2Proxy);
-    }
-
-    /// @notice Build whitelisted calldatas for the break glass guardian.
-    /// @dev Three publishMessage calldatas — one per satellite chain — that
-    ///      together unwind mip-x56's cross-chain trust topology. Each calldata,
-    ///      when executed via `MultichainGovernorV2.executeBreakGlass(targets,
-    ///      calldatas)` with `targets[i] = WORMHOLE_CORE` (Ethereum), emits a
-    ///      Wormhole message to the corresponding TemporalGovernor whose
-    ///      payload calls:
-    ///        inner[0]: TemporalGovernor.unSetTrustedSenders([{ETHEREUM, MULTICHAIN_GOVERNOR_V2_PROXY}])
-    ///        inner[1]: TemporalGovernor.setTrustedSenders([{MOONBEAM, MULTICHAIN_GOVERNOR_PROXY}])
-    ///
-    ///      Index table:
-    ///        [0] publishMessage → Moonbeam TemporalGovernor  — restore old governor as trusted sender
-    ///        [1] publishMessage → Base     TemporalGovernor  — restore old governor as trusted sender
-    ///        [2] publishMessage → Optimism TemporalGovernor  — restore old governor as trusted sender
-    ///
-    ///      After break-glass executes, the old Moonbeam MULTICHAIN_GOVERNOR_PROXY
-    ///      (v1.1) regains a Wormhole *execution* path into each TemporalGovernor
-    ///      and can reverse the ~75 Moonbeam ownership/admin transfers (and any
-    ///      Base/OP follow-up) through normal governance.
-    ///
-    ///      Why publishMessage everywhere (no direct admin calls):
-    ///      MultichainGovernorV2 lives on Ethereum, so executeBreakGlass's
-    ///      `_functionCallWithValue(targets[i], calldatas[i], 0)` only reaches
-    ///      Ethereum-side contracts directly. Every satellite-chain mutation
-    ///      must therefore route through Wormhole → TemporalGovernor.
-    ///
-    ///      KNOWN CAVEATS — intentionally not addressed by break-glass:
-    ///      (i) Cross-chain vote collection remains broken after the unwind.
-    ///          mip-x56's `MultichainVoteCollectionV2.initializeV3` (gated by
-    ///          `reinitializer(3)`, no external mutator on V2) hardcodes
-    ///          `targetAddress[ETHEREUM_WORMHOLE_CHAIN_ID] = ethereumGovernorV2`
-    ///          on Base/OP VoteCollectionV2. The trusted-sender flip restores
-    ///          OUTBOUND messaging (old governor → TemporalGovernor) but does
-    ///          NOT restore INBOUND vote collection — `emitVotes` still bridges
-    ///          to the V2 governor only, and the trusted-sender check on
-    ///          VoteCollectionV2 still rejects inbound proposal broadcasts from
-    ///          the old governor. The old governor therefore operates on
-    ///          Moonbeam-local voting power (xWELL + stkWELL + WELL + distributor
-    ///          on Moonbeam) until a separate emergency upgrade deploys a
-    ///          MultichainVoteCollectionV3 that exposes target-address mutators
-    ///          (e.g. `addTargetAddress`/`removeTargetAddress` as `onlyOwner`)
-    ///          and upgrades via `MRD_PROXY_ADMIN` through the restored Wormhole
-    ///          path. This is an acknowledged post-incident emergency-response
-    ///          path, not a break-glass-time action.
-    ///      (ii) Ethereum-side contracts owned by the V2 governor (xWELL,
-    ///           stkWELL, WormholeBridgeAdapter, VotingPowerAggregator,
-    ///           ProxyAdmin) are not unwound by break-glass. PAUSE_GUARDIAN
-    ///           multisig coordinates Ethereum-side recovery separately.
-    function _buildBreakGlassCalldatas(
-        Addresses addresses
-    ) internal returns (bytes[] memory) {
-        // Capture cross-chain addresses up front; helper switches forks per chain.
-        vm.selectFork(ETHEREUM_FORK_ID);
-        address ethereumGovernorV2 = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY"
-        );
-
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamMultichainGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-
-        bytes[] memory calldatas = new bytes[](3);
-
-        calldatas[0] = _buildUnwindPublishMessageCalldata(
-            addresses,
-            MOONBEAM_FORK_ID,
-            ethereumGovernorV2,
-            moonbeamMultichainGovernor
-        );
-
-        calldatas[1] = _buildUnwindPublishMessageCalldata(
-            addresses,
-            BASE_FORK_ID,
-            ethereumGovernorV2,
-            moonbeamMultichainGovernor
-        );
-
-        calldatas[2] = _buildUnwindPublishMessageCalldata(
-            addresses,
-            OPTIMISM_FORK_ID,
-            ethereumGovernorV2,
-            moonbeamMultichainGovernor
-        );
-
-        // Restore Ethereum fork since callers expect it
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        return calldatas;
-    }
-
-    /// @notice Build a publishMessage calldata that unwinds the satellite
-    ///         chain's TemporalGovernor trusted-sender state — remove the new
-    ///         Ethereum V2 governor and restore the old Moonbeam
-    ///         MultichainGovernor (v1.1) as a trusted sender.
-    /// @param addresses The address registry
-    /// @param satelliteForkId Fork ID of the satellite chain whose TemporalGovernor we are unwinding
-    /// @param ethereumGovernorV2 Ethereum MultichainGovernorV2 proxy to remove from trusted senders
-    /// @param moonbeamMultichainGovernor Old Moonbeam MultichainGovernor proxy to restore as trusted sender
-    function _buildUnwindPublishMessageCalldata(
-        Addresses addresses,
-        uint256 satelliteForkId,
-        address ethereumGovernorV2,
-        address moonbeamMultichainGovernor
-    ) internal returns (bytes memory) {
-        vm.selectFork(satelliteForkId);
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-
-        // Inner call 0: remove the new Ethereum V2 governor as a trusted sender
-        ITemporalGovernor.TrustedSender[]
-            memory ethereumSender = new ITemporalGovernor.TrustedSender[](1);
-        ethereumSender[0] = ITemporalGovernor.TrustedSender({
-            chainId: ETHEREUM_WORMHOLE_CHAIN_ID,
-            addr: ethereumGovernorV2
-        });
-        bytes memory unSetEthereumCalldata = abi.encodeWithSignature(
-            "unSetTrustedSenders((uint16,address)[])",
-            ethereumSender
-        );
-
-        // Inner call 1: restore the old Moonbeam MultichainGovernor as a trusted sender
-        ITemporalGovernor.TrustedSender[]
-            memory moonbeamSender = new ITemporalGovernor.TrustedSender[](1);
-        moonbeamSender[0] = ITemporalGovernor.TrustedSender({
-            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
-            addr: moonbeamMultichainGovernor
-        });
-        bytes memory setMoonbeamCalldata = abi.encodeWithSignature(
-            "setTrustedSenders((uint16,address)[])",
-            moonbeamSender
-        );
-
-        // Build the TemporalGovernor._executeProposal-shaped payload with two
-        // inner calls, both targeting TemporalGovernor itself (its
-        // setTrustedSenders/unSetTrustedSenders are gated on
-        // msg.sender == address(this)).
-        address[] memory innerTargets = new address[](2);
-        innerTargets[0] = temporalGovernor;
-        innerTargets[1] = temporalGovernor;
-
-        uint256[] memory innerValues = new uint256[](2);
-
-        bytes[] memory innerCalldatas = new bytes[](2);
-        innerCalldatas[0] = unSetEthereumCalldata;
-        innerCalldatas[1] = setMoonbeamCalldata;
-
-        return
-            abi.encodeWithSignature(
-                "publishMessage(uint32,bytes,uint8)",
-                1000,
-                abi.encode(
-                    temporalGovernor, // intendedRecipient
-                    innerTargets,
-                    innerValues,
-                    innerCalldatas
-                ),
-                1 // consistency: finalized
-            );
-    }
-
-    function _buildMoonbeam(Addresses addresses) internal {
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        // 4. Upgrade MultichainGovernor on Moonbeam to latest version (with recoverETH())
-        address moonbeamMultichainGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-        address moonbeamProxyAdmin = addresses.getAddress(
-            "MOONBEAM_PROXY_ADMIN"
-        );
-
-        address newMultichainGovernorImpl = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V1_1_IMPL"
-        );
-
-        _pushAction(
-            moonbeamProxyAdmin,
-            abi.encodeWithSignature(
-                "upgrade(address,address)",
-                moonbeamMultichainGovernor,
-                newMultichainGovernorImpl
-            ),
-            "Upgrade MultichainGovernor on Moonbeam to version with recoverETH()",
-            ActionType.Moonbeam
-        );
-
-        // 5. Recover ETH from MultichainGovernor on Moonbeam
-        address wellFoundationMultisig = addresses.getAddress(
-            "WELL_FOUNDATION_MULTISIG"
-        );
-
-        _pushAction(
-            moonbeamMultichainGovernor,
-            abi.encodeWithSignature(
-                "recoverETH(address)",
-                payable(wellFoundationMultisig)
-            ),
-            "Recover ETH from MultichainGovernor on Moonbeam to WELL_FOUNDATION_MULTISIG",
-            ActionType.Moonbeam
-        );
-
-        // 5.5. Add stkWell as snapshot source to VotingPowerAggregator on Moonbeam
-        address moonbeamVotingPower = addresses.getAddress(
-            "VOTING_POWER_AGGREGATOR"
-        );
-        address moonbeamStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
-
-        _pushAction(
-            moonbeamVotingPower,
-            abi.encodeWithSignature(
-                "addSnapshotSource(address)",
-                moonbeamStkWell
-            ),
-            "Add stkWell as snapshot source to VotingPowerAggregator on Moonbeam",
-            ActionType.Moonbeam
-        );
-
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-
-        // 5.6. Transfer VotingPowerAggregator ownership to TemporalGovernor
-        _pushAction(
-            moonbeamVotingPower,
-            abi.encodeWithSignature(
-                "transferOwnership(address)",
-                temporalGovernor
-            ),
-            "Transfer VotingPowerAggregator ownership to TemporalGovernor on Moonbeam",
-            ActionType.Moonbeam
-        );
-
-        // Note: Ethereum MultichainGovernorV2 is already set as a trusted sender on Moonbeam TemporalGovernor
-        // during deployment (see deploy() function above), so no additional action needed here.
-
-        // 6. Transfer ownership of all contracts on Moonbeam owned by MultichainGovernor to TemporalGovernor
-        uint256 ownershipTransferCount = 0;
-
-        // All 75 address names from 1284.json (Moonbeam)
-        string[] memory moonbeamContracts = new string[](75);
-        moonbeamContracts[0] = "mGLIMMER";
-        moonbeamContracts[1] = "MGLIMMER_MULTISIG";
-        moonbeamContracts[2] = "WELL_FOUNDATION_MULTISIG";
-        moonbeamContracts[3] = "CURLY";
-        moonbeamContracts[4] = "mETHwh";
-        moonbeamContracts[5] = "WELL";
-        moonbeamContracts[6] = "MULTICHAIN_GOVERNOR_PROXY";
-        moonbeamContracts[7] = "MULTICHAIN_GOVERNOR_IMPL";
-        moonbeamContracts[8] = "STELLASWAP_REWARDER";
-        moonbeamContracts[9] = "DEPRECATED_MULTICHAIN_GOVERNOR_IMPL";
-        moonbeamContracts[10] = "BREAK_GLASS_GUARDIAN";
-        moonbeamContracts[11] = "ARTEMIS_GOVERNOR";
-        moonbeamContracts[12] = "MOONBEAM_PROXY_ADMIN";
-        moonbeamContracts[13] = "GOVTOKEN";
-        moonbeamContracts[14] = "MOONBEAM_PAUSE_GUARDIAN_MULTISIG";
-        moonbeamContracts[15] = "CHAINLINK_ORACLE";
-        moonbeamContracts[16] = "MOONBEAM_TIMELOCK";
-        moonbeamContracts[17] = "WORMHOLE_CORE";
-        moonbeamContracts[18] = "WORMHOLE_BRIDGE_RELAYER_PROXY";
-        moonbeamContracts[19] = "ECOSYSTEM_RESERVE_PROXY";
-        moonbeamContracts[20] = "ECOSYSTEM_RESERVE_CONTROLLER";
-        moonbeamContracts[21] = "UNITROLLER";
-        moonbeamContracts[22] = "TOKENSALE";
-        moonbeamContracts[23] = "MNATIVE";
-        moonbeamContracts[24] = "GOVTOKEN_LP";
-        moonbeamContracts[25] = "MOONWELL_VIEWS_IMPLEMENTATION";
-        moonbeamContracts[26] = "MOONWELL_VIEWS_PROXY_ADMIN";
-        moonbeamContracts[27] = "MOONWELL_VIEWS_PROXY";
-        moonbeamContracts[28] = "xWELL_LOCKBOX";
-        moonbeamContracts[29] = "WORMHOLE_BRIDGE_ADAPTER_PROXY";
-        moonbeamContracts[30] = "WORMHOLE_BRIDGE_ADAPTER_LOGIC";
-        moonbeamContracts[31] = "WORMHOLE_UNWRAPPER_ADAPTER";
-        moonbeamContracts[32] = "xWELL_LOGIC";
-        moonbeamContracts[33] = "xWELL_PROXY";
-        moonbeamContracts[34] = "xWELL_ROUTER";
-        moonbeamContracts[35] = "TOKEN_SALE_DISTRIBUTOR_PROXY";
-        moonbeamContracts[36] = "TOKEN_SALE_DISTRIBUTOR_IMPL";
-        moonbeamContracts[37] = "STK_GOVTOKEN_PROXY";
-        moonbeamContracts[38] = "STK_GOVTOKEN_IMPL";
-        moonbeamContracts[39] = "MOONWELL_mBUSD";
-        moonbeamContracts[40] = "MOONWELL_mUSDC";
-        moonbeamContracts[41] = "DEPRECATED_MOONWELL_mETH";
-        moonbeamContracts[42] = "DEPRECATED_MOONWELL_mWBTC";
-        moonbeamContracts[43] = "madUSDC";
-        moonbeamContracts[44] = "madWETH";
-        moonbeamContracts[45] = "madWBTC";
-        moonbeamContracts[46] = "mxcDOT";
-        moonbeamContracts[47] = "mxcUSDT";
-        moonbeamContracts[48] = "JUMP_RATE_IRM_mxcUSDT";
-        moonbeamContracts[49] = "mFRAX";
-        moonbeamContracts[50] = "JUMP_RATE_IRM_mFRAX";
-        moonbeamContracts[51] = "mxcUSDC";
-        moonbeamContracts[52] = "JUMP_RATE_IRM_mxcUSDC";
-        moonbeamContracts[53] = "mUSDCwh";
-        moonbeamContracts[54] = "MOONWELL_mWBTC";
-        moonbeamContracts[55] = "JUMP_RATE_IRM_mUSDCwh";
-        moonbeamContracts[56] = "JUMP_RATE_IRM_mWBTCwh";
-        moonbeamContracts[57] = "JUMP_RATE_IRM_mUSDCwh_MIP_M38";
-        moonbeamContracts[58] = "JUMP_RATE_IRM_mFRAX_MIP_M38";
-        moonbeamContracts[59] = "MOONWELL_mETH";
-        moonbeamContracts[60] = "NOMAD_REALLOCATION_MULTISIG";
-        moonbeamContracts[61] = "xcDOT";
-        moonbeamContracts[62] = "xcUSDT";
-        moonbeamContracts[63] = "xcUSDC";
-        moonbeamContracts[64] = "MOONWELL_mFRAX";
-        moonbeamContracts[65] = "MARKET_ADD_CHECKER";
-        moonbeamContracts[66] = "API3_GLMR_USD_FEED";
-        moonbeamContracts[67] = "API3_DOT_USD_FEED";
-        moonbeamContracts[68] = "API3_FRAX_USD_FEED";
-        moonbeamContracts[69] = "API3_USDT_USD_FEED";
-        moonbeamContracts[70] = "API3_USDC_USD_FEED";
-        moonbeamContracts[71] = "API3_ETH_USD_FEED";
-        moonbeamContracts[72] = "API3_BTC_USD_FEED";
-        moonbeamContracts[73] = "ANTHIAS_MULTISIG";
-        moonbeamContracts[74] = "F-GLMR-DEVGRANT";
-
-        // Track addresses already processed to avoid duplicate actions for aliases
-        // (e.g., mGLIMMER/MNATIVE and mETHwh/MOONWELL_mETH point to same contract)
-        address[] memory processedAddresses = new address[](
-            moonbeamContracts.length
-        );
-        uint256 processedCount = 0;
-
-        // Loop through all contracts and transfer ownership if owned by MultichainGovernor
-        for (uint256 i = 0; i < moonbeamContracts.length; i++) {
-            // Check if contract address exists in addresses mapping
-            if (!addresses.isAddressSet(moonbeamContracts[i])) {
+            // Dedupe: skip if already processed in this loop (e.g.
+            // CHAINLINK_USDC_USD covers USDC + USDBC). HAL-06: rely on the
+            // explicit `_isUpgraded` set rather than the deprecated-suffix
+            // registry slot, which can be absent when the canonical
+            // `_OEV_WRAPPER` key was missing locally.
+            if (_isUpgraded[chainId][config.oracleName]) {
                 continue;
             }
 
-            address contractAddress = addresses.getAddress(
-                moonbeamContracts[i]
+            // Resolve the live wrapper via the registry: whatever address is
+            // currently wired under the market's actual ERC20 symbol.
+            // Inconsistency between the config list, the addresses
+            // registry, and the on-chain ChainlinkOracle state must
+            // surface as a hard revert — silent skips here would let
+            // proposals execute against partial coverage.
+            (bool ok, string memory symbol) = _readSymbol(addresses, config);
+            require(
+                ok,
+                string.concat(
+                    "MIP-X56: symbol not resolvable for ",
+                    config.oracleName
+                )
             );
 
-            // Skip if we already processed this address (alias dedup)
-            bool alreadyProcessed = false;
-            for (uint256 j = 0; j < processedCount; j++) {
-                if (processedAddresses[j] == contractAddress) {
-                    alreadyProcessed = true;
-                    break;
-                }
-            }
-            if (alreadyProcessed) continue;
+            address registered = address(oracle.getFeed(symbol));
+            (bool isWrapped, ) = _isOEVWrapper(registered);
+            require(
+                isWrapped,
+                string.concat(
+                    "MIP-X56: registered feed is not an OEV wrapper for ",
+                    config.oracleName
+                )
+            );
 
-            // Pattern 1: Ownable (owner() -> transferOwnership())
-            try this._getOwner(contractAddress) returns (address owner) {
-                if (owner == moonbeamMultichainGovernor) {
-                    _pushAction(
-                        contractAddress,
-                        abi.encodeWithSignature(
-                            "transferOwnership(address)",
-                            temporalGovernor
-                        ),
-                        string(
-                            abi.encodePacked(
-                                "Transfer ",
-                                moonbeamContracts[i],
-                                " ownership to TemporalGovernor"
-                            )
-                        ),
-                        ActionType.Moonbeam
-                    );
-                    ownershipTransferCount++;
-                    contractsToValidateOwnership.push(moonbeamContracts[i]);
-                    processedAddresses[processedCount++] = contractAddress;
-                    continue;
-                }
-            } catch {}
+            // Capture the existing wrapper's full configuration so the new
+            // wrapper can mirror it exactly.
+            WrapperParams memory params = _captureParams(registered);
 
-            // Pattern 2: admin() — mToken/Unitroller (_setPendingAdmin) or ChainlinkOracle (setAdmin)
-            try this._getAdmin(contractAddress) returns (address admin) {
-                if (admin == moonbeamMultichainGovernor) {
-                    bool hasPending = this._hasPendingAdmin(contractAddress);
-                    if (hasPending) {
-                        // mToken/Unitroller pattern: 2-step via _setPendingAdmin
-                        _pushAction(
-                            contractAddress,
-                            abi.encodeWithSignature(
-                                "_setPendingAdmin(address)",
-                                payable(temporalGovernor)
-                            ),
-                            string(
-                                abi.encodePacked(
-                                    "Set pending admin on ",
-                                    moonbeamContracts[i],
-                                    " to TemporalGovernor"
-                                )
-                            ),
-                            ActionType.Moonbeam
-                        );
-                    } else {
-                        // ChainlinkOracle pattern: 1-step via setAdmin
-                        _pushAction(
-                            contractAddress,
-                            abi.encodeWithSignature(
-                                "setAdmin(address)",
-                                temporalGovernor
-                            ),
-                            string(
-                                abi.encodePacked(
-                                    "Set admin on ",
-                                    moonbeamContracts[i],
-                                    " to TemporalGovernor"
-                                )
-                            ),
-                            ActionType.Moonbeam
-                        );
-                    }
-                    ownershipTransferCount++;
-                    contractsToValidateOwnership.push(moonbeamContracts[i]);
-                    processedAddresses[processedCount++] = contractAddress;
-                    continue;
-                }
-            } catch {}
+            _capturedParams[chainId][config.oracleName] = params;
 
-            // Pattern 3: EMISSION_MANAGER() -> setEmissionsManager() (stkWELL)
-            try this._getEmissionManager(contractAddress) returns (
-                address manager
-            ) {
-                if (manager == moonbeamMultichainGovernor) {
-                    _pushAction(
-                        contractAddress,
-                        abi.encodeWithSignature(
-                            "setEmissionsManager(address)",
-                            temporalGovernor
-                        ),
-                        string(
-                            abi.encodePacked(
-                                "Set emissions manager on ",
-                                moonbeamContracts[i],
-                                " to TemporalGovernor"
-                            )
-                        ),
-                        ActionType.Moonbeam
-                    );
-                    ownershipTransferCount++;
-                    contractsToValidateOwnership.push(moonbeamContracts[i]);
-                    processedAddresses[processedCount++] = contractAddress;
-                    continue;
-                }
-            } catch {}
+            _deployAndRegisterWrapper(
+                addresses,
+                chainId,
+                config.oracleName,
+                params
+            );
         }
     }
 
-    function _buildBase(
+    /// @notice Deploy a new ChainlinkOEVWrapper and register it under the
+    ///         canonical `_OEV_WRAPPER` name, archiving the previous wrapper
+    ///         under `_OEV_WRAPPER_DEPRECATED_V3`. Extracted to avoid stack-
+    ///         too-deep in `_deployForChain`.
+    ///
+    ///         Two layouts are supported:
+    ///         (1) "pre-update": chains/*.json still has canonical = OLD —
+    ///             broadcast NEW, archive OLD under DEPRECATED, promote NEW.
+    ///         (2) "post-update": chains/*.json already carries
+    ///             canonical = NEW (with `isContract: false` until on-chain
+    ///             execution flips it) AND DEPRECATED = OLD. The actual
+    ///             on-chain deployment happens off-script; this function
+    ///             becomes a no-op that lets CI print calldata referencing
+    ///             the pre-registered addresses without simulation-vs-
+    ///             on-chain deployer nonce drift.
+    function _deployAndRegisterWrapper(
         Addresses addresses,
-        address ethereumGovernorV2
+        uint256 chainId,
+        string memory oracleName,
+        WrapperParams memory params
     ) internal {
-        vm.selectFork(BASE_FORK_ID);
-
-        // 7. Upgrade MultichainVoteCollection to V2 on Base
-        address baseVoteCollectionProxy = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY"
+        string memory canonicalName = string.concat(
+            oracleName,
+            OEV_WRAPPER_SUFFIX
         );
-        address baseVoteCollectionV2Impl = addresses.getAddress(
-            "VOTE_COLLECTION_V2_IMPL"
-        );
-        address baseProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
-        address baseVotingPowerAggregator = addresses.getAddress(
-            "VOTING_POWER_AGGREGATOR"
+        string memory deprecatedName = string.concat(
+            oracleName,
+            DEPRECATED_SUFFIX
         );
 
-        _pushAction(
-            baseProxyAdmin,
-            abi.encodeWithSignature(
-                "upgrade(address,address)",
-                baseVoteCollectionProxy,
-                baseVoteCollectionV2Impl
-            ),
-            "Upgrade MultichainVoteCollection to V2 on Base",
-            ActionType.Base
-        );
-        // Call initializeV3 on Base VoteCollection - set VotingPowerAggregator and add new Ethereum governor
-        // Old Moonbeam governor is hardcoded and will be removed automatically
-        _pushAction(
-            baseVoteCollectionProxy,
-            abi.encodeWithSignature(
-                "initializeV3(address,uint16,address)",
-                baseVotingPowerAggregator,
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                ethereumGovernorV2
-            ),
-            "Initialize V2: set VotingPowerAggregator, remove old Moonbeam governor, add Ethereum governor on Base VoteCollection",
-            ActionType.Base
-        );
-        // 7.5. Add stkWell as snapshot source to VotingPowerAggregator on Base
-        address baseStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
-
-        _pushAction(
-            baseVotingPowerAggregator,
-            abi.encodeWithSignature("addSnapshotSource(address)", baseStkWell),
-            "Add stkWell as snapshot source to VotingPowerAggregator on Base",
-            ActionType.Base
-        );
-        // Get Base TemporalGovernor address
-        address baseTemporalGovernor = addresses.getAddress(
-            "TEMPORAL_GOVERNOR"
-        );
-
-        // Add new Ethereum MultichainGovernorV2 as trusted sender on Base TemporalGovernor
-        ITemporalGovernor.TrustedSender[]
-            memory trustedSendersToAdd = new ITemporalGovernor.TrustedSender[](
-                1
+        if (addresses.isAddressSet(deprecatedName)) {
+            // (2) Post-update layout: trust chains/*.json. Skip the
+            // broadcast so simulation-vs-on-chain deployer-nonce drift
+            // cannot make the queued setFeed calldata reference the
+            // wrong wrapper.
+            require(
+                addresses.isAddressSet(canonicalName),
+                string.concat(
+                    "MIP-X56: DEPRECATED set but canonical missing for ",
+                    oracleName
+                )
             );
-        trustedSendersToAdd[0] = ITemporalGovernor.TrustedSender({
-            chainId: ETHEREUM_WORMHOLE_CHAIN_ID,
-            addr: ethereumGovernorV2
-        });
-
-        _pushAction(
-            baseTemporalGovernor,
-            abi.encodeWithSignature(
-                "setTrustedSenders((uint16,address)[])",
-                trustedSendersToAdd
-            ),
-            "Add Ethereum MultichainGovernorV2 as trusted sender on Base TemporalGovernor",
-            ActionType.Base
-        );
-        // Remove old Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamMultichainGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-        vm.selectFork(BASE_FORK_ID);
-        ITemporalGovernor.TrustedSender[]
-            memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
-                1
+        } else {
+            // (1) Pre-update layout: broadcast NEW, archive OLD, promote NEW.
+            vm.startBroadcast();
+            ChainlinkOEVWrapper newWrapper = new ChainlinkOEVWrapper(
+                params.priceFeed,
+                params.owner,
+                params.chainlinkOracle,
+                params.feeRecipient,
+                params.liquidatorFeeBps,
+                params.maxRoundDelay,
+                params.maxDecrements
             );
-        trustedSendersToRemove[0] = ITemporalGovernor.TrustedSender({
-            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
-            addr: moonbeamMultichainGovernor
-        });
+            vm.stopBroadcast();
 
-        _pushAction(
-            baseTemporalGovernor,
-            abi.encodeWithSignature(
-                "unSetTrustedSenders((uint16,address)[])",
-                trustedSendersToRemove
-            ),
-            "Remove Moonbeam MultichainGovernor as trusted sender from Base TemporalGovernor",
-            ActionType.Base
-        );
+            // Archive the pre-existing canonical wrapper under the
+            // deprecated slot, then promote the new wrapper to canonical.
+            // Mirrors the MIP-X43 convention:
+            //   <name>_OEV_WRAPPER_DEPRECATED_V3 -> old wrapper
+            //   <name>_OEV_WRAPPER               -> new wrapper
+            if (addresses.isAddressSet(canonicalName)) {
+                addresses.addAddress(
+                    deprecatedName,
+                    addresses.getAddress(canonicalName)
+                );
+                addresses.changeAddress(
+                    canonicalName,
+                    address(newWrapper),
+                    true
+                );
+            } else {
+                addresses.addAddress(canonicalName, address(newWrapper));
+            }
+        }
+        _upgradedOracleNames[chainId].push(oracleName);
+        _isUpgraded[chainId][oracleName] = true;
     }
 
-    function _buildOptimism(
-        Addresses addresses,
-        address ethereumGovernorV2
-    ) internal {
-        vm.selectFork(OPTIMISM_FORK_ID);
+    /// @notice Snapshot the pre-upgrade state of ALL Morpho wrapper proxies on
+    ///         Base so validate() can later assert exact equality post-upgrade.
+    ///         Runs AFTER deploy() and BEFORE build()/simulate(), per the
+    ///         proposal lifecycle.
+    function _snapshotMorphoWrapperState(Addresses addresses) private {
+        vm.selectFork(BASE_FORK_ID);
 
-        // 7. Upgrade MultichainVoteCollection to V2 on Optimism
-        address optimismVoteCollectionProxy = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY"
-        );
-        address optimismVoteCollectionV2Impl = addresses.getAddress(
-            "VOTE_COLLECTION_V2_IMPL"
-        );
-        address optimismProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
-        address optimismVotingPowerAggregator = addresses.getAddress(
-            "VOTING_POWER_AGGREGATOR"
-        );
+        MorphoOracleConfig[]
+            memory morphoConfigs = getMorphoOracleConfigurations(BASE_CHAIN_ID);
 
-        _pushAction(
-            optimismProxyAdmin,
-            abi.encodeWithSignature(
-                "upgrade(address,address)",
-                optimismVoteCollectionProxy,
-                optimismVoteCollectionV2Impl
-            ),
-            "Upgrade MultichainVoteCollection to V2 on Optimism",
-            ActionType.Optimism
-        );
-        // Call initializeV3 on Optimism VoteCollection - set VotingPowerAggregator and add new Ethereum governor
-        // Old Moonbeam governor is hardcoded and will be removed automatically
-        _pushAction(
-            optimismVoteCollectionProxy,
-            abi.encodeWithSignature(
-                "initializeV3(address,uint16,address)",
-                optimismVotingPowerAggregator,
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                ethereumGovernorV2
-            ),
-            "Initialize V2: set VotingPowerAggregator, remove old Moonbeam governor, add Ethereum governor on Optimism VoteCollection",
-            ActionType.Optimism
-        );
-        // 7.5. Add stkWell as snapshot source to VotingPowerAggregator on Optimism
-        address optimismStkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
-
-        _pushAction(
-            optimismVotingPowerAggregator,
-            abi.encodeWithSignature(
-                "addSnapshotSource(address)",
-                optimismStkWell
-            ),
-            "Add stkWell as snapshot source to VotingPowerAggregator on Optimism",
-            ActionType.Optimism
-        );
-        // Get Optimism TemporalGovernor address
-        address optimismTemporalGovernor = addresses.getAddress(
-            "TEMPORAL_GOVERNOR"
-        );
-
-        // Add new Ethereum MultichainGovernorV2 as trusted sender on Optimism TemporalGovernor
-        ITemporalGovernor.TrustedSender[]
-            memory trustedSendersToAdd = new ITemporalGovernor.TrustedSender[](
-                1
+        for (uint256 i = 0; i < morphoConfigs.length; i++) {
+            string memory proxyKey = string(
+                abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
             );
-        trustedSendersToAdd[0] = ITemporalGovernor.TrustedSender({
-            chainId: ETHEREUM_WORMHOLE_CHAIN_ID,
-            addr: ethereumGovernorV2
-        });
-
-        _pushAction(
-            optimismTemporalGovernor,
-            abi.encodeWithSignature(
-                "setTrustedSenders((uint16,address)[])",
-                trustedSendersToAdd
-            ),
-            "Add Ethereum MultichainGovernorV2 as trusted sender on Optimism TemporalGovernor",
-            ActionType.Optimism
-        );
-        // Remove old Moonbeam MultichainGovernor as trusted sender from Optimism TemporalGovernor
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamMultichainGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-        vm.selectFork(OPTIMISM_FORK_ID);
-        ITemporalGovernor.TrustedSender[]
-            memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
-                1
+            require(
+                addresses.isAddressSet(proxyKey),
+                string.concat("MIP-X56: missing Morpho proxy ", proxyKey)
             );
-        trustedSendersToRemove[0] = ITemporalGovernor.TrustedSender({
-            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
-            addr: moonbeamMultichainGovernor
-        });
 
-        _pushAction(
-            optimismTemporalGovernor,
-            abi.encodeWithSignature(
-                "unSetTrustedSenders((uint16,address)[])",
-                trustedSendersToRemove
-            ),
-            "Remove Moonbeam MultichainGovernor as trusted sender from Optimism TemporalGovernor",
-            ActionType.Optimism
-        );
+            address proxyAddr = addresses.getAddress(proxyKey);
+            ChainlinkOEVMorphoWrapper proxy = ChainlinkOEVMorphoWrapper(
+                payable(proxyAddr)
+            );
+
+            MorphoSnapshot storage snap = _morphoSnapshot[proxyAddr];
+            snap.liquidatorFeeBps = proxy.liquidatorFeeBps();
+            snap.maxRoundDelay = proxy.maxRoundDelay();
+            snap.maxDecrements = proxy.maxDecrements();
+            snap.feeRecipient = proxy.feeRecipient();
+            snap.owner = proxy.owner();
+            snap.priceFeed = address(proxy.priceFeed());
+            snap.chainlinkOracle = address(proxy.chainlinkOracle());
+            snap.cachedRoundId = proxy.cachedRoundId();
+            snap.morphoBlue = address(proxy.morphoBlue());
+            snap.decimals = proxy.decimals();
+            (, int256 ans, , uint256 updatedAt, ) = AggregatorV3Interface(
+                snap.priceFeed
+            ).latestRoundData();
+            snap.answer = ans;
+            snap.updatedAt = updatedAt;
+
+            // OEV-surface snapshot: read through the proxy itself so we can
+            // assert post-upgrade output matches the pre-upgrade output of
+            // the same address (catches a state-machine change even when the
+            // raw feed is unchanged).
+            (, int256 oevAns, , uint256 oevUp, ) = AggregatorV3Interface(
+                proxyAddr
+            ).latestRoundData();
+            snap.oevAnswer = oevAns;
+            snap.oevUpdatedAt = oevUp;
+        }
     }
 
+    /// @notice Snapshot pre-simulation state for every upgrade target so
+    ///         validate() can assert price preservation across the upgrade.
+    function beforeSimulationHook(Addresses addresses) public override {
+        _snapshotChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
+        _snapshotChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
+        _snapshotMorphoWrapperState(addresses);
+        vm.selectFork(primaryForkId());
+    }
+
+    function _snapshotChain(
+        Addresses addresses,
+        uint256 forkId,
+        uint256 chainId
+    ) internal {
+        vm.selectFork(forkId);
+
+        OracleConfig[] memory configs = getOracleConfigurations(chainId);
+        IChainlinkOracle oracle = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+
+        for (uint256 i = 0; i < configs.length; i++) {
+            OracleConfig memory config = configs[i];
+            if (!_isUpgraded[chainId][config.oracleName]) {
+                // Not upgraded by this proposal — skipped (raw feed, no
+                // symbol, or already processed duplicate). HAL-06: use the
+                // explicit `_isUpgraded` set rather than the deprecated-suffix
+                // registry slot.
+                continue;
+            }
+
+            // Snapshot raw aggregator answer/updatedAt once per oracleName.
+            if (_rawUpdatedAtPre[chainId][config.oracleName] == 0) {
+                address rawFeed = _capturedParams[chainId][config.oracleName]
+                    .priceFeed;
+                if (rawFeed != address(0)) {
+                    (
+                        ,
+                        int256 ans,
+                        ,
+                        uint256 updatedAt,
+
+                    ) = AggregatorV3Interface(rawFeed).latestRoundData();
+                    _rawAnswerPre[chainId][config.oracleName] = ans;
+                    _rawUpdatedAtPre[chainId][config.oracleName] = updatedAt;
+                }
+            }
+
+            // Snapshot the OLD OEV wrapper's latestRoundData() output once
+            // per oracleName. Resolved via the `_OEV_WRAPPER_DEPRECATED_V3`
+            // registry key so this works in both layouts:
+            //   - Pre-update chains/*.json: DEPRECATED is registered
+            //     in-memory by `_deployAndRegisterWrapper` (mode 1) before
+            //     beforeSimulationHook runs.
+            //   - Post-update chains/*.json: DEPRECATED is loaded directly
+            //     from chains/*.json (carries the archived OLD wrapper).
+            // Decoupled from `oracle.getFeed(symbol)` so CI can print
+            // calldata without depending on on-chain registry reads.
+            if (_oevUpdatedAtPre[chainId][config.oracleName] == 0) {
+                string memory deprecatedKey = string.concat(
+                    config.oracleName,
+                    DEPRECATED_SUFFIX
+                );
+                require(
+                    addresses.isAddressSet(deprecatedKey),
+                    string.concat(
+                        "MIP-X56: missing DEPRECATED key for ",
+                        config.oracleName
+                    )
+                );
+                address oldWrapperAddr = addresses.getAddress(deprecatedKey);
+                (, int256 oevAns, , uint256 oevUp, ) = AggregatorV3Interface(
+                    oldWrapperAddr
+                ).latestRoundData();
+                _oevAnswerPre[chainId][config.oracleName] = oevAns;
+                _oevUpdatedAtPre[chainId][config.oracleName] = oevUp;
+            }
+
+            // Per-symbol snapshot of getUnderlyingPrice for the mTokenKey.
+            if (
+                bytes(config.mTokenKey).length > 0 &&
+                addresses.isAddressSet(config.mTokenKey)
+            ) {
+                _underlyingPricePre[chainId][config.mTokenKey] = oracle
+                    .getUnderlyingPrice(
+                        MToken(addresses.getAddress(config.mTokenKey))
+                    );
+            }
+        }
+    }
+
+    /// @notice Queue the on-chain governance actions: setFeed for every
+    ///         upgraded wrapper x every symbol that maps to it, plus the
+    ///         Morpho proxy upgrades on Base (WELL, MAMO, stkWELL).
     function build(Addresses addresses) public override {
-        // NOTE: Ethereum VotingPowerAggregator configuration (addSnapshotSource) is handled
-        // in afterDeploy() by the deployer before transferring ownership to MultichainGovernorV2.
-        // This proposal (mip-x56) is executed by the old Moonbeam MultichainGovernor, so it cannot
-        // execute actions on the Ethereum MultichainGovernorV2 which doesn't have any proposals yet.
+        _buildForChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
+        _buildForChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
 
-        // initializeV3() on Base/OP removes the legacy Moonbeam governor as a
-        // trusted sender; in-flight Moonbeam proposals would have their satellite
-        // votes stranded. Block construction until they drain.
-        _assertNoLiveMoonbeamProposals(addresses);
-
-        // Build Moonbeam actions
-        _buildMoonbeam(addresses);
-
-        // Get Ethereum governor info for Base and Optimism
-        vm.selectFork(ETHEREUM_FORK_ID);
-        address ethereumGovernorV2 = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY"
+        // Base only: upgrade all three ChainlinkOEVMorphoWrapper proxies to
+        // the shared new implementation. No reinitializer - storage layout is
+        // preserved across the swap.
+        vm.selectFork(BASE_FORK_ID);
+        address newImpl = addresses.getAddress(
+            "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2"
+        );
+        address proxyAdmin = addresses.getAddress(
+            "CHAINLINK_ORACLE_PROXY_ADMIN"
         );
 
-        // Build Base and Optimism actions
-        _buildBase(addresses, ethereumGovernorV2);
-        _buildOptimism(addresses, ethereumGovernorV2);
+        MorphoOracleConfig[]
+            memory morphoConfigs = getMorphoOracleConfigurations(BASE_CHAIN_ID);
+
+        for (uint256 i = 0; i < morphoConfigs.length; i++) {
+            string memory proxyKey = string(
+                abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
+            );
+            // Fail loud: every configured Morpho proxy MUST exist in the
+            // registry. Silently skipping would let the proposal pass a
+            // simulation while leaving the upgrade + allowlist seed
+            // unapplied for that proxy.
+            require(
+                addresses.isAddressSet(proxyKey),
+                string.concat("MIP-X56: missing Morpho proxy ", proxyKey)
+            );
+
+            address proxy = addresses.getAddress(proxyKey);
+
+            // Upgrade impl (gate logic + loan-feed deref + validation parity).
+            _pushAction(
+                proxyAdmin,
+                abi.encodeWithSignature(
+                    "upgrade(address,address)",
+                    proxy,
+                    newImpl
+                ),
+                string.concat(
+                    "Base: upgrade ChainlinkOEVMorphoWrapper proxy ",
+                    morphoConfigs[i].proxyName
+                )
+            );
+
+            // Seed the allowlist with the canonical Morpho market this proxy
+            // serves. Both actions execute atomically within one proposal
+            // execution, so the gate is never live without the canonical
+            // market approved. setApprovedMarket is `onlyOwner`-gated
+            // (TEMPORAL_GOVERNOR), unfront-runnable.
+            MarketParams memory canonicalMarket = _canonicalMorphoMarket(
+                addresses,
+                morphoConfigs[i].proxyName
+            );
+            bytes32 canonicalId = keccak256(abi.encode(canonicalMarket));
+            _pushAction(
+                proxy,
+                abi.encodeWithSignature(
+                    "setApprovedMarket(bytes32,bool)",
+                    canonicalId,
+                    true
+                ),
+                string.concat(
+                    "Base: setApprovedMarket(canonicalId, true) on ",
+                    morphoConfigs[i].proxyName
+                )
+            );
+        }
     }
 
-    /// @notice Reverts if the Moonbeam MultichainGovernor has any Active or
-    /// CrossChainVoteCollection proposals.
-    function _assertNoLiveMoonbeamProposals(Addresses addresses) internal {
-        uint256 currentForkId = vm.activeFork();
-        vm.selectFork(MOONBEAM_FORK_ID);
+    /// @notice Canonical Morpho market params per Base proxy. Source of truth
+    ///         is the live integration test (`testUpdatePriceEarlyAndLiquidate_*`
+    ///         in ChainlinkOEVMorphoWrapperIntegration.t.sol). All three
+    ///         proxies serve markets borrowing USDC against an asset using the
+    ///         standard `MORPHO_ADAPTIVE_CURVE_IRM`.
+    function _canonicalMorphoMarket(
+        Addresses addresses,
+        string memory proxyName
+    ) internal view returns (MarketParams memory) {
+        address loanToken = addresses.getAddress("USDC");
+        address irm = addresses.getAddress("MORPHO_ADAPTIVE_CURVE_IRM");
 
-        address moonbeamGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-        uint256[] memory live = MultichainGovernor(payable(moonbeamGovernor))
-            .liveProposals();
+        bytes32 key = keccak256(bytes(proxyName));
 
-        require(
-            live.length == 0,
-            "Moonbeam governor has live proposals; wait for them to drain"
-        );
+        if (key == keccak256(bytes("CHAINLINK_WELL_USD"))) {
+            return
+                MarketParams({
+                    loanToken: loanToken,
+                    collateralToken: addresses.getAddress("xWELL_PROXY"),
+                    oracle: addresses.getAddress(
+                        "MORPHO_CHAINLINK_WELL_USD_ORACLE"
+                    ),
+                    irm: irm,
+                    lltv: 0.625e18
+                });
+        } else if (key == keccak256(bytes("CHAINLINK_MAMO_USD"))) {
+            return
+                MarketParams({
+                    loanToken: loanToken,
+                    collateralToken: addresses.getAddress("MAMO"),
+                    oracle: addresses.getAddress(
+                        "MORPHO_CHAINLINK_MAMO_USD_ORACLE"
+                    ),
+                    irm: irm,
+                    lltv: 0.385e18
+                });
+        } else if (key == keccak256(bytes("CHAINLINK_stkWELL_USD"))) {
+            return
+                MarketParams({
+                    loanToken: loanToken,
+                    collateralToken: addresses.getAddress("STK_GOVTOKEN_PROXY"),
+                    oracle: addresses.getAddress(
+                        "MORPHO_CHAINLINK_stkWELL_USD_ORACLE"
+                    ),
+                    irm: irm,
+                    lltv: 0.625e18
+                });
+        } else {
+            revert(
+                string.concat(
+                    "MIP-X56: no canonical Morpho market params for proxy ",
+                    proxyName
+                )
+            );
+        }
+    }
 
-        vm.selectFork(currentForkId);
+    function _buildForChain(
+        Addresses addresses,
+        uint256 forkId,
+        uint256 chainId
+    ) internal {
+        vm.selectFork(forkId);
+
+        OracleConfig[] memory configs = getOracleConfigurations(chainId);
+        address chainlinkOracle = addresses.getAddress("CHAINLINK_ORACLE");
+
+        for (uint256 i = 0; i < configs.length; i++) {
+            OracleConfig memory config = configs[i];
+
+            // Only wire feeds for wrappers deployed by this proposal.
+            // HAL-06: explicit set instead of deprecated-suffix inference.
+            if (!_isUpgraded[chainId][config.oracleName]) continue;
+
+            string memory wrapperName = string.concat(
+                config.oracleName,
+                OEV_WRAPPER_SUFFIX
+            );
+
+            (bool ok, string memory symbol) = _readSymbol(addresses, config);
+            require(
+                ok,
+                string.concat(
+                    "MIP-X56: symbol not resolvable for ",
+                    config.oracleName
+                )
+            );
+
+            address newWrapper = addresses.getAddress(wrapperName);
+            _pushAction(
+                chainlinkOracle,
+                abi.encodeWithSignature(
+                    "setFeed(string,address)",
+                    symbol,
+                    newWrapper
+                ),
+                string.concat(
+                    "ChainlinkOracle.setFeed(",
+                    symbol,
+                    ", new ChainlinkOEVWrapper for ",
+                    config.oracleName,
+                    ")"
+                )
+            );
+        }
     }
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    /// @notice Helper function to get owner of a contract
-    /// @param contractAddress The address of the contract to check
-    /// @return owner The owner address
-    function _getOwner(
-        address contractAddress
-    ) external view returns (address owner) {
-        (bool success, bytes memory data) = contractAddress.staticcall(
-            abi.encodeWithSignature("owner()")
-        );
-        require(success && data.length >= 32, "Failed to get owner");
-        owner = abi.decode(data, (address));
-    }
-
-    /// @notice Helper function to get pending owner of a contract (for 2-step ownership)
-    /// @param contractAddress The address of the contract to check
-    /// @return pendingOwner The pending owner address (address(0) if not 2-step or no pending owner)
-    function _getPendingOwner(
-        address contractAddress
-    ) external view returns (address pendingOwner) {
-        (bool success, bytes memory data) = contractAddress.staticcall(
-            abi.encodeWithSignature("pendingOwner()")
-        );
-        if (success && data.length >= 32) {
-            pendingOwner = abi.decode(data, (address));
-        }
-        // Returns address(0) if contract doesn't have pendingOwner() function
-    }
-
-    /// @notice Try to get admin() of a contract (mToken/Unitroller/ChainlinkOracle pattern)
-    function _getAdmin(
-        address contractAddress
-    ) external view returns (address admin) {
-        (bool success, bytes memory data) = contractAddress.staticcall(
-            abi.encodeWithSignature("admin()")
-        );
-        require(success && data.length >= 32, "Failed to get admin");
-        admin = abi.decode(data, (address));
-    }
-
-    /// @notice Try to get EMISSION_MANAGER() of a contract (stkWELL pattern)
-    function _getEmissionManager(
-        address contractAddress
-    ) external view returns (address manager) {
-        (bool success, bytes memory data) = contractAddress.staticcall(
-            abi.encodeWithSignature("EMISSION_MANAGER()")
-        );
-        require(success && data.length >= 32, "Failed to get emission manager");
-        manager = abi.decode(data, (address));
-    }
-
-    /// @notice Check if contract supports pendingAdmin (mToken/Unitroller vs ChainlinkOracle)
-    function _hasPendingAdmin(
-        address contractAddress
-    ) external view returns (bool) {
-        (bool success, ) = contractAddress.staticcall(
-            abi.encodeWithSignature("pendingAdmin()")
-        );
-        return success;
-    }
-
-    /// @notice Helper function to validate all ownership transfers
-    /// @param addresses The addresses contract
-    /// @param temporalGovernor The temporal governor address
-    /// @return success Whether all ownership transfers were validated successfully
-    function _validateAllOwnershipTransfers(
-        Addresses addresses,
-        address temporalGovernor
-    ) internal view returns (bool success) {
-        uint256 validatedCount = 0;
-        uint256 failedCount = 0;
-
-        for (uint256 i = 0; i < contractsToValidateOwnership.length; i++) {
-            string memory contractName = contractsToValidateOwnership[i];
-            address contractAddress = addresses.getAddress(contractName);
-            bool validated = false;
-
-            // Pattern 1: owner() / pendingOwner()
-            try this._getOwner(contractAddress) returns (address currentOwner) {
-                if (currentOwner == temporalGovernor) {
-                    validatedCount++;
-                    validated = true;
-                } else {
-                    address pendingOwner = this._getPendingOwner(
-                        contractAddress
-                    );
-                    if (pendingOwner == temporalGovernor) {
-                        validatedCount++;
-                        validated = true;
-                    }
-                }
-            } catch {}
-
-            if (validated) continue;
-
-            // Pattern 2: admin() / pendingAdmin()
-            try this._getAdmin(contractAddress) returns (address currentAdmin) {
-                if (currentAdmin == temporalGovernor) {
-                    validatedCount++;
-                    validated = true;
-                } else if (this._hasPendingAdmin(contractAddress)) {
-                    // 2-step admin: check pendingAdmin
-                    (bool ok, bytes memory data) = contractAddress.staticcall(
-                        abi.encodeWithSignature("pendingAdmin()")
-                    );
-                    if (ok && data.length >= 32) {
-                        address pendingAdmin = abi.decode(data, (address));
-                        if (pendingAdmin == temporalGovernor) {
-                            validatedCount++;
-                            validated = true;
-                        }
-                    }
-                }
-            } catch {}
-
-            if (validated) continue;
-
-            // Pattern 3: EMISSION_MANAGER()
-            try this._getEmissionManager(contractAddress) returns (
-                address manager
-            ) {
-                if (manager == temporalGovernor) {
-                    validatedCount++;
-                    validated = true;
-                }
-            } catch {}
-
-            if (!validated) {
-                failedCount++;
-            }
-        }
-
-        // All contracts that were queued for ownership transfer MUST have been transferred
-        assertEq(
-            failedCount,
-            0,
-            "Some contracts failed ownership transfer validation"
-        );
-        assertEq(
-            validatedCount,
-            contractsToValidateOwnership.length,
-            "Not all contracts had ownership transferred"
-        );
-        assertGt(
-            validatedCount,
-            0,
-            "No contracts had ownership transferred to TemporalGovernor"
-        );
-
-        return true;
-    }
-
-    function _validateEthereum(Addresses addresses) internal {
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        // 1. Validate MultichainGovernorV2 proxy is deployed
-        address governorV2Proxy = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY"
-        );
-        assertGt(
-            governorV2Proxy.code.length,
-            0,
-            "MultichainGovernorV2 proxy not deployed on Ethereum"
-        );
-
-        // 2. Validate MultichainGovernorV2 implementation is deployed
-        address governorV2Impl = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_IMPL"
-        );
-        assertGt(
-            governorV2Impl.code.length,
-            0,
-            "MultichainGovernorV2 implementation not deployed on Ethereum"
-        );
-
-        // 3. Validate VotingPowerAggregator is deployed on Ethereum
-        address ethereumVotingPower = addresses.getAddress(
-            "VOTING_POWER_AGGREGATOR"
-        );
-        assertGt(
-            ethereumVotingPower.code.length,
-            0,
-            "VotingPowerAggregator not deployed on Ethereum"
-        );
-
-        // 4. Validate governor is initialized correctly
-        MultichainGovernorV2 governor = MultichainGovernorV2(
-            payable(governorV2Proxy)
-        );
-        assertEq(
-            address(governor.votingPower()),
-            ethereumVotingPower,
-            "MultichainGovernorV2 votingPower not set correctly"
-        );
-
-        // 5. Validate proposal count matches Moonbeam
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamMultichainGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-        uint256 expectedProposalCount = MultichainGovernor(
-            payable(moonbeamMultichainGovernor)
-        ).proposalCount();
-
-        vm.selectFork(ETHEREUM_FORK_ID);
-        assertEq(
-            governor.proposalCount(),
-            expectedProposalCount,
-            "MultichainGovernorV2 proposalCount not initialized correctly from Moonbeam"
-        );
-
-        // 6. Validate trusted senders are set correctly (Moonbeam, Base, Optimism VoteCollections)
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_V2_PROXY"
-        );
-
-        vm.selectFork(BASE_FORK_ID);
-        address baseVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY"
-        );
-
-        vm.selectFork(OPTIMISM_FORK_ID);
-        address optimismVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY"
-        );
-
-        vm.selectFork(ETHEREUM_FORK_ID);
-        assertTrue(
-            governor.isTrustedSender(
-                MOONBEAM_WORMHOLE_CHAIN_ID,
-                moonbeamVoteCollection
-            ),
-            "Moonbeam VoteCollection not trusted sender on MultichainGovernorV2"
-        );
-
-        assertTrue(
-            governor.isTrustedSender(
-                BASE_WORMHOLE_CHAIN_ID,
-                baseVoteCollection
-            ),
-            "Base VoteCollection not trusted sender on MultichainGovernorV2"
-        );
-
-        assertTrue(
-            governor.isTrustedSender(
-                OPTIMISM_WORMHOLE_CHAIN_ID,
-                optimismVoteCollection
-            ),
-            "Optimism VoteCollection not trusted sender on MultichainGovernorV2"
-        );
-
-        // 7. Validate governance parameters
-        assertEq(
-            governor.proposalThreshold(),
-            PROPOSAL_THRESHOLD,
-            "Proposal threshold not set correctly"
-        );
-
-        assertEq(
-            governor.votingPeriod(),
-            VOTING_PERIOD_SECONDS,
-            "Voting period not set correctly"
-        );
-
-        assertEq(
-            governor.crossChainVoteCollectionPeriod(),
-            CROSS_CHAIN_VOTE_COLLECTION_PERIOD,
-            "Cross chain vote collection period not set correctly"
-        );
-
-        assertEq(governor.quorum(), QUORUM, "Quorum not set correctly");
-
-        // 8. Validate breakGlassGuardian and pauseGuardian
-        assertEq(
-            governor.breakGlassGuardian(),
-            addresses.getAddress("BREAK_GLASS_GUARDIAN"),
-            "breakGlassGuardian not set correctly on MultichainGovernorV2"
-        );
-
-        assertEq(
-            governor.pauseGuardian(),
-            addresses.getAddress("PAUSE_GUARDIAN"),
-            "pauseGuardian not set correctly on MultichainGovernorV2"
-        );
-
-        assertEq(
-            governor.pauseDuration(),
-            PAUSE_DURATION,
-            "pauseDuration not set correctly on MultichainGovernorV2"
-        );
-
-        assertEq(
-            address(governor.wormhole()),
-            addresses.getAddress("WORMHOLE_CORE"),
-            "wormhole not set correctly on MultichainGovernorV2"
-        );
-
-        // 8b. Validate all 3 break-glass whitelisted calldatas were stored correctly.
-        // Each is a publishMessage payload that unwinds one satellite chain's
-        // TemporalGovernor trusted-sender state (remove Ethereum V2 governor,
-        // restore old Moonbeam MULTICHAIN_GOVERNOR_PROXY). Any ABI / chainId /
-        // target mismatch here would make break glass inoperable.
-        bytes[] memory expectedCalldatas = _buildBreakGlassCalldatas(addresses);
-        // _buildBreakGlassCalldatas switches forks; re-select Ethereum where the governor lives
-        vm.selectFork(ETHEREUM_FORK_ID);
-        for (uint256 i = 0; i < expectedCalldatas.length; i++) {
-            assertTrue(
-                governor.isWhitelistedCalldata(expectedCalldatas[i]),
-                string.concat(
-                    "break glass calldata not whitelisted at index ",
-                    vm.toString(i)
-                )
-            );
-        }
-
-        // 9. Validate Ethereum VotingPowerAggregator state (configured in afterDeploy)
-        // With Ownable2Step, afterDeploy only sets pendingOwner; the governor
-        // must acceptOwnership() in its first proposal to complete the transfer
-        VotingPowerAggregator ethAggregator = VotingPowerAggregator(
-            ethereumVotingPower
-        );
-        assertEq(
-            ethAggregator.pendingOwner(),
-            governorV2Proxy,
-            "Ethereum VotingPowerAggregator pendingOwner not set to MultichainGovernorV2"
-        );
-
-        assertEq(
-            address(ethAggregator.xWell()),
-            addresses.getAddress("xWELL_PROXY"),
-            "Ethereum VotingPowerAggregator xWell not set correctly"
-        );
-
-        assertTrue(
-            ethAggregator.isSnapshotSource(
-                addresses.getAddress("STK_GOVTOKEN_PROXY")
-            ),
-            "stkWell not added as snapshot source on Ethereum VotingPowerAggregator"
-        );
-
-        // 11. Validate Ethereum ProxyAdmin ownership transferred to MultichainGovernorV2
-        address ethereumProxyAdmin = addresses.getAddress("PROXY_ADMIN");
-        assertEq(
-            ProxyAdmin(ethereumProxyAdmin).owner(),
-            governorV2Proxy,
-            "Ethereum ProxyAdmin ownership not transferred to MultichainGovernorV2"
-        );
-    }
-
-    function _validateMoonbeam(Addresses addresses) internal {
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        address moonbeamMultichainGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-
-        // 1. Validate TemporalGovernor is deployed
-        assertGt(
-            temporalGovernor.code.length,
-            0,
-            "TemporalGovernor not deployed on Moonbeam"
-        );
-
-        // 2. Validate VotingPowerAggregator is deployed on Moonbeam
-        address moonbeamVotingPower = addresses.getAddress(
-            "VOTING_POWER_AGGREGATOR"
-        );
-        assertGt(
-            moonbeamVotingPower.code.length,
-            0,
-            "VotingPowerAggregator not deployed on Moonbeam"
-        );
-
-        // 3. Validate MultichainVoteCollectionMoonbeam is deployed on Moonbeam
-        address moonbeamVoteCollectionV2 = addresses.getAddress(
-            "VOTE_COLLECTION_V2_PROXY"
-        );
-        assertGt(
-            moonbeamVoteCollectionV2.code.length,
-            0,
-            "MultichainVoteCollectionMoonbeam not deployed on Moonbeam"
-        );
-
-        // 4. Validate MultichainVoteCollectionMoonbeam has correct votingPower
-        MultichainVoteCollectionMoonbeam voteCollection = MultichainVoteCollectionMoonbeam(
-                moonbeamVoteCollectionV2
-            );
-        assertEq(
-            address(voteCollection.votingPower()),
-            moonbeamVotingPower,
-            "VotingPowerAggregator not set on Moonbeam VoteCollection"
-        );
-
-        // 5. Validate MultichainVoteCollectionMoonbeam has Ethereum governor as trusted sender
-        vm.selectFork(ETHEREUM_FORK_ID);
-        address ethereumGovernorV2 = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY"
-        );
-
-        vm.selectFork(MOONBEAM_FORK_ID);
-        assertTrue(
-            voteCollection.isTrustedSender(
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                ethereumGovernorV2
-            ),
-            "Ethereum MultichainGovernorV2 not trusted sender on Moonbeam VoteCollection"
-        );
-
-        // 5.5. Validate Ethereum MultichainGovernorV2 is trusted sender on Moonbeam TemporalGovernor
-        // This is set during TemporalGovernor deployment (not in proposal actions)
-        TemporalGovernor moonbeamTemporalGov = TemporalGovernor(
-            payable(temporalGovernor)
-        );
-        assertTrue(
-            moonbeamTemporalGov.isTrustedSender(
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                ethereumGovernorV2
-            ),
-            "Ethereum MultichainGovernorV2 not trusted sender on Moonbeam TemporalGovernor"
-        );
-
-        // 5.6. Validate ProposalView is deployed and references TemporalGovernor
-        address proposalView = addresses.getAddress("PROPOSAL_VIEW");
-        assertGt(
-            proposalView.code.length,
-            0,
-            "ProposalView not deployed on Moonbeam"
-        );
-        assertEq(
-            address(ProposalView(proposalView).temporalGovernor()),
-            temporalGovernor,
-            "ProposalView does not reference correct TemporalGovernor"
-        );
-
-        // 6. Validate MultichainGovernor was upgraded to v1.1 (with recoverETH)
-        address newMultichainGovernorImpl = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V1_1_IMPL"
-        );
-        address moonbeamProxyAdmin = addresses.getAddress(
-            "MOONBEAM_PROXY_ADMIN"
-        );
-
-        address currentImpl = ProxyAdmin(moonbeamProxyAdmin)
-            .getProxyImplementation(
-                ITransparentUpgradeableProxy(
-                    payable(moonbeamMultichainGovernor)
-                )
-            );
-        assertEq(
-            currentImpl,
-            newMultichainGovernorImpl,
-            "MultichainGovernor not upgraded on Moonbeam"
-        );
-
-        // 7. Validate ETH was recovered from MultichainGovernor
-        uint256 governorBalance = moonbeamMultichainGovernor.balance;
-        assertEq(
-            governorBalance,
-            0,
-            "ETH not recovered from MultichainGovernor"
-        );
-
-        // 8. Validate ProxyAdmin ownership transferred to TemporalGovernor
-        assertEq(
-            ProxyAdmin(moonbeamProxyAdmin).owner(),
-            temporalGovernor,
-            "MOONBEAM_PROXY_ADMIN ownership not transferred"
-        );
-
-        // 9. Validate ALL contract ownerships that were transferred to TemporalGovernor
-        assertTrue(
-            _validateAllOwnershipTransfers(addresses, temporalGovernor),
-            "Ownership transfer validation failed"
-        );
-
-        // 10. Validate VotingPowerAggregator pending ownership transferred to
-        // TemporalGovernor. With Ownable2Step, the Moonbeam governor's proposal
-        // sets pendingOwner only; TemporalGovernor must call acceptOwnership()
-        // in the first Ethereum MultichainGovernorV2 follow-up proposal.
-        assertEq(
-            VotingPowerAggregator(moonbeamVotingPower).pendingOwner(),
-            temporalGovernor,
-            "Moonbeam VotingPowerAggregator pendingOwner not set to TemporalGovernor"
-        );
-
-        // 11. Validate stkWell added as snapshot source on Moonbeam VotingPowerAggregator
-        assertTrue(
-            VotingPowerAggregator(moonbeamVotingPower).isSnapshotSource(
-                addresses.getAddress("STK_GOVTOKEN_PROXY")
-            ),
-            "stkWell not added as snapshot source on Moonbeam VotingPowerAggregator"
-        );
-    }
-
-    function _validateBase(
-        Addresses addresses,
-        address governorV2Proxy
-    ) internal {
-        vm.selectFork(BASE_FORK_ID);
-
-        // 1. Validate VotingPowerAggregator is deployed on Base
-        address baseVotingPower = addresses.getAddress(
-            "VOTING_POWER_AGGREGATOR"
-        );
-        assertGt(
-            baseVotingPower.code.length,
-            0,
-            "VotingPowerAggregator not deployed on Base"
-        );
-
-        // 2. Validate MultichainVoteCollectionV2 implementation is deployed on Base
-        address baseVoteCollectionV2Impl = addresses.getAddress(
-            "VOTE_COLLECTION_V2_IMPL"
-        );
-        assertGt(
-            baseVoteCollectionV2Impl.code.length,
-            0,
-            "MultichainVoteCollectionV2 implementation not deployed on Base"
-        );
-
-        // 3. Validate MultichainVoteCollection was upgraded to V2 on Base
-        address baseVoteCollectionProxy = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY"
-        );
-        address baseProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
-
-        address baseCurrentImpl = ProxyAdmin(baseProxyAdmin)
-            .getProxyImplementation(
-                ITransparentUpgradeableProxy(payable(baseVoteCollectionProxy))
-            );
-        assertEq(
-            baseCurrentImpl,
-            baseVoteCollectionV2Impl,
-            "MultichainVoteCollection not upgraded to V2 on Base"
-        );
-
-        // 4. Validate VotingPowerAggregator is set on Base VoteCollection
-        MultichainVoteCollectionV2 baseVoteCollection = MultichainVoteCollectionV2(
-                baseVoteCollectionProxy
-            );
-        assertEq(
-            address(baseVoteCollection.votingPower()),
-            baseVotingPower,
-            "VotingPowerAggregator not set on Base VoteCollection"
-        );
-
-        // 4a. Validate wormhole is set on Base VoteCollection (storage slot preserved from V1)
-        assertNotEq(
-            address(baseVoteCollection.wormhole()),
-            address(0),
-            "wormhole not set on Base VoteCollection after upgrade"
-        );
-
-        // 5. Validate Ethereum MultichainGovernorV2 is trusted sender on Base VoteCollection
-        assertTrue(
-            baseVoteCollection.isTrustedSender(
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                governorV2Proxy
-            ),
-            "MultichainGovernorV2 not trusted sender on Base VoteCollection"
-        );
-
-        // 6. Validate old Moonbeam MultichainGovernor is NOT trusted sender anymore on Base VoteCollection
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamMultichainGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-
-        vm.selectFork(BASE_FORK_ID);
-        assertFalse(
-            baseVoteCollection.isTrustedSender(
-                MOONBEAM_WORMHOLE_CHAIN_ID,
-                moonbeamMultichainGovernor
-            ),
-            "Moonbeam MultichainGovernor still trusted sender on Base VoteCollection"
-        );
-
-        // 7. Validate Ethereum MultichainGovernorV2 is trusted sender on Base TemporalGovernor
-        address baseTemporalGovernor = addresses.getAddress(
-            "TEMPORAL_GOVERNOR"
-        );
-        TemporalGovernor temporalGov = TemporalGovernor(
-            payable(baseTemporalGovernor)
-        );
-
-        assertTrue(
-            temporalGov.isTrustedSender(
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                governorV2Proxy
-            ),
-            "Ethereum MultichainGovernorV2 not trusted sender on Base TemporalGovernor"
-        );
-
-        // 8. Validate stkWell added as snapshot source on Base VotingPowerAggregator
-        VotingPowerAggregator baseAggregator = VotingPowerAggregator(
-            baseVotingPower
-        );
-        assertTrue(
-            baseAggregator.isSnapshotSource(
-                addresses.getAddress("STK_GOVTOKEN_PROXY")
-            ),
-            "stkWell not added as snapshot source on Base VotingPowerAggregator"
-        );
-
-        // 8a. Validate VotingPowerAggregator owner is TemporalGovernor on Base
-        assertEq(
-            baseAggregator.owner(),
-            baseTemporalGovernor,
-            "Base VotingPowerAggregator owner not set to TemporalGovernor"
-        );
-
-        // 8b. Validate VotingPowerAggregator xWell is set correctly on Base
-        assertEq(
-            address(baseAggregator.xWell()),
-            addresses.getAddress("xWELL_PROXY"),
-            "Base VotingPowerAggregator xWell not set correctly"
-        );
-
-        // 9. Validate old Moonbeam MultichainGovernor is NOT trusted sender on Base TemporalGovernor
-        assertFalse(
-            temporalGov.isTrustedSender(
-                MOONBEAM_WORMHOLE_CHAIN_ID,
-                moonbeamMultichainGovernor
-            ),
-            "Moonbeam MultichainGovernor still trusted sender on Base TemporalGovernor"
-        );
-    }
-
-    function _validateOptimism(
-        Addresses addresses,
-        address governorV2Proxy
-    ) internal {
-        vm.selectFork(OPTIMISM_FORK_ID);
-
-        // 1. Validate VotingPowerAggregator is deployed on Optimism
-        address optimismVotingPower = addresses.getAddress(
-            "VOTING_POWER_AGGREGATOR"
-        );
-        assertGt(
-            optimismVotingPower.code.length,
-            0,
-            "VotingPowerAggregator not deployed on Optimism"
-        );
-
-        // 2. Validate MultichainVoteCollectionV2 implementation is deployed on Optimism
-        address optimismVoteCollectionV2Impl = addresses.getAddress(
-            "VOTE_COLLECTION_V2_IMPL"
-        );
-        assertGt(
-            optimismVoteCollectionV2Impl.code.length,
-            0,
-            "MultichainVoteCollectionV2 implementation not deployed on Optimism"
-        );
-
-        // 3. Validate MultichainVoteCollection was upgraded to V2 on Optimism
-        address optimismVoteCollectionProxy = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY"
-        );
-        address optimismProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
-
-        address optimismCurrentImpl = ProxyAdmin(optimismProxyAdmin)
-            .getProxyImplementation(
-                ITransparentUpgradeableProxy(
-                    payable(optimismVoteCollectionProxy)
-                )
-            );
-        assertEq(
-            optimismCurrentImpl,
-            optimismVoteCollectionV2Impl,
-            "MultichainVoteCollection not upgraded to V2 on Optimism"
-        );
-
-        // 4. Validate VotingPowerAggregator is set on Optimism VoteCollection
-        MultichainVoteCollectionV2 optimismVoteCollection = MultichainVoteCollectionV2(
-                optimismVoteCollectionProxy
-            );
-        assertEq(
-            address(optimismVoteCollection.votingPower()),
-            optimismVotingPower,
-            "VotingPowerAggregator not set on Optimism VoteCollection"
-        );
-
-        // 4a. Validate wormhole is set on Optimism VoteCollection (storage slot preserved from V1)
-        assertNotEq(
-            address(optimismVoteCollection.wormhole()),
-            address(0),
-            "wormhole not set on Optimism VoteCollection after upgrade"
-        );
-
-        // 5. Validate Ethereum MultichainGovernorV2 is trusted sender on Optimism VoteCollection
-        assertTrue(
-            optimismVoteCollection.isTrustedSender(
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                governorV2Proxy
-            ),
-            "MultichainGovernorV2 not trusted sender on Optimism VoteCollection"
-        );
-
-        // 6. Validate old Moonbeam MultichainGovernor is NOT trusted sender anymore on Optimism VoteCollection
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamMultichainGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-
-        vm.selectFork(OPTIMISM_FORK_ID);
-        assertFalse(
-            optimismVoteCollection.isTrustedSender(
-                MOONBEAM_WORMHOLE_CHAIN_ID,
-                moonbeamMultichainGovernor
-            ),
-            "Moonbeam MultichainGovernor still trusted sender on Optimism VoteCollection"
-        );
-
-        // 7. Validate Ethereum MultichainGovernorV2 is trusted sender on Optimism TemporalGovernor
-        address optimismTemporalGovernor = addresses.getAddress(
-            "TEMPORAL_GOVERNOR"
-        );
-        TemporalGovernor temporalGov = TemporalGovernor(
-            payable(optimismTemporalGovernor)
-        );
-
-        assertTrue(
-            temporalGov.isTrustedSender(
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                governorV2Proxy
-            ),
-            "Ethereum MultichainGovernorV2 not trusted sender on Optimism TemporalGovernor"
-        );
-
-        // 8. Validate stkWell added as snapshot source on Optimism VotingPowerAggregator
-        VotingPowerAggregator optimismAggregator = VotingPowerAggregator(
-            optimismVotingPower
-        );
-        assertTrue(
-            optimismAggregator.isSnapshotSource(
-                addresses.getAddress("STK_GOVTOKEN_PROXY")
-            ),
-            "stkWell not added as snapshot source on Optimism VotingPowerAggregator"
-        );
-
-        // 8a. Validate VotingPowerAggregator owner is TemporalGovernor on Optimism
-        assertEq(
-            optimismAggregator.owner(),
-            optimismTemporalGovernor,
-            "Optimism VotingPowerAggregator owner not set to TemporalGovernor"
-        );
-
-        // 8b. Validate VotingPowerAggregator xWell is set correctly on Optimism
-        assertEq(
-            address(optimismAggregator.xWell()),
-            addresses.getAddress("xWELL_PROXY"),
-            "Optimism VotingPowerAggregator xWell not set correctly"
-        );
-
-        // 9. Validate old Moonbeam MultichainGovernor is NOT trusted sender on Optimism TemporalGovernor
-        assertFalse(
-            temporalGov.isTrustedSender(
-                MOONBEAM_WORMHOLE_CHAIN_ID,
-                moonbeamMultichainGovernor
-            ),
-            "Moonbeam MultichainGovernor still trusted sender on Optimism TemporalGovernor"
-        );
-    }
-
     function validate(Addresses addresses, address) public override {
-        // Validate Ethereum deployment
-        _validateEthereum(addresses);
-
-        // Validate Moonbeam deployment and actions
-        _validateMoonbeam(addresses);
-
-        // Get Ethereum governor info for Base and Optimism validation
-        vm.selectFork(ETHEREUM_FORK_ID);
-        address governorV2Proxy = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY"
+        _validateChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID, "Base");
+        _validateChain(
+            addresses,
+            OPTIMISM_FORK_ID,
+            OPTIMISM_CHAIN_ID,
+            "Optimism"
         );
 
-        // Validate Base deployment and actions
-        _validateBase(addresses, governorV2Proxy);
+        // Morpho proxy upgrades - Base only.
+        vm.selectFork(BASE_FORK_ID);
+        _validateAllMorphoWrappers(addresses);
 
-        // Validate Optimism deployment and actions
-        _validateOptimism(addresses, governorV2Proxy);
+        vm.selectFork(primaryForkId());
+    }
+
+    function _validateChain(
+        Addresses addresses,
+        uint256 forkId,
+        uint256 chainId,
+        string memory chainName
+    ) internal {
+        vm.selectFork(forkId);
+
+        console.log("");
+        console.log(string.concat("=== Validating ", chainName, " ==="));
+
+        OracleConfig[] memory configs = getOracleConfigurations(chainId);
+
+        for (uint256 i = 0; i < configs.length; i++) {
+            _validateConfig(addresses, chainId, chainName, configs[i]);
+        }
+    }
+
+    function _validateConfig(
+        Addresses addresses,
+        uint256 chainId,
+        string memory chainName,
+        OracleConfig memory config
+    ) internal view {
+        // Only validate oracles that were upgraded by this proposal.
+        // HAL-06: explicit set instead of deprecated-suffix inference.
+        if (!_isUpgraded[chainId][config.oracleName]) return;
+
+        string memory wrapperName = string.concat(
+            config.oracleName,
+            OEV_WRAPPER_SUFFIX
+        );
+        address newWrapperAddr = addresses.getAddress(wrapperName);
+
+        console.log("");
+        console.log(string.concat("-- ", config.oracleName, " --"));
+        console.log("  new wrapper:", newWrapperAddr);
+
+        // (1) Wiring check: oracle.getFeed(symbol) == new wrapper.
+        //     Symbol must be resolvable at validate() time — if it
+        //     isn't, post-state can't be verified and the proposal
+        //     must fail loudly rather than silently passing.
+        (bool ok, string memory symbol) = _readSymbol(addresses, config);
+        require(
+            ok,
+            string.concat(
+                "MIP-X56: symbol not resolvable at validate for ",
+                config.oracleName
+            )
+        );
+        IChainlinkOracle oracle = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+        assertEq(
+            address(oracle.getFeed(symbol)),
+            newWrapperAddr,
+            string.concat(
+                chainName,
+                ": feed not wired to new wrapper for ",
+                symbol
+            )
+        );
+
+        // (2) Param-mirroring check.
+        _validateWrapperParams(
+            ChainlinkOEVWrapper(payable(newWrapperAddr)),
+            _capturedParams[chainId][config.oracleName],
+            chainName,
+            config.oracleName
+        );
+
+        // (3) OEV-wrapper price preservation: the freshly-deployed wrapper
+        //     must hand back values that match BOTH the raw aggregator's
+        //     pre-snapshot AND the predecessor wrapper's pre-snapshot. Reads
+        //     the NEW wrapper, so any broken forwarding path or OEV state-
+        //     machine regression surfaces here.
+        _validatePricePreserved(
+            AggregatorV3Interface(newWrapperAddr),
+            _rawAnswerPre[chainId][config.oracleName],
+            _rawUpdatedAtPre[chainId][config.oracleName],
+            _oevAnswerPre[chainId][config.oracleName],
+            _oevUpdatedAtPre[chainId][config.oracleName],
+            string.concat(chainName, " ", config.oracleName)
+        );
+
+        // (4) Full-resolution path within +-2%.
+        _validateUnderlyingPrice(addresses, chainId, chainName, config);
+    }
+
+    function _validateWrapperParams(
+        ChainlinkOEVWrapper newWrapper,
+        WrapperParams memory captured,
+        string memory chainName,
+        string memory oracleName
+    ) internal view {
+        assertEq(
+            address(newWrapper.priceFeed()),
+            captured.priceFeed,
+            string.concat(chainName, ": priceFeed mismatch for ", oracleName)
+        );
+
+        assertEq(
+            newWrapper.owner(),
+            captured.owner,
+            string.concat(chainName, ": owner mismatch for ", oracleName)
+        );
+        assertEq(
+            address(newWrapper.chainlinkOracle()),
+            captured.chainlinkOracle,
+            string.concat(
+                chainName,
+                ": chainlinkOracle mismatch for ",
+                oracleName
+            )
+        );
+        assertEq(
+            newWrapper.feeRecipient(),
+            captured.feeRecipient,
+            string.concat(chainName, ": feeRecipient mismatch for ", oracleName)
+        );
+        assertEq(
+            newWrapper.liquidatorFeeBps(),
+            captured.liquidatorFeeBps,
+            string.concat(
+                chainName,
+                ": liquidatorFeeBps mismatch for ",
+                oracleName
+            )
+        );
+        assertEq(
+            newWrapper.maxRoundDelay(),
+            captured.maxRoundDelay,
+            string.concat(
+                chainName,
+                ": maxRoundDelay mismatch for ",
+                oracleName
+            )
+        );
+        assertEq(
+            newWrapper.maxDecrements(),
+            captured.maxDecrements,
+            string.concat(
+                chainName,
+                ": maxDecrements mismatch for ",
+                oracleName
+            )
+        );
+
+        // Defense-in-depth: the new wrapper's priceFeed MUST be a raw Chainlink
+        // aggregator, not another OEV wrapper. Catches the pathological case where
+        // the prior wrapper was misconfigured (or where a future redeploy uses a
+        // wrapped feed by mistake) and silently undoes the bounty fix.
+        (bool priceFeedIsWrapped, ) = _isOEVWrapper(
+            address(newWrapper.priceFeed())
+        );
+        require(
+            !priceFeedIsWrapped,
+            string.concat(
+                "MIP-X56: ",
+                chainName,
+                " new wrapper's priceFeed must be a raw aggregator for ",
+                oracleName
+            )
+        );
+    }
+
+    function _validateUnderlyingPrice(
+        Addresses addresses,
+        uint256 chainId,
+        string memory chainName,
+        OracleConfig memory config
+    ) internal view {
+        if (
+            bytes(config.mTokenKey).length == 0 ||
+            !addresses.isAddressSet(config.mTokenKey)
+        ) {
+            return;
+        }
+        uint256 capturedPrice = _underlyingPricePre[chainId][config.mTokenKey];
+        if (capturedPrice == 0) return;
+
+        IChainlinkOracle oracle = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+        uint256 postPrice = oracle.getUnderlyingPrice(
+            MToken(addresses.getAddress(config.mTokenKey))
+        );
+
+        console.log(
+            string.concat("  getUnderlyingPrice(", config.mTokenKey, ") pre: "),
+            capturedPrice
+        );
+        console.log(
+            string.concat("  getUnderlyingPrice(", config.mTokenKey, ") post:"),
+            postPrice
+        );
+
+        // Strict-equality check: since this proposal only swaps wrapper
+        // bytecode (same priceFeed pointer, same raw aggregator answer),
+        // the consumer-facing mToken-scaled price MUST match bit-for-bit.
+        // Any divergence means the new wrapper resolves to a different
+        // raw aggregator and the bounty-fix was not applied cleanly.
+        assertEq(
+            postPrice,
+            capturedPrice,
+            string.concat(
+                chainName,
+                ": getUnderlyingPrice diverged for ",
+                config.mTokenKey
+            )
+        );
+    }
+
+    /// @notice Asserts that the OEV-wrapped surface (Core wrapper or Morpho
+    ///         proxy) returns the SAME `(answer, updatedAt)` post-upgrade
+    ///         as it did pre-upgrade AND that the value matches the raw
+    ///         aggregator's pre-snapshot.
+    ///
+    ///         Two-pair assertion catches:
+    ///           - Re-wiring: post output drifts from raw pre-snapshot →
+    ///             wrapper points at a different aggregator.
+    ///           - State-machine regression: post output drifts from OEV
+    ///             pre-snapshot → upgrade changed delay/passthrough behavior.
+    ///         Both pairs hold simultaneously only when the wrapper was in
+    ///         passthrough mode at snapshot time AND the upgrade preserved
+    ///         that. A failure on either side surfaces the relevant class.
+    function _validatePricePreserved(
+        AggregatorV3Interface wrapper,
+        int256 expectedRawAnswer,
+        uint256 expectedRawUpdatedAt,
+        int256 expectedOevAnswer,
+        uint256 expectedOevUpdatedAt,
+        string memory label
+    ) internal view {
+        (, int256 ans, , uint256 updatedAt, ) = wrapper.latestRoundData();
+
+        // Bake every value into its label via vm.toString so each log line
+        // is self-contained — bare `console.logInt` calls produce orphaned
+        // numeric lines that are easy to lose to stdout filters.
+        console.log(
+            string.concat(
+                "  [",
+                label,
+                "] raw pre answer: ",
+                vm.toString(expectedRawAnswer),
+                "  updatedAt: ",
+                vm.toString(expectedRawUpdatedAt)
+            )
+        );
+        console.log(
+            string.concat(
+                "  [",
+                label,
+                "] OEV pre answer: ",
+                vm.toString(expectedOevAnswer),
+                "  updatedAt: ",
+                vm.toString(expectedOevUpdatedAt)
+            )
+        );
+        console.log(
+            string.concat(
+                "  [",
+                label,
+                "] OEV post answer: ",
+                vm.toString(ans),
+                "  updatedAt: ",
+                vm.toString(updatedAt)
+            )
+        );
+
+        assertEq(
+            ans,
+            expectedRawAnswer,
+            string.concat(
+                label,
+                ": OEV-wrapped answer post-upgrade != raw feed pre-snapshot"
+            )
+        );
+        assertEq(
+            updatedAt,
+            expectedRawUpdatedAt,
+            string.concat(
+                label,
+                ": OEV-wrapped updatedAt post-upgrade != raw feed pre-snapshot"
+            )
+        );
+        assertEq(
+            ans,
+            expectedOevAnswer,
+            string.concat(
+                label,
+                ": OEV-wrapped answer post-upgrade != OEV pre-snapshot"
+            )
+        );
+        assertEq(
+            updatedAt,
+            expectedOevUpdatedAt,
+            string.concat(
+                label,
+                ": OEV-wrapped updatedAt post-upgrade != OEV pre-snapshot"
+            )
+        );
+    }
+
+    /// @notice EIP-1967 implementation slot:
+    ///         `bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)`
+    bytes32 internal constant _EIP1967_IMPL_SLOT =
+        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+
+    /// @notice Loop over all Morpho oracle configs and validate that each
+    ///         proxy's storage is unchanged after the implementation upgrade.
+    ///         Also validates raw price preservation per proxy. Morpho proxies
+    ///         are not mTokens — getUnderlyingPrice does not apply to them.
+    function _validateAllMorphoWrappers(Addresses addresses) internal view {
+        MorphoOracleConfig[]
+            memory morphoConfigs = getMorphoOracleConfigurations(BASE_CHAIN_ID);
+        address expectedImpl = addresses.getAddress(
+            "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2"
+        );
+
+        for (uint256 i = 0; i < morphoConfigs.length; i++) {
+            string memory proxyKey = string(
+                abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
+            );
+            require(
+                addresses.isAddressSet(proxyKey),
+                string.concat("MIP-X56: missing Morpho proxy ", proxyKey)
+            );
+
+            address proxyAddr = addresses.getAddress(proxyKey);
+            MorphoSnapshot storage snap = _morphoSnapshot[proxyAddr];
+
+            console.log("Validating Morpho proxy:", morphoConfigs[i].proxyName);
+
+            // HAL-10: assert the EIP-1967 implementation slot actually points
+            // at the new implementation. Storage-equivalence checks below
+            // can't distinguish "upgrade landed" from "upgrade silently
+            // skipped" if the old impl shared the same getters.
+            address actualImpl = address(
+                uint160(uint256(vm.load(proxyAddr, _EIP1967_IMPL_SLOT)))
+            );
+            assertEq(
+                actualImpl,
+                expectedImpl,
+                string.concat(
+                    "Base Morpho ",
+                    morphoConfigs[i].proxyName,
+                    ": EIP-1967 impl slot does not point at V2 implementation"
+                )
+            );
+
+            _validateMorphoWrapperState(
+                proxyAddr,
+                snap,
+                morphoConfigs[i].proxyName,
+                addresses
+            );
+
+            // OEV-proxy price preservation: post-upgrade the proxy itself
+            // must return values matching BOTH the raw aggregator's pre-
+            // snapshot AND the proxy's own pre-upgrade output. The second
+            // pair catches a state-machine change even when the raw feed
+            // is unchanged.
+            _validatePricePreserved(
+                AggregatorV3Interface(proxyAddr),
+                snap.answer,
+                snap.updatedAt,
+                snap.oevAnswer,
+                snap.oevUpdatedAt,
+                string.concat("Base Morpho ", morphoConfigs[i].proxyName)
+            );
+
+            // Decimals preservation.
+            ChainlinkOEVMorphoWrapper wrapper = ChainlinkOEVMorphoWrapper(
+                payable(proxyAddr)
+            );
+            assertEq(
+                wrapper.decimals(),
+                snap.decimals,
+                string.concat(
+                    "Base Morpho ",
+                    morphoConfigs[i].proxyName,
+                    ": decimals changed across upgrade"
+                )
+            );
+
+            // Allowlist seeding: the canonical Morpho market id must be
+            // approved post-upgrade. Catches the case where the seed was
+            // malformed (wrong addresses or lltv) and silently produced a
+            // non-canonical id.
+            MarketParams memory canonicalMarket = _canonicalMorphoMarket(
+                addresses,
+                morphoConfigs[i].proxyName
+            );
+            bytes32 canonicalId = keccak256(abi.encode(canonicalMarket));
+            require(
+                wrapper.approvedMarkets(canonicalId),
+                string.concat(
+                    "Base Morpho ",
+                    morphoConfigs[i].proxyName,
+                    ": canonical market id not seeded by setApprovedMarket"
+                )
+            );
+        }
+    }
+
+    /// @notice Strict-equality check: every storage variable of a single Morpho
+    ///         wrapper proxy after the implementation swap must equal the
+    ///         snapshot captured in afterDeploy().
+    function _validateMorphoWrapperState(
+        address proxyAddr,
+        MorphoSnapshot storage snap,
+        string memory proxyName,
+        Addresses addresses
+    ) internal view {
+        ChainlinkOEVMorphoWrapper wrapper = ChainlinkOEVMorphoWrapper(
+            payable(proxyAddr)
+        );
+
+        assertEq(
+            wrapper.liquidatorFeeBps(),
+            snap.liquidatorFeeBps,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " liquidatorFeeBps changed by upgrade"
+            )
+        );
+        assertEq(
+            wrapper.maxRoundDelay(),
+            snap.maxRoundDelay,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " maxRoundDelay changed by upgrade"
+            )
+        );
+        assertEq(
+            wrapper.maxDecrements(),
+            snap.maxDecrements,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " maxDecrements changed by upgrade"
+            )
+        );
+        assertEq(
+            wrapper.feeRecipient(),
+            snap.feeRecipient,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " feeRecipient changed by upgrade"
+            )
+        );
+        assertEq(
+            wrapper.owner(),
+            snap.owner,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " owner changed by upgrade"
+            )
+        );
+        assertEq(
+            address(wrapper.priceFeed()),
+            snap.priceFeed,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " priceFeed changed by upgrade"
+            )
+        );
+        assertEq(
+            address(wrapper.chainlinkOracle()),
+            snap.chainlinkOracle,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " chainlinkOracle changed by upgrade"
+            )
+        );
+        assertEq(
+            wrapper.cachedRoundId(),
+            snap.cachedRoundId,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " cachedRoundId changed by upgrade"
+            )
+        );
+        assertEq(
+            address(wrapper.morphoBlue()),
+            snap.morphoBlue,
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " morphoBlue changed by upgrade"
+            )
+        );
+
+        // Cross-check expected-vs-snapshot to catch a pre-existing
+        // misconfiguration the snapshot would otherwise mask.
+        assertEq(
+            wrapper.owner(),
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " owner should be TemporalGovernor"
+            )
+        );
+        assertEq(
+            wrapper.feeRecipient(),
+            addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"),
+            string.concat(
+                "Base: Morpho wrapper ",
+                proxyName,
+                " feeRecipient mismatch"
+            )
+        );
+    }
+
+    /// @notice Detects whether an address is an OEV wrapper by probing for
+    ///         the `priceFeed()` selector. Returns (false, zero) for raw
+    ///         aggregators, address(0), or wrappers whose inner pointer is 0.
+    function _isOEVWrapper(
+        address registryEntry
+    ) internal view returns (bool, AggregatorV3Interface raw) {
+        if (registryEntry == address(0))
+            return (false, AggregatorV3Interface(address(0)));
+        try IOEVWrapperFeed(registryEntry).priceFeed() returns (
+            AggregatorV3Interface inner
+        ) {
+            if (address(inner) != address(0)) {
+                return (true, inner);
+            }
+        } catch {}
+        return (false, AggregatorV3Interface(address(0)));
+    }
+
+    /// @notice Capture the constructor-mirroring parameters of a live
+    ///         `ChainlinkOEVWrapper`-shaped contract.
+    function _captureParams(
+        address wrapperAddr
+    ) internal view returns (WrapperParams memory params) {
+        ChainlinkOEVWrapper w = ChainlinkOEVWrapper(payable(wrapperAddr));
+
+        params.priceFeed = address(w.priceFeed());
+        params.owner = w.owner();
+        params.chainlinkOracle = address(w.chainlinkOracle());
+        params.feeRecipient = w.feeRecipient();
+        params.liquidatorFeeBps = w.liquidatorFeeBps();
+        params.maxRoundDelay = w.maxRoundDelay();
+        params.maxDecrements = w.maxDecrements();
+    }
+
+    /// @notice Resolve the on-chain ERC20 symbol for the config's token key.
+    ///         Returns (false, "") if the token key is not registered on the
+    ///         current fork (skip with log).
+    function _readSymbol(
+        Addresses addresses,
+        OracleConfig memory config
+    ) internal view returns (bool, string memory) {
+        if (!addresses.isAddressSet(config.symbol)) {
+            return (false, "");
+        }
+        return (true, ERC20(addresses.getAddress(config.symbol)).symbol());
     }
 }

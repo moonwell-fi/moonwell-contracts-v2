@@ -9,6 +9,7 @@ import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import {MErc20Storage, MTokenInterface, MErc20Interface} from "../MTokenInterfaces.sol";
 import {EIP20Interface} from "../EIP20Interface.sol";
 import {IChainlinkOracle} from "../interfaces/IChainlinkOracle.sol";
+import {IOEVWrapperFeed} from "./IOEVWrapperFeed.sol";
 
 /**
  * @title ChainlinkOEVWrapper
@@ -577,7 +578,9 @@ contract ChainlinkOEVWrapper is
         uint256 mTokenCollateralBalanceBefore = mTokenCollateral.balanceOf(
             address(this)
         );
-        underlyingLoan.approve(_mTokenLoan, repayAmount);
+        // HAL-05: forceApprove tolerates non-standard ERC20s (USDT-class,
+        // void-return approve) where the bare `approve` would silently fail.
+        IERC20(address(underlyingLoan)).forceApprove(_mTokenLoan, repayAmount);
         require(
             MErc20Interface(_mTokenLoan).liquidateBorrow(
                 borrower,
@@ -592,19 +595,58 @@ contract ChainlinkOEVWrapper is
             mTokenCollateralBalanceBefore;
     }
 
-    /// @notice Get the loan token price directly from the underlying Chainlink feed
-    /// @dev Bypasses any OEV wrapper to get fresh price data, preventing price staleness exploits
+    /// @notice Resolve a feed registered in ChainlinkOracle down to its raw
+    ///         Chainlink aggregator, single-hop.
+    /// @dev If the registry feed is itself an OEV wrapper (exposes priceFeed()),
+    ///      returns the inner aggregator. Otherwise returns the input unchanged.
+    ///      Deliberately single-hop to avoid recursion and match the registry
+    ///      invariant that entries are raw or a single level of wrapping.
+    function _resolveRawFeed(
+        AggregatorV3Interface registryFeed
+    ) internal view returns (AggregatorV3Interface) {
+        try IOEVWrapperFeed(address(registryFeed)).priceFeed() returns (
+            AggregatorV3Interface inner
+        ) {
+            if (address(inner) != address(0)) {
+                return inner;
+            }
+        } catch {
+            // registry feed is a raw aggregator (no priceFeed() selector);
+            // fall through and return the input.
+        }
+        return registryFeed;
+    }
+
+    /// @notice Get the loan token price from the raw underlying Chainlink feed.
+    /// @dev Single-hop dereferences any OEV wrapper registered under the loan
+    ///      token's symbol in ChainlinkOracle, so the split math reads from a
+    ///      raw Chainlink aggregator. Mirrors the collateral side's freshness
+    ///      guarantee (which reads from the wrapper's own `priceFeed` directly,
+    ///      a raw aggregator by deployment convention).
     /// @param underlyingLoan The underlying loan token interface
     /// @return The price scaled to 1e18 and adjusted for token decimals
     function _getLoanTokenPrice(
         EIP20Interface underlyingLoan
     ) internal view returns (uint256) {
-        // Get the price feed for the loan token directly from the oracle
-        AggregatorV3Interface loanFeed = chainlinkOracle.getFeed(
+        AggregatorV3Interface registryFeed = chainlinkOracle.getFeed(
             underlyingLoan.symbol()
         );
+        // Defense-in-depth: if the registry was misconfigured to point at an
+        // EOA, the call inside _resolveRawFeed would revert with the
+        // non-actionable "call to non-contract address" message (Solidity's
+        // try/catch does not catch this revert in 0.8.19). Reject upfront
+        // with a clear message. We re-check after resolve in case the
+        // registry returns a wrapper whose inner priceFeed() points at an EOA.
+        require(
+            address(registryFeed).code.length > 0,
+            "ChainlinkOEVWrapper: loan feed has no code"
+        );
+        AggregatorV3Interface loanFeed = _resolveRawFeed(registryFeed);
+        require(
+            address(loanFeed).code.length > 0,
+            "ChainlinkOEVWrapper: loan feed has no code"
+        );
 
-        // Get the latest price from the feed and validate
         int256 loanAnswer;
         {
             (
@@ -620,7 +662,7 @@ contract ChainlinkOEVWrapper is
             loanAnswer = answer;
         }
 
-        // Scale feed decimals to 18
+        // Scale feed decimals to 18 using the resolved feed's decimals.
         uint8 feedDecimals = loanFeed.decimals();
         uint256 loanPricePerUnit = uint256(loanAnswer);
         if (feedDecimals < 18) {
@@ -629,7 +671,7 @@ contract ChainlinkOEVWrapper is
             loanPricePerUnit = loanPricePerUnit / (10 ** (feedDecimals - 18));
         }
 
-        // Adjust for token decimals (same logic as ChainlinkOracle)
+        // Adjust for token decimals (same logic as ChainlinkOracle).
         uint8 tokenDecimals = underlyingLoan.decimals();
         if (tokenDecimals < 18) {
             return loanPricePerUnit * (10 ** (18 - tokenDecimals));

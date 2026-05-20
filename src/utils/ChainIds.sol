@@ -55,9 +55,10 @@ library ChainIds {
         } else if (
             chainId == MOONBASE_CHAIN_ID ||
             chainId == BASE_SEPOLIA_CHAIN_ID ||
-            chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
+            chainId == ETHEREUM_SEPOLIA_CHAIN_ID
         ) {
-            /// map base sepolia, optimism sepolia and moonbase chain id to moonbase chain id
+            /// map base sepolia, optimism sepolia, ethereum sepolia and moonbase chain id to moonbase chain id
             return MOONBASE_CHAIN_ID;
         } else {
             revert("ChainIds: invalid chain id to moonbeam chain id");
@@ -65,7 +66,7 @@ library ChainIds {
     }
 
     function toBaseChainId(uint256 chainId) internal pure returns (uint256) {
-        /// map base, moonbeam, optimism and ethereum chain id to base chain id
+        /// map mainnet optimism, moonbeam, ethereum and base chain id to base chain id
         if (
             chainId == OPTIMISM_CHAIN_ID ||
             chainId == MOONBEAM_CHAIN_ID ||
@@ -76,9 +77,10 @@ library ChainIds {
         } else if (
             chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
             chainId == MOONBASE_CHAIN_ID ||
-            chainId == BASE_SEPOLIA_CHAIN_ID
+            chainId == BASE_SEPOLIA_CHAIN_ID ||
+            chainId == ETHEREUM_SEPOLIA_CHAIN_ID
         ) {
-            /// map base sepolia and moonbase chain id to base sepolia chain id
+            /// map base sepolia, ethereum sepolia and moonbase chain id to base sepolia chain id
             return BASE_SEPOLIA_CHAIN_ID;
         } else {
             revert("ChainIds: invalid chain id to base chain id");
@@ -88,7 +90,7 @@ library ChainIds {
     function toOptimismChainId(
         uint256 chainId
     ) internal pure returns (uint256) {
-        /// map optimism, moonbeam, base and ethereum chain id to optimism chain id
+        /// map mainnet moonbeam, base, ethereum and optimism chain id to optimism chain id
         if (
             chainId == MOONBEAM_CHAIN_ID ||
             chainId == OPTIMISM_CHAIN_ID ||
@@ -99,9 +101,10 @@ library ChainIds {
         } else if (
             chainId == MOONBASE_CHAIN_ID ||
             chainId == BASE_SEPOLIA_CHAIN_ID ||
-            chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
+            chainId == ETHEREUM_SEPOLIA_CHAIN_ID
         ) {
-            /// map optimism sepolia and moonbase chain id to optimism sepolia chain id
+            /// map optimism sepolia, ethereum sepolia and moonbase chain id to optimism sepolia chain id
             return OPTIMISM_SEPOLIA_CHAIN_ID;
         } else {
             revert("ChainIds: invalid chain id to optimism chain id");

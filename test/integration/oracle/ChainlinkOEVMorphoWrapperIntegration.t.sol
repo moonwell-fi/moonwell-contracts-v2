@@ -11,6 +11,8 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {IMetaMorpho, MarketParams, MarketAllocation} from "@protocol/morpho/IMetaMorpho.sol";
 import {ChainlinkOracleConfigs} from "@proposals/ChainlinkOracleConfigs.sol";
 import {OEVProtocolFeeRedeemer} from "@protocol/OEVProtocolFeeRedeemer.sol";
+import {IMorphoChainlinkOracleV2} from "@protocol/morpho/IMorphoChainlinkOracleV2.sol";
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
 contract ChainlinkOEVMorphoWrapperIntegrationTest is
     PostProposalCheck,
@@ -29,6 +31,11 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
     );
 
     ChainlinkOEVMorphoWrapper[] public wrappers;
+    /// @notice Parallel array of canonical (approved) MarketParams per wrapper.
+    ///         Mirrors `mip-x56.sol::_canonicalMorphoMarket` so revert-path
+    ///         tests can drive each wrapper past its `approvedMarkets` gate
+    ///         and reach the intended downstream revert.
+    MarketParams[] internal approvedParams;
     OEVProtocolFeeRedeemer public redeemer;
 
     // Test actors
@@ -58,8 +65,64 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                 wrappers.push(
                     ChainlinkOEVMorphoWrapper(addresses.getAddress(wrapperName))
                 );
+                approvedParams.push(
+                    _canonicalParamsFor(morphoConfigs[i].proxyName)
+                );
             }
         }
+    }
+
+    /// @notice Mirrors `mip-x56.sol::_canonicalMorphoMarket` — returns the
+    ///         canonical MarketParams that MIP-X56 seeded as approved for
+    ///         each Morpho wrapper proxy. Tests use this to drive the
+    ///         wrapper past its `approvedMarkets` gate.
+    function _canonicalParamsFor(
+        string memory proxyName
+    ) internal view returns (MarketParams memory) {
+        address loanToken = addresses.getAddress("USDC");
+        address irm = addresses.getAddress("MORPHO_ADAPTIVE_CURVE_IRM");
+
+        bytes32 key = keccak256(bytes(proxyName));
+        if (key == keccak256(bytes("CHAINLINK_WELL_USD"))) {
+            return
+                MarketParams({
+                    loanToken: loanToken,
+                    collateralToken: addresses.getAddress("xWELL_PROXY"),
+                    oracle: addresses.getAddress(
+                        "MORPHO_CHAINLINK_WELL_USD_ORACLE"
+                    ),
+                    irm: irm,
+                    lltv: 0.625e18
+                });
+        } else if (key == keccak256(bytes("CHAINLINK_MAMO_USD"))) {
+            return
+                MarketParams({
+                    loanToken: loanToken,
+                    collateralToken: addresses.getAddress("MAMO"),
+                    oracle: addresses.getAddress(
+                        "MORPHO_CHAINLINK_MAMO_USD_ORACLE"
+                    ),
+                    irm: irm,
+                    lltv: 0.385e18
+                });
+        } else if (key == keccak256(bytes("CHAINLINK_stkWELL_USD"))) {
+            return
+                MarketParams({
+                    loanToken: loanToken,
+                    collateralToken: addresses.getAddress("STK_GOVTOKEN_PROXY"),
+                    oracle: addresses.getAddress(
+                        "MORPHO_CHAINLINK_stkWELL_USD_ORACLE"
+                    ),
+                    irm: irm,
+                    lltv: 0.625e18
+                });
+        }
+        revert(
+            string.concat(
+                "ChainlinkOEVMorphoWrapperIntegrationTest: no canonical params for ",
+                proxyName
+            )
+        );
     }
 
     function testSetLiquidatorFeeBps() public {
@@ -197,7 +260,6 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
     }
 
     function testUpdatePriceEarlyAndLiquidate_stkWELL() public {
-        vm.skip(true); // TODO: once we enable stkWELL oev wrapper
         _testLiquidation(
             addresses.getAddress("CHAINLINK_stkWELL_USD_ORACLE_PROXY"),
             addresses.getAddress("STK_GOVTOKEN_PROXY"),
@@ -209,7 +271,6 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
     }
 
     function testUpdatePriceEarlyAndLiquidate_MAMO() public {
-        vm.skip(true); // TODO: once we enable mamo oev wrapper
         _testLiquidation(
             addresses.getAddress("CHAINLINK_MAMO_USD_ORACLE_PROXY"),
             addresses.getAddress("MAMO"),
@@ -312,9 +373,14 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
         uint256 seized,
         address collToken
     ) internal {
-        deal(loanToken, LIQUIDATOR, borrowAmount);
+        // Fund the liquidator with 2x borrowAmount so we can pass a
+        // maxRepayAmount larger than the actual debt and exercise both the
+        // HAL-08 allowance-scrub path and the HAL-03 excess-refund path
+        // (any unused loan tokens must be returned via safeTransfer).
+        uint256 maxRepayAmount = borrowAmount * 2;
+        deal(loanToken, LIQUIDATOR, maxRepayAmount);
         vm.startPrank(LIQUIDATOR);
-        IERC20(loanToken).approve(address(wrapper), borrowAmount);
+        IERC20(loanToken).approve(address(wrapper), maxRepayAmount);
 
         uint256 liqLoanBefore = IERC20(loanToken).balanceOf(LIQUIDATOR);
         uint256 liqCollBefore = IERC20(collToken).balanceOf(LIQUIDATOR);
@@ -327,12 +393,39 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
             params,
             BORROWER,
             seized,
-            borrowAmount
+            maxRepayAmount
         );
         vm.stopPrank();
 
-        // Parse event to get protocol fee
-        (uint256 protocolFee, ) = _parseLiquidationEvent();
+        // HAL-08: residual loan-token allowance to Morpho Blue must be 0
+        // after the call. If a future regression dropped the forceApprove(.,0)
+        // scrub, a subsequent caller could re-use the leftover allowance.
+        assertEq(
+            IERC20(loanToken).allowance(
+                address(wrapper),
+                address(wrapper.morphoBlue())
+            ),
+            0,
+            "HAL-08: residual loan-token allowance to morphoBlue not zeroed"
+        );
+
+        // HAL-03: every unused loan token must be returned to msg.sender
+        // (the liquidator). Combined with the deal of `maxRepayAmount`, the
+        // liquidator's net spend equals exactly `actualRepaidAssets`.
+        uint256 liqLoanSpent = liqLoanBefore -
+            IERC20(loanToken).balanceOf(LIQUIDATOR);
+        assertLe(
+            liqLoanSpent,
+            borrowAmount,
+            "HAL-03: liquidator spent more loan tokens than the debt"
+        );
+
+        // Parse event for split amounts and the actual seized collateral.
+        (
+            uint256 actualSeizedAssets,
+            uint256 protocolFee,
+            uint256 liquidatorFee
+        ) = _parseLiquidationEventFull();
 
         // Assertions
         assertEq(wrapper.cachedRoundId(), 777);
@@ -341,10 +434,22 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
             0,
             "no loan repaid"
         );
-        assertGt(
-            IERC20(collToken).balanceOf(LIQUIDATOR) - liqCollBefore,
-            0,
-            "no collateral received"
+        uint256 liquidatorReceived = IERC20(collToken).balanceOf(LIQUIDATOR) -
+            liqCollBefore;
+        assertGt(liquidatorReceived, 0, "no collateral received");
+
+        // Invariant: every collateral token seized must end up either with
+        // the liquidator or with the redeemer (protocol). No tokens stuck.
+        assertEq(
+            liquidatorFee + protocolFee,
+            actualSeizedAssets,
+            "split conservation: liquidatorFee + protocolFee != seized"
+        );
+        // The on-chain transfer split must match the event split exactly.
+        assertEq(
+            liquidatorReceived,
+            liquidatorFee,
+            "liquidator on-chain receipt != event liquidatorFee"
         );
 
         // Verify redeemer received protocol fee (underlying tokens)
@@ -361,6 +466,17 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                 redeemerCollAfter - redeemerCollBefore,
                 protocolFee,
                 "Redeemer balance should match protocol fee from event"
+            );
+
+            // Directional split check: with liquidatorFeeBps = 4000 (40%),
+            // the liquidator receives the full repayment value PLUS 40% of
+            // the collateral surplus, while the protocol receives only 60%
+            // of the surplus. So whenever the protocol gets any fee at all,
+            // the liquidator's share must strictly dominate.
+            assertGt(
+                liquidatorFee,
+                protocolFee,
+                "liquidatorFee should exceed protocolFee when protocolFee > 0"
             );
 
             address mTokenCollateral = _findMTokenForUnderlying(collToken);
@@ -382,6 +498,47 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                 redeemerCollBefore,
                 "Redeemer should not receive tokens when protocolFee is 0"
             );
+            // protocolFee == 0 is the collateral-worth-less-than-repay case;
+            // the liquidator must have received 100% of the seized collateral.
+            assertEq(
+                liquidatorFee,
+                actualSeizedAssets,
+                "liquidator should receive full seized when protocolFee is 0"
+            );
+        }
+    }
+
+    /// @notice Parse PriceUpdatedEarlyAndLiquidated for all numeric fields.
+    /// @dev Mirrors `_parseLiquidationEvent` but also returns `seizedAssets`
+    ///      so callers can verify split conservation.
+    function _parseLiquidationEventFull()
+        internal
+        returns (
+            uint256 seizedAssets,
+            uint256 protocolFee,
+            uint256 liquidatorFee
+        )
+    {
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 eventSig = keccak256(
+            "PriceUpdatedEarlyAndLiquidated(address,uint256,uint256,uint256,uint256)"
+        );
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] == eventSig) {
+                (
+                    uint256 _seized,
+                    ,
+                    uint256 _protocolFee,
+                    uint256 _liquidatorFee
+                ) = abi.decode(
+                        logs[i].data,
+                        (uint256, uint256, uint256, uint256)
+                    );
+
+                seizedAssets = _seized;
+                protocolFee = _protocolFee;
+                liquidatorFee = _liquidatorFee;
+            }
         }
     }
 
@@ -466,13 +623,9 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
     }
 
     function testUpdatePriceEarlyAndLiquidate_RevertInvalidPrice() public {
-        MarketParams memory params;
-        address mUSDC = addresses.getAddress("MOONWELL_USDC");
-        address mWETH = addresses.getAddress("MOONWELL_WETH");
-        params.loanToken = MErc20(mUSDC).underlying();
-        params.collateralToken = MErc20(mWETH).underlying();
         for (uint256 i = 0; i < wrappers.length; i++) {
             ChainlinkOEVMorphoWrapper wrapper = wrappers[i];
+            MarketParams memory params = approvedParams[i];
             vm.mockCall(
                 address(wrapper.priceFeed()),
                 abi.encodeWithSelector(
@@ -486,19 +639,16 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                     uint80(1)
                 )
             );
-            vm.expectRevert();
+            // Tight assertion: must revert at _validateRoundData, not earlier.
+            vm.expectRevert("Chainlink price cannot be lower or equal to 0");
             wrapper.updatePriceEarlyAndLiquidate(params, address(0xBEEF), 1, 1);
         }
     }
 
     function testUpdatePriceEarlyAndLiquidate_RevertIncompleteRound() public {
-        MarketParams memory params;
-        address mUSDC = addresses.getAddress("MOONWELL_USDC");
-        address mWETH = addresses.getAddress("MOONWELL_WETH");
-        params.loanToken = MErc20(mUSDC).underlying();
-        params.collateralToken = MErc20(mWETH).underlying();
         for (uint256 i = 0; i < wrappers.length; i++) {
             ChainlinkOEVMorphoWrapper wrapper = wrappers[i];
+            MarketParams memory params = approvedParams[i];
             vm.mockCall(
                 address(wrapper.priceFeed()),
                 abi.encodeWithSelector(
@@ -512,19 +662,15 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                     uint80(1)
                 )
             );
-            vm.expectRevert();
+            vm.expectRevert("Round is in incompleted state");
             wrapper.updatePriceEarlyAndLiquidate(params, address(0xBEEF), 1, 1);
         }
     }
 
     function testUpdatePriceEarlyAndLiquidate_RevertStalePrice() public {
-        MarketParams memory params;
-        address mUSDC = addresses.getAddress("MOONWELL_USDC");
-        address mWETH = addresses.getAddress("MOONWELL_WETH");
-        params.loanToken = MErc20(mUSDC).underlying();
-        params.collateralToken = MErc20(mWETH).underlying();
         for (uint256 i = 0; i < wrappers.length; i++) {
             ChainlinkOEVMorphoWrapper wrapper = wrappers[i];
+            MarketParams memory params = approvedParams[i];
             vm.mockCall(
                 address(wrapper.priceFeed()),
                 abi.encodeWithSelector(
@@ -538,26 +684,21 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                     uint80(1)
                 )
             );
-            vm.expectRevert();
+            vm.expectRevert("Stale price");
             wrapper.updatePriceEarlyAndLiquidate(params, address(0xBEEF), 1, 1);
         }
     }
 
-    function testUpdatePriceEarlyAndLiquidate_RevertFeeZeroWhenMultiplierZero()
-        public
-    {
+    function testUpdatePriceEarlyAndLiquidate_RevertUnapprovedMarket() public {
+        // Sanity: with `params.oracle = 0` and `lltv = 0`, the market id is
+        // not in `approvedMarkets`, so the gate must fire and reject. This
+        // is the test the four revert tests above used to accidentally hit.
         MarketParams memory params;
-        address mUSDC = addresses.getAddress("MOONWELL_USDC");
-        address mWETH = addresses.getAddress("MOONWELL_WETH");
-        params.loanToken = MErc20(mUSDC).underlying();
-        params.collateralToken = MErc20(mWETH).underlying();
+        params.loanToken = addresses.getAddress("USDC");
         for (uint256 i = 0; i < wrappers.length; i++) {
             ChainlinkOEVMorphoWrapper wrapper = wrappers[i];
-            vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-            wrapper.setLiquidatorFeeBps(0);
             _mockValidRound(wrapper, 10, 3_000e8);
-
-            vm.expectRevert();
+            vm.expectRevert("ChainlinkOEVMorphoWrapper: market not approved");
             wrapper.updatePriceEarlyAndLiquidate(
                 params,
                 address(0xBEEF),
@@ -621,5 +762,30 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
             ),
             abi.encode(roundId_, price_, uint256(0), block.timestamp, roundId_)
         );
+    }
+
+    /// @notice Regression: verify the per-market QUOTE_FEED_1 — which the
+    ///         wrapper now reads directly for the loan-token price — is a
+    ///         live raw Chainlink aggregator returning a positive answer.
+    function testLoanFeedQuoteFeed1IsLiveRawAggregator() public {
+        if (block.chainid != 8453) return;
+
+        // WELL/USDC Morpho market on Base.
+        address morphoOracle = 0x71FBaD6c2200C8A5B89380f9B6bb8a35d411c852;
+        AggregatorV3Interface quoteFeed = IMorphoChainlinkOracleV2(morphoOracle)
+            .QUOTE_FEED_1();
+        require(address(quoteFeed) != address(0), "QUOTE_FEED_1 unset");
+        _assertHasCode(address(quoteFeed), "QUOTE_FEED_1");
+        (, int256 ans, , uint256 updatedAt, ) = quoteFeed.latestRoundData();
+        require(ans > 0, "QUOTE_FEED_1 answer <= 0");
+        require(updatedAt > 0, "QUOTE_FEED_1 updatedAt == 0");
+    }
+
+    function _assertHasCode(address target, string memory label) internal view {
+        uint256 codeLen;
+        assembly {
+            codeLen := extcodesize(target)
+        }
+        require(codeLen > 0, string(abi.encodePacked(label, " has no code")));
     }
 }
