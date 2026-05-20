@@ -20,6 +20,7 @@ import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
 /// MultichainGovernorV2 is deployed by initProposal() via MIP-X56 on Ethereum as the governance hub
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
@@ -211,6 +212,40 @@ contract mipe00 is HybridProposalV2, Configs {
         /// deploy oracle, set price oracle
         ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
         addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
+
+        /// ------- MoonwellViewsV3 (read-only views aggregator) -------
+        /// impl + dedicated ProxyAdmin + initialized TransparentUpgradeableProxy.
+        /// The dedicated ProxyAdmin keeps view-only upgrades out of governance.
+        /// Ethereum has no safety module (stkWELL), so _safetyModule is address(0).
+        {
+            MoonwellViewsV3 viewsImpl = new MoonwellViewsV3();
+            addresses.addAddress(
+                "MOONWELL_VIEWS_IMPLEMENTATION",
+                address(viewsImpl)
+            );
+
+            ProxyAdmin viewsProxyAdmin = new ProxyAdmin();
+            addresses.addAddress(
+                "MOONWELL_VIEWS_PROXY_ADMIN",
+                address(viewsProxyAdmin)
+            );
+
+            bytes memory viewsInitData = abi.encodeWithSignature(
+                "initialize(address,address,address,address,address,address)",
+                addresses.getAddress("UNITROLLER"),
+                address(0), /// tokenSaleDistributor
+                address(0), /// safetyModule - no stkWELL on Ethereum
+                addresses.getAddress("xWELL_PROXY"),
+                address(0), /// nativeMarket
+                address(0) /// governanceTokenLP
+            );
+            TransparentUpgradeableProxy viewsProxy = new TransparentUpgradeableProxy(
+                    address(viewsImpl),
+                    address(viewsProxyAdmin),
+                    viewsInitData
+                );
+            addresses.addAddress("MOONWELL_VIEWS_PROXY", address(viewsProxy));
+        }
     }
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -843,6 +878,49 @@ contract mipe00 is HybridProposalV2, Configs {
                     assertEq(marketConfig.borrowGlobalIndex, 1e36);
                 }
             }
+        }
+
+        /// assert MoonwellViewsV3 proxy is deployed and wired correctly
+        {
+            MoonwellViewsV3 views = MoonwellViewsV3(
+                addresses.getAddress("MOONWELL_VIEWS_PROXY")
+            );
+            assertEq(
+                address(views.comptroller()),
+                addresses.getAddress("UNITROLLER")
+            );
+
+            bytes32 _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+            assertEq(
+                vm.load(
+                    addresses.getAddress("MOONWELL_VIEWS_PROXY"),
+                    _IMPLEMENTATION_SLOT
+                ),
+                bytes32(
+                    uint256(
+                        uint160(
+                            addresses.getAddress(
+                                "MOONWELL_VIEWS_IMPLEMENTATION"
+                            )
+                        )
+                    )
+                )
+            );
+
+            bytes32 _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+            assertEq(
+                vm.load(
+                    addresses.getAddress("MOONWELL_VIEWS_PROXY"),
+                    _ADMIN_SLOT
+                ),
+                bytes32(
+                    uint256(
+                        uint160(
+                            addresses.getAddress("MOONWELL_VIEWS_PROXY_ADMIN")
+                        )
+                    )
+                )
+            );
         }
     }
 }
