@@ -358,7 +358,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                     nextSequence++,
                     0,
                     payload,
-                    200
+                    1 // CONSISTENCY_LEVEL from WormholeBridgeBase
                 );
             }
         }
@@ -556,7 +556,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         uint64 sequence = 200;
         uint8 version = 1;
         uint32 nonce = 0;
-        uint8 consistencyLevel = 200;
+        uint8 consistencyLevel = 1; // CONSISTENCY_LEVEL from WormholeBridgeBase
 
         encodedVM = abi.encodePacked(
             version,
