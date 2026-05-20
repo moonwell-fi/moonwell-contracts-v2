@@ -17,7 +17,7 @@ import {MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGo
 import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {mipx56} from "@proposals/mips/mip-x56/mip-x56.sol";
+import {mipx58} from "@proposals/mips/mip-x58/mip-x58.sol";
 import {mipe00} from "@proposals/mips/mip-e00/mip-e00.sol";
 import {mipe01} from "@proposals/mips/mip-e01/mip-e01.sol";
 
@@ -77,7 +77,7 @@ contract MigrationHarness is Test {
         vm.makePersistent(address(addresses));
 
         // Phase A: run mip-x56 (governor migration)
-        _phaseA_runMipX56();
+        _phaseA_runMipX58();
 
         // Phase A.5: simulate PostDeployEthereumXWell.s.sol — the deployer-side
         // script that transfers xWELL + WormholeBridgeAdapter + ProxyAdmin
@@ -117,21 +117,21 @@ contract MigrationHarness is Test {
     /// MIGRATION PHASES
     /// --------------------------------------------------------------------
 
-    function _phaseA_runMipX56() internal {
-        mipx56 x56 = new mipx56();
-        vm.makePersistent(address(x56));
+    function _phaseA_runMipX58() internal {
+        // Governor migration proposal — was mip-x56 in earlier rounds,
+        // renamed to mip-x58 in the gov-refactor PR (mip-x56 is now the
+        // OEV wrapper redeploy).
+        mipx58 x58 = new mipx58();
+        vm.makePersistent(address(x58));
 
         // Match ProposalMap.runProposal's pattern: deployer = address(proposal).
-        // The proposal contract itself is the msg.sender for all afterDeploy
-        // calls, so any ownership/admin set in deploy() with this address as
-        // admin will match later afterDeploy() calls.
-        address deployer = address(x56);
+        address deployer = address(x58);
 
-        x56.deploy(addresses, deployer);
-        x56.afterDeploy(addresses, deployer);
-        x56.build(addresses);
-        x56.simulate(addresses, deployer);
-        x56.validate(addresses, deployer);
+        x58.deploy(addresses, deployer);
+        x58.afterDeploy(addresses, deployer);
+        x58.build(addresses);
+        x58.simulate(addresses, deployer);
+        x58.validate(addresses, deployer);
     }
 
     /// @notice Simulate PostDeployEthereumXWell.s.sol: deployer transfers

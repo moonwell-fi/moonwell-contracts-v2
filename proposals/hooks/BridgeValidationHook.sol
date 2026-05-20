@@ -10,9 +10,8 @@ import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 ///      the actual bridge cost returned by router.bridgeCost(destinationChain)
 abstract contract BridgeValidationHook {
     /// @notice Function selector for bridgeToRecipient(address,uint256,uint16)
-    /// @dev Hardcoded selector to disambiguate from the signed-quote overload
     bytes4 private constant BRIDGE_TO_RECIPIENT_SELECTOR =
-        bytes4(keccak256("bridgeToRecipient(address,uint256,uint16)"));
+        xWELLRouter.bridgeToRecipient.selector;
 
     /// @notice Minimum multiplier for bridge cost (4x)
     uint256 private constant MIN_BRIDGE_COST_MULTIPLIER = 4;

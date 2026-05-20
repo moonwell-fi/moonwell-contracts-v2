@@ -732,6 +732,12 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
         );
     }
 
+    function testGrantPauseGuardianZeroAddressReverts() public {
+        vm.prank(address(governor));
+        vm.expectRevert(IMultichainGovernorV2.ZeroAddress.selector);
+        governor.grantPauseGuardian(address(0));
+    }
+
     function testGrantPauseGuardianSucceeds() public {
         address oldPauseGuardian = governor.pauseGuardian();
         address newPauseGuardian = address(1);
@@ -798,6 +804,66 @@ contract MultichainGovernorV2UnitTest is MultichainBaseTestV2 {
             governor.proposalActive(proposalId),
             false,
             "proposal not cancelled"
+        );
+    }
+
+    function _proposeInit() internal returns (uint256 proposalId) {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory descriptionUri = "ipfs://QmInitProposalForExpiryTest";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        proposalId = governor.propose(
+            targets,
+            values,
+            calldatas,
+            descriptionUri,
+            false // finalize=false → proposal stays in Init
+        );
+    }
+
+    function testInitProposalEntersInitState() public {
+        uint256 proposalId = _proposeInit();
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Init),
+            "proposal not in Init state"
+        );
+    }
+
+    function testCancelInitBeforeExpiryByThirdPartyReverts() public {
+        uint256 proposalId = _proposeInit();
+
+        // warp to exactly the boundary; expiry check uses strict `>`, so still un-expired
+        vm.warp(block.timestamp + governor.INIT_EXPIRY());
+
+        address thirdParty = address(0xBEEF);
+        vm.prank(thirdParty);
+        vm.expectRevert(IMultichainGovernorV2.UnauthorizedCancel.selector);
+        governor.cancel(proposalId);
+    }
+
+    function testCancelInitAfterExpiryByThirdPartySucceeds() public {
+        uint256 proposalId = _proposeInit();
+
+        vm.warp(block.timestamp + governor.INIT_EXPIRY() + 1);
+
+        address thirdParty = address(0xBEEF);
+        vm.prank(thirdParty);
+        governor.cancel(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IMultichainGovernorV2.ProposalState.Canceled),
+            "stale Init proposal not cancelled"
         );
     }
 

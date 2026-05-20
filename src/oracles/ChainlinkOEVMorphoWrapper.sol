@@ -33,7 +33,10 @@ contract ChainlinkOEVMorphoWrapper is
     /// @notice The Chainlink price feed this proxy forwards to
     AggregatorV3Interface public priceFeed;
 
-    /// @notice The ChainlinkOracle contract
+    /// @notice The ChainlinkOracle contract.
+    /// @dev Vestigial after the loan-feed source moved to
+    ///      MorphoChainlinkOracleV2.QUOTE_FEED_1. Storage slot retained for
+    ///      layout compatibility with prior implementations.
     IChainlinkOracle public chainlinkOracle;
 
     /// @notice The Morpho Blue contract address
@@ -53,6 +56,21 @@ contract ChainlinkOEVMorphoWrapper is
 
     /// @notice The max decrements
     uint256 public maxDecrements;
+
+    /// @notice Whether a Morpho market id is approved for early price updates and liquidations
+    /// @dev Market id is `keccak256(abi.encode(MarketParams))` — the canonical Morpho Blue id
+    mapping(bytes32 => bool) public approvedMarkets;
+
+    /// @notice Manual reentrancy guard status. 0 = uninitialized / not entered,
+    ///         1 = not entered (post first call), 2 = entered.
+    /// @dev Implemented inline rather than via `ReentrancyGuardUpgradeable`
+    ///      to avoid shifting all existing storage slots — inheriting that
+    ///      parent would prepend 50 slots and break the upgradeable layout.
+    uint256 private _reentrancyStatus;
+
+    /// @notice Storage gap for future-proofing upgradeable storage layout.
+    /// @dev Shrunk 50 → 49 (approvedMarkets) → 48 (_reentrancyStatus).
+    uint256[48] private __gap;
 
     /// @notice Emitted when the fee recipient is changed
     event FeeRecipientChanged(address oldFeeRecipient, address newFeeRecipient);
@@ -75,6 +93,9 @@ contract ChainlinkOEVMorphoWrapper is
         uint256 newMaxDecrements
     );
 
+    /// @notice Emitted when a Morpho market is approved or unapproved for early liquidation
+    event MarketApproved(bytes32 indexed id, bool approved);
+
     /// @notice Emitted when the price is updated early and liquidated
     event PriceUpdatedEarlyAndLiquidated(
         address indexed borrower,
@@ -83,6 +104,18 @@ contract ChainlinkOEVMorphoWrapper is
         uint256 protocolFee,
         uint256 liquidatorFee
     );
+
+    /// @notice Inline reentrancy guard. See `_reentrancyStatus` for the
+    ///         rationale on avoiding `ReentrancyGuardUpgradeable` inheritance.
+    modifier nonReentrant() {
+        require(
+            _reentrancyStatus != 2,
+            "ChainlinkOEVMorphoWrapper: reentrant call"
+        );
+        _reentrancyStatus = 2;
+        _;
+        _reentrancyStatus = 1;
+    }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -328,6 +361,23 @@ contract ChainlinkOEVMorphoWrapper is
     }
 
     /**
+     * @notice Approve or unapprove a Morpho market for early price updates and liquidation
+     * @dev Only approved markets may advance `cachedRoundId` via `updatePriceEarlyAndLiquidate`.
+     *      This prevents an attacker from spinning up a permissionless dust market with this
+     *      wrapper as base feed and using it to unlock the fresh price for free.
+     * @param id The canonical Morpho Blue market id (`keccak256(abi.encode(MarketParams))`)
+     * @param approved Whether the market is approved
+     */
+    function setApprovedMarket(bytes32 id, bool approved) external onlyOwner {
+        require(
+            approvedMarkets[id] != approved,
+            "ChainlinkOEVMorphoWrapper: market approval unchanged"
+        );
+        approvedMarkets[id] = approved;
+        emit MarketApproved(id, approved);
+    }
+
+    /**
      * @notice Sets the max number of decrements to search previous rounds
      * @param _maxDecrements The new max decrements (must be > 0)
      */
@@ -371,7 +421,7 @@ contract ChainlinkOEVMorphoWrapper is
         address borrower,
         uint256 seizedAssets,
         uint256 maxRepayAmount
-    ) external {
+    ) external nonReentrant {
         // ensure the borrower is not the zero address
         require(
             borrower != address(0),
@@ -388,6 +438,16 @@ contract ChainlinkOEVMorphoWrapper is
         require(
             maxRepayAmount > 0,
             "ChainlinkOEVMorphoWrapper: max repay amount cannot be zero"
+        );
+
+        // gate: only approved markets may advance cachedRoundId. Without this an attacker
+        // could create a permissionless Morpho market + oracle pointing at this wrapper,
+        // self-liquidate a dust position, unlock the fresh price for shared consumers, and
+        // then liquidate real positions through Morpho Blue's native `liquidate()` at zero
+        // OEV cost. (C4 #195)
+        require(
+            approvedMarkets[keccak256(abi.encode(marketParams))],
+            "ChainlinkOEVMorphoWrapper: market not approved"
         );
 
         require(
@@ -429,7 +489,10 @@ contract ChainlinkOEVMorphoWrapper is
                 maxRepayAmount
             );
 
-            loanToken.approve(address(morphoBlue), maxRepayAmount);
+            IERC20(address(loanToken)).forceApprove(
+                address(morphoBlue),
+                maxRepayAmount
+            );
             (actualSeizedAssets, actualRepaidAssets) = morphoBlue.liquidate(
                 marketParams,
                 borrower,
@@ -437,19 +500,23 @@ contract ChainlinkOEVMorphoWrapper is
                 0,
                 ""
             );
+            // HAL-08: zero out the residual allowance so a future caller can't
+            // skip a fresh approval for the leftover (maxRepay - actualRepaid).
+            IERC20(address(loanToken)).forceApprove(address(morphoBlue), 0);
 
             require(
                 actualRepaidAssets <= maxRepayAmount,
                 "ChainlinkOEVMorphoWrapper: repaid amount exceeds maximum"
             );
 
-            // return any excess loan tokens to the liquidator
+            // HAL-03: return excess via safeTransfer so void-return tokens
+            // (e.g. USDT-class) on permissionless Morpho markets don't brick
+            // the refund path.
             uint256 excessLoanTokens = maxRepayAmount - actualRepaidAssets;
             if (excessLoanTokens > 0) {
-                bool success = loanToken.transfer(msg.sender, excessLoanTokens);
-                require(
-                    success,
-                    "ChainlinkOEVMorphoWrapper: excess loan tokens transfer failed"
+                IERC20(address(loanToken)).safeTransfer(
+                    msg.sender,
+                    excessLoanTokens
                 );
             }
         }
@@ -465,20 +532,16 @@ contract ChainlinkOEVMorphoWrapper is
                 marketParams
             );
 
-        // transfer the liquidator's payment (repayment + bonus) to the liquidator
-        bool liquidatorSuccess = EIP20Interface(marketParams.collateralToken)
-            .transfer(msg.sender, liquidatorFee);
-        require(
-            liquidatorSuccess,
-            "ChainlinkOEVMorphoWrapper: liquidator fee transfer failed"
+        // HAL-03/05: use safeTransfer for collateral distribution too, so
+        // void-return tokens (e.g. USDT-class) joining a permissionless
+        // Morpho market as collateral don't brick the fee-split path.
+        IERC20(marketParams.collateralToken).safeTransfer(
+            msg.sender,
+            liquidatorFee
         );
-
-        // transfer the remainder to the fee recipient
-        bool protocolSuccess = EIP20Interface(marketParams.collateralToken)
-            .transfer(feeRecipient, protocolFee);
-        require(
-            protocolSuccess,
-            "ChainlinkOEVMorphoWrapper: protocol fee transfer failed"
+        IERC20(marketParams.collateralToken).safeTransfer(
+            feeRecipient,
+            protocolFee
         );
 
         emit PriceUpdatedEarlyAndLiquidated(
@@ -490,26 +553,53 @@ contract ChainlinkOEVMorphoWrapper is
         );
     }
 
-    /// @notice Get the loan token price from ChainlinkOracle
-    /// @dev Gets the feed for the loan token and scales the price similar to ChainlinkOracle
-    /// @param loanToken The loan token interface
-    /// @return The price scaled to 1e18 and adjusted for token decimals
+    /// @notice Get the loan token price from the Morpho market's per-market
+    ///         oracle, sourced directly from QUOTE_FEED_1.
+    /// @dev By Morpho's convention, QUOTE_FEED_1 is the raw Chainlink
+    ///      aggregator for the quote (loan) asset of the market — it is not
+    ///      OEV-wrapped, so no dereferencing is needed. Reads it directly,
+    ///      runs full Chainlink staleness validation via _validateRoundData,
+    ///      and scales to 1e18 with loan-token decimal adjustment.
+    /// @param marketParams The Morpho market parameters (loanToken + oracle)
+    /// @return The price scaled to 1e18 and adjusted for loan token decimals
     function _getLoanTokenPrice(
-        EIP20Interface loanToken
-    ) private view returns (uint256) {
-        // Get the price feed for the loan token
-        AggregatorV3Interface loanFeed = chainlinkOracle.getFeed(
-            loanToken.symbol()
-        );
-
-        // Get the latest price from the feed
-        (, int256 loanAnswer, , , ) = loanFeed.latestRoundData();
+        MarketParams memory marketParams
+    ) internal view returns (uint256) {
+        AggregatorV3Interface loanFeed = IMorphoChainlinkOracleV2(
+            marketParams.oracle
+        ).QUOTE_FEED_1();
         require(
-            loanAnswer > 0,
-            "ChainlinkOEVMorphoWrapper: invalid loan token price"
+            address(loanFeed) != address(0),
+            "ChainlinkOEVMorphoWrapper: loan feed not set"
+        );
+        require(
+            address(
+                IMorphoChainlinkOracleV2(marketParams.oracle).QUOTE_FEED_2()
+            ) == address(0),
+            "ChainlinkOEVMorphoWrapper: chained quote feeds unsupported"
+        );
+        require(
+            address(
+                IMorphoChainlinkOracleV2(marketParams.oracle).BASE_FEED_2()
+            ) == address(0),
+            "ChainlinkOEVMorphoWrapper: chained base feeds unsupported"
         );
 
-        // Scale feed decimals to 18
+        int256 loanAnswer;
+        {
+            (
+                uint80 roundId,
+                int256 answer,
+                ,
+                uint256 updatedAt,
+                uint80 answeredInRound
+            ) = loanFeed.latestRoundData();
+
+            _validateRoundData(roundId, answer, updatedAt, answeredInRound);
+
+            loanAnswer = answer;
+        }
+
         uint8 feedDecimals = loanFeed.decimals();
         uint256 loanPricePerUnit = uint256(loanAnswer);
         if (feedDecimals < 18) {
@@ -518,8 +608,7 @@ contract ChainlinkOEVMorphoWrapper is
             loanPricePerUnit = loanPricePerUnit / (10 ** (feedDecimals - 18));
         }
 
-        // Adjust for token decimals (same logic as ChainlinkOracle)
-        uint8 tokenDecimals = loanToken.decimals();
+        uint8 tokenDecimals = EIP20Interface(marketParams.loanToken).decimals();
         if (tokenDecimals < 18) {
             return loanPricePerUnit * (10 ** (18 - tokenDecimals));
         } else if (tokenDecimals > 18) {
@@ -574,9 +663,7 @@ contract ChainlinkOEVMorphoWrapper is
         uint256 collateralReceived,
         MarketParams memory marketParams
     ) internal view returns (uint256 liquidatorFee, uint256 protocolFee) {
-        uint256 loanTokenPrice = _getLoanTokenPrice(
-            EIP20Interface(marketParams.loanToken)
-        );
+        uint256 loanTokenPrice = _getLoanTokenPrice(marketParams);
         uint256 collateralTokenPrice = _getCollateralTokenPrice(
             collateralAnswer,
             EIP20Interface(marketParams.collateralToken)

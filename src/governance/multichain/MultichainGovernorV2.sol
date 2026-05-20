@@ -23,6 +23,10 @@ contract MultichainGovernorV2 is
     using EnumerableSet for EnumerableSet.UintSet;
     using Address for address payable;
 
+    /// @notice grace period before a stale Init proposal can be cancelled by anyone;
+    /// prevents indefinite occupancy of _liveProposals slots by un-finalized proposals
+    uint256 public constant INIT_EXPIRY = 1 days;
+
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
     /// -------------------- STATE VARIABLES -------------------- ///
@@ -607,9 +611,11 @@ contract MultichainGovernorV2 is
         emit ProposalExecuted(proposalId);
     }
 
-    /// @dev cancels proposal if it has not been executed. cancellation is allowed in either of these flows:
+    /// @dev cancels proposal if it has not been executed. cancellation is allowed in any of these flows:
     ///  - proposer cancels
     ///  - permissionless cancel, user voting power currently drops below threshold
+    ///  - permissionless cancel of a stale Init proposal: state is Init and createdAt + INIT_EXPIRY has elapsed,
+    ///    preventing indefinite occupancy of _liveProposals by un-finalized proposals
     /// and
     /// proposal is in one of the following states:
     /// - active
@@ -625,14 +631,6 @@ contract MultichainGovernorV2 is
             revert InvalidProposalId();
         }
 
-        if (
-            msg.sender != proposals[proposalId].proposer &&
-            votingPower.getCurrentVotes(proposals[proposalId].proposer) >=
-            proposalThreshold
-        ) {
-            revert UnauthorizedCancel();
-        }
-
         ProposalState proposalState = state(proposalId);
 
         if (
@@ -640,6 +638,21 @@ contract MultichainGovernorV2 is
             proposalState != ProposalState.Init
         ) {
             revert InvalidProposalState(proposalState, ProposalState.Active);
+        }
+
+        /// in Init state, votingStartTime carries the init timestamp (set in _initializeProposal,
+        /// not yet overwritten by _finalizeProposal). After INIT_EXPIRY anyone can cancel.
+        bool isStaleInit = proposalState == ProposalState.Init &&
+            block.timestamp >
+            proposals[proposalId].votingStartTime + INIT_EXPIRY;
+
+        if (
+            msg.sender != proposals[proposalId].proposer &&
+            votingPower.getCurrentVotes(proposals[proposalId].proposer) >=
+            proposalThreshold &&
+            !isStaleInit
+        ) {
+            revert UnauthorizedCancel();
         }
 
         Proposal storage proposal = proposals[proposalId];
@@ -787,6 +800,9 @@ contract MultichainGovernorV2 is
     function grantPauseGuardian(
         address newPauseGuardian
     ) external onlyGovernor whenNotPaused {
+        if (newPauseGuardian == address(0)) {
+            revert ZeroAddress();
+        }
         _grantGuardian(newPauseGuardian);
     }
 
@@ -1166,6 +1182,9 @@ contract MultichainGovernorV2 is
         proposal.values = values;
         proposal.calldatas = calldatas;
         proposal.descriptionUri = descriptionUri;
+        /// stamp init time so INIT_EXPIRY-based stale cancel works for un-finalized proposals;
+        /// _finalizeProposal overwrites this with the actual voting start timestamp
+        proposal.votingStartTime = block.timestamp;
     }
 
     /// @notice Appends targets, values, and calldatas to an existing proposal

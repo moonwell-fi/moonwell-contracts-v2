@@ -1,0 +1,39 @@
+name: Ethereum
+
+on: [pull_request]
+
+env:
+  OP_RPC_URL: ${{secrets.OP_RPC_URL}}
+  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
+  FOUNDRY_PROFILE: ci
+  ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
+  PRIMARY_FORK_ID: 3
+
+jobs:
+  wormhole-bridge-adapter-tests:
+    name: WormholeBridgeAdapter Integration Test
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Setup MIPs Permissions
+        uses: ./.github/actions/setup-mips-permissions
+
+      - name: Run Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 20
+           max_attempts: 3
+           # No --fork-url: this test extends PostProposalCheck, which manages
+           # all four forks itself via createForksAndSelect. Passing --fork-url
+           # pre-creates fork 0 with the wrong chain id and breaks checkForks.
+           command: time forge test --match-contract 'WormholeBridgeAdapterIntegrationTest' -vvv --ffi
