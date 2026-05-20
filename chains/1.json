@@ -118,5 +118,30 @@
         "addr": "0x826D8ECd5E9EC46A63f1B0a2da7a8929a8590c29",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V6"
+    },
+    {
+        "addr": "0x78C504b6C0eA2AdbF6A58B208C9888f3692db169",
+        "isContract": true,
+        "name": "MULTICHAIN_GOVERNOR_V2_IMPL"
+    },
+    {
+        "addr": "0x1E336faa789426eE30dCcf975F582aC8Bd7fB563",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR_IMPL"
+    },
+    {
+        "addr": "0x908dF70C2EDEA165eE22fe63549af46944Ea4689",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR"
+    },
+    {
+        "addr": "0x8769B70ac7c93AF0e75de0D69877709B66d75838",
+        "isContract": true,
+        "name": "MULTICHAIN_GOVERNOR_V2_PROXY"
+    },
+    {
+        "addr": "0x8769B70ac7c93AF0e75de0D69877709B66d75838",
+        "isContract": true,
+        "name": "EMISSIONS_ADMIN"
     }
 ]
