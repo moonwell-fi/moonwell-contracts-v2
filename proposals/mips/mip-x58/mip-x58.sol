@@ -132,7 +132,9 @@ contract mipx58 is HybridProposal {
 
         // 1. Deploy MultichainGovernorV2 on Ethereum
         if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_IMPL")) {
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             address governorV2Impl = address(new MultichainGovernorV2());
 
@@ -142,7 +144,9 @@ contract mipx58 is HybridProposal {
         }
 
         if (!addresses.isAddressSet("PROXY_ADMIN")) {
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             ethereumProxyAdmin = address(new ProxyAdmin());
 
@@ -157,7 +161,9 @@ contract mipx58 is HybridProposal {
         if (!addresses.isAddressSet("VOTING_POWER_AGGREGATOR")) {
             address xWellAddress = addresses.getAddress("xWELL_PROXY");
 
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             address votingPowerImpl = address(new VotingPowerAggregator());
 
@@ -191,7 +197,10 @@ contract mipx58 is HybridProposal {
         // can use it as a trusted sender before the proxy itself is deployed.
         // The proxy is deployed and initialized atomically at the end of deploy().
         if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
-            (, address deployer, ) = vm.readCallers();
+            address deployer = addresses.getAddress(
+                "MOONWELL_DEPLOYER",
+                ETHEREUM_CHAIN_ID
+            );
             uint256 predictedNonce = vm.getNonce(deployer);
             address predictedGovernorProxy = vm.computeCreateAddress(
                 deployer,
@@ -221,7 +230,9 @@ contract mipx58 is HybridProposal {
 
         // Deploy MultichainGovernor v1.1 (with recoverETH) on Moonbeam
         if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V1_1_IMPL")) {
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
             // NOTE: it's not v2 - it's the version with recoverETH()
             address newMultichainGovernorImpl = address(
                 new MultichainGovernor()
@@ -259,7 +270,9 @@ contract mipx58 is HybridProposal {
                 addr: governorV2Proxy
             });
 
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             // Deploy TemporalGovernor directly (not upgradeable, no proxy needed)
             address temporalGovernor = address(
@@ -282,7 +295,9 @@ contract mipx58 is HybridProposal {
                 "TEMPORAL_GOVERNOR"
             );
 
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             address proposalView = address(
                 new ProposalView(ITemporalGovernor(temporalGovernor))
@@ -303,7 +318,9 @@ contract mipx58 is HybridProposal {
                 "MOONBEAM_PROXY_ADMIN"
             );
 
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             address votingPowerImpl = address(new VotingPowerAggregator());
 
@@ -364,7 +381,9 @@ contract mipx58 is HybridProposal {
                 temporalGovernor
             );
 
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             address voteCollectionImpl = address(
                 new MultichainVoteCollectionMoonbeam()
@@ -400,7 +419,9 @@ contract mipx58 is HybridProposal {
                 "TEMPORAL_GOVERNOR"
             );
 
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             address votingPowerImpl = address(new VotingPowerAggregator());
 
@@ -429,7 +450,9 @@ contract mipx58 is HybridProposal {
 
         // Deploy MultichainVoteCollectionV2 implementation on Base
         if (!addresses.isAddressSet("VOTE_COLLECTION_V2_IMPL", block.chainid)) {
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             address voteCollectionV2Impl = address(
                 new MultichainVoteCollectionV2()
@@ -456,7 +479,9 @@ contract mipx58 is HybridProposal {
                 "TEMPORAL_GOVERNOR"
             );
 
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             address votingPowerImpl = address(new VotingPowerAggregator());
 
@@ -485,7 +510,9 @@ contract mipx58 is HybridProposal {
 
         // Deploy MultichainVoteCollectionV2 implementation on Optimism
         if (!addresses.isAddressSet("VOTE_COLLECTION_V2_IMPL", block.chainid)) {
-            vm.startBroadcast();
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
 
             address voteCollectionV2Impl = address(
                 new MultichainVoteCollectionV2()
@@ -608,7 +635,10 @@ contract mipx58 is HybridProposal {
         // the CREATE matches the registered address. vm.setNonce is local-
         // only — in real broadcasts the on-chain nonce is unaffected and
         // already matches because no Ethereum txs happened in between.
-        (, address deployerNow, ) = vm.readCallers();
+        address deployerNow = addresses.getAddress(
+            "MOONWELL_DEPLOYER",
+            ETHEREUM_CHAIN_ID
+        );
         if (vm.getNonce(deployerNow) != _predictedDeployerNonce) {
             // vm.setNonce rejects decreases; setNonceUnsafe allows lowering.
             // We need to lower because the cross-fork broadcast counter has
@@ -616,7 +646,9 @@ contract mipx58 is HybridProposal {
             vm.setNonceUnsafe(deployerNow, _predictedDeployerNonce);
         }
 
-        vm.startBroadcast();
+        vm.startBroadcast(
+            addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+        );
         address actualProxy = address(
             new TransparentUpgradeableProxy(
                 governorV2Impl,
@@ -640,12 +672,16 @@ contract mipx58 is HybridProposal {
         );
 
         // Add stkWELL snapshot source and transfer aggregator ownership to the governor.
-        vm.startBroadcast();
+        vm.startBroadcast(
+            addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+        );
         _configureEthereumVotingPower(addresses, governorV2Proxy);
         vm.stopBroadcast();
 
         // Transfer Ethereum ProxyAdmin ownership to MultichainGovernorV2 (current owner is deployer)
-        vm.startBroadcast(addresses.getAddress("MOONWELL_DEPLOYER"));
+        vm.startBroadcast(
+            addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+        );
 
         ProxyAdmin(addresses.getAddress("PROXY_ADMIN")).transferOwnership(
             governorV2Proxy
