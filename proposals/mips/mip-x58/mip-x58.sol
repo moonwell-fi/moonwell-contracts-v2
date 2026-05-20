@@ -406,8 +406,6 @@ contract mipx58 is HybridProposal {
             );
         }
 
-        // 4. Transfer ownership of the ProxyAdmin contract to the newly deployed MultichainGovernorV2
-
         // ============ BASE DEPLOYMENTS ============
         vm.selectFork(BASE_FORK_ID);
 
@@ -716,57 +714,62 @@ contract mipx58 is HybridProposal {
     }
 
     /// @notice Build whitelisted calldatas for the break glass guardian.
-    /// @dev Three publishMessage calldatas — one per satellite chain — that
-    ///      together unwind mip-x58's cross-chain trust topology. Each calldata,
-    ///      when executed via `MultichainGovernorV2.executeBreakGlass(targets,
-    ///      calldatas)` with `targets[i] = WORMHOLE_CORE` (Ethereum), emits a
-    ///      Wormhole message to the corresponding TemporalGovernor whose
-    ///      payload calls:
-    ///        inner[0]: TemporalGovernor.unSetTrustedSenders([{ETHEREUM, MULTICHAIN_GOVERNOR_V2_PROXY}])
-    ///        inner[1]: TemporalGovernor.setTrustedSenders([{MOONBEAM, MULTICHAIN_GOVERNOR_PROXY}])
+    /// @dev Nine calldatas that together unwind mip-x58's cross-chain trust
+    ///      topology AND return Ethereum-side admin ownership to PAUSE_GUARDIAN.
+    ///      PAUSE_GUARDIAN executes them via
+    ///      `MultichainGovernorV2.executeBreakGlass(targets, calldatas)` with
+    ///      callers supplying the target alongside each calldata (the whitelist
+    ///      stores calldata bytes only, target-agnostic).
     ///
     ///      Index table:
-    ///        [0] publishMessage → Moonbeam TemporalGovernor  — restore old governor as trusted sender
-    ///        [1] publishMessage → Base     TemporalGovernor  — restore old governor as trusted sender
-    ///        [2] publishMessage → Optimism TemporalGovernor  — restore old governor as trusted sender
+    ///        [0] publishMessage → Moonbeam TG: unSetTrustedSenders([{ETHEREUM, V2_GOV}])
+    ///                                          + setTrustedSenders([{MOONBEAM, OLD_GOV}])
+    ///        [1] publishMessage → Base TG: same TG trusted-sender flip
+    ///        [2] publishMessage → Optimism TG: same TG trusted-sender flip
+    ///        [3] publishMessage → Base TG → VoteCollectionV2.addTargetAddress(MOONBEAM, OLD_GOV)
+    ///        [4] publishMessage → Optimism TG → VoteCollectionV2.addTargetAddress(MOONBEAM, OLD_GOV)
+    ///        [5] publishMessage → Base TG → VoteCollectionV2.removeTargetAddress(ETHEREUM)
+    ///        [6] publishMessage → Optimism TG → VoteCollectionV2.removeTargetAddress(ETHEREUM)
+    ///        [7] transferOwnership(PAUSE_GUARDIAN) — replayed against xWELL,
+    ///            WormholeBridgeAdapter, VotingPowerAggregator, PROXY_ADMIN
+    ///        [8] setEmissionsManager(PAUSE_GUARDIAN) — STK_GOVTOKEN_PROXY only
     ///
-    ///      After break-glass executes, the old Moonbeam MULTICHAIN_GOVERNOR_PROXY
-    ///      (v1.1) regains a Wormhole *execution* path into each TemporalGovernor
-    ///      and can reverse the ~75 Moonbeam ownership/admin transfers (and any
-    ///      Base/OP follow-up) through normal governance.
+    ///      Coverage:
+    ///        - Outbound execution path: [0..2] flip TG trusted senders so the
+    ///          old Moonbeam MULTICHAIN_GOVERNOR_PROXY regains Wormhole
+    ///          execution into each TemporalGovernor and can reverse the ~75
+    ///          Moonbeam ownership/admin transfers through normal governance.
+    ///        - Inbound vote collection: [3..6] symmetrically rewire Base/OP
+    ///          VoteCollectionV2 trusted senders — [3..4] restore the old
+    ///          Moonbeam governor; [5..6] evict the Ethereum V2 governor.
+    ///          After delivery, VoteCollectionV2.targetAddress[ETHEREUM] ==
+    ///          address(0) and targetAddress[MOONBEAM] == old Moonbeam governor,
+    ///          fully reversing the initializeV3 trusted-sender mutation.
+    ///          Moonbeam VoteCollection is a separate contract
+    ///          (`MultichainVoteCollectionMoonbeam`) and has no equivalent
+    ///          break-glass payload here.
+    ///        - Ethereum-side ownership: [7..8] return ownership / emissions
+    ///          manager of every V2-owned Ethereum contract back to
+    ///          PAUSE_GUARDIAN, fully unwinding mip-x58's Ethereum-side
+    ///          control transfer.
     ///
-    ///      Why publishMessage everywhere (no direct admin calls):
-    ///      MultichainGovernorV2 lives on Ethereum, so executeBreakGlass's
-    ///      `_functionCallWithValue(targets[i], calldatas[i], 0)` only reaches
-    ///      Ethereum-side contracts directly. Every satellite-chain mutation
-    ///      must therefore route through Wormhole → TemporalGovernor.
+    ///      Targets at execution time (PAUSE_GUARDIAN must supply):
+    ///        [0..6]: WORMHOLE_CORE (Ethereum) — publishMessage receiver
+    ///        [7]:    xWELL_PROXY, WORMHOLE_BRIDGE_ADAPTER_PROXY,
+    ///                VOTING_POWER_AGGREGATOR, PROXY_ADMIN (one entry per
+    ///                contract; same calldata bytes replayed against each)
+    ///        [8]:    STK_GOVTOKEN_PROXY
     ///
-    ///      KNOWN CAVEATS — intentionally not addressed by break-glass:
-    ///      (i) Cross-chain vote collection remains broken after the unwind.
-    ///          mip-x58's `MultichainVoteCollectionV2.initializeV3` (gated by
-    ///          `reinitializer(3)`, no external mutator on V2) hardcodes
-    ///          `targetAddress[ETHEREUM_WORMHOLE_CHAIN_ID] = ethereumGovernorV2`
-    ///          on Base/OP VoteCollectionV2. The trusted-sender flip restores
-    ///          OUTBOUND messaging (old governor → TemporalGovernor) but does
-    ///          NOT restore INBOUND vote collection — `emitVotes` still bridges
-    ///          to the V2 governor only, and the trusted-sender check on
-    ///          VoteCollectionV2 still rejects inbound proposal broadcasts from
-    ///          the old governor. The old governor therefore operates on
-    ///          Moonbeam-local voting power (xWELL + stkWELL + WELL + distributor
-    ///          on Moonbeam) until a separate emergency upgrade deploys a
-    ///          MultichainVoteCollectionV3 that exposes target-address mutators
-    ///          (e.g. `addTargetAddress`/`removeTargetAddress` as `onlyOwner`)
-    ///          and upgrades via `MRD_PROXY_ADMIN` through the restored Wormhole
-    ///          path. This is an acknowledged post-incident emergency-response
-    ///          path, not a break-glass-time action.
-    ///      (ii) Ethereum-side contracts owned by the V2 governor (xWELL,
-    ///           stkWELL, WormholeBridgeAdapter, VotingPowerAggregator,
-    ///           ProxyAdmin) are not unwound by break-glass. PAUSE_GUARDIAN
-    ///           multisig coordinates Ethereum-side recovery separately.
+    ///      Operational follow-up: targets [7] except PROXY_ADMIN are
+    ///      Ownable2StepUpgradeable, so PAUSE_GUARDIAN multisig must call
+    ///      `acceptOwnership()` on xWELL, WormholeBridgeAdapter, and
+    ///      VotingPowerAggregator after break-glass executes. PROXY_ADMIN is
+    ///      single-step Ownable. The stkWELL emissions-manager setter is also
+    ///      single-step.
     function _buildBreakGlassCalldatas(
         Addresses addresses
     ) internal returns (bytes[] memory) {
-        // Capture cross-chain addresses up front; helper switches forks per chain.
+        // Capture cross-chain addresses up front; helpers switch forks per chain.
         vm.selectFork(ETHEREUM_FORK_ID);
         address ethereumGovernorV2 = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_V2_PROXY"
@@ -777,8 +780,9 @@ contract mipx58 is HybridProposal {
             "MULTICHAIN_GOVERNOR_PROXY"
         );
 
-        bytes[] memory calldatas = new bytes[](3);
+        bytes[] memory calldatas = new bytes[](9);
 
+        // [0..2] TG trusted-sender flips per satellite chain
         calldatas[0] = _buildUnwindPublishMessageCalldata(
             addresses,
             MOONBEAM_FORK_ID,
@@ -798,6 +802,44 @@ contract mipx58 is HybridProposal {
             OPTIMISM_FORK_ID,
             ethereumGovernorV2,
             moonbeamMultichainGovernor
+        );
+
+        // [3..4] VoteCollectionV2 trusted-sender restore on Base/OP
+        calldatas[3] = _buildVoteCollectionRestorePublishMessageCalldata(
+            addresses,
+            BASE_FORK_ID,
+            moonbeamMultichainGovernor
+        );
+
+        calldatas[4] = _buildVoteCollectionRestorePublishMessageCalldata(
+            addresses,
+            OPTIMISM_FORK_ID,
+            moonbeamMultichainGovernor
+        );
+
+        // [5..6] VoteCollectionV2 trusted-sender eviction (V2 governor) on Base/OP
+        calldatas[5] = _buildVoteCollectionRemovePublishMessageCalldata(
+            addresses,
+            BASE_FORK_ID
+        );
+
+        calldatas[6] = _buildVoteCollectionRemovePublishMessageCalldata(
+            addresses,
+            OPTIMISM_FORK_ID
+        );
+
+        // [7..8] Direct Ethereum-side ownership return to PAUSE_GUARDIAN
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+
+        calldatas[7] = abi.encodeWithSignature(
+            "transferOwnership(address)",
+            pauseGuardian
+        );
+
+        calldatas[8] = abi.encodeWithSignature(
+            "setEmissionsManager(address)",
+            pauseGuardian
         );
 
         // Restore Ethereum fork since callers expect it
@@ -860,6 +902,96 @@ contract mipx58 is HybridProposal {
         bytes[] memory innerCalldatas = new bytes[](2);
         innerCalldatas[0] = unSetEthereumCalldata;
         innerCalldatas[1] = setMoonbeamCalldata;
+
+        return
+            abi.encodeWithSignature(
+                "publishMessage(uint32,bytes,uint8)",
+                1000,
+                abi.encode(
+                    temporalGovernor, // intendedRecipient
+                    innerTargets,
+                    innerValues,
+                    innerCalldatas
+                ),
+                1 // consistency: finalized
+            );
+    }
+
+    /// @notice Build a publishMessage calldata that restores the old Moonbeam
+    ///         MULTICHAIN_GOVERNOR_PROXY as a trusted sender on the satellite
+    ///         chain's MultichainVoteCollectionV2. Reaches VoteCollectionV2's
+    ///         new `addTargetAddress(uint16,address) onlyOwner` mutator via the
+    ///         TemporalGovernor (the owner of VoteCollectionV2 on Base/OP).
+    /// @param addresses The address registry
+    /// @param satelliteForkId Fork id of the satellite chain (Base or Optimism)
+    /// @param moonbeamMultichainGovernor Old Moonbeam MULTICHAIN_GOVERNOR_PROXY to add
+    function _buildVoteCollectionRestorePublishMessageCalldata(
+        Addresses addresses,
+        uint256 satelliteForkId,
+        address moonbeamMultichainGovernor
+    ) internal returns (bytes memory) {
+        vm.selectFork(satelliteForkId);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address voteCollection = addresses.getAddress("VOTE_COLLECTION_PROXY");
+
+        bytes memory addTargetCalldata = abi.encodeWithSignature(
+            "addTargetAddress(uint16,address)",
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            moonbeamMultichainGovernor
+        );
+
+        address[] memory innerTargets = new address[](1);
+        innerTargets[0] = voteCollection;
+
+        uint256[] memory innerValues = new uint256[](1);
+
+        bytes[] memory innerCalldatas = new bytes[](1);
+        innerCalldatas[0] = addTargetCalldata;
+
+        return
+            abi.encodeWithSignature(
+                "publishMessage(uint32,bytes,uint8)",
+                1000,
+                abi.encode(
+                    temporalGovernor, // intendedRecipient
+                    innerTargets,
+                    innerValues,
+                    innerCalldatas
+                ),
+                1 // consistency: finalized
+            );
+    }
+
+    /// @notice Build a publishMessage calldata that evicts the Ethereum V2
+    ///         MultichainGovernor as a trusted sender on the satellite chain's
+    ///         MultichainVoteCollectionV2. Reaches VoteCollectionV2's new
+    ///         `removeTargetAddress(uint16) onlyOwner` mutator via the
+    ///         TemporalGovernor. Symmetric counterpart to
+    ///         `_buildVoteCollectionRestorePublishMessageCalldata`: together
+    ///         they reverse the trusted-sender mutation that
+    ///         `initializeV3` baked in.
+    /// @param addresses The address registry
+    /// @param satelliteForkId Fork id of the satellite chain (Base or Optimism)
+    function _buildVoteCollectionRemovePublishMessageCalldata(
+        Addresses addresses,
+        uint256 satelliteForkId
+    ) internal returns (bytes memory) {
+        vm.selectFork(satelliteForkId);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address voteCollection = addresses.getAddress("VOTE_COLLECTION_PROXY");
+
+        bytes memory removeTargetCalldata = abi.encodeWithSignature(
+            "removeTargetAddress(uint16)",
+            ETHEREUM_WORMHOLE_CHAIN_ID
+        );
+
+        address[] memory innerTargets = new address[](1);
+        innerTargets[0] = voteCollection;
+
+        uint256[] memory innerValues = new uint256[](1);
+
+        bytes[] memory innerCalldatas = new bytes[](1);
+        innerCalldatas[0] = removeTargetCalldata;
 
         return
             abi.encodeWithSignature(
