@@ -1613,5 +1613,20 @@
         "addr": "0xb22694F7280DB8832B37240C4e40C240a4eecC8a",
         "isContract": true,
         "name": "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2"
+    },
+    {
+        "addr": "0x701551a3cd30A29cCC012e8f160fB2Cac9b0f5Af",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR_IMPL"
+    },
+    {
+        "addr": "0xb3a9E0DCf37658a48aa9f018C44f90378ddD4357",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR"
+    },
+    {
+        "addr": "0x9d465d56d235674693A158Af40c8d53ddE59B0CE",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_V2_IMPL"
     }
 ]

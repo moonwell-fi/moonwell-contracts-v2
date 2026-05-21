@@ -1295,6 +1295,124 @@ contract MultichainVoteCollectionV2UnitTest is MultichainBaseTestV2 {
         voteCollection.setGasLimit(gasLimit);
     }
 
+    // ADD / REMOVE TARGET ADDRESS (onlyOwner mutators added for mip-x58 break-glass)
+
+    function testAddTargetAddressOwnerSucceeds() public {
+        uint16 newChainId = 99;
+        address newSender = address(0xBEEF);
+
+        // owner == address(this) per testSetup; no prank needed
+        voteCollection.addTargetAddress(newChainId, newSender);
+
+        assertEq(
+            voteCollection.targetAddress(newChainId),
+            newSender,
+            "targetAddress not stored"
+        );
+        assertTrue(
+            voteCollection.isTrustedSender(newChainId, newSender),
+            "isTrustedSender false after add"
+        );
+        assertEq(
+            voteCollection.getAllTargetChainsLength(),
+            2,
+            "target chains length not incremented"
+        );
+    }
+
+    function testAddTargetAddressNonOwnerReverts() public {
+        vm.prank(address(0xCAFE));
+        vm.expectRevert("Ownable: caller is not the owner");
+        voteCollection.addTargetAddress(99, address(0xBEEF));
+    }
+
+    function testAddTargetAddressZeroAddrReverts() public {
+        vm.expectRevert(WormholeBridgeBase.InvalidAddress.selector);
+        voteCollection.addTargetAddress(99, address(0));
+    }
+
+    function testAddTargetAddressDuplicateChainReverts() public {
+        // MOONBEAM_WORMHOLE_CHAIN_ID is already configured in setup;
+        // re-adding the same chain id must revert
+        vm.expectRevert(WormholeBridgeBase.ChainAlreadyAdded.selector);
+        voteCollection.addTargetAddress(
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            address(0xBEEF)
+        );
+    }
+
+    function testRemoveTargetAddressOwnerSucceeds() public {
+        uint16 newChainId = 99;
+        address newSender = address(0xBEEF);
+
+        voteCollection.addTargetAddress(newChainId, newSender);
+        assertEq(
+            voteCollection.targetAddress(newChainId),
+            newSender,
+            "add precondition failed"
+        );
+
+        voteCollection.removeTargetAddress(newChainId);
+
+        assertEq(
+            voteCollection.targetAddress(newChainId),
+            address(0),
+            "targetAddress not cleared"
+        );
+        assertFalse(
+            voteCollection.isTrustedSender(newChainId, newSender),
+            "isTrustedSender true after remove"
+        );
+        assertEq(
+            voteCollection.getAllTargetChainsLength(),
+            1,
+            "target chains length not decremented"
+        );
+    }
+
+    function testRemoveTargetAddressNonOwnerReverts() public {
+        vm.prank(address(0xCAFE));
+        vm.expectRevert("Ownable: caller is not the owner");
+        voteCollection.removeTargetAddress(MOONBEAM_WORMHOLE_CHAIN_ID);
+    }
+
+    function testRemoveTargetAddressNotAddedReverts() public {
+        vm.expectRevert(WormholeBridgeBase.ChainNotAdded.selector);
+        voteCollection.removeTargetAddress(99);
+    }
+
+    function testRemoveTargetAddressPreInitializedChainSucceeds() public {
+        // MOONBEAM_WORMHOLE_CHAIN_ID is mapped to address(governor) during
+        // initialize. Mirrors the mip-x58 break-glass scenario where
+        // removeTargetAddress(ETHEREUM_WORMHOLE_CHAIN_ID) on Base/OP VC2 evicts
+        // the V2 governor that initializeV3 baked in.
+        assertEq(
+            voteCollection.targetAddress(MOONBEAM_WORMHOLE_CHAIN_ID),
+            address(governor),
+            "precondition: governor must be the initialized trusted sender"
+        );
+
+        voteCollection.removeTargetAddress(MOONBEAM_WORMHOLE_CHAIN_ID);
+
+        assertEq(
+            voteCollection.targetAddress(MOONBEAM_WORMHOLE_CHAIN_ID),
+            address(0),
+            "targetAddress not cleared for pre-initialized chain"
+        );
+        assertFalse(
+            voteCollection.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                address(governor)
+            ),
+            "isTrustedSender true after removing pre-initialized chain"
+        );
+        assertEq(
+            voteCollection.getAllTargetChainsLength(),
+            0,
+            "target chains length should be 0 after removing sole chain"
+        );
+    }
+
     // VIEW FUNCTIONS
 
     function testGetChainAddresVotes() public {

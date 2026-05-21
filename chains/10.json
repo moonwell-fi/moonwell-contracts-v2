@@ -883,5 +883,20 @@
         "addr": "0xc7867F143A6550e32df4D880a2c1Cee3ab8AdB2c",
         "isContract": true,
         "name": "CHAINLINK_VELO_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xbaC3Dd6d0333ea14F957B7B0796bCD59e8771501",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR_IMPL"
+    },
+    {
+        "addr": "0xF2af8f06409628c6d2F8852B696A9dEebe75C2A1",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR"
+    },
+    {
+        "addr": "0x826D8ECd5E9EC46A63f1B0a2da7a8929a8590c29",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_V2_IMPL"
     }
 ]

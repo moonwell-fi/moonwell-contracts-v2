@@ -415,6 +415,35 @@ contract MultichainVoteCollectionV2 is
         revert("deprecated");
     }
 
+    /// @notice add a trusted sender for a given Wormhole chain id
+    /// @dev Owner-gated mutator that delegates to WormholeBridgeBase
+    ///      ._addTargetAddress. Exists so the owner (the satellite
+    ///      TemporalGovernor on Base/OP) can re-introduce a trusted sender
+    ///      whose target slot was zeroed — e.g. to restore the old Moonbeam
+    ///      MultichainGovernor as a trusted sender via the mip-x58
+    ///      break-glass path. Reverts if the chain id already has a target
+    ///      (ChainAlreadyAdded) or if addr is zero (InvalidAddress).
+    /// @param chainId Wormhole chain id of the trusted sender
+    /// @param addr Address of the trusted sender on that chain
+    function addTargetAddress(uint16 chainId, address addr) external onlyOwner {
+        _addTargetAddress(chainId, addr);
+    }
+
+    /// @notice remove the trusted sender for a given Wormhole chain id
+    /// @dev Owner-gated mutator that delegates to WormholeBridgeBase
+    ///      ._removeTargetAddresses. Reverts with ChainNotAdded if the
+    ///      chain id has no current target.
+    /// @param chainId Wormhole chain id whose trusted sender slot to clear
+    function removeTargetAddress(uint16 chainId) external onlyOwner {
+        WormholeTrustedSender.TrustedSender[]
+            memory cfg = new WormholeTrustedSender.TrustedSender[](1);
+        cfg[0] = WormholeTrustedSender.TrustedSender({
+            chainId: chainId,
+            addr: address(0)
+        });
+        _removeTargetAddresses(cfg);
+    }
+
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
     //// ------------- WORMHOLE OVERRIDES ------------- ////
