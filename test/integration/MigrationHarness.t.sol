@@ -12,6 +12,7 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {VotingPowerAggregator} from "@protocol/governance/multichain/VotingPowerAggregator.sol";
 import {MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
 
@@ -24,7 +25,9 @@ import {mipe01} from "@proposals/mips/mip-e01/mip-e01.sol";
 
 import {EthMarketUpdateSmoke} from "@test/integration/proposals/EthMarketUpdateSmoke.sol";
 import {BaseMarketUpdateSmoke} from "@test/integration/proposals/BaseMarketUpdateSmoke.sol";
+import {MoonbeamMarketUpdateSmoke} from "@test/integration/proposals/MoonbeamMarketUpdateSmoke.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 
 import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_FORK_ID, ETHEREUM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 
@@ -640,6 +643,47 @@ contract MigrationHarness is Test {
     }
 
     /// --------------------------------------------------------------------
+    /// PHASE F2 — END-TO-END MOONBEAM SMOKE TEST
+    /// --------------------------------------------------------------------
+
+    /// @notice Proves the new Ethereum MultichainGovernorV2 can hop through
+    ///         Wormhole to the Moonbeam TemporalGovernor and execute an
+    ///         action that mutates a live Moonbeam Comptroller parameter.
+    ///         Mirrors Phase F (Base) but targets Moonbeam. The full path:
+    ///         governorV2.execute → publishMessage → fake VAA →
+    ///         Moonbeam TG.queueProposal → vm.warp past TG's proposalDelay
+    ///         (1 day) → Moonbeam TG.executeProposal →
+    ///         Comptroller._setCloseFactor lands on the live Moonbeam
+    ///         Unitroller. Unitroller admin is TG by this point
+    ///         (mip-e01 in Phase D accepted admin from x58's
+    ///         _setPendingAdmin), so the change goes through.
+    function testPhaseF2_smokeProposalChangesMoonbeamComptroller() public {
+        vm.selectFork(MOONBEAM_FORK_ID);
+        Comptroller moonbeamComptroller = Comptroller(
+            addresses.getAddress("UNITROLLER")
+        );
+        uint256 initialCloseFactor = moonbeamComptroller.closeFactorMantissa();
+
+        MoonbeamMarketUpdateSmoke smoke = new MoonbeamMarketUpdateSmoke();
+        vm.makePersistent(address(smoke));
+
+        smoke.build(addresses);
+        smoke.simulate(addresses, address(0));
+        smoke.validate(addresses, address(0));
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+        assertEq(
+            moonbeamComptroller.closeFactorMantissa(),
+            smoke.NEW_CLOSE_FACTOR(),
+            "Moonbeam closeFactor change did not land"
+        );
+        assertTrue(
+            moonbeamComptroller.closeFactorMantissa() != initialCloseFactor,
+            "Moonbeam closeFactor unchanged"
+        );
+    }
+
+    /// --------------------------------------------------------------------
     /// PHASE G — BREAK-GLASS EXECUTION PATH
     /// --------------------------------------------------------------------
     /// Proves the migration is reversible: the breakGlassGuardian set during
@@ -840,5 +884,163 @@ contract MigrationHarness is Test {
             governorV2.breakGlassGuardian() != address(0),
             "guardian role unexpectedly revoked by reverted call"
         );
+    }
+
+    /// @notice End-to-end downstream effect of break-glass: capture the
+    ///         LogMessagePublished from the Eth Wormhole core, deliver the
+    ///         resulting VAA to the Moonbeam TemporalGovernor, and verify
+    ///         the trusted-sender state actually flips:
+    ///           - Eth governor REMOVED as trusted sender
+    ///           - Old Moonbeam MultichainGovernor RESTORED as trusted sender
+    ///
+    ///         Pre-condition (post-mip-x58): Moonbeam TG trusts only the
+    ///         new Eth governor (ETHEREUM_WORMHOLE_CHAIN_ID → governorV2).
+    ///         Post break-glass + downstream delivery: trust is flipped to
+    ///         the old Moonbeam governor (MOONBEAM_WORMHOLE_CHAIN_ID →
+    ///         oldMoonbeamGovernor).
+    function testPhaseG_breakGlassDeliversUnwindToMoonbeamTG() public {
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address bgGuardian = governorV2.breakGlassGuardian();
+        address ethWormholeCore = addresses.getAddress(
+            "WORMHOLE_CORE",
+            ETHEREUM_CHAIN_ID
+        );
+
+        // Pre-state on Moonbeam TG: trusts new Eth governor; does NOT trust
+        // old Moonbeam governor.
+        vm.selectFork(MOONBEAM_FORK_ID);
+        TemporalGovernor moonbeamTG = TemporalGovernor(
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
+        );
+        address oldMoonbeamGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
+        assertTrue(
+            moonbeamTG.isTrustedSender(
+                ETHEREUM_WORMHOLE_CHAIN_ID,
+                address(governorV2)
+            ),
+            "pre: Moonbeam TG should trust new Eth governor"
+        );
+        assertFalse(
+            moonbeamTG.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "pre: Moonbeam TG should NOT trust old Moonbeam governor"
+        );
+
+        // Build the unwind calldata and execute break-glass on Ethereum.
+        // Record logs so we can capture the LogMessagePublished payload.
+        bytes memory unwindCalldata = _buildUnwindCalldataForFork(
+            MOONBEAM_FORK_ID
+        );
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address[] memory targets = new address[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        targets[0] = ethWormholeCore;
+        calldatas[0] = unwindCalldata;
+
+        vm.recordLogs();
+        vm.prank(bgGuardian);
+        governorV2.executeBreakGlass(targets, calldatas);
+
+        // Pull the published-message payload out of the Eth Wormhole core's
+        // emitted LogMessagePublished event.
+        bytes memory innerPayload = _extractFirstPublishedPayload(
+            ethWormholeCore
+        );
+        require(innerPayload.length > 0, "no LogMessagePublished captured");
+
+        // Deliver to Moonbeam TG: etch the Implementation mock at Moonbeam
+        // WORMHOLE_CORE (bypasses guardian signature check), generate a fake
+        // VAA with emitter = Eth governor on ETHEREUM_WORMHOLE_CHAIN_ID,
+        // queue + warp + execute.
+        vm.selectFork(MOONBEAM_FORK_ID);
+        address moonbeamWormholeCore = addresses.getAddress("WORMHOLE_CORE");
+        Implementation core = new Implementation();
+        vm.etch(moonbeamWormholeCore, address(core).code);
+
+        bytes memory vaa = _generateVAA(
+            uint32(block.timestamp),
+            ETHEREUM_WORMHOLE_CHAIN_ID,
+            bytes32(uint256(uint160(address(governorV2)))),
+            innerPayload
+        );
+
+        moonbeamTG.queueProposal(vaa);
+        vm.warp(block.timestamp + moonbeamTG.proposalDelay() + 1);
+        moonbeamTG.executeProposal(vaa);
+
+        // Post-state on Moonbeam TG: trust is fully flipped.
+        assertFalse(
+            moonbeamTG.isTrustedSender(
+                ETHEREUM_WORMHOLE_CHAIN_ID,
+                address(governorV2)
+            ),
+            "post: Moonbeam TG should NO LONGER trust new Eth governor"
+        );
+        assertTrue(
+            moonbeamTG.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "post: Moonbeam TG should now trust old Moonbeam governor"
+        );
+    }
+
+    /// @notice Extracts the `payload` field from the first
+    ///         LogMessagePublished event emitted by `emitter` in the
+    ///         current recorded-logs window.
+    ///         Event signature:
+    ///           LogMessagePublished(address indexed sender, uint64 sequence,
+    ///                               uint32 nonce, bytes payload, uint8 consistencyLevel)
+    ///         (sender is indexed; sequence/nonce/payload/consistencyLevel
+    ///         are ABI-encoded together into data.)
+    function _extractFirstPublishedPayload(
+        address emitter
+    ) internal returns (bytes memory) {
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 sig = keccak256(
+            "LogMessagePublished(address,uint64,uint32,bytes,uint8)"
+        );
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].emitter != emitter) continue;
+            if (logs[i].topics.length == 0) continue;
+            if (logs[i].topics[0] != sig) continue;
+            (, , bytes memory payload, ) = abi.decode(
+                logs[i].data,
+                (uint64, uint32, bytes, uint8)
+            );
+            return payload;
+        }
+        return new bytes(0);
+    }
+
+    /// @notice Builds an unsigned Wormhole VAA in the same packed layout
+    ///         HybridProposalV2.generateVAA uses. The Implementation mock
+    ///         etched at WORMHOLE_CORE bypasses guardian signature checks,
+    ///         so an unsigned VAA is enough for in-test delivery.
+    function _generateVAA(
+        uint32 timestamp,
+        uint16 emitterChainId,
+        bytes32 emitterAddress,
+        bytes memory payload
+    ) internal pure returns (bytes memory) {
+        uint64 sequence = 200;
+        uint8 version = 1;
+        uint32 nonceField = 0;
+        uint8 consistencyLevel = 200;
+        return
+            abi.encodePacked(
+                version,
+                timestamp,
+                nonceField,
+                emitterChainId,
+                emitterAddress,
+                sequence,
+                consistencyLevel,
+                payload
+            );
     }
 }
