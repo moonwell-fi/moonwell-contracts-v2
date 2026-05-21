@@ -638,6 +638,13 @@ contract StakedWellIntegrationTest is PostProposalCheck {
             "Ethereum: Staker should have xWELL"
         );
 
+        // Capture stkWELL contract's xWELL balance BEFORE staking — the
+        // Ethereum mainnet fork can carry a real prior balance from on-chain
+        // stakers, so we assert the delta rather than absolute equality.
+        uint256 stkWellPreBalance = IERC20(xWellProxy).balanceOf(
+            address(stkWellEthereum)
+        );
+
         // Approve and stake
         vm.startPrank(staker);
         IERC20(xWellProxy).approve(address(stkWellEthereum), stakeAmount);
@@ -660,13 +667,13 @@ contract StakedWellIntegrationTest is PostProposalCheck {
             "Ethereum: xWELL should be transferred to stkWELL contract"
         );
 
-        // Verify stkWELL contract holds xWELL
+        // Verify stkWELL contract balance increased by exactly stakeAmount
         uint256 stkWellContractBalance = IERC20(xWellProxy).balanceOf(
             address(stkWellEthereum)
         );
         assertEq(
             stkWellContractBalance,
-            stakeAmount,
+            stkWellPreBalance + stakeAmount,
             "Ethereum: stkWELL contract should hold staked xWELL"
         );
     }
