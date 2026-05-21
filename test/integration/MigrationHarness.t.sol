@@ -13,6 +13,8 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {VotingPowerAggregator} from "@protocol/governance/multichain/VotingPowerAggregator.sol";
 import {MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
 
@@ -1042,5 +1044,448 @@ contract MigrationHarness is Test {
                 consistencyLevel,
                 payload
             );
+    }
+
+    /// @notice End-to-end downstream effect of break-glass for the FULL
+    ///         Moonbeam → Base satellite path. Executes break-glass with
+    ///         the three calldatas x58 whitelists for the Base side
+    ///         (Moonbeam TG unwind, Base TG unwind, Base VC restore),
+    ///         delivers each VAA to its target, and then drives a synthetic
+    ///         old-governor → Base TG cross-chain action to prove the
+    ///         restored trust graph actually carries a payload end-to-end.
+    ///
+    ///         Validates the user-facing recovery guarantee: after
+    ///         break-glass, the old Moonbeam MultichainGovernor (v1.1) can
+    ///         publish a Wormhole message that the Base TemporalGovernor
+    ///         queues, executes, and lands a state change on a live Base
+    ///         mToken.
+    function testPhaseG_breakGlassRestoresMoonbeamToBaseGovernance() public {
+        _assertPreBreakGlassTrustState();
+
+        bytes[] memory payloads = _executeBreakGlassWithMoonbeamAndBaseUnwind();
+        require(payloads.length == 3, "expected 3 LogMessagePublished events");
+
+        // Delivery order matters: payload[1] (Base TG unwind) removes Eth
+        // gov as a trusted sender on Base TG. payload[2] (Base VC restore)
+        // is itself emitter'd by Eth gov, so it MUST be delivered before
+        // payload[1] — otherwise queueProposal reverts on the trusted-
+        // sender check.
+        _deliverVCRestoreToBaseTG(payloads[2]);
+        _deliverUnwindToBaseTG(payloads[1]);
+        _deliverUnwindToMoonbeamTG(payloads[0]);
+
+        _assertPostBreakGlassTrustState();
+
+        _smokeOldGovernorPublishesBaseAction();
+    }
+
+    /// @notice Snapshot pre-break-glass trust state on Moonbeam TG, Base TG,
+    ///         and Base VoteCollection. After mip-x58, all three trust only
+    ///         the new Ethereum governor; Base VC has no Moonbeam target.
+    function _assertPreBreakGlassTrustState() internal {
+        address ethGovV2 = address(governorV2);
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+        TemporalGovernor moonbeamTG = TemporalGovernor(
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
+        );
+        assertTrue(
+            moonbeamTG.isTrustedSender(ETHEREUM_WORMHOLE_CHAIN_ID, ethGovV2),
+            "pre: Moonbeam TG should trust new Eth governor"
+        );
+
+        vm.selectFork(BASE_FORK_ID);
+        TemporalGovernor baseTG = TemporalGovernor(
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
+        );
+        address baseVoteCollection = addresses.getAddress(
+            "VOTE_COLLECTION_PROXY"
+        );
+        assertTrue(
+            baseTG.isTrustedSender(ETHEREUM_WORMHOLE_CHAIN_ID, ethGovV2),
+            "pre: Base TG should trust new Eth governor"
+        );
+        assertEq(
+            WormholeBridgeBase(baseVoteCollection).targetAddress(
+                ETHEREUM_WORMHOLE_CHAIN_ID
+            ),
+            ethGovV2,
+            "pre: Base VC should target new Eth governor"
+        );
+        assertEq(
+            WormholeBridgeBase(baseVoteCollection).targetAddress(
+                MOONBEAM_WORMHOLE_CHAIN_ID
+            ),
+            address(0),
+            "pre: Base VC should have no Moonbeam target"
+        );
+    }
+
+    /// @notice Assert the post-break-glass trust state on Moonbeam TG, Base
+    ///         TG, and Base VoteCollection.
+    function _assertPostBreakGlassTrustState() internal {
+        address ethGovV2 = address(governorV2);
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+        TemporalGovernor moonbeamTG = TemporalGovernor(
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
+        );
+        address oldMoonbeamGovernor = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
+        assertFalse(
+            moonbeamTG.isTrustedSender(ETHEREUM_WORMHOLE_CHAIN_ID, ethGovV2),
+            "post: Moonbeam TG should NO LONGER trust Eth gov"
+        );
+        assertTrue(
+            moonbeamTG.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "post: Moonbeam TG should trust old Moonbeam gov"
+        );
+
+        vm.selectFork(BASE_FORK_ID);
+        TemporalGovernor baseTG = TemporalGovernor(
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
+        );
+        address baseVoteCollection = addresses.getAddress(
+            "VOTE_COLLECTION_PROXY"
+        );
+        assertFalse(
+            baseTG.isTrustedSender(ETHEREUM_WORMHOLE_CHAIN_ID, ethGovV2),
+            "post: Base TG should NO LONGER trust Eth gov"
+        );
+        assertTrue(
+            baseTG.isTrustedSender(
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                oldMoonbeamGovernor
+            ),
+            "post: Base TG should trust old Moonbeam gov"
+        );
+        assertEq(
+            WormholeBridgeBase(baseVoteCollection).targetAddress(
+                MOONBEAM_WORMHOLE_CHAIN_ID
+            ),
+            oldMoonbeamGovernor,
+            "post: Base VC should target old Moonbeam gov"
+        );
+    }
+
+    /// @notice Build calldatas [0] (Moonbeam TG unwind), [1] (Base TG
+    ///         unwind), [3] (Base VC restore) from the x58 whitelist,
+    ///         assert all three are whitelisted, then `executeBreakGlass`
+    ///         them in a single guardian call. Returns the three captured
+    ///         LogMessagePublished payloads in the order Moonbeam TG /
+    ///         Base TG / Base VC.
+    function _executeBreakGlassWithMoonbeamAndBaseUnwind()
+        internal
+        returns (bytes[] memory)
+    {
+        bytes memory moonbeamTGCalldata = _buildUnwindCalldataForFork(
+            MOONBEAM_FORK_ID
+        );
+        bytes memory baseTGCalldata = _buildUnwindCalldataForFork(BASE_FORK_ID);
+        bytes
+            memory baseVCRestoreCalldata = _buildVoteCollectionRestoreCalldataForFork(
+                BASE_FORK_ID
+            );
+
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address ethWormholeCore = addresses.getAddress(
+            "WORMHOLE_CORE",
+            ETHEREUM_CHAIN_ID
+        );
+        assertTrue(
+            governorV2.isWhitelistedCalldata(moonbeamTGCalldata),
+            "moonbeam TG calldata not whitelisted"
+        );
+        assertTrue(
+            governorV2.isWhitelistedCalldata(baseTGCalldata),
+            "base TG calldata not whitelisted"
+        );
+        assertTrue(
+            governorV2.isWhitelistedCalldata(baseVCRestoreCalldata),
+            "base VC restore calldata not whitelisted"
+        );
+
+        address[] memory bgTargets = new address[](3);
+        bytes[] memory bgCalldatas = new bytes[](3);
+        bgTargets[0] = ethWormholeCore;
+        bgTargets[1] = ethWormholeCore;
+        bgTargets[2] = ethWormholeCore;
+        bgCalldatas[0] = moonbeamTGCalldata;
+        bgCalldatas[1] = baseTGCalldata;
+        bgCalldatas[2] = baseVCRestoreCalldata;
+
+        vm.recordLogs();
+        vm.prank(governorV2.breakGlassGuardian());
+        governorV2.executeBreakGlass(bgTargets, bgCalldatas);
+
+        return
+            _extractAllPublishedPayloads(vm.getRecordedLogs(), ethWormholeCore);
+    }
+
+    /// @notice Etch Implementation mock on Moonbeam WORMHOLE_CORE and
+    ///         deliver the Moonbeam-TG unwind payload — flips Moonbeam TG
+    ///         trusted sender from Eth governor to old Moonbeam governor.
+    function _deliverUnwindToMoonbeamTG(bytes memory payload) internal {
+        vm.selectFork(MOONBEAM_FORK_ID);
+        Implementation core = new Implementation();
+        vm.etch(addresses.getAddress("WORMHOLE_CORE"), address(core).code);
+
+        TemporalGovernor tg = TemporalGovernor(
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
+        );
+        bytes memory vaa = _generateVAA(
+            uint32(block.timestamp),
+            ETHEREUM_WORMHOLE_CHAIN_ID,
+            bytes32(uint256(uint160(address(governorV2)))),
+            payload
+        );
+        tg.queueProposal(vaa);
+        vm.warp(block.timestamp + tg.proposalDelay() + 1);
+        tg.executeProposal(vaa);
+    }
+
+    /// @notice Etch Implementation mock on Base WORMHOLE_CORE and deliver
+    ///         the Base-TG unwind payload — flips Base TG trusted sender
+    ///         from Eth governor to old Moonbeam governor.
+    function _deliverUnwindToBaseTG(bytes memory payload) internal {
+        vm.selectFork(BASE_FORK_ID);
+        Implementation core = new Implementation();
+        vm.etch(addresses.getAddress("WORMHOLE_CORE"), address(core).code);
+
+        TemporalGovernor tg = TemporalGovernor(
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
+        );
+        bytes memory vaa = _generateVAA(
+            uint32(block.timestamp),
+            ETHEREUM_WORMHOLE_CHAIN_ID,
+            bytes32(uint256(uint160(address(governorV2)))),
+            payload
+        );
+        tg.queueProposal(vaa);
+        vm.warp(block.timestamp + tg.proposalDelay() + 1);
+        tg.executeProposal(vaa);
+    }
+
+    /// @notice Deliver the Base-VC restore payload via Base TG — TG decodes
+    ///         the inner call and invokes
+    ///         baseVoteCollection.addTargetAddress(MOONBEAM, oldGovernor).
+    ///         Etches the Implementation mock at Base WORMHOLE_CORE so
+    ///         signature checks are bypassed. Must run BEFORE the Base TG
+    ///         unwind (the unwind removes Eth gov as trusted sender on
+    ///         Base TG; this VAA is emitter'd by Eth gov so it would fail
+    ///         the trust check post-unwind).
+    function _deliverVCRestoreToBaseTG(bytes memory payload) internal {
+        vm.selectFork(BASE_FORK_ID);
+        Implementation core = new Implementation();
+        vm.etch(addresses.getAddress("WORMHOLE_CORE"), address(core).code);
+
+        TemporalGovernor tg = TemporalGovernor(
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
+        );
+        bytes memory vaa = _generateVAA(
+            uint32(block.timestamp),
+            ETHEREUM_WORMHOLE_CHAIN_ID,
+            bytes32(uint256(uint160(address(governorV2)))),
+            payload
+        );
+        tg.queueProposal(vaa);
+        vm.warp(block.timestamp + tg.proposalDelay() + 1);
+        tg.executeProposal(vaa);
+    }
+
+    /// @notice Smoke test that the old Moonbeam MultichainGovernor can still
+    ///         drive a Base satellite action after break-glass. Pranks as
+    ///         the old governor and publishes a Wormhole message whose
+    ///         payload targets Base TG → Base USDC._setReserveFactor; then
+    ///         delivers the generated VAA to Base TG and asserts the Base
+    ///         USDC reserve factor changed.
+    function _smokeOldGovernorPublishesBaseAction() internal {
+        vm.selectFork(BASE_FORK_ID);
+        MToken baseUSDC = MToken(addresses.getAddress("MOONWELL_USDC"));
+        uint256 initialRF = baseUSDC.reserveFactorMantissa();
+        uint256 newRF = 0.18e18;
+        require(newRF != initialRF, "test value collides with initial state");
+
+        bytes memory smokePayload = _buildOldGovernorBasePayload(
+            address(baseUSDC),
+            newRF
+        );
+
+        bytes memory smokePayloadCaptured = _publishViaOldGovernor(
+            smokePayload
+        );
+
+        vm.selectFork(BASE_FORK_ID);
+        TemporalGovernor baseTG = TemporalGovernor(
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
+        );
+        bytes memory vaa = _generateVAA(
+            uint32(block.timestamp),
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            bytes32(
+                uint256(
+                    uint160(
+                        addresses.getAddress(
+                            "MULTICHAIN_GOVERNOR_PROXY",
+                            MOONBEAM_CHAIN_ID
+                        )
+                    )
+                )
+            ),
+            smokePayloadCaptured
+        );
+        baseTG.queueProposal(vaa);
+        vm.warp(block.timestamp + baseTG.proposalDelay() + 1);
+        baseTG.executeProposal(vaa);
+
+        assertEq(
+            baseUSDC.reserveFactorMantissa(),
+            newRF,
+            "Base USDC reserve factor did not land via old Moonbeam governor"
+        );
+        assertTrue(
+            baseUSDC.reserveFactorMantissa() != initialRF,
+            "Base USDC reserve factor unchanged from initial"
+        );
+    }
+
+    /// @notice Build the payload an old-governor cross-chain proposal would
+    ///         pass to Wormhole publishMessage when targeting Base TG.
+    ///         Encodes (baseTG, [target], [0], [calldata]).
+    function _buildOldGovernorBasePayload(
+        address target,
+        uint256 newReserveFactor
+    ) internal returns (bytes memory) {
+        vm.selectFork(BASE_FORK_ID);
+        address baseTGAddr = addresses.getAddress("TEMPORAL_GOVERNOR");
+
+        bytes memory innerCall = abi.encodeWithSignature(
+            "_setReserveFactor(uint256)",
+            newReserveFactor
+        );
+        address[] memory innerTargets = new address[](1);
+        innerTargets[0] = target;
+        uint256[] memory innerValues = new uint256[](1);
+        bytes[] memory innerCalldatas = new bytes[](1);
+        innerCalldatas[0] = innerCall;
+
+        return
+            abi.encode(baseTGAddr, innerTargets, innerValues, innerCalldatas);
+    }
+
+    /// @notice Prank as the old Moonbeam governor and publish a Wormhole
+    ///         message with the given payload via the live Moonbeam
+    ///         WORMHOLE_CORE. Returns the captured payload from the
+    ///         emitted LogMessagePublished event.
+    function _publishViaOldGovernor(
+        bytes memory payload
+    ) internal returns (bytes memory) {
+        vm.selectFork(MOONBEAM_FORK_ID);
+        address oldGov = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        address moonbeamCore = addresses.getAddress("WORMHOLE_CORE");
+
+        uint256 messageFee = IWormhole(moonbeamCore).messageFee();
+        vm.deal(oldGov, messageFee + 1 ether);
+
+        vm.recordLogs();
+        vm.prank(oldGov);
+        IWormhole(moonbeamCore).publishMessage{value: messageFee}(
+            uint32(2000),
+            payload,
+            uint8(1)
+        );
+
+        bytes[] memory captured = _extractAllPublishedPayloads(
+            vm.getRecordedLogs(),
+            moonbeamCore
+        );
+        require(captured.length == 1, "expected 1 smoke publishMessage");
+        return captured[0];
+    }
+
+    /// @notice Mirror of
+    ///         mip-x58._buildVoteCollectionRestorePublishMessageCalldata for
+    ///         a single satellite chain. Reconstructs the calldata bytes x58
+    ///         wrote into the whitelist at init time so the harness can
+    ///         exercise the Base VC restore path independently.
+    function _buildVoteCollectionRestoreCalldataForFork(
+        uint256 satelliteForkId
+    ) internal returns (bytes memory) {
+        uint256 forkBefore = vm.activeFork();
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+        address moonbeamGov = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+
+        vm.selectFork(satelliteForkId);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address voteCollection = addresses.getAddress("VOTE_COLLECTION_PROXY");
+
+        bytes memory addTargetCalldata = abi.encodeWithSignature(
+            "addTargetAddress(uint16,address)",
+            MOONBEAM_WORMHOLE_CHAIN_ID,
+            moonbeamGov
+        );
+
+        address[] memory innerTargets = new address[](1);
+        innerTargets[0] = voteCollection;
+
+        uint256[] memory innerValues = new uint256[](1);
+
+        bytes[] memory innerCalldatas = new bytes[](1);
+        innerCalldatas[0] = addTargetCalldata;
+
+        bytes memory result = abi.encodeWithSignature(
+            "publishMessage(uint32,bytes,uint8)",
+            uint32(1000),
+            abi.encode(
+                temporalGovernor,
+                innerTargets,
+                innerValues,
+                innerCalldatas
+            ),
+            uint8(1)
+        );
+
+        vm.selectFork(forkBefore);
+        return result;
+    }
+
+    /// @notice Variant of `_extractFirstPublishedPayload` that returns ALL
+    ///         LogMessagePublished payloads from a given emitter, in the
+    ///         order they were emitted. Pass the result of
+    ///         `vm.getRecordedLogs()` directly so callers control the read
+    ///         (the buffer is cleared on read; multiple consumers in a
+    ///         single test must read once and share).
+    function _extractAllPublishedPayloads(
+        Vm.Log[] memory logs,
+        address emitter
+    ) internal pure returns (bytes[] memory) {
+        bytes32 sig = keccak256(
+            "LogMessagePublished(address,uint64,uint32,bytes,uint8)"
+        );
+        uint256 count;
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].emitter != emitter) continue;
+            if (logs[i].topics.length == 0) continue;
+            if (logs[i].topics[0] != sig) continue;
+            count++;
+        }
+        bytes[] memory out = new bytes[](count);
+        uint256 j;
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].emitter != emitter) continue;
+            if (logs[i].topics.length == 0) continue;
+            if (logs[i].topics[0] != sig) continue;
+            (, , bytes memory payload, ) = abi.decode(
+                logs[i].data,
+                (uint64, uint32, bytes, uint8)
+            );
+            out[j++] = payload;
+        }
+        return out;
     }
 }
