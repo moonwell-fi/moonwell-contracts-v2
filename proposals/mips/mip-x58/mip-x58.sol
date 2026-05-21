@@ -83,6 +83,17 @@ contract mipx58 is HybridProposal {
     /// broadcasts where the on-chain Ethereum nonce naturally matches.
     uint64 private _predictedDeployerNonce;
 
+    /// @notice Moonbeam MultichainGovernor.proposalCount() captured at deploy
+    /// time. MultichainGovernorV2 on Ethereum is initialized with
+    /// `_initialMoonbeamProposalCount + 1` so the new governor's proposal IDs
+    /// pick up exactly where Moonbeam's left off. validate() asserts against
+    /// this captured value rather than re-reading live Moonbeam state — the
+    /// fork's `proposalCount` can advance between deploy and validate
+    /// (e.g. via simulate()'s own propose() call, or any other Moonbeam
+    /// activity baked into the test harness), so an MGV2-vs-live-Moonbeam
+    /// comparison at validate time is environmentally fragile.
+    uint256 private _initialMoonbeamProposalCount;
+
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./proposals/mips/mip-x58/x58.md")
@@ -555,6 +566,11 @@ contract mipx58 is HybridProposal {
         uint256 startingProposalCount = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         ).proposalCount();
+
+        // Capture for validate(): MGV2.proposalCount should equal
+        // (_initialMoonbeamProposalCount + 1). Stored here so validate doesn't
+        // re-read live Moonbeam state, which can drift between phases.
+        _initialMoonbeamProposalCount = startingProposalCount;
         address moonbeamVoteCollection = addresses.getAddress(
             "VOTE_COLLECTION_V2_PROXY"
         );
@@ -1756,21 +1772,24 @@ contract mipx58 is HybridProposal {
             "MultichainGovernorV2 votingPower not set correctly"
         );
 
-        // 5. Validate proposal count matches Moonbeam
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamMultichainGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-        uint256 expectedProposalCount = MultichainGovernor(
-            payable(moonbeamMultichainGovernor)
-        ).proposalCount();
-
-        vm.selectFork(ETHEREUM_FORK_ID);
-        assertEq(
-            governor.proposalCount(),
-            expectedProposalCount,
-            "MultichainGovernorV2 proposalCount not initialized correctly from Moonbeam"
-        );
+        // 5. Validate MGV2.proposalCount matches the deploy-time snapshot of
+        // Moonbeam.proposalCount + 1. We assert against the value captured at
+        // deploy rather than re-reading live Moonbeam state, because Moonbeam
+        // can advance between deploy and validate (simulate()'s propose()
+        // bumps it by 1; other harness-driven activity can bump it further).
+        //
+        // Skip when deploy() was a no-op (sentinel 0): MGV2 was previously
+        // deployed on-chain so we can't reconstruct what Moonbeam.proposalCount
+        // was at the original initialization time. The invariant was checked
+        // when the original deploy ran; nothing to recheck here.
+        if (_initialMoonbeamProposalCount > 0) {
+            vm.selectFork(ETHEREUM_FORK_ID);
+            assertEq(
+                governor.proposalCount(),
+                _initialMoonbeamProposalCount + 1,
+                "MultichainGovernorV2 proposalCount not initialized correctly from Moonbeam"
+            );
+        }
 
         // 6. Validate trusted senders are set correctly (Moonbeam, Base, Optimism VoteCollections)
         vm.selectFork(MOONBEAM_FORK_ID);
