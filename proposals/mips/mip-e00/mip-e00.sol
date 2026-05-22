@@ -21,7 +21,7 @@ import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
-/// MultichainGovernorV2 is deployed by initProposal() via MIP-X56 on Ethereum as the governance hub
+/// MultichainGovernorV2 is deployed by initProposal() via MIP-X58 on Ethereum as the governance hub
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -29,7 +29,7 @@ import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol"
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ChainIds, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
-import {mipx56} from "@proposals/mips/mip-x56/mip-x56.sol";
+import {mipx58} from "@proposals/mips/mip-x58/mip-x58.sol";
 
 contract mipe00 is HybridProposalV2, Configs {
     using Address for address;
@@ -59,28 +59,28 @@ contract mipe00 is HybridProposalV2, Configs {
         return ETHEREUM_FORK_ID;
     }
 
-    /// @notice Run MIP-X56 to deploy MultichainGovernorV2 before MIP-E00 deployment
+    /// @notice Run MIP-X58 to deploy MultichainGovernorV2 before MIP-E00 deployment
     function initProposal(Addresses addresses) public override {
-        /// Skip if MIP-X56 has already been executed (e.g. in integration tests
-        /// where mip-x56 runs as its own dev proposal before mip-e00). Re-running
-        /// x56.afterDeploy would attempt to re-initialize the MultichainGovernorV2
+        /// Skip if MIP-X58 has already been executed (e.g. in integration tests
+        /// where mip-x58 runs as its own dev proposal before mip-e00). Re-running
+        /// x58.afterDeploy would attempt to re-initialize the MultichainGovernorV2
         /// proxy and revert with "Initializable: contract is already initialized".
         if (addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
             vm.selectFork(ETHEREUM_FORK_ID);
             return;
         }
 
-        /// Deploy MultichainGovernorV2 + cross-chain governance contracts via MIP-X56
-        mipx56 x56 = new mipx56();
+        /// Deploy MultichainGovernorV2 + cross-chain governance contracts via MIP-X58
+        mipx58 x58 = new mipx58();
 
         /// Get deployer address
         (, address deployerAddress, ) = vm.readCallers();
 
-        /// Run x56 deploy and afterDeploy to set up MultichainGovernorV2 and the
+        /// Run x58 deploy and afterDeploy to set up MultichainGovernorV2 and the
         /// per-chain VotingPowerAggregator / VoteCollection contracts.
         /// Note: These functions switch between forks internally
-        x56.deploy(addresses, deployerAddress);
-        x56.afterDeploy(addresses, deployerAddress);
+        x58.deploy(addresses, deployerAddress);
+        x58.afterDeploy(addresses, deployerAddress);
 
         /// Switch back to Ethereum fork for MIP-E00 deployment
         vm.selectFork(ETHEREUM_FORK_ID);
@@ -89,8 +89,8 @@ contract mipe00 is HybridProposalV2, Configs {
     /// @notice the deployer should have WETH, USDC, USDT, WBTC, weETH, wstETH to be able to deploy on Ethereum.
     /// This allows the deployer to be able to initialize the markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {
-        /// ------- MultichainGovernorV2 (deployed by initProposal via MIP-X52) -------
-        /// The MultichainGovernorV2 is deployed in initProposal() which runs MIP-X52.
+        /// ------- MultichainGovernorV2 (deployed by initProposal via MIP-X58) -------
+        /// The MultichainGovernorV2 is deployed in initProposal() which runs MIP-X58.
         /// MIP-E00 uses the existing governor for all protocol contracts.
         localInit(addresses);
 
@@ -412,7 +412,7 @@ contract mipe00 is HybridProposalV2, Configs {
         );
 
         /// ------------ ACCEPT OWNERSHIP (Ownable2Step) ------------
-        /// MIP-X56 sets pendingOwner on these contracts; the new
+        /// MIP-X58 sets pendingOwner on these contracts; the new
         /// MultichainGovernorV2 (Ethereum) and TemporalGovernor (other chains)
         /// must accept ownership in MIP-E00 to complete the transfer.
 
@@ -439,12 +439,12 @@ contract mipe00 is HybridProposalV2, Configs {
 
         /// Moonbeam: VotingPowerAggregator — TemporalGovernor accepts.
         /// This is the only Ownable2Step pending-owner accept needed in E00:
-        /// MIP-X56 calls the public `transferOwnership` on the Moonbeam VPA,
+        /// MIP-X58 calls the public `transferOwnership` on the Moonbeam VPA,
         /// which sets `pendingOwner = TemporalGovernor` and requires the new
         /// owner to call `acceptOwnership()` here to complete the transfer.
         ///
         /// The Moonbeam VC and Base/Optimism VPAs are intentionally NOT
-        /// included: they are initialized in MIP-X56 with the TemporalGovernor
+        /// included: they are initialized in MIP-X58 with the TemporalGovernor
         /// as their direct owner (via `_transferOwnership` inside `initialize`,
         /// see MultichainVoteCollectionMoonbeam.sol:59 and
         /// VotingPowerAggregator.sol:36), so `pendingOwner` is `address(0)` on
@@ -526,7 +526,7 @@ contract mipe00 is HybridProposalV2, Configs {
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
-        /// MultichainGovernorV2 is deployed by initProposal via MIP-X52 - just get the address
+        /// MultichainGovernorV2 is deployed by initProposal via MIP-X58 - just get the address
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY");
 
         {
@@ -686,7 +686,7 @@ contract mipe00 is HybridProposalV2, Configs {
             );
         }
 
-        /// MultichainGovernorV2 specific validations are handled by MIP-X52
+        /// MultichainGovernorV2 specific validations are handled by MIP-X58
 
         {
             Comptroller comptroller = Comptroller(
