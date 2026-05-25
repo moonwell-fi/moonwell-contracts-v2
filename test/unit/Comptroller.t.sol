@@ -84,6 +84,31 @@ contract ComptrollerUnitTest is
         sigUtils = new SigUtils(faucetToken.DOMAIN_SEPARATOR());
     }
 
+    function _deployAndSupportMarket() internal returns (MErc20Immutable) {
+        FaucetTokenWithPermit underlying = new FaucetTokenWithPermit(
+            1e18,
+            "Testing",
+            18,
+            "TEST"
+        );
+
+        MErc20Immutable market = new MErc20Immutable(
+            address(underlying),
+            comptroller,
+            irModel,
+            1e18,
+            "Test mToken",
+            "mTEST",
+            8,
+            payable(address(this))
+        );
+
+        comptroller._supportMarket(market);
+        oracle.setUnderlyingPrice(market, 1e18);
+
+        return market;
+    }
+
     function testWiring() public {
         // Ensure things are wired correctly
         assertEq(comptroller.admin(), address(this));
@@ -136,6 +161,65 @@ contract ComptrollerUnitTest is
             );
             assertEq(collateralFactorUpdated, cfToSet);
         }
+    }
+
+    function testEnterMarketsCapsAccountAssets() public {
+        uint maxAssets = comptroller.maxAssets();
+        address[] memory markets = new address[](maxAssets + 1);
+
+        for (uint i = 0; i < markets.length; i++) {
+            markets[i] = address(_deployAndSupportMarket());
+        }
+
+        uint[] memory results = comptroller.enterMarkets(markets);
+
+        for (uint i = 0; i < maxAssets; i++) {
+            assertEq(results[i], uint(Error.NO_ERROR));
+        }
+        assertEq(results[maxAssets], uint(Error.TOO_MANY_ASSETS));
+
+        MToken[] memory assetsIn = comptroller.getAssetsIn(address(this));
+        assertEq(assetsIn.length, maxAssets);
+        assertFalse(
+            comptroller.checkMembership(
+                address(this),
+                MToken(markets[maxAssets])
+            )
+        );
+    }
+
+    function testBorrowAllowedCannotAutoEnterAboveMaxAssets() public {
+        uint maxAssets = comptroller.maxAssets();
+        address borrower = address(0xB0B);
+        address[] memory markets = new address[](maxAssets + 1);
+
+        for (uint i = 0; i < markets.length; i++) {
+            markets[i] = address(_deployAndSupportMarket());
+        }
+
+        address[] memory marketsToEnter = new address[](maxAssets);
+        for (uint i = 0; i < marketsToEnter.length; i++) {
+            marketsToEnter[i] = markets[i];
+        }
+
+        vm.prank(borrower);
+        uint[] memory results = comptroller.enterMarkets(marketsToEnter);
+
+        for (uint i = 0; i < results.length; i++) {
+            assertEq(results[i], uint(Error.NO_ERROR));
+        }
+
+        vm.prank(markets[maxAssets]);
+        uint result = comptroller.borrowAllowed(
+            markets[maxAssets],
+            borrower,
+            1
+        );
+
+        assertEq(result, uint(Error.TOO_MANY_ASSETS));
+        assertFalse(
+            comptroller.checkMembership(borrower, MToken(markets[maxAssets]))
+        );
     }
 
     function testRewards() public {

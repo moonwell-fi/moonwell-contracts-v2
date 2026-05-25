@@ -94,6 +94,9 @@ contract Comptroller is
     // No collateralFactorMantissa may exceed this value
     uint internal constant collateralFactorMaxMantissa = 0.9e18; // 0.9
 
+    /// @notice Maximum number of markets an account can enter.
+    uint public constant maxAssets = 20;
+
     constructor() {
         admin = msg.sender;
     }
@@ -166,6 +169,10 @@ contract Comptroller is
         if (marketToJoin.accountMembership[borrower] == true) {
             // already joined
             return Error.NO_ERROR;
+        }
+
+        if (accountAssets[borrower].length >= maxAssets) {
+            return Error.TOO_MANY_ASSETS;
         }
 
         // survived the gauntlet, add to list
