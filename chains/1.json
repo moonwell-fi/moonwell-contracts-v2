@@ -108,5 +108,20 @@
         "addr": "0xbaC3Dd6d0333ea14F957B7B0796bCD59e8771501",
         "isContract": true,
         "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"
+    },
+    {
+        "addr": "0xCb44138f3e2e25B72338372488d2a74A580a0E15",
+        "isContract": true,
+        "name": "STAKING_VIEWS_IMPLEMENTATION"
+    },
+    {
+        "addr": "0xB8A798a50a7274A13449B7f2Dd6Df22faF2d40E5",
+        "isContract": true,
+        "name": "STAKING_VIEWS_PROXY_ADMIN"
+    },
+    {
+        "addr": "0xF5f2ae75d762B7e2B42D53f48018436f52Ce5401",
+        "isContract": true,
+        "name": "STAKING_VIEWS_PROXY"
     }
 ]
