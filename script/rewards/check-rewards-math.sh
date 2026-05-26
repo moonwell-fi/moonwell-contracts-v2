@@ -93,8 +93,18 @@ case "$PROPOSAL_DIR" in
 esac
 
 if [ ! -d "$PROPOSAL_DIR" ]; then
-  echo "Error: not a directory: $PROPOSAL_DIR" >&2
-  exit 2
+  # Auto-detected paths (CI git-diff) may include dirs deleted in the PR.
+  # Skip rather than fail so the workflow doesn't block on removed proposals.
+  case "$PROPOSAL_DIR" in
+    *proposals/mips/mip-*)
+      echo "[skip] directory was deleted: $PROPOSAL_DIR" >&2
+      exit 0
+      ;;
+    *)
+      echo "Error: not a directory: $PROPOSAL_DIR" >&2
+      exit 2
+      ;;
+  esac
 fi
 
 BASENAME=$(basename "$PROPOSAL_DIR")
