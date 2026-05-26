@@ -99,6 +99,12 @@ abstract contract Proposal is Script, Test {
     /// live fork is selected
     function initProposal(Addresses) public virtual {}
 
+    /// @notice optional IPFS URI for the proposal description. When set, V2
+    /// proposal types use it as the `descriptionUri` argument to propose()
+    /// instead of the raw markdown. No-op by default so proposal types that
+    /// don't support it (and V1) simply ignore it.
+    function setProposalDescriptionUri(string memory) public virtual {}
+
     /// @dev Print recorded addresses
     function _printAddressesChanges(Addresses addresses) internal view {
         bytes
