@@ -423,6 +423,15 @@ contract mipe00 is HybridProposalV2, Configs {
             "MultichainGovernorV2 accepts ownership of WormholeBridgeAdapter on Ethereum"
         );
 
+        /// Ethereum: xWELL — MultichainGovernorV2 accepts. PAUSE_GUARDIAN
+        /// multisig has already executed transferOwnership(MULTICHAIN_GOVERNOR_V2_PROXY)
+        /// off-chain; this completes the Ownable2Step handoff.
+        _pushAction(
+            addresses.getAddress("xWELL_PROXY", ETHEREUM_CHAIN_ID),
+            abi.encodeWithSignature("acceptOwnership()"),
+            "MultichainGovernorV2 accepts ownership of xWELL on Ethereum"
+        );
+
         /// Moonbeam: WormholeBridgeAdapter — TemporalGovernor accepts
         _pushAction(
             addresses.getAddress(
