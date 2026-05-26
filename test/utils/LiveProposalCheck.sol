@@ -66,9 +66,11 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
         while (count < 10) {
             // TODO remove this once we have the ability to cancel proposals
-            // 147 (mip-b58): already executed on-chain but ProposalView
-            // state is stale — skip to avoid re-execution failures.
-            if (proposalId != 90 && proposalId != 147) {
+            // 147 (mip-b58) and 165 (mip-x56): already executed on-chain but
+            // governor.state() still returns Succeeded; execute() then reverts
+            // with "proposal can only be executed if it is Succeeded". Skip
+            // to avoid re-execution failures + spurious expectEmit mismatches.
+            if (proposalId != 90 && proposalId != 147 && proposalId != 165) {
                 IMultichainGovernor.ProposalState state = governor.state(
                     proposalId
                 );
@@ -109,10 +111,11 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             uint256 count = 0;
 
             while (count < 10) {
-                // 147 (mip-b58): already executed but ProposalView
-                // state is stale — skip to avoid re-execution failures.
+                // 147 (mip-b58) and 165 (mip-x56): already executed but
+                // ProposalView state is stale — skip to avoid re-execution failures.
                 if (
                     proposalStart != 147 &&
+                    proposalStart != 165 &&
                     proposalView.proposalStates(proposalStart) ==
                     ProposalView.ProposalState.Queued
                 ) {
@@ -339,16 +342,13 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             address(governor)
         );
 
-        bytes memory payload;
         for (uint256 i = 0; i < targets.length; i++) {
             if (targets[i] == wormholeCore) {
-                // decode temporal governor calldata
-                (, payload, ) = abi.decode(
-                    /// 1. strip off function selector
-                    /// 2. decode the call to publishMessage payload
-                    calldatas[i].slice(4, calldatas[i].length - 4),
-                    (uint32, bytes, uint8)
-                );
+                // decode the call to publishMessage(uint32 gas, bytes payload, uint8 consistencyLevel)
+                (
+                    bytes memory payload,
+                    uint8 consistencyLevel
+                ) = _decodePublishMessageArgs(calldatas[i]);
 
                 /// increments each time the Multichain Governor publishes a message
                 vm.expectEmit(true, true, true, true, wormholeCore);
@@ -358,7 +358,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                     nextSequence++,
                     0,
                     payload,
-                    200
+                    consistencyLevel
                 );
             }
         }
@@ -546,6 +546,19 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         }
     }
 
+    /// @dev decode publishMessage(uint32,bytes,uint8) calldata and return the
+    ///      payload + consistencyLevel. Lives in its own function so the
+    ///      decode locals don't blow the stack of the larger
+    ///      _executeProposalActions frame.
+    function _decodePublishMessageArgs(
+        bytes memory callData
+    ) private pure returns (bytes memory payload, uint8 consistencyLevel) {
+        (, payload, consistencyLevel) = abi.decode(
+            callData.slice(4, callData.length - 4),
+            (uint32, bytes, uint8)
+        );
+    }
+
     /// @dev utility function to generate a Wormhole VAA payload excluding the guardians signature
     function generateVAA(
         uint32 timestamp,
@@ -556,7 +569,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         uint64 sequence = 200;
         uint8 version = 1;
         uint32 nonce = 0;
-        uint8 consistencyLevel = 200;
+        uint8 consistencyLevel = 1; // CONSISTENCY_LEVEL from WormholeBridgeBase
 
         encodedVM = abi.encodePacked(
             version,
