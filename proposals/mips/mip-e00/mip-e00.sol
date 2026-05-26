@@ -29,7 +29,6 @@ import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol"
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ChainIds, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
-import {mipx58} from "@proposals/mips/mip-x58/mip-x58.sol";
 
 contract mipe00 is HybridProposalV2, Configs {
     using Address for address;
@@ -60,29 +59,10 @@ contract mipe00 is HybridProposalV2, Configs {
     }
 
     /// @notice Run MIP-X58 to deploy MultichainGovernorV2 before MIP-E00 deployment
-    function initProposal(Addresses addresses) public override {
-        /// Skip if MIP-X58 has already been executed (e.g. in integration tests
-        /// where mip-x58 runs as its own dev proposal before mip-e00). Re-running
-        /// x58.afterDeploy would attempt to re-initialize the MultichainGovernorV2
-        /// proxy and revert with "Initializable: contract is already initialized".
-        if (addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
-            vm.selectFork(ETHEREUM_FORK_ID);
-            return;
-        }
-
-        /// Deploy MultichainGovernorV2 + cross-chain governance contracts via MIP-X58
-        mipx58 x58 = new mipx58();
-
-        /// Get deployer address
-        (, address deployerAddress, ) = vm.readCallers();
-
-        /// Run x58 deploy and afterDeploy to set up MultichainGovernorV2 and the
-        /// per-chain VotingPowerAggregator / VoteCollection contracts.
-        /// Note: These functions switch between forks internally
-        x58.deploy(addresses, deployerAddress);
-        x58.afterDeploy(addresses, deployerAddress);
-
-        /// Switch back to Ethereum fork for MIP-E00 deployment
+    function initProposal(Addresses) public override {
+        /// MIP-X58 is already executed on-chain; MULTICHAIN_GOVERNOR_V2_PROXY
+        /// is registered in chains/1.json. No setup needed — just select the
+        /// Ethereum fork for MIP-E00 deployment.
         vm.selectFork(ETHEREUM_FORK_ID);
     }
 
