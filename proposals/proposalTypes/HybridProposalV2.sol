@@ -943,7 +943,16 @@ abstract contract HybridProposalV2 is
             payloads[i] = proposalActions[i].data;
         }
 
-        checkBaseOptimismActions(proposalActions);
+        /// _runExtChain is invoked from three call sites — Moonbeam, Base,
+        /// Optimism (lines 535/541/547). Each switches forks before calling.
+        /// The target-has-code validation has to dispatch to the matching
+        /// per-chain checker; calling checkBaseOptimismActions on Moonbeam
+        /// reverts via ChainIds.nonMoonbeamChainIds().
+        if (block.chainid.nonMoonbeamChainIds()) {
+            checkBaseOptimismActions(proposalActions);
+        } else {
+            checkMoonbeamActions(targets);
+        }
 
         bytes memory payload = abi.encode(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
