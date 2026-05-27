@@ -2,10 +2,10 @@
     {
         "initialMintAmount": 1e15,
         "collateralFactor": 0.8e18,
-        "reserveFactor": 0.1e18,
+        "reserveFactor": 0.15e18,
         "seizeShare": 0.03e18,
-        "supplyCap": 50000e18,
-        "borrowCap": 35000e18,
+        "supplyCap": 30000e18,
+        "borrowCap": 20000e18,
         "priceFeedName": "ETH_ORACLE",
         "tokenAddressName": "WETH",
         "name": "Moonwell WETH",
@@ -13,9 +13,9 @@
         "addressesString": "MOONWELL_WETH",
         "jrm": {
             "baseRatePerYear": 0,
-            "multiplierPerYear": 0.04e18,
-            "jumpMultiplierPerYear": 3.0e18,
-            "kink": 0.8e18
+            "multiplierPerYear": 0.025e18,
+            "jumpMultiplierPerYear": 9.0e18,
+            "kink": 0.9e18
         }
     },
     {
@@ -23,8 +23,8 @@
         "collateralFactor": 0.85e18,
         "reserveFactor": 0.1e18,
         "seizeShare": 0.03e18,
-        "supplyCap": 100000000e6,
-        "borrowCap": 80000000e6,
+        "supplyCap": 200000000e6,
+        "borrowCap": 180000000e6,
         "priceFeedName": "USDC_ORACLE",
         "tokenAddressName": "USDC",
         "name": "Moonwell USDC",
@@ -32,18 +32,18 @@
         "addressesString": "MOONWELL_USDC",
         "jrm": {
             "baseRatePerYear": 0,
-            "multiplierPerYear": 0.05e18,
-            "jumpMultiplierPerYear": 2.5e18,
-            "kink": 0.8e18
+            "multiplierPerYear": 0.67e18,
+            "jumpMultiplierPerYear": 9.0e18,
+            "kink": 0.9e18
         }
     },
     {
         "initialMintAmount": 1e6,
-        "collateralFactor": 0.8e18,
+        "collateralFactor": 0.85e18,
         "reserveFactor": 0.1e18,
         "seizeShare": 0.03e18,
-        "supplyCap": 50000000e6,
-        "borrowCap": 40000000e6,
+        "supplyCap": 200000000e6,
+        "borrowCap": 180000000e6,
         "priceFeedName": "USDT_ORACLE",
         "tokenAddressName": "USDT",
         "name": "Moonwell USDT",
@@ -51,28 +51,28 @@
         "addressesString": "MOONWELL_USDT",
         "jrm": {
             "baseRatePerYear": 0,
-            "multiplierPerYear": 0.05e18,
-            "jumpMultiplierPerYear": 2.5e18,
-            "kink": 0.8e18
+            "multiplierPerYear": 0.67e18,
+            "jumpMultiplierPerYear": 9.0e18,
+            "kink": 0.9e18
         }
     },
     {
         "initialMintAmount": 1e4,
-        "collateralFactor": 0.75e18,
+        "collateralFactor": 0.8e18,
         "reserveFactor": 0.15e18,
         "seizeShare": 0.03e18,
         "supplyCap": 1000e8,
-        "borrowCap": 500e8,
+        "borrowCap": 600e8,
         "priceFeedName": "CBBTC_ORACLE",
         "tokenAddressName": "cbBTC",
         "name": "Moonwell cbBTC",
         "symbol": "mcbBTC",
         "addressesString": "MOONWELL_cbBTC",
         "jrm": {
-            "baseRatePerYear": 0.01e18,
-            "multiplierPerYear": 0.06e18,
-            "jumpMultiplierPerYear": 3.0e18,
-            "kink": 0.65e18
+            "baseRatePerYear": 0,
+            "multiplierPerYear": 0.068e18,
+            "jumpMultiplierPerYear": 2.0e18,
+            "kink": 0.6e18
         }
     }
 ]

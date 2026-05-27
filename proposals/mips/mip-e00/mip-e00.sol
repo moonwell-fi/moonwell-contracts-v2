@@ -6,6 +6,7 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
+import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
@@ -20,6 +21,9 @@ import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
+import {OEVProtocolFeeRedeemer} from "@protocol/OEVProtocolFeeRedeemer.sol";
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
 /// MultichainGovernorV2 is deployed by initProposal() via MIP-X58 on Ethereum as the governance hub
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
@@ -33,6 +37,7 @@ import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
 contract mipe00 is HybridProposalV2, Configs {
     using Address for address;
     using ChainIds for uint256;
+    using stdJson for string;
 
     string public constant override name = "MIP-E00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
@@ -44,6 +49,22 @@ contract mipe00 is HybridProposalV2, Configs {
         address irModel;
         address unitroller;
     }
+
+    /// @notice OEV wrapper configuration (mirrors MarketAddV3.OEVConfiguration).
+    /// Loaded from proposals/mips/mip-e00/OEVConfigurations.json keyed by chain id.
+    struct OEVConfiguration {
+        uint16 feeMultiplier;
+        uint256 maxDecrements;
+        uint256 maxRoundDelay;
+        string mTokenName;
+        string underlyingFeedName;
+        string wrapperName;
+    }
+
+    OEVConfiguration[] internal oevConfigurations;
+
+    /// @notice Raw Chainlink prices captured pre-simulation for post-simulate parity check
+    mapping(string wrapperName => int256 price) public rawChainlinkPrices;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -64,6 +85,31 @@ contract mipe00 is HybridProposalV2, Configs {
         /// is registered in chains/1.json. No setup needed — just select the
         /// Ethereum fork for MIP-E00 deployment.
         vm.selectFork(ETHEREUM_FORK_ID);
+
+        _saveOEVConfigurations();
+    }
+
+    /// @notice Load OEV wrapper configurations for the active (Ethereum) chain.
+    /// Mirrors MarketAddV3._saveOEVConfigurations but reads a hardcoded path,
+    /// matching how mTokens.json is consumed elsewhere in this proposal.
+    function _saveOEVConfigurations() internal {
+        string memory encodedJson = vm.readFile(
+            "proposals/mips/mip-e00/OEVConfigurations.json"
+        );
+        string memory chain = string.concat(".", vm.toString(block.chainid));
+
+        if (!vm.keyExistsJson(encodedJson, chain)) {
+            return;
+        }
+
+        bytes memory parsedJson = vm.parseJson(encodedJson, chain);
+        OEVConfiguration[] memory configs = abi.decode(
+            parsedJson,
+            (OEVConfiguration[])
+        );
+        for (uint256 i = 0; i < configs.length; i++) {
+            oevConfigurations.push(configs[i]);
+        }
     }
 
     /// @notice the deployer should have WETH, USDC, USDT, WBTC, weETH, wstETH to be able to deploy on Ethereum.
@@ -250,6 +296,51 @@ contract mipe00 is HybridProposalV2, Configs {
                 );
             addresses.addAddress("MOONWELL_VIEWS_PROXY", address(viewsProxy));
         }
+
+        /// ------- OEV Protocol Fee Redeemer + Chainlink OEV Wrappers -------
+        /// Ethereum is the governance hub, so the wrappers' on-chain owner is
+        /// MULTICHAIN_GOVERNOR_V2_PROXY (in MarketAddV3 this slot is the
+        /// TEMPORAL_GOVERNOR — Ethereum has no temporal governor since it is
+        /// the source chain). Mirrors the MIP-X38 pattern: whitelist mTokens
+        /// directly while deployer still owns the redeemer, then hand off.
+        address oevOwner = addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY");
+
+        if (!addresses.isAddressSet("OEV_PROTOCOL_FEE_REDEEMER")) {
+            OEVProtocolFeeRedeemer feeRedeemer = new OEVProtocolFeeRedeemer(
+                addresses.getAddress("MOONWELL_WETH")
+            );
+
+            for (uint256 i = 0; i < oevConfigurations.length; i++) {
+                feeRedeemer.whitelistMarket(
+                    addresses.getAddress(oevConfigurations[i].mTokenName),
+                    true
+                );
+            }
+
+            feeRedeemer.transferOwnership(oevOwner);
+            addresses.addAddress(
+                "OEV_PROTOCOL_FEE_REDEEMER",
+                address(feeRedeemer)
+            );
+        }
+
+        for (uint256 i = 0; i < oevConfigurations.length; i++) {
+            OEVConfiguration memory cfg = oevConfigurations[i];
+            if (addresses.isAddressSet(cfg.wrapperName)) {
+                continue;
+            }
+
+            ChainlinkOEVWrapper wrapper = new ChainlinkOEVWrapper(
+                addresses.getAddress(cfg.underlyingFeedName),
+                oevOwner,
+                addresses.getAddress("CHAINLINK_ORACLE"),
+                addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"),
+                cfg.feeMultiplier,
+                cfg.maxRoundDelay,
+                cfg.maxDecrements
+            );
+            addresses.addAddress(cfg.wrapperName, address(wrapper));
+        }
     }
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -419,6 +510,16 @@ contract mipe00 is HybridProposalV2, Configs {
                 }
             }
         }
+
+        /// Snapshot raw Chainlink prices for post-simulate parity assertion in validate().
+        for (uint256 i = 0; i < oevConfigurations.length; i++) {
+            OEVConfiguration memory cfg = oevConfigurations[i];
+            (, int256 price, , , ) = AggregatorV3Interface(
+                addresses.getAddress(cfg.underlyingFeedName)
+            ).latestRoundData();
+            require(price > 0, "Raw Chainlink price must be positive");
+            rawChainlinkPrices[cfg.wrapperName] = price;
+        }
     }
 
     function build(Addresses addresses) public override {
@@ -567,6 +668,26 @@ contract mipe00 is HybridProposalV2, Configs {
                 }
             }
         }
+
+        /// ------------ POINT CHAINLINK_ORACLE FEEDS AT OEV WRAPPERS ------------
+        /// afterDeploy() initially wires each symbol to the raw Chainlink
+        /// aggregator; governance now redirects each symbol to its OEV wrapper.
+        address chainlinkOracle = addresses.getAddress("CHAINLINK_ORACLE");
+        for (uint256 i = 0; i < oevConfigurations.length; i++) {
+            OEVConfiguration memory cfg = oevConfigurations[i];
+            MErc20 mToken = MErc20(addresses.getAddress(cfg.mTokenName));
+            string memory symbol = ERC20(mToken.underlying()).symbol();
+
+            _pushAction(
+                chainlinkOracle,
+                abi.encodeWithSignature(
+                    "setFeed(string,address)",
+                    symbol,
+                    addresses.getAddress(cfg.wrapperName)
+                ),
+                string.concat("Set ", symbol, " feed to OEV wrapper")
+            );
+        }
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -581,32 +702,9 @@ contract mipe00 is HybridProposalV2, Configs {
             );
 
             assertEq(oracle.admin(), address(governor));
-            /// validate chainlink price feeds are correctly set according to config in oracle
-
-            Configs.CTokenConfiguration[]
-                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-
-            //// set mint paused for all of the deployed MTokens
-            unchecked {
-                for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-                    Configs.CTokenConfiguration memory config = cTokenConfigs[
-                        i
-                    ];
-
-                    assertEq(
-                        address(
-                            oracle.getFeed(
-                                ERC20(
-                                    addresses.getAddress(
-                                        config.tokenAddressName
-                                    )
-                                ).symbol()
-                            )
-                        ),
-                        addresses.getAddress(config.priceFeedName)
-                    );
-                }
-            }
+            /// Per-symbol feed wiring is asserted in the OEV WRAPPERS block
+            /// below — after build() runs setFeed(symbol, wrapper), feeds no
+            /// longer point at the raw Chainlink aggregators (priceFeedName).
         }
 
         /// assert comptroller and unitroller are wired together properly
@@ -968,6 +1066,87 @@ contract mipe00 is HybridProposalV2, Configs {
                     )
                 )
             );
+        }
+
+        /// ------------ OEV WRAPPERS + FEE REDEEMER ------------
+        {
+            OEVProtocolFeeRedeemer feeRedeemer = OEVProtocolFeeRedeemer(
+                payable(addresses.getAddress("OEV_PROTOCOL_FEE_REDEEMER"))
+            );
+            assertEq(feeRedeemer.owner(), governor);
+
+            ChainlinkOracle oracle = ChainlinkOracle(
+                addresses.getAddress("CHAINLINK_ORACLE")
+            );
+
+            for (uint256 i = 0; i < oevConfigurations.length; i++) {
+                OEVConfiguration memory cfg = oevConfigurations[i];
+
+                ChainlinkOEVWrapper wrapper = ChainlinkOEVWrapper(
+                    payable(addresses.getAddress(cfg.wrapperName))
+                );
+
+                assertEq(
+                    address(wrapper.priceFeed()),
+                    addresses.getAddress(cfg.underlyingFeedName),
+                    "OEV wrapper priceFeed mismatch"
+                );
+                assertEq(
+                    wrapper.owner(),
+                    governor,
+                    "OEV wrapper owner mismatch"
+                );
+                assertEq(
+                    wrapper.liquidatorFeeBps(),
+                    cfg.feeMultiplier,
+                    "OEV wrapper fee mismatch"
+                );
+                assertEq(
+                    wrapper.feeRecipient(),
+                    address(feeRedeemer),
+                    "OEV wrapper feeRecipient mismatch"
+                );
+                assertEq(
+                    address(wrapper.chainlinkOracle()),
+                    address(oracle),
+                    "OEV wrapper chainlinkOracle mismatch"
+                );
+                assertEq(
+                    wrapper.maxRoundDelay(),
+                    cfg.maxRoundDelay,
+                    "OEV wrapper maxRoundDelay mismatch"
+                );
+                assertEq(
+                    wrapper.maxDecrements(),
+                    cfg.maxDecrements,
+                    "OEV wrapper maxDecrements mismatch"
+                );
+                assertGt(
+                    wrapper.cachedRoundId(),
+                    0,
+                    "OEV wrapper cachedRoundId should be > 0"
+                );
+
+                (, int256 wrapperPrice, , , ) = wrapper.latestRoundData();
+                assertEq(
+                    wrapperPrice,
+                    rawChainlinkPrices[cfg.wrapperName],
+                    "OEV wrapper price does not match raw Chainlink feed price"
+                );
+
+                MErc20 mToken = MErc20(addresses.getAddress(cfg.mTokenName));
+                string memory symbol = ERC20(mToken.underlying()).symbol();
+                assertEq(
+                    address(oracle.getFeed(symbol)),
+                    address(wrapper),
+                    "CHAINLINK_ORACLE feed not pointing at OEV wrapper"
+                );
+
+                assertTrue(
+                    feeRedeemer.whitelistedMarkets(address(mToken)),
+                    "mToken not whitelisted on OEV fee redeemer"
+                );
+            }
         }
 
         _validateProposalDescriptionUri();
