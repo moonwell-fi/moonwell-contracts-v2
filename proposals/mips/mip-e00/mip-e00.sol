@@ -978,7 +978,7 @@ contract mipe00 is HybridProposalV2, Configs {
     /// ProposalMap.runProposal — that the two agree. Guards against shipping
     /// the proposal with the IPFS pin step skipped or with mips.json drifted
     /// from the runtime value loaded by the test harness.
-    function _validateProposalDescriptionUri() internal {
+    function _validateProposalDescriptionUri() internal view {
         string memory mipsJson = vm.readFile(
             string.concat(vm.projectRoot(), "/proposals/mips/mips.json")
         );
