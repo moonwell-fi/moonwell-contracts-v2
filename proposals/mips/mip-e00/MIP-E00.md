@@ -35,7 +35,7 @@ controls consistent with Moonwell’s existing security practices.
 
 If approved, this proposal will authorize the deployment of Moonwell Protocol to
 Ethereum Mainnet with the following initial markets, vaults, oracle
-configuration, governance setup, and risk parameters.
+configuration and risk parameters.
 
 ### Initial Markets
 
@@ -45,17 +45,6 @@ configuration, governance setup, and risk parameters.
 | USDC   | 85%               | 10%            | 100,000,000 | 80,000,000 |
 | USDT   | 80%               | 10%            | 50,000,000  | 40,000,000 |
 | cbBTC  | 75%               | 15%            | 1,000       | 500        |
-
-### Initial MMorpho Vaults
-
-The Ethereum deployment will include the following Morpho vaults:
-
-- WETH Flagship Vault (`mwETH`)
-- USDC Flagship Vault (`mwUSDC`)
-- USDT Flagship Vault (`mwUSDT`)
-
-These vaults are intended to provide users with simple, curated access to
-Moonwell lending markets on Ethereum.
 
 ### Oracle Configuration
 
