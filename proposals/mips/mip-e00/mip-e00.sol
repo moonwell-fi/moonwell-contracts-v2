@@ -34,6 +34,12 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ChainIds, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
 
+/// @dev Minimal Ownable-like surface used to read `owner()` on the four
+/// acceptOwnership() targets in validate(). Avoids pulling a full OZ import.
+interface IOwnableLike {
+    function owner() external view returns (address);
+}
+
 contract mipe00 is HybridProposalV2, Configs {
     using Address for address;
     using ChainIds for uint256;
@@ -41,7 +47,7 @@ contract mipe00 is HybridProposalV2, Configs {
 
     string public constant override name = "MIP-E00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
-    uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
+    uint256 public constant closeFactor = 0.5e18; /// close factor is 50%
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
 
     struct CTokenAddresses {
@@ -779,6 +785,62 @@ contract mipe00 is HybridProposalV2, Configs {
             /// longer point at the raw Chainlink aggregators (priceFeedName).
         }
 
+        /// ------- Ownable2Step handoff post-state -------
+        /// build() pushes four acceptOwnership() calls (two on Ethereum, two
+        /// on Moonbeam). Ownable2Step reverts on caller mismatch so the
+        /// simulation already guards them, but make the post-state explicit
+        /// so future harness changes can't silently regress the invariant.
+        {
+            /// Ethereum targets — new owner is MultichainGovernorV2
+            assertEq(
+                IOwnableLike(
+                    addresses.getAddress(
+                        "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                        ETHEREUM_CHAIN_ID
+                    )
+                ).owner(),
+                governor,
+                "WormholeBridgeAdapter (Eth) owner != governor"
+            );
+            assertEq(
+                IOwnableLike(
+                    addresses.getAddress("xWELL_PROXY", ETHEREUM_CHAIN_ID)
+                ).owner(),
+                governor,
+                "xWELL_PROXY (Eth) owner != governor"
+            );
+
+            /// Moonbeam targets — new owner is TemporalGovernor on Moonbeam.
+            /// Switch fork to read live owner storage, then restore.
+            uint256 priorFork = vm.activeFork();
+            vm.selectFork(MOONBEAM_FORK_ID);
+            address moonbeamTemporalGovernor = addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                MOONBEAM_CHAIN_ID
+            );
+            assertEq(
+                IOwnableLike(
+                    addresses.getAddress(
+                        "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                        MOONBEAM_CHAIN_ID
+                    )
+                ).owner(),
+                moonbeamTemporalGovernor,
+                "WormholeBridgeAdapter (Moonbeam) owner != TemporalGovernor"
+            );
+            assertEq(
+                IOwnableLike(
+                    addresses.getAddress(
+                        "VOTING_POWER_AGGREGATOR",
+                        MOONBEAM_CHAIN_ID
+                    )
+                ).owner(),
+                moonbeamTemporalGovernor,
+                "VotingPowerAggregator (Moonbeam) owner != TemporalGovernor"
+            );
+            vm.selectFork(priorFork);
+        }
+
         /// assert comptroller and unitroller are wired together properly
         {
             Unitroller unitroller = Unitroller(
@@ -1016,6 +1078,16 @@ contract mipe00 is HybridProposalV2, Configs {
 
                     /// assert mToken initial exchange rate is correct
                     assertEq(mToken.exchangeRateCurrent(), initialExchangeRate);
+
+                    /// assert oracle returns a positive underlying price
+                    /// (defense-in-depth: feed wiring is asserted in OEV block
+                    /// below; this ensures the wired feed actually quotes).
+                    assertGt(
+                        ChainlinkOracle(
+                            addresses.getAddress("CHAINLINK_ORACLE")
+                        ).getUnderlyingPrice(MToken(address(mToken))),
+                        0
+                    );
 
                     /// assert mToken name and symbol are correct
                     assertEq(mToken.name(), config.name);
