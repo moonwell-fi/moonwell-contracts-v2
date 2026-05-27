@@ -355,6 +355,22 @@ contract mipe00 is HybridProposalV2, Configs {
         Addresses addresses,
         address deployer
     ) public override {
+        /// Idempotency guard: once MRD_PROXY_ADMIN's ownership has been
+        /// transferred to MULTICHAIN_GOVERNOR_V2_PROXY, the deployer can no
+        /// longer make any of the admin calls below (transferOwnership,
+        /// _addEmissionConfig where applicable, mToken setters, oracle setAdmin
+        /// etc.) — they would all revert. Treat the ownership transfer as the
+        /// canonical "afterDeploy already ran" sentinel and short-circuit.
+        if (
+            ProxyAdmin(addresses.getAddress("MRD_PROXY_ADMIN")).owner() ==
+            addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY")
+        ) {
+            console.log(
+                "[MIP-E00] afterDeploy SKIPPED: MRD_PROXY_ADMIN already owned by governor"
+            );
+            return;
+        }
+
         /// Seed cTokenConfigurations so afterDeploy() works standalone (DO_DEPLOY=false).
         /// initEmissions iterates getCTokenConfigurations(block.chainid) — without
         /// this seed, the mapping is empty and zero emissions are pushed.
