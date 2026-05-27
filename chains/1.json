@@ -233,5 +233,100 @@
         "addr": "0x8769B70ac7c93AF0e75de0D69877709B66d75838",
         "isContract": true,
         "name": "EMISSIONS_ADMIN"
+    },
+    {
+        "addr": "0xAd3315F8B0c17f3bF97186B65EF91DA9FbFf170B",
+        "isContract": true,
+        "name": "MRD_IMPL"
+    },
+    {
+        "addr": "0x385198a4853940A915273a7F81b5e8737EB8391B",
+        "isContract": true,
+        "name": "COMPTROLLER"
+    },
+    {
+        "addr": "0xebC30F3F5ebF5AF8e7c8F536277a4394d3b54D5b",
+        "isContract": true,
+        "name": "UNITROLLER"
+    },
+    {
+        "addr": "0xBe7ff42920F4236a7A4B60D19d49dfEc0a773A29",
+        "isContract": true,
+        "name": "MRD_PROXY_ADMIN"
+    },
+    {
+        "addr": "0x531f69127bB04Ebb0Fd321b8092d34a4C2B4E0f1",
+        "isContract": true,
+        "name": "MRD_PROXY"
+    },
+    {
+        "addr": "0x380cEFd824c91e60c6023E4441E95329383C5B1E",
+        "isContract": true,
+        "name": "MTOKEN_IMPLEMENTATION"
+    },
+    {
+        "addr": "0x05916Cd53874dEa8738Da2CBd093F9dA723656F6",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH"
+    },
+    {
+        "addr": "0xF9034474447DCb08c27CB11C8dD7315b57698cC8",
+        "isContract": true,
+        "name": "MOONWELL_WETH"
+    },
+    {
+        "addr": "0x83cC04372dc2c14c078F8117DA96412AA2Bda3dD",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC"
+    },
+    {
+        "addr": "0x1d39DB555d7F0767aeF8f8A9814b691DB9C9A7B3",
+        "isContract": true,
+        "name": "MOONWELL_USDC"
+    },
+    {
+        "addr": "0x4a761563cE4a0212AD79A931b82fB294f4e9a623",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDT"
+    },
+    {
+        "addr": "0x696dAF18Ba0Cf503FAc9ef137ed3EF5aA719e14D",
+        "isContract": true,
+        "name": "MOONWELL_USDT"
+    },
+    {
+        "addr": "0x0F2A39213724f82c112928d5046ea794eA5f7563",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC"
+    },
+    {
+        "addr": "0x0c71a9bA73ABACf84f33B88B3e382f004358f6Fa",
+        "isContract": true,
+        "name": "MOONWELL_cbBTC"
+    },
+    {
+        "addr": "0xc7867F143A6550e32df4D880a2c1Cee3ab8AdB2c",
+        "isContract": true,
+        "name": "WETH_ROUTER"
+    },
+    {
+        "addr": "0xd05B7D0d156798a85335ECD283d20C7AE07142E4",
+        "isContract": true,
+        "name": "CHAINLINK_ORACLE"
+    },
+    {
+        "addr": "0xfa1eb770dD37870a4eB0BfE8E70E809852cd0A06",
+        "isContract": true,
+        "name": "MOONWELL_VIEWS_IMPLEMENTATION"
+    },
+    {
+        "addr": "0x452F29E1942a29FAbdEf3620f9e989C294234c71",
+        "isContract": true,
+        "name": "MOONWELL_VIEWS_PROXY_ADMIN"
+    },
+    {
+        "addr": "0xA061Ed814bBd1b03e8df0B7AbEbc40f4A6feb895",
+        "isContract": true,
+        "name": "MOONWELL_VIEWS_PROXY"
     }
 ]

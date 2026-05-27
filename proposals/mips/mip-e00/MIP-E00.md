@@ -7,9 +7,8 @@ Mainnet.
 
 If approved, Moonwell will deploy its lending protocol to Ethereum, creating new
 lending and borrowing markets for WETH, USDC, USDT, and cbBTC. The deployment
-will also include initial Morpho vaults, Chainlink oracle configuration,
-Ethereum market risk parameters, and the governance infrastructure needed for
-Moonwell Governance to manage the deployment from its existing governance hub.
+will also include Chainlink oracle configuration and Ethereum market risk
+parameters.
 
 This marks an important milestone for Moonwell: the protocol’s expansion to
 Ethereum Mainnet, the largest smart contract platform and the deepest DeFi
