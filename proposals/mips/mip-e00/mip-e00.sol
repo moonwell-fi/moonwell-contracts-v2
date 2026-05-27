@@ -422,6 +422,12 @@ contract mipe00 is HybridProposalV2, Configs {
     }
 
     function build(Addresses addresses) public override {
+        /// Seed cTokenConfigurations so build() works standalone (DO_DEPLOY=false).
+        /// Idempotent: Configs._setMTokenConfiguration early-returns when the
+        /// mapping for this chain is already populated, so this is a no-op when
+        /// deploy() already ran in the same script invocation.
+        _setMTokenConfiguration("proposals/mips/mip-e00/mTokens.json");
+
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
         /// Unitroller configuration
