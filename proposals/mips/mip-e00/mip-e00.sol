@@ -94,13 +94,23 @@ contract mipe00 is HybridProposalV2, Configs {
     }
 
     /// @notice Run MIP-X58 to deploy MultichainGovernorV2 before MIP-E00 deployment
-    function initProposal(Addresses) public override {
+    function initProposal(Addresses addresses) public override {
         /// MIP-X58 is already executed on-chain; MULTICHAIN_GOVERNOR_V2_PROXY
         /// is registered in chains/1.json. No setup needed — just select the
         /// Ethereum fork for MIP-E00 deployment.
         vm.selectFork(ETHEREUM_FORK_ID);
 
         _saveOEVConfigurations();
+
+        /// Populate in-memory `cTokenConfigurations` and `emissions` mappings
+        /// once, here, so every downstream phase (deploy, afterDeploy, build,
+        /// simulate, validate) sees a non-empty array regardless of DO_DEPLOY
+        /// / DO_AFTER_DEPLOY / DO_BUILD env flags. `_setMTokenConfiguration`
+        /// is idempotent via its own length guard; `initEmissions` is NOT —
+        /// it must be called exactly once per script invocation, which is
+        /// why all other callsites in deploy/afterDeploy/build were removed.
+        _setMTokenConfiguration("proposals/mips/mip-e00/mTokens.json");
+        initEmissions(addresses, address(0));
     }
 
     /// @notice Load OEV wrapper configurations for the active (Ethereum) chain.
@@ -180,7 +190,6 @@ contract mipe00 is HybridProposalV2, Configs {
             addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
 
-        _setMTokenConfiguration("proposals/mips/mip-e00/mTokens.json");
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         uint256 cTokenConfigsLength = cTokenConfigs.length;
@@ -260,7 +269,6 @@ contract mipe00 is HybridProposalV2, Configs {
             }
         }
 
-        initEmissions(addresses, deployer);
         if (!addresses.isAddressSet("WETH_ROUTER")) {
             WETHRouter router = new WETHRouter(
                 WETH9(addresses.getAddress("WETH")),
@@ -377,13 +385,6 @@ contract mipe00 is HybridProposalV2, Configs {
             return;
         }
 
-        /// Seed cTokenConfigurations so afterDeploy() works standalone (DO_DEPLOY=false).
-        /// initEmissions iterates getCTokenConfigurations(block.chainid) — without
-        /// this seed, the mapping is empty and zero emissions are pushed.
-        /// Idempotent: Configs._setMTokenConfiguration early-returns when the
-        /// mapping for this chain is already populated.
-        _setMTokenConfiguration("proposals/mips/mip-e00/mTokens.json");
-
         console.log("[MIP-E00] afterDeploy ENTERED, chainid:", block.chainid);
 
         {
@@ -493,8 +494,8 @@ contract mipe00 is HybridProposalV2, Configs {
             oracle.setAdmin(governor);
         }
         /// -------------- EMISSION CONFIGURATION --------------
-        initEmissions(addresses, deployer);
-
+        /// `emissions[chainid]` was populated once in initProposal(); read
+        /// the snapshot back here and push each entry to MRD.
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
             block.chainid
         );
@@ -601,12 +602,6 @@ contract mipe00 is HybridProposalV2, Configs {
     }
 
     function build(Addresses addresses) public override {
-        /// Seed cTokenConfigurations so build() works standalone (DO_DEPLOY=false).
-        /// Idempotent: Configs._setMTokenConfiguration early-returns when the
-        /// mapping for this chain is already populated, so this is a no-op when
-        /// deploy() already ran in the same script invocation.
-        _setMTokenConfiguration("proposals/mips/mip-e00/mTokens.json");
-
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
         /// Unitroller configuration
