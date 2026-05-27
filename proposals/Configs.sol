@@ -343,7 +343,8 @@ abstract contract Configs is Test {
 
                 if (
                     block.chainid == BASE_SEPOLIA_CHAIN_ID ||
-                    block.chainid == BASE_CHAIN_ID
+                    block.chainid == BASE_CHAIN_ID ||
+                    block.chainid == ETHEREUM_CHAIN_ID
                 ) {
                     /// pay USDBC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({

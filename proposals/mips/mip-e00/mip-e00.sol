@@ -52,18 +52,11 @@ contract mipe00 is HybridProposalV2, Configs {
 
     /// @notice OEV wrapper configuration (mirrors MarketAddV3.OEVConfiguration).
     /// Loaded from proposals/mips/mip-e00/OEVConfigurations.json keyed by chain id.
-    /// @dev Field order matches Foundry parseJson decoding order under
-    /// PostProposalCheck simulation: case-sensitive alphabetical
-    /// (uppercase ASCII < lowercase). `mTokenName` sorts before
-    /// `maxDecrements`/`maxRoundDelay` because 'T' (0x54) < 'a' (0x61).
-    /// Reordering here is required — otherwise `abi.decode` panics with
-    /// memory allocation error (0x41) because slot[1] holds the mTokenName
-    /// string offset rather than the maxDecrements uint.
     struct OEVConfiguration {
         uint16 feeMultiplier;
-        string mTokenName;
         uint256 maxDecrements;
         uint256 maxRoundDelay;
+        string mTokenName;
         string underlyingFeedName;
         string wrapperName;
     }
