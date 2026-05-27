@@ -19,13 +19,11 @@ liquidity environment in the world.
 
 Moonwell currently operates across multiple networks and has focused on making
 onchain lending more accessible, transparent, and useful for users. Expanding to
-Ethereum Mainnet is a major step in that mission.
-
-Ethereum remains the center of DeFi liquidity, institutional activity, and
-high-value onchain assets. Launching Moonwell on Ethereum gives the protocol an
-opportunity to serve a broader user base, support deeper asset markets, and
-establish a stronger presence in the ecosystem where decentralized finance first
-reached meaningful scale.
+Ethereum Mainnet is a major step in that mission. Ethereum remains the center of
+DeFi liquidity, institutional activity, and high-value onchain assets. Launching
+Moonwell on Ethereum gives the protocol an opportunity to serve a broader user
+base, support deeper asset markets, and establish a stronger presence in the
+ecosystem where decentralized finance first reached meaningful scale.
 
 This proposal sets the initial parameters for that deployment. These parameters
 are intended to support a measured launch with major, highly liquid assets,
@@ -46,11 +44,6 @@ The proposed initial Ethereum Mainnet markets are:
 - cbBTC
 - USDT
 - USDC
-
-The initial deployment will not include wstETH. While wstETH is a high-quality
-liquid staking token, the current recommendation is to hold off on listing it
-until Moonwell has an oracle configuration that can safely and reliably support
-the asset.
 
 ### Global Risk Parameters
 
@@ -239,12 +232,8 @@ deployment matures, liquidity deepens, and market behavior becomes easier to
 evaluate.
 
 The use of Chainlink price feeds provides familiar and battle-tested oracle
-infrastructure for the initial markets.
-
-The proposed governance design also preserves continuity for Moonwell. By using
-a TemporalGovernor connected through Wormhole, Moonwell Governance can manage
-Ethereum Mainnet from the existing governance hub rather than creating a
-separate governance process for Ethereum.
+infrastructure for the initial markets. Additionally, these markets will have
+their own OEV Wrappers deployed as well.
 
 ## Voting Options
 
