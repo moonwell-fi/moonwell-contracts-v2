@@ -929,5 +929,80 @@ contract mipe00 is HybridProposalV2, Configs {
                 )
             );
         }
+
+        _validateProposalDescriptionUri();
+    }
+
+    /// @notice Assert this proposal's mips.json entry carries a pinned IPFS
+    /// descriptionUri and — when the in-memory URI was injected by
+    /// ProposalMap.runProposal — that the two agree. Guards against shipping
+    /// the proposal with the IPFS pin step skipped or with mips.json drifted
+    /// from the runtime value loaded by the test harness.
+    function _validateProposalDescriptionUri() internal {
+        string memory mipsJson = vm.readFile(
+            string.concat(vm.projectRoot(), "/proposals/mips/mips.json")
+        );
+
+        // Match by `.path` not array index — mips.json entries are reordered
+        // constantly and pinning to index 0 would silently break the moment
+        // someone reshuffles the file.
+        string memory targetPath = "mip-e00.sol/mipe00.json";
+        string memory uriFromJson;
+        bool found;
+
+        uint256 i = 0;
+        while (
+            vm.keyExistsJson(
+                mipsJson,
+                string.concat(".[", vm.toString(i), "].path")
+            )
+        ) {
+            string memory pathValue = vm.parseJsonString(
+                mipsJson,
+                string.concat(".[", vm.toString(i), "].path")
+            );
+            if (keccak256(bytes(pathValue)) == keccak256(bytes(targetPath))) {
+                string memory uriKey = string.concat(
+                    ".[",
+                    vm.toString(i),
+                    "].descriptionUri"
+                );
+                require(
+                    vm.keyExistsJson(mipsJson, uriKey),
+                    "MIP-E00: mips.json entry missing descriptionUri - run pin-proposal-description workflow"
+                );
+                uriFromJson = vm.parseJsonString(mipsJson, uriKey);
+                found = true;
+                break;
+            }
+            i++;
+        }
+
+        require(found, "MIP-E00: entry not found in mips.json");
+
+        bytes memory uriBytes = bytes(uriFromJson);
+        require(
+            uriBytes.length > 7 &&
+                uriBytes[0] == "i" &&
+                uriBytes[1] == "p" &&
+                uriBytes[2] == "f" &&
+                uriBytes[3] == "s" &&
+                uriBytes[4] == ":" &&
+                uriBytes[5] == "/" &&
+                uriBytes[6] == "/",
+            "MIP-E00: descriptionUri must be a non-empty ipfs:// URI"
+        );
+
+        // When run via ProposalMap.runProposal, PROPOSAL_DESCRIPTION_URI is
+        // populated from the same mips.json entry. Catch any drift between
+        // the file and the runtime value. Skipped for raw forge script runs
+        // where PROPOSAL_DESCRIPTION_URI is empty by design.
+        if (bytes(PROPOSAL_DESCRIPTION_URI).length > 0) {
+            assertEq(
+                PROPOSAL_DESCRIPTION_URI,
+                uriFromJson,
+                "MIP-E00: PROPOSAL_DESCRIPTION_URI does not match mips.json descriptionUri"
+            );
+        }
     }
 }

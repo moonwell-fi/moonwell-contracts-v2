@@ -45,13 +45,22 @@ contract ProposalMapParseTest is Test {
         assertTrue(sawE00, "mip-e00 should be in development");
     }
 
-    function test_descriptionUriAbsentByDefault() public {
-        // no entry currently carries descriptionUri => empty string
-        assertEq(
-            map.getProposalDescriptionUri(
-                "artifacts/foundry/mip-e00.sol/mipe00.json"
-            ),
-            ""
+    function test_descriptionUriPresentForMipE00() public {
+        // MIP-E00 is pinned to IPFS by the pin-proposal-description workflow,
+        // so its mips.json entry must carry a non-empty ipfs:// descriptionUri.
+        // Assert the durable invariant (prefix + non-empty), not the literal
+        // CID, which changes each time the description is re-pinned.
+        string memory uri = map.getProposalDescriptionUri(
+            "artifacts/foundry/mip-e00.sol/mipe00.json"
         );
+        bytes memory uriBytes = bytes(uri);
+        assertGt(uriBytes.length, 7, "mip-e00 descriptionUri is empty");
+        assertEq(uriBytes[0], bytes1("i"), "mip-e00 descriptionUri prefix [0]");
+        assertEq(uriBytes[1], bytes1("p"), "mip-e00 descriptionUri prefix [1]");
+        assertEq(uriBytes[2], bytes1("f"), "mip-e00 descriptionUri prefix [2]");
+        assertEq(uriBytes[3], bytes1("s"), "mip-e00 descriptionUri prefix [3]");
+        assertEq(uriBytes[4], bytes1(":"), "mip-e00 descriptionUri prefix [4]");
+        assertEq(uriBytes[5], bytes1("/"), "mip-e00 descriptionUri prefix [5]");
+        assertEq(uriBytes[6], bytes1("/"), "mip-e00 descriptionUri prefix [6]");
     }
 }
