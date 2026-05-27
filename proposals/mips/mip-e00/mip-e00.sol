@@ -1082,7 +1082,16 @@ contract mipe00 is HybridProposalV2, Configs {
                         marketConfig.emissionToken,
                         addresses.getAddress(config.emissionToken)
                     );
-                    assertEq(marketConfig.endTime, config.endTime);
+                    /// On-chain `endTime` was committed by the original
+                    /// _addEmissionConfig broadcast; `config.endTime` is
+                    /// recomputed from `block.timestamp + 4 weeks` every
+                    /// run by Configs.initEmissions. On a re-run after the
+                    /// initial deploy, the two diverge by exactly the wall
+                    /// clock delta between runs. Trust the on-chain value;
+                    /// only verify the schedule is still 4-weeks-shaped and
+                    /// hasn't drifted into the past.
+                    assertGt(marketConfig.endTime, block.timestamp);
+                    assertLe(marketConfig.endTime, block.timestamp + 4 weeks);
                     assertEq(
                         marketConfig.supplyEmissionsPerSec,
                         config.supplyEmissionPerSec
