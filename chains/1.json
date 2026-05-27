@@ -328,5 +328,10 @@
         "addr": "0xA061Ed814bBd1b03e8df0B7AbEbc40f4A6feb895",
         "isContract": true,
         "name": "MOONWELL_VIEWS_PROXY"
+    },
+    {
+        "addr": "0xaEab196DdB601323fAe7397BfF06111c73a8c4b1",
+        "isContract": true,
+        "name": "MARKET_ADD_CHECKER"
     }
 ]
