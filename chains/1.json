@@ -92,7 +92,7 @@
     {
         "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
         "name": "BORROW_SUPPLY_GUARDIAN",
-        "isContract": false
+        "isContract": true
     },
     {
         "addr": "0x6b175474e89094c44da98b954eedeac495271d0f",
