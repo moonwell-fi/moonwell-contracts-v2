@@ -84,12 +84,15 @@ contract mipe00 is HybridProposalV2, Configs {
         init(addresses);
 
         /// ------- Reward Distributor -------
-        {
+        if (!addresses.isAddressSet("MRD_IMPL")) {
             MultiRewardDistributor distributor = new MultiRewardDistributor();
             addresses.addAddress("MRD_IMPL", address(distributor));
         }
-        {
-            /// ------- Unitroller/Comptroller -------
+        /// ------- Unitroller/Comptroller + MRD proxy -------
+        /// Guard on MRD_PROXY (last address created in the block) so a
+        /// partial re-run never re-wires `_setPendingImplementation` /
+        /// `_become` against fresh contracts.
+        if (!addresses.isAddressSet("MRD_PROXY")) {
             Unitroller unitroller = new Unitroller();
             Comptroller comptroller = new Comptroller();
             unitroller._setPendingImplementation(address(comptroller));
@@ -112,7 +115,7 @@ contract mipe00 is HybridProposalV2, Configs {
             addresses.addAddress("MRD_PROXY", address(mrdProxy));
         }
         /// ------ MTOKENS -------
-        {
+        if (!addresses.isAddressSet("MTOKEN_IMPLEMENTATION")) {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
             addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
@@ -126,7 +129,16 @@ contract mipe00 is HybridProposalV2, Configs {
             for (uint256 i = 0; i < cTokenConfigsLength; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
                 /// ----- Jump Rate IRM -------
-                {
+                if (
+                    !addresses.isAddressSet(
+                        string(
+                            abi.encodePacked(
+                                "JUMP_RATE_IRM_",
+                                config.addressesString
+                            )
+                        )
+                    )
+                ) {
                     address irModel = address(
                         new JumpRateModel(
                             config.jrm.baseRatePerYear,
@@ -164,41 +176,52 @@ contract mipe00 is HybridProposalV2, Configs {
                 ///    = 2e26
                 /// (10 ** (6 + 8)) * 2 // 6 decimals example
                 ///    = 2e14
-                uint256 initialExchangeRate = (10 **
-                    (ERC20(addresses.getAddress(config.tokenAddressName))
-                        .decimals() + 8)) * 2;
-                MErc20Delegator mToken = new MErc20Delegator(
-                    addresses.getAddress(config.tokenAddressName),
-                    ComptrollerInterface(addr.unitroller),
-                    InterestRateModel(addr.irModel),
-                    initialExchangeRate,
-                    config.name,
-                    config.symbol,
-                    mTokenDecimals,
-                    payable(deployer),
-                    addr.mTokenImpl,
-                    ""
-                );
-                addresses.addAddress(config.addressesString, address(mToken));
+                if (!addresses.isAddressSet(config.addressesString)) {
+                    uint256 initialExchangeRate = (10 **
+                        (ERC20(addresses.getAddress(config.tokenAddressName))
+                            .decimals() + 8)) * 2;
+                    MErc20Delegator mToken = new MErc20Delegator(
+                        addresses.getAddress(config.tokenAddressName),
+                        ComptrollerInterface(addr.unitroller),
+                        InterestRateModel(addr.irModel),
+                        initialExchangeRate,
+                        config.name,
+                        config.symbol,
+                        mTokenDecimals,
+                        payable(deployer),
+                        addr.mTokenImpl,
+                        ""
+                    );
+                    addresses.addAddress(
+                        config.addressesString,
+                        address(mToken)
+                    );
+                }
             }
         }
 
         initEmissions(addresses, deployer);
-        WETHRouter router = new WETHRouter(
-            WETH9(addresses.getAddress("WETH")),
-            MErc20(addresses.getAddress("MOONWELL_WETH"))
-        );
-        addresses.addAddress("WETH_ROUTER", address(router));
+        if (!addresses.isAddressSet("WETH_ROUTER")) {
+            WETHRouter router = new WETHRouter(
+                WETH9(addresses.getAddress("WETH")),
+                MErc20(addresses.getAddress("MOONWELL_WETH"))
+            );
+            addresses.addAddress("WETH_ROUTER", address(router));
+        }
         /// deploy oracle, set price oracle
-        ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
-        addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
+        if (!addresses.isAddressSet("CHAINLINK_ORACLE")) {
+            ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
+            addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
+        }
 
         /// ------- MoonwellViewsV3 (read-only views aggregator) -------
         /// impl + dedicated ProxyAdmin + initialized TransparentUpgradeableProxy.
         /// The dedicated ProxyAdmin keeps view-only upgrades out of governance.
         /// On Ethereum the stkWELL safety module is registered as
         /// STK_GOVTOKEN_PROXY (the Base key is stkWELL_PROXY).
-        {
+        /// Guard on MOONWELL_VIEWS_PROXY (last address created) so a partial
+        /// re-run never re-initializes the proxy against a fresh impl/admin.
+        if (!addresses.isAddressSet("MOONWELL_VIEWS_PROXY")) {
             MoonwellViewsV3 viewsImpl = new MoonwellViewsV3();
             addresses.addAddress(
                 "MOONWELL_VIEWS_IMPLEMENTATION",
