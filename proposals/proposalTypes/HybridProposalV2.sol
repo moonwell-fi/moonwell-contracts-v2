@@ -89,6 +89,12 @@ abstract contract HybridProposalV2 is
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
 
+    /// @notice optional IPFS URI (e.g. ipfs://<cid>) pointing at the pinned
+    /// proposal description. When set, it is used as the `descriptionUri`
+    /// argument to propose() instead of the raw markdown. Populated off-chain
+    /// (see ProposalMap) from the optional `descriptionUri` field in mips.json.
+    string public PROPOSAL_DESCRIPTION_URI;
+
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
         address indexed sender,
@@ -103,6 +109,20 @@ abstract contract HybridProposalV2 is
         bytes memory newProposalDescription
     ) internal {
         PROPOSAL_DESCRIPTION = newProposalDescription;
+    }
+
+    /// @notice set the optional IPFS URI for the proposal description
+    function setProposalDescriptionUri(string memory uri) public override {
+        PROPOSAL_DESCRIPTION_URI = uri;
+    }
+
+    /// @notice description argument used in propose() calldata: the pinned IPFS
+    /// URI when available, otherwise the raw markdown (backwards compatible)
+    function _proposeDescription() internal view returns (string memory) {
+        return
+            bytes(PROPOSAL_DESCRIPTION_URI).length > 0
+                ? PROPOSAL_DESCRIPTION_URI
+                : string(PROPOSAL_DESCRIPTION);
     }
 
     /// @notice push an action to the Hybrid proposal without specifying a
@@ -486,7 +506,7 @@ abstract contract HybridProposalV2 is
             targets,
             values,
             payloads,
-            string(PROPOSAL_DESCRIPTION),
+            _proposeDescription(),
             true // finalize = true
         );
 
@@ -669,7 +689,7 @@ abstract contract HybridProposalV2 is
                 targets,
                 values,
                 payloads,
-                string(PROPOSAL_DESCRIPTION),
+                _proposeDescription(),
                 true // finalize = true
             );
 

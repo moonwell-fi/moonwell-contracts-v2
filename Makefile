@@ -69,3 +69,12 @@ test-unit:
 audit-rewards:
 	@./script/rewards/check-rewards-math.sh $(PROPOSAL)
 
+# Pin in-development proposal descriptions to IPFS (Pinata) and record the
+# ipfs://<cid> in the matching mips.json entry. Requires PINATA_JWT.
+# Usage:
+#   PINATA_JWT=... make pin-descriptions FILES="proposals/mips/mip-e00/MIP-E00.md"
+#   PINATA_JWT=... make pin-descriptions   # auto-detect from git diff main
+#   PIN_DRY_RUN=1 make pin-descriptions FILES=...   # no network, fake CID
+pin-descriptions:
+	@./script/proposals/pin-descriptions.sh $(FILES)
+
