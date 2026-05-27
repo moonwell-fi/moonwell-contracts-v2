@@ -52,11 +52,19 @@ contract mipe00 is HybridProposalV2, Configs {
 
     /// @notice OEV wrapper configuration (mirrors MarketAddV3.OEVConfiguration).
     /// Loaded from proposals/mips/mip-e00/OEVConfigurations.json keyed by chain id.
+    /// @dev Field order MUST match Foundry parseJson decoding order: case-sensitive
+    /// alphabetical (uppercase ASCII < lowercase). `mTokenName` sorts before
+    /// `maxDecrements`/`maxRoundDelay` because 'T' (0x54) < 'a' (0x61).
+    /// Do NOT reorder to match the on-disk JSON layout — `vm.parseJson` ignores
+    /// file order and re-sorts keys alphabetically before ABI-encoding. Any
+    /// reorder here causes `abi.decode` to panic with memory allocation error
+    /// (0x41) because slot[1] would hold the mTokenName string offset rather
+    /// than the maxDecrements uint.
     struct OEVConfiguration {
         uint16 feeMultiplier;
+        string mTokenName;
         uint256 maxDecrements;
         uint256 maxRoundDelay;
-        string mTokenName;
         string underlyingFeedName;
         string wrapperName;
     }
@@ -343,7 +351,19 @@ contract mipe00 is HybridProposalV2, Configs {
         }
     }
 
-    function afterDeploy(Addresses addresses, address) public override {
+    function afterDeploy(
+        Addresses addresses,
+        address deployer
+    ) public override {
+        /// Seed cTokenConfigurations so afterDeploy() works standalone (DO_DEPLOY=false).
+        /// initEmissions iterates getCTokenConfigurations(block.chainid) — without
+        /// this seed, the mapping is empty and zero emissions are pushed.
+        /// Idempotent: Configs._setMTokenConfiguration early-returns when the
+        /// mapping for this chain is already populated.
+        _setMTokenConfiguration("proposals/mips/mip-e00/mTokens.json");
+
+        console.log("[MIP-E00] afterDeploy ENTERED, chainid:", block.chainid);
+
         {
             ProxyAdmin proxyAdmin = ProxyAdmin(
                 addresses.getAddress("MRD_PROXY_ADMIN")
@@ -451,6 +471,7 @@ contract mipe00 is HybridProposalV2, Configs {
             oracle.setAdmin(governor);
         }
         /// -------------- EMISSION CONFIGURATION --------------
+        initEmissions(addresses, deployer);
 
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
             block.chainid
@@ -459,9 +480,44 @@ contract mipe00 is HybridProposalV2, Configs {
             addresses.getAddress("MRD_PROXY")
         );
 
+        console.log("[MIP-E00] afterDeploy emissions chainid:", block.chainid);
+        console.log("[MIP-E00] emissionConfig.length:", emissionConfig.length);
+
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
+
+                console.log(
+                    "[MIP-E00] emission[",
+                    i,
+                    "] mToken:",
+                    config.mToken
+                );
+                console.log("[MIP-E00] emission[", i, "] owner:", config.owner);
+                console.log(
+                    "[MIP-E00] emission[",
+                    i,
+                    "] emissionToken:",
+                    config.emissionToken
+                );
+                console.log(
+                    "[MIP-E00] emission[",
+                    i,
+                    "] supplyEmissionPerSec:",
+                    config.supplyEmissionPerSec
+                );
+                console.log(
+                    "[MIP-E00] emission[",
+                    i,
+                    "] borrowEmissionsPerSec:",
+                    config.borrowEmissionsPerSec
+                );
+                console.log(
+                    "[MIP-E00] emission[",
+                    i,
+                    "] endTime:",
+                    config.endTime
+                );
 
                 mrd._addEmissionConfig(
                     MToken(addresses.getAddress(config.mToken)),

@@ -7,8 +7,9 @@ Mainnet.
 
 If approved, Moonwell will deploy its lending protocol to Ethereum, creating new
 lending and borrowing markets for WETH, USDC, USDT, and cbBTC. The deployment
-will also include Chainlink oracle configuration and Ethereum market risk
-parameters.
+will also include Chainlink oracle configuration, Ethereum market risk
+parameters, and the governance infrastructure needed for Moonwell Governance to
+manage the deployment from its existing governance hub.
 
 This marks an important milestone for Moonwell: the protocol’s expansion to
 Ethereum Mainnet, the largest smart contract platform and the deepest DeFi
@@ -35,16 +36,166 @@ controls consistent with Moonwell’s existing security practices.
 
 If approved, this proposal will authorize the deployment of Moonwell Protocol to
 Ethereum Mainnet with the following initial markets, vaults, oracle
-configuration and risk parameters.
+configuration, governance setup, and risk parameters.
 
-### Initial Markets
+### Initial Ethereum Markets
 
-| Market | Collateral Factor | Reserve Factor | Supply Cap  | Borrow Cap |
-| ------ | ----------------- | -------------- | ----------- | ---------- |
-| WETH   | 80%               | 10%            | 50,000      | 35,000     |
-| USDC   | 85%               | 10%            | 100,000,000 | 80,000,000 |
-| USDT   | 80%               | 10%            | 50,000,000  | 40,000,000 |
-| cbBTC  | 75%               | 15%            | 1,000       | 500        |
+The proposed initial Ethereum Mainnet markets are:
+
+- WETH
+- cbBTC
+- USDT
+- USDC
+
+The initial deployment will not include wstETH. While wstETH is a high-quality
+liquid staking token, the current recommendation is to hold off on listing it
+until Moonwell has an oracle configuration that can safely and reliably support
+the asset.
+
+### Global Risk Parameters
+
+| Parameter             | Value |
+| --------------------- | ----- |
+| Liquidation Incentive | 10%   |
+| Liquidator Share      | 7%    |
+| Protocol Seize Share  | 3%    |
+| Close Factor          | 50%   |
+
+### WETH Risk Parameters
+
+| Parameter         | Recommended Value |
+| ----------------- | ----------------- |
+| Collateral Factor | 80%               |
+| Reserve Factor    | 15%               |
+| Supply Cap        | 30,000 WETH       |
+| Borrow Cap        | 20,000 WETH       |
+
+#### WETH Interest Rate Parameters
+
+| Parameter       | Recommended Value |
+| --------------- | ----------------- |
+| Base Rate       | 0                 |
+| Multiplier      | 0.025             |
+| Jump Multiplier | 9                 |
+| Kink            | 0.9               |
+
+#### WETH Projected APYs
+
+With a 15% reserve factor:
+
+| Utilization | Borrow APY | Supply APY |
+| ----------- | ---------- | ---------- |
+| 0%          | 0%         | 0%         |
+| 90% / Kink  | 2.25%      | 1.72%      |
+| 100%        | 92.25%     | 78.41%     |
+
+#### WETH Oracle
+
+| Oracle  | Address                                      | Type         |
+| ------- | -------------------------------------------- | ------------ |
+| ETH/USD | `0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419` | Market price |
+
+### cbBTC Risk Parameters
+
+| Parameter         | Recommended Value |
+| ----------------- | ----------------- |
+| Collateral Factor | 80%               |
+| Reserve Factor    | 15%               |
+| Supply Cap        | 1,000 cbBTC       |
+| Borrow Cap        | 600 cbBTC         |
+
+#### cbBTC Interest Rate Parameters
+
+| Parameter       | Recommended Value |
+| --------------- | ----------------- |
+| Base Rate       | 0                 |
+| Multiplier      | 0.068             |
+| Jump Multiplier | 2                 |
+| Kink            | 0.6               |
+
+#### cbBTC Projected APYs
+
+With a 15% reserve factor:
+
+| Utilization | Borrow APY | Supply APY |
+| ----------- | ---------- | ---------- |
+| 0%          | 0%         | 0%         |
+| 60% / Kink  | 4.08%      | 2.08%      |
+| 100%        | 84.08%     | 71.47%     |
+
+#### cbBTC Oracle
+
+| Oracle    | Address                                      | Type         |
+| --------- | -------------------------------------------- | ------------ |
+| cbBTC/USD | `0x2665701293fCbEB223D11A08D826563EDcCE423A` | Market price |
+
+### USDT Risk Parameters
+
+| Parameter         | Recommended Value |
+| ----------------- | ----------------- |
+| Collateral Factor | 85%               |
+| Reserve Factor    | 10%               |
+| Supply Cap        | 200,000,000 USDT  |
+| Borrow Cap        | 180,000,000 USDT  |
+
+#### USDT Interest Rate Parameters
+
+| Parameter       | Recommended Value |
+| --------------- | ----------------- |
+| Base Rate       | 0                 |
+| Multiplier      | 0.67              |
+| Jump Multiplier | 9                 |
+| Kink            | 0.9               |
+
+#### USDT Projected APYs
+
+With a 10% reserve factor:
+
+| Utilization | Borrow APY | Supply APY |
+| ----------- | ---------- | ---------- |
+| 0%          | 0%         | 0%         |
+| 90% / Kink  | 6.03%      | 4.88%      |
+| 100%        | 96.03%     | 86.43%     |
+
+#### USDT Oracle
+
+| Oracle   | Address                                      | Type         |
+| -------- | -------------------------------------------- | ------------ |
+| USDT/USD | `0x3E7d1eAB13ad0104d2750B8863b489D65364e32D` | Market price |
+
+### USDC Risk Parameters
+
+| Parameter         | Recommended Value |
+| ----------------- | ----------------- |
+| Collateral Factor | 85%               |
+| Reserve Factor    | 10%               |
+| Supply Cap        | 200,000,000 USDC  |
+| Borrow Cap        | 180,000,000 USDC  |
+
+#### USDC Interest Rate Parameters
+
+| Parameter       | Recommended Value |
+| --------------- | ----------------- |
+| Base Rate       | 0                 |
+| Multiplier      | 0.67              |
+| Jump Multiplier | 9                 |
+| Kink            | 0.9               |
+
+#### USDC Projected APYs
+
+With a 10% reserve factor:
+
+| Utilization | Borrow APY | Supply APY |
+| ----------- | ---------- | ---------- |
+| 0%          | 0%         | 0%         |
+| 90% / Kink  | 6.03%      | 4.88%      |
+| 100%        | 96.03%     | 86.43%     |
+
+#### USDC Oracle
+
+| Oracle   | Address                                      | Type         |
+| -------- | -------------------------------------------- | ------------ |
+| USDC/USD | `0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6` | Market price |
 
 ### Oracle Configuration
 
@@ -68,16 +219,6 @@ The deployment will use the following initial protocol-level risk parameters:
 | Close Factor          | 50%   |
 | Protocol Seize Share  | 3%    |
 
-### Governance Configuration
-
-The Ethereum deployment will include a `TemporalGovernor` contract that receives
-governance actions from Moonbeam through Wormhole.
-
-This allows Moonwell Governance to continue managing protocol changes from its
-existing governance hub while extending control to the Ethereum deployment. In
-practice, this means Moonwell can expand to Ethereum without fragmenting
-governance across separate systems.
-
 ## Rationale
 
 Ethereum Mainnet is the most important liquidity venue in decentralized finance.
@@ -98,9 +239,7 @@ deployment matures, liquidity deepens, and market behavior becomes easier to
 evaluate.
 
 The use of Chainlink price feeds provides familiar and battle-tested oracle
-infrastructure for the initial markets. The use of capped price feeds adds
-additional protection for assets such as stablecoins and wrapped assets where
-conservative oracle behavior is important.
+infrastructure for the initial markets.
 
 The proposed governance design also preserves continuity for Moonwell. By using
 a TemporalGovernor connected through Wormhole, Moonwell Governance can manage
