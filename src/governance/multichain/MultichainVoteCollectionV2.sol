@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
 import {IMultichainVoteCollection} from "@protocol/governance/multichain/IMultichainVoteCollection.sol";
@@ -5,9 +6,11 @@ import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contr
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
-import {SnapshotInterface} from "@protocol/governance/multichain/SnapshotInterface.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {SnapshotInterface} from "@protocol/governance/multichain/SnapshotInterface.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {IVotingPowerAggregator} from "@protocol/governance/multichain/IVotingPowerAggregator.sol";
 
 /// @notice Upgradeable contract, constructor disables the implementation contract
 /// This contract is intentionally as minimal as possible. It is only responsible for
@@ -19,23 +22,26 @@ import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 /// Moonbeam will only allow receiving of votes for each chaind id and proposal id
 /// once per proposal. This is to prevent votes from external chains being double
 /// counted.
-/// NOTE: this contract is upgraded to MultichainVoteCollectionV2
-contract MultichainVoteCollection is
+/// @custom:oz-upgrades-from MultichainVoteCollection
+contract MultichainVoteCollectionV2 is
     IMultichainVoteCollection,
     WormholeBridgeBase,
     Ownable2StepUpgradeable
 {
+    uint16 private constant MOONBEAM_WORMHOLE_CHAIN_ID = 16;
+    address private constant MOONBEAM_GOVERNOR_DEPRECATED =
+        0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4;
+
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
     /// -------------------- STATE VARIABLES -------------------- ///
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
 
-    /// @notice reference to the xWELL token
+    /// @dev DEPRECATED SLOT
     xWELL public xWell;
 
-    /// @notice reference to the stkWELL token
-    /// this stkWELL version uses timestamps instead of block number
+    /// @dev DEPRECATED SLOT
     SnapshotInterface public stkWell;
 
     /// ---------------------------------------------------------
@@ -47,20 +53,20 @@ contract MultichainVoteCollection is
     /// @notice mapping from proposalId to MultichainProposal
     mapping(uint256 proposalId => MultichainProposal) public proposals;
 
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-    /// ------------- V2 STORAGE (post-upgrade) -----------------
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-
     /// @notice Wormhole core bridge for on-chain VAA verification
+    /// @dev must remain at this slot to match V1 storage layout (slot 159)
     IWormhole public wormhole;
 
-    /// @notice tracks processed VAA hashes to prevent replay
+    /// @notice VAA hashes that have already been processed (replay protection)
+    /// @dev must remain at this slot to match V1 storage layout (slot 160)
     mapping(bytes32 => bool) public processedVAAHashes;
 
-    /// @notice disable the initializer to stop governance hijacking
-    /// and avoid selfdestruct attacks.
+    /// @notice reference to the voting power aggregator
+    /// @dev new V2 slot (161), set by initializeV3
+    IVotingPowerAggregator public votingPower;
+
+    /// @notice disable the initializer to stop governance hijacking and avoid selfdestruct attacks.
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
@@ -69,14 +75,14 @@ contract MultichainVoteCollection is
     /// @param _xWell address of the xWELL token
     /// @param _stkWell address of the stkWell token
     /// @param _moonbeamGovernor address of the moonbeam governor contract
-    /// @param _wormholeRelayer address of the wormhole relayer
+    /// @param _wormholeCore address of the wormhole core bridge
     /// @param _moonbeamWormholeChainId chain id of the moonbeam chain
     /// @param _owner address of the contract
     function initialize(
         address _xWell,
         address _stkWell,
         address _moonbeamGovernor,
-        address _wormholeRelayer,
+        address _wormholeCore,
         uint16 _moonbeamWormholeChainId,
         address _owner
     ) external initializer {
@@ -85,20 +91,46 @@ contract MultichainVoteCollection is
 
         _addTargetAddress(_moonbeamWormholeChainId, _moonbeamGovernor);
 
-        _setWormholeRelayer(_wormholeRelayer);
-
-        _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
+        wormhole = IWormhole(_wormholeCore);
 
         __Ownable_init();
         _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
     }
 
-    /// @notice V2 upgrade: set the Wormhole core bridge address for direct
-    ///         VAA verification, bypassing the deprecated standard relayer.
-    /// @param wormholeCore address of the Wormhole core bridge on this chain
-    function initializeV2(address wormholeCore) external reinitializer(2) {
-        require(wormholeCore != address(0), "MultichainGovernor: zero address");
-        wormhole = IWormhole(wormholeCore);
+    /// @notice initialize v3
+    /// @param _votingPowerAggregator address of the voting power aggregator
+    /// @param _ethereumWormholeChainId wormhole chain id of the new governor to add
+    /// @param _ethereumGovernor address of the new governor to add
+    /// @custom:oz-upgrades-validate-as-initializer
+    function initializeV3(
+        address _votingPowerAggregator,
+        uint16 _ethereumWormholeChainId,
+        address _ethereumGovernor
+    ) external reinitializer(3) {
+        require(
+            _votingPowerAggregator != address(0),
+            "MultichainVoteCollectionV2: voting power aggregator cannot be zero address"
+        );
+        require(
+            _ethereumGovernor != address(0),
+            "MultichainVoteCollectionV2: new governor cannot be zero address"
+        );
+
+        votingPower = IVotingPowerAggregator(_votingPowerAggregator);
+
+        // Remove old governor as trusted sender, add the new one
+        WormholeTrustedSender.TrustedSender[]
+            memory trustedSendersToRemove = new WormholeTrustedSender.TrustedSender[](
+                1
+            );
+        trustedSendersToRemove[0] = WormholeTrustedSender.TrustedSender({
+            chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
+            addr: MOONBEAM_GOVERNOR_DEPRECATED
+        });
+        _removeTargetAddresses(trustedSendersToRemove);
+
+        // Add new governor as trusted sender
+        _addTargetAddress(_ethereumWormholeChainId, _ethereumGovernor);
     }
 
     /// --------------------------------------------------------- ///
@@ -179,17 +211,14 @@ contract MultichainVoteCollection is
         abstainVotes = proposal.votes.abstainVotes;
     }
 
-    /// @notice returns the total voting power for an address at a given block number and timestamp
-    /// returns the sum of votes across both xWELL and stkWELL at the given timestamp
+    /// @notice returns the total voting power for an address at a given timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
     function getVotes(
         address account,
         uint256 timestamp
     ) public view returns (uint256) {
-        return
-            xWell.getPastVotes(account, timestamp) +
-            stkWell.getPriorVotes(account, timestamp);
+        return votingPower.getVotes(account, timestamp);
     }
 
     /// --------------------------------------------------------- ///
@@ -210,26 +239,26 @@ contract MultichainVoteCollection is
         /// Check if proposal start time has passed
         require(
             proposal.votingStartTime <= block.timestamp,
-            "MultichainVoteCollection: Voting has not started yet"
+            "MultichainVoteCollectionV2: Voting has not started yet"
         );
 
         /// Check if proposal end time has not passed
         require(
             proposal.votingEndTime >= block.timestamp,
-            "MultichainVoteCollection: Voting has ended"
+            "MultichainVoteCollectionV2: Voting has ended"
         );
 
         /// Vote value must be 0, 1 or 2
         require(
             voteValue <= Constants.VOTE_VALUE_ABSTAIN,
-            "MultichainVoteCollection: invalid vote value"
+            "MultichainVoteCollectionV2: invalid vote value"
         );
 
         /// Check if user has already voted
         Receipt storage receipt = proposal.receipts[msg.sender];
         require(
             receipt.hasVoted == false,
-            "MultichainVoteCollection: voter already voted"
+            "MultichainVoteCollectionV2: voter already voted"
         );
 
         /// Get voting power
@@ -238,7 +267,10 @@ contract MultichainVoteCollection is
             proposal.voteSnapshotTimestamp
         );
 
-        require(userVotes != 0, "MultichainVoteCollection: voter has no votes");
+        require(
+            userVotes != 0,
+            "MultichainVoteCollectionV2: voter has no votes"
+        );
 
         /// Effects
 
@@ -263,7 +295,7 @@ contract MultichainVoteCollection is
         emit VoteCast(msg.sender, proposalId, voteValue, userVotes);
     }
 
-    /// @notice Emits votes to be contabilized on Moonbeam Governor contract
+    /// @notice Emits votes to be tallied on the Ethereum MultichainGovernorV2
     /// @param proposalId the proposal id
     function emitVotes(uint256 proposalId) external payable override {
         /// Get the proposal
@@ -275,19 +307,19 @@ contract MultichainVoteCollection is
         /// Check if proposal has votes
         require(
             votes.totalVotes > 0,
-            "MultichainVoteCollection: proposal has no votes"
+            "MultichainVoteCollectionV2: proposal has no votes"
         );
 
         /// Check if proposal end time has passed
         require(
             proposal.votingEndTime < block.timestamp,
-            "MultichainVoteCollection: Voting has not ended"
+            "MultichainVoteCollectionV2: Voting has not ended"
         );
 
         /// Check if proposal collection end time has not passed
         require(
             proposal.crossChainVoteCollectionEndTimestamp >= block.timestamp,
-            "MultichainVoteCollection: Voting collection phase has ended"
+            "MultichainVoteCollectionV2: Voting collection phase has ended"
         );
 
         _bridgeOutAll(
@@ -314,13 +346,12 @@ contract MultichainVoteCollection is
     /// --------------------------------------------------------- ///
 
     /// @notice bridge proposals from moonbeam
-    /// @param payload the payload of the message, contains proposalId, votingStartTime,
-    ///                votingEndTime and voteCollectionEndTime
+    /// @param payload the payload of the message, contains proposalId, votingStartTime, votingEndTime and voteCollectionEndTime
     function _bridgeIn(uint16, bytes memory payload) internal override {
         /// payload should be 5 uint256s
         require(
             payload.length == 160,
-            "MultichainVoteCollection: invalid payload length"
+            "MultichainVoteCollectionV2: invalid payload length"
         );
 
         /// Parse the payload and do the corresponding actions!
@@ -335,31 +366,31 @@ contract MultichainVoteCollection is
         /// Ensure proposalId is unique
         require(
             proposals[proposalId].votingStartTime == 0,
-            "MultichainVoteCollection: proposal already exists"
+            "MultichainVoteCollectionV2: proposal already exists"
         );
 
         /// Ensure votingEndTime is in the future so there is time for users to vote
         require(
             votingEndTime > block.timestamp,
-            "MultichainVoteCollection: end time must be in the future"
+            "MultichainVoteCollectionV2: end time must be in the future"
         );
 
         /// Ensure voteSnapshotTimestamp is less than votingStartTime
         require(
             voteSnapshotTimestamp < votingStartTime,
-            "MultichainVoteCollection: snapshot time must be before start time"
+            "MultichainVoteCollectionV2: snapshot time must be before start time"
         );
 
         /// Ensure votingStartTime is less than votingEndTime
         require(
             votingStartTime < votingEndTime,
-            "MultichainVoteCollection: start time must be before end time"
+            "MultichainVoteCollectionV2: start time must be before end time"
         );
 
         /// Ensure votingStartTime is less than votingEndTime
         require(
             votingEndTime < crossChainVoteCollectionEndTimestamp,
-            "MultichainVoteCollection: end time must be before vote collection end"
+            "MultichainVoteCollectionV2: end time must be before vote collection end"
         );
 
         /// Create the proposal
@@ -379,38 +410,52 @@ contract MultichainVoteCollection is
         );
     }
 
-    //// ---------------------------------------------- ////
-    //// ---------------------------------------------- ////
-    //// ----------------- ADMIN ONLY ----------------- ////
-    //// ---------------------------------------------- ////
-    //// ---------------------------------------------- ////
-
-    /// @notice set a gas limit for the relayer on the external chain
-    /// should only be called if there is a change in gas prices on the external chain
-    /// @param newGasLimit new gas limit to set
-    function setGasLimit(uint96 newGasLimit) external onlyOwner {
-        require(
-            newGasLimit >= Constants.MIN_GAS_LIMIT,
-            "MultichainVoteCollection: gas limit too low"
-        );
-
-        _setGasLimit(newGasLimit);
+    /// @notice deprecated — gas limit is no longer used with publishMessage
+    function setGasLimit(uint96) external view onlyOwner {
+        revert("deprecated");
     }
 
-    /// @notice update the stkWell token address
-    /// @param newStakedWell the new stkWell token address
-    function setNewStakedWell(address newStakedWell) external onlyOwner {
-        stkWell = SnapshotInterface(newStakedWell);
-
-        emit NewStakedWellSet(newStakedWell);
+    /// @notice add a trusted sender for a given Wormhole chain id
+    /// @dev Owner-gated mutator that delegates to WormholeBridgeBase
+    ///      ._addTargetAddress. Exists so the owner (the satellite
+    ///      TemporalGovernor on Base/OP) can re-introduce a trusted sender
+    ///      whose target slot was zeroed — e.g. to restore the old Moonbeam
+    ///      MultichainGovernor as a trusted sender via the mip-x58
+    ///      break-glass path. Reverts if the chain id already has a target
+    ///      (ChainAlreadyAdded) or if addr is zero (InvalidAddress).
+    /// @param chainId Wormhole chain id of the trusted sender
+    /// @param addr Address of the trusted sender on that chain
+    function addTargetAddress(uint16 chainId, address addr) external onlyOwner {
+        _addTargetAddress(chainId, addr);
     }
+
+    /// @notice remove the trusted sender for a given Wormhole chain id
+    /// @dev Owner-gated mutator that delegates to WormholeBridgeBase
+    ///      ._removeTargetAddresses. Reverts with ChainNotAdded if the
+    ///      chain id has no current target.
+    /// @param chainId Wormhole chain id whose trusted sender slot to clear
+    function removeTargetAddress(uint16 chainId) external onlyOwner {
+        WormholeTrustedSender.TrustedSender[]
+            memory cfg = new WormholeTrustedSender.TrustedSender[](1);
+        cfg[0] = WormholeTrustedSender.TrustedSender({
+            chainId: chainId,
+            addr: address(0)
+        });
+        _removeTargetAddresses(cfg);
+    }
+
+    //// ---------------------------------------------- ////
+    //// ---------------------------------------------- ////
+    //// ------------- WORMHOLE OVERRIDES ------------- ////
+    //// ---------------------------------------------- ////
+    //// ---------------------------------------------- ////
 
     /// @notice return the wormhole core contract
     function _wormhole() internal view override returns (IWormhole) {
         return wormhole;
     }
 
-    /// @notice check if a VAA hash has been processed
+    /// @notice check if a VAA hash has already been processed
     function _isVAAHashProcessed(
         bytes32 hash
     ) internal view override returns (bool) {

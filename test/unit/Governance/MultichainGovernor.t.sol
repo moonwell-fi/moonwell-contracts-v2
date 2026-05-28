@@ -13,6 +13,8 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
+import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
@@ -234,7 +236,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].chainId = 1;
         _trustedSenders[0].addr = address(0);
 
-        vm.expectRevert("WormholeBridge: invalid target address");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.InvalidAddress.selector)
+        );
         vm.prank(address(governor));
         governor.addExternalChainConfigs(_trustedSenders);
     }
@@ -427,7 +431,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     /// PAUSE GUARDIAN
     function testPauseNonPauseGuardianFails() public {
-        vm.expectRevert("ConfigurablePauseGuardian: only pause guardian");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ConfigurablePauseGuardian.OnlyPauseGuardian.selector
+            )
+        );
         vm.prank(address(1));
         governor.pause();
     }
@@ -524,7 +532,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].addr = address(this);
 
         vm.prank(address(governor));
-        vm.expectRevert("WormholeBridge: chain not added");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.ChainNotAdded.selector)
+        );
         governor.removeExternalChainConfigs(_trustedSenders);
     }
 
@@ -558,7 +568,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             memory _trustedSenders = testaddExternalChainConfigsGovernorSucceeds();
 
         vm.prank(address(governor));
-        vm.expectRevert("WormholeBridge: chain already added");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeBridgeBase.ChainAlreadyAdded.selector
+            )
+        );
         governor.addExternalChainConfigs(_trustedSenders);
     }
 
@@ -782,6 +796,73 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             "governor did not accept eth"
         );
         assertTrue(success, "eth transfer failed");
+    }
+
+    function testRecoverETHNonGovernorFails() public {
+        address payable recipient = payable(address(0x123));
+
+        vm.expectRevert("MultichainGovernor: only governor");
+        governor.recoverETH(recipient);
+    }
+
+    function testRecoverETHGovernorSucceeds() public {
+        uint256 sendAmount = 5 ether;
+        address payable recipient = payable(address(0x456));
+
+        // Send ETH to governor
+        vm.deal(address(this), sendAmount);
+        (bool success, ) = address(governor).call{value: sendAmount}("");
+        assertTrue(success, "eth transfer to governor failed");
+
+        assertEq(
+            address(governor).balance,
+            sendAmount,
+            "governor did not receive eth"
+        );
+
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        // Recover ETH as governor
+        vm.prank(address(governor));
+        governor.recoverETH(recipient);
+
+        assertEq(
+            address(governor).balance,
+            0,
+            "governor should have zero balance after recovery"
+        );
+        assertEq(
+            recipient.balance,
+            recipientBalanceBefore + sendAmount,
+            "recipient did not receive recovered eth"
+        );
+    }
+
+    function testRecoverETHWithZeroBalance() public {
+        address payable recipient = payable(address(0x789));
+
+        assertEq(
+            address(governor).balance,
+            0,
+            "governor should start with zero balance"
+        );
+
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        // Recover ETH when balance is zero
+        vm.prank(address(governor));
+        governor.recoverETH(recipient);
+
+        assertEq(
+            address(governor).balance,
+            0,
+            "governor should still have zero balance"
+        );
+        assertEq(
+            recipient.balance,
+            recipientBalanceBefore,
+            "recipient balance should not change"
+        );
     }
 
     // VIEW FUNCTIONS

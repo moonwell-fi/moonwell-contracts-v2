@@ -309,3 +309,28 @@ jobs:
            timeout_minutes: 20
            max_attempts: 1
            command: time forge test --match-contract StakedWellIntegrationTest -vvv --ffi
+
+  run-multichain-proposal-v2-tests:
+    name: Multichain Proposal V2 Integration Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Setup MIPs Permissions
+        uses: ./.github/actions/setup-mips-permissions
+
+      - name: Run Integration Test
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 20
+           max_attempts: 1
+           command: time forge test --match-contract MultichainProposalIntegrationV2 -vvv --ffi
