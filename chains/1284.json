@@ -136,7 +136,7 @@
     },
     {
         "addr": "0xf0A4a985254F5D419E70e52f634B75D36e668D1a",
-        "name": "MOONWELL_VIEWS_IMPLEMENTATION",
+        "name": "MOONWELL_VIEWS_IMPLEMENTATION_DEPRECATED",
         "isContract": true
     },
     {
@@ -453,5 +453,10 @@
         "addr": "0xB8A798a50a7274A13449B7f2Dd6Df22faF2d40E5",
         "isContract": true,
         "name": "VOTE_COLLECTION_V2_PROXY"
+    },
+    {
+        "addr": "0xdec80bB934397575594E91970b37baf65f5b21bE",
+        "name": "MOONWELL_VIEWS_IMPLEMENTATION_V2",
+        "isContract": true
     }
 ]

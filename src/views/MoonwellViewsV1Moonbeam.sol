@@ -5,6 +5,7 @@ import {BaseMoonwellViewsMoonbeam} from "@protocol/views/BaseMoonwellViewsMoonbe
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 
 /**
  * @title Moonwell Views Contract — Moonbeam V1 (legacy storage layout)
@@ -21,6 +22,54 @@ contract MoonwellViewsV1Moonbeam is
     ExponentialNoError
 {
     uint224 constant _INITIAL_INDEX = 1e36;
+
+    /// @notice xWELL token, the canonical "tokens" voting source after
+    ///         mip-x58 deployed VotingPowerAggregator on every chain.
+    /// @dev    Wired via `initializeV2` since the original `initialize`
+    ///         on this proxy ran Sep 2023 — before xWELL existed. Lives
+    ///         at storage slot 7 (Initializable at slot 0, plus the six
+    ///         legacy `BaseMoonwellViewsMoonbeam` state vars).
+    xWELL public xWellToken;
+
+    /// @notice Wire xWELL after upgrading the legacy Moonbeam views
+    ///         proxy. Called atomically with the upgrade via
+    ///         `ProxyAdmin.upgradeAndCall` so there is no window in
+    ///         which an attacker could preempt and point xWellToken at
+    ///         a malicious contract.
+    /// @param _xWell the xWELL_PROXY address (0xA88594D4… on every
+    ///        chain via CREATE2).
+    function initializeV2(address _xWell) external reinitializer(2) {
+        require(_xWell != address(0), "xWell cant be the 0 address!");
+        xWellToken = xWELL(_xWell);
+    }
+
+    /// @notice Override: post-mip-x58 only xWELL + stkWELL count toward
+    ///         voting power. Native Moonbeam WELL is no longer
+    ///         registered as a snapshot source on the
+    ///         VotingPowerAggregator, so read xWELL instead of the
+    ///         legacy `governanceToken` (WELL) slot.
+    function getUserTokensVotingPower(
+        address _user
+    ) public view override returns (Votes memory _result) {
+        if (address(xWellToken) != address(0)) {
+            _result = Votes(
+                xWellToken.getVotes(_user),
+                xWellToken.balanceOf(_user),
+                xWellToken.delegates(_user)
+            );
+        }
+    }
+
+    /// @notice Override: post-mip-x58 the TokenSaleDistributor is not a
+    ///         snapshot source on the VotingPowerAggregator. Zero out
+    ///         the delegated-voting-power component and keep the
+    ///         unclaimed balance for display continuity.
+    function getUserClaimsVotingPower(
+        address _user
+    ) public view override returns (Votes memory _result) {
+        _result = super.getUserClaimsVotingPower(_user);
+        _result.delegatedVotingPower = 0;
+    }
 
     function _getSupplyCaps(address) internal pure override returns (uint) {
         return 0;
