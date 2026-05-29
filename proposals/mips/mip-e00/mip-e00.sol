@@ -555,41 +555,6 @@ contract mipe00 is HybridProposalV2, Configs {
     }
 
     function beforeSimulationHook(Addresses addresses) public override {
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-
-        address recipient = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY"
-        );
-        address usdt = addresses.getAddress("USDT");
-
-        uint256 cTokenConfigsLength = cTokenConfigs.length;
-        unchecked {
-            for (uint256 i = 0; i < cTokenConfigsLength; i++) {
-                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                address tokenAddress = addresses.getAddress(
-                    config.tokenAddressName
-                );
-                uint256 amount = cTokenConfigs[i].initialMintAmount;
-
-                if (tokenAddress == usdt) {
-                    /// forge-std deal() cannot fund Tether USDT: its slot
-                    /// brute-force writes a marker into USDT slot 10
-                    /// (upgradedAddress + deprecated), flipping the contract
-                    /// into its deprecated branch so balanceOf reverts before
-                    /// the real balances slot is located. Write the balances
-                    /// mapping (slot 2) directly instead.
-                    vm.store(
-                        usdt,
-                        keccak256(abi.encode(recipient, uint256(2))),
-                        bytes32(amount)
-                    );
-                } else {
-                    deal(tokenAddress, recipient, amount);
-                }
-            }
-        }
-
         /// Snapshot raw Chainlink prices for post-simulate parity assertion in validate().
         for (uint256 i = 0; i < oevConfigurations.length; i++) {
             OEVConfiguration memory cfg = oevConfigurations[i];
