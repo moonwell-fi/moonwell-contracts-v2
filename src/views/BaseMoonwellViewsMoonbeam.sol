@@ -12,10 +12,19 @@ import {MErc20Interface} from "@protocol/MTokenInterfaces.sol";
 import {UniswapV2PairInterface} from "@protocol/views/UniswapV2PairInterface.sol";
 
 /**
- * @title Moonwell Views Contract
+ * @title Moonwell Views Contract — Moonbeam legacy storage layout
  * @author Moonwell
+ * @notice Functional duplicate of `BaseMoonwellViews` with state variables
+ *         declared in the order used by the original Moonbeam V1 deployment
+ *         (commit 5785b1e1, Sep 2023). Commit 04c5bc48 (Mar 2024) inserted
+ *         `governanceToken` between `comptroller` and `_tokenSaleDistributor`
+ *         in `BaseMoonwellViews`, breaking storage compatibility with
+ *         pre-existing proxies. Base/Optimism were redeployed post-reorder,
+ *         so they use `BaseMoonwellViews` directly. Moonbeam was not — its
+ *         proxy still holds the legacy layout. Use this file only for
+ *         implementations targeting the live Moonbeam views proxy.
  */
-contract BaseMoonwellViews is Initializable {
+contract BaseMoonwellViewsMoonbeam is Initializable {
     struct StakingInfo {
         uint cooldown;
         uint unstakeWindow;
@@ -93,13 +102,19 @@ contract BaseMoonwellViews is Initializable {
         bool transferPaused;
     }
 
-    Comptroller public comptroller;
-    Well public governanceToken;
-
-    TokenSaleDistributorInterfaceV1 private _tokenSaleDistributor;
-    SafetyModuleInterfaceV1 public safetyModule;
-    UniswapV2PairInterface internal _governanceTokenLP;
-    address internal _nativeMarket;
+    // ---------------------------------------------------------------------
+    // Storage layout: MUST match the Moonbeam V1 proxy at
+    //   0xe76C8B8706faC85a8Fbdcac3C42e3E7823c73994.
+    // Slot order is fixed by the original Sep 2023 deployment and cannot
+    // be changed without breaking upgrades. Verified against live storage
+    // on 2026-05-23.
+    // ---------------------------------------------------------------------
+    Comptroller public comptroller; // slot 0
+    TokenSaleDistributorInterfaceV1 private _tokenSaleDistributor; // slot 1
+    SafetyModuleInterfaceV1 public safetyModule; // slot 2
+    Well public governanceToken; // slot 3
+    UniswapV2PairInterface internal _governanceTokenLP; // slot 4
+    address internal _nativeMarket; // slot 5
 
     /// construct the logic contract and initialize so that the initialize function is uncallable
     /// from the implementation and only callable from the proxy

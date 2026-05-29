@@ -2031,6 +2031,13 @@ contract MultichainProposalIntegrationV2 is
 
     function testLiveProposalsView() public {
         vm.selectFork(ETHEREUM_FORK_ID);
+
+        // Snapshot any pre-existing live proposals on the forked mainnet
+        // governor. This test forks at the latest block, so a real
+        // governance proposal may already be Active — assert on the delta
+        // we create, not an absolute count.
+        uint256[] memory liveBefore = governorV2.liveProposals();
+
         vm.startPrank(PROPOSER);
 
         // Create first proposal
@@ -2058,17 +2065,42 @@ contract MultichainProposalIntegrationV2 is
         bytes[] memory calldatas2 = new bytes[](1);
         calldatas2[0] = abi.encodeWithSignature("function2()");
 
-        governorV2.propose(targets2, values2, calldatas2, "Proposal 2", false);
+        uint256 proposalId2 = governorV2.propose(
+            targets2,
+            values2,
+            calldatas2,
+            "Proposal 2",
+            false
+        );
 
         vm.stopPrank();
 
-        // Check live proposals - only Active proposals should be returned
-        // Init state proposals are NOT considered "live" for the liveProposals view
-        uint256[] memory liveProposals = governorV2.liveProposals();
+        // Check live proposals - only Active proposals should be returned.
+        // Init state proposals are NOT considered "live" for this view.
+        uint256[] memory liveAfter = governorV2.liveProposals();
 
-        // Only the first proposal (Active) should be live
-        assertEq(liveProposals.length, 1);
-        assertEq(liveProposals[0], proposalId1);
+        // Exactly one proposal (the Active one) became live; the Init-state
+        // proposal must not appear.
+        assertEq(
+            liveAfter.length,
+            liveBefore.length + 1,
+            "exactly one new proposal should become live"
+        );
+
+        // The Active proposal must be in the live set, and the Init-state
+        // proposal must not be.
+        bool foundActive;
+        bool foundInit;
+        for (uint256 i = 0; i < liveAfter.length; i++) {
+            if (liveAfter[i] == proposalId1) {
+                foundActive = true;
+            }
+            if (liveAfter[i] == proposalId2) {
+                foundInit = true;
+            }
+        }
+        assertTrue(foundActive, "Active proposal should be live");
+        assertFalse(foundInit, "Init-state proposal should not be live");
     }
 
     /// --------------------------------------------------------- ///
