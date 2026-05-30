@@ -10,6 +10,7 @@ import {Proposal} from "@proposals/Proposal.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {LiveProposalCheck} from "@test/utils/LiveProposalCheck.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichainGovernorV2.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract PostProposalCheck is LiveProposalCheck {
@@ -82,6 +83,13 @@ contract PostProposalCheck is LiveProposalCheck {
             proposals.push(proposal);
         }
 
+        // Simulate MultichainGovernorV2 proposals that already carry an
+        // on-chain id but have not been executed yet (e.g. MIP-E00). The legacy
+        // executeSucceededProposals / executeLiveProposals paths only drive the
+        // original Moonbeam MultichainGovernor, so a pending V2 proposal would
+        // otherwise never apply its effects to the fork.
+        simulatePendingGovernorV2Proposals();
+
         // Sync all fork timestamps to the maximum observed across all forks.
         // Proposal execution may warp some forks forward (e.g. Base during
         // executeLiveProposals) and then backward (e.g. Base during
@@ -114,5 +122,60 @@ contract PostProposalCheck is LiveProposalCheck {
 
         // set proposalStartTime on the active (Moonbeam) fork
         vm.warp(proposalStartTime);
+    }
+
+    /// @notice Run the full deploy -> build -> simulate -> validate lifecycle
+    /// for every MultichainGovernorV2 proposal in mips.json that carries a
+    /// non-zero id but has not yet executed on-chain. These were simulated as
+    /// id:0 in-development proposals until an id was assigned; once submitted to
+    /// MultichainGovernorV2 they fall outside the legacy Moonbeam-governor
+    /// execution paths, so we re-apply their effects here (e.g. MIP-E00 lists
+    /// and initializes the Ethereum markets). Already-executed proposals are
+    /// skipped so we never re-run finalized governance.
+    function simulatePendingGovernorV2Proposals() internal {
+        ProposalMap.ProposalFields[] memory v2Proposals = proposalMap
+            .filterByGovernor("MultichainGovernorV2");
+
+        for (uint256 i = 0; i < v2Proposals.length; i++) {
+            // id:0 entries are handled by the in-development loop above.
+            if (v2Proposals[i].id == 0) {
+                continue;
+            }
+
+            vm.selectFork(ETHEREUM_FORK_ID);
+
+            if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
+                continue;
+            }
+
+            IMultichainGovernorV2 governorV2 = IMultichainGovernorV2(
+                addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY")
+            );
+
+            // A proposal whose id exists but whose state is anything other than
+            // Executed still needs its effects applied to the fork. If state()
+            // reverts the id was never created on-chain — also treat as pending.
+            bool pending;
+            try governorV2.state(v2Proposals[i].id) returns (
+                IMultichainGovernorV2.ProposalState state
+            ) {
+                pending = state != IMultichainGovernorV2.ProposalState.Executed;
+            } catch {
+                pending = true;
+            }
+
+            if (!pending) {
+                continue;
+            }
+
+            proposalMap.setEnv(v2Proposals[i].envPath);
+            Proposal proposal = proposalMap.runProposal(
+                addresses,
+                v2Proposals[i].path
+            );
+            vm.makePersistent(address(proposal));
+
+            proposals.push(proposal);
+        }
     }
 }
