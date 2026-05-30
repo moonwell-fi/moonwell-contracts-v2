@@ -1,4 +1,4 @@
-name: Invariant 
+name: Invariant
 
 on: [pull_request]
 
@@ -19,7 +19,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Run Invariant Test 
+      - name: Run Invariant Test
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
@@ -27,5 +27,3 @@ jobs:
            timeout_minutes: 20
            max_attempts: 3
            command: time forge test -vvv --match-contract Invariant
-
-

@@ -69,7 +69,7 @@ contract PreMipB00Script is Script, Test {
 
         vm.stopBroadcast();
 
-        addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+        addresses.addAddress("cbETH_COMPOSITE_ORACLE", address(cbEthOracle));
 
         (
             string[] memory recordedNames,

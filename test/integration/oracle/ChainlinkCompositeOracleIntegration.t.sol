@@ -44,7 +44,7 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
             uint80 roundId, /// always 0, value unused in ChainlinkOracle.sol
             int256 answer, /// the composite price
             uint256 startedAt, /// always 0, value unused in ChainlinkOracle.sol
-            uint256 updatedAt, /// always block.timestamp
+            uint256 updatedAt, /// minimum `updatedAt` across underlying feeds (HAL-02)
             uint80 answeredInRound /// always 0, value unused in ChainlinkOracle.sol
         ) = oracle.latestRoundData();
         uint256 price = oracle.getDerivedPrice(
@@ -56,7 +56,15 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
         assertTrue(answer > 0, "Price should be greater than 0");
 
         assertEq(price, uint256(answer));
-        assertEq(updatedAt, block.timestamp);
+        /// HAL-02: `latestRoundData` propagates `min(updatedAt)` across underlying
+        /// feeds instead of substituting `block.timestamp`, so consumers can detect
+        /// staleness. Assert it is a real, non-future timestamp.
+        assertGt(updatedAt, 0, "updatedAt should be > 0");
+        assertLe(
+            updatedAt,
+            block.timestamp,
+            "updatedAt should not be in the future"
+        );
         assertEq(roundId, 0);
         assertEq(startedAt, 0);
         assertEq(answeredInRound, 0);

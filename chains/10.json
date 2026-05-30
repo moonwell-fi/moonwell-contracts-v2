@@ -1,5 +1,15 @@
 [
     {
+        "addr": "0x4DdD7968113A037e84034eDDEc4524497B77d200",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_MIP_X50"
+    },
+    {
+        "addr": "0xc3831D840243C4Df57F52C063eEE2a6b44d1840e",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_USDT0_MIP_X42"
+    },
+    {
         "addr": "0xF203236B9CEf1FaaEa4aCE8e8e2EB65431ef7697",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_USDT0_DAI_MIP_X35"
@@ -227,12 +237,32 @@
     {
         "addr": "0x355F7b5edbfbfb5cCc7a3C67Dab2f99A72FDDa09",
         "isContract": true,
-        "name": "PAUSE_GUARDIAN"
+        "name": "PAUSE_GUARDIAN_DEPRECATED"
     },
     {
         "addr": "0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722",
         "isContract": true,
         "name": "WORMHOLE_CORE"
+    },
+    {
+        "addr": "0x85B704501f6AE718205C0636260768C4e72ac3e7",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
+        "addr": "0xa3B6551cCbB5Fe1dc33b71EE3590B1Df22ae75B3",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER_ROUTER"
+    },
+    {
+        "addr": "0xA25862D222Eb8343505c12d96e097e4332468D60",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER"
+    },
+    {
+        "addr": "0xa54008017941EcE968623a0Dd8Ee907E2b133596",
+        "isContract": false,
+        "name": "WORMHOLE_QUOTER_SIGNER"
     },
     {
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
@@ -645,32 +675,32 @@
         "name": "RESERVE_AUTOMATION_WBTC"
     },
     {
-        "addr": "0xBe61051C9DFc613a30534cEF33ca656A73274Fe7",
+        "addr": "0xd05B7D0d156798a85335ECD283d20C7AE07142E4",
         "isContract": true,
         "name": "CHAINLINK_USDC_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0x87716613750d02FDc101301B36cB5a0991962A70",
+        "addr": "0xfa1eb770dD37870a4eB0BfE8E70E809852cd0A06",
         "isContract": true,
         "name": "CHAINLINK_DAI_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0x83cC04372dc2c14c078F8117DA96412AA2Bda3dD",
+        "addr": "0x9427a800f5618dEB7162A4cdD74B613f30a1554A",
         "isContract": true,
         "name": "CHAINLINK_USDT_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0x696dAF18Ba0Cf503FAc9ef137ed3EF5aA719e14D",
+        "addr": "0x452F29E1942a29FAbdEf3620f9e989C294234c71",
         "isContract": true,
         "name": "CHAINLINK_WBTC_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0xBC13e85B40048DE07c2ED66498E5DC62aC7A4eB0",
+        "addr": "0xf613DC4CC612d19DFf308e77d65D34db27c46303",
         "isContract": true,
         "name": "CHAINLINK_OP_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0xc7867F143A6550e32df4D880a2c1Cee3ab8AdB2c",
+        "addr": "0xA061Ed814bBd1b03e8df0B7AbEbc40f4A6feb895",
         "isContract": true,
         "name": "CHAINLINK_VELO_USD_OEV_WRAPPER"
     },
@@ -730,7 +760,7 @@
         "name": "OEV_PROTOCOL_FEE_REDEEMER"
     },
     {
-        "addr": "0x531f69127bB04Ebb0Fd321b8092d34a4C2B4E0f1",
+        "addr": "0x6fB1e8B41fCDd1FaFA75D5281fBBE7DBB87434d2",
         "isContract": true,
         "name": "CHAINLINK_ETH_USD_OEV_WRAPPER"
     },
@@ -778,5 +808,95 @@
         "addr": "0x6aa41dF8FB0deC976B59bf0824FC5fFB88ccA958",
         "isContract": true,
         "name": "CHAINLINK_VELO_USD_OEV_WRAPPER_DEPRECATED"
+    },
+    {
+        "addr": "0x78Feb72aeA00B912ac45438e0764A02213266568",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL_V2"
+    },
+    {
+        "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
+        "isContract": true,
+        "name": "PAUSE_GUARDIAN"
+    },
+    {
+        "addr": "0xb3a9E0DCf37658a48aa9f018C44f90378ddD4357",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V3"
+    },
+    {
+        "addr": "0x9d465d56d235674693A158Af40c8d53ddE59B0CE",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL_V2"
+    },
+    {
+        "addr": "0x85B3A4D84d5A6d5a8606968b223C3b4648D59D98",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V4"
+    },
+    {
+        "addr": "0x2dc66C40bb15F0470e40508B43cD64D0b4F57180",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL_V3"
+    },
+    {
+        "addr": "0xa8A334ffaba129C07Df4740001ceE7c0D838ddB9",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"
+    },
+    {
+        "addr": "0xb46b3856f87305Aa76DC59349de0b518368e318b",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V6"
+    },
+    {
+        "addr": "0xBe61051C9DFc613a30534cEF33ca656A73274Fe7",
+        "isContract": true,
+        "name": "CHAINLINK_USDC_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0x83cC04372dc2c14c078F8117DA96412AA2Bda3dD",
+        "isContract": true,
+        "name": "CHAINLINK_USDT_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0x87716613750d02FDc101301B36cB5a0991962A70",
+        "isContract": true,
+        "name": "CHAINLINK_DAI_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0x531f69127bB04Ebb0Fd321b8092d34a4C2B4E0f1",
+        "isContract": true,
+        "name": "CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0x696dAF18Ba0Cf503FAc9ef137ed3EF5aA719e14D",
+        "isContract": true,
+        "name": "CHAINLINK_WBTC_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xBC13e85B40048DE07c2ED66498E5DC62aC7A4eB0",
+        "isContract": true,
+        "name": "CHAINLINK_OP_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xc7867F143A6550e32df4D880a2c1Cee3ab8AdB2c",
+        "isContract": true,
+        "name": "CHAINLINK_VELO_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xbaC3Dd6d0333ea14F957B7B0796bCD59e8771501",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR_IMPL"
+    },
+    {
+        "addr": "0xF2af8f06409628c6d2F8852B696A9dEebe75C2A1",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR"
+    },
+    {
+        "addr": "0x826D8ECd5E9EC46A63f1B0a2da7a8929a8590c29",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_V2_IMPL"
     }
 ]

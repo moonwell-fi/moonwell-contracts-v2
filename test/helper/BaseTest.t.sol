@@ -13,6 +13,8 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {MockCoreBridgeForAdapter} from "@test/mock/MockCoreBridgeForAdapter.sol";
+import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
 import {BASE_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
@@ -70,6 +72,12 @@ contract BaseTest is xWELLDeploy, Test {
 
     /// @notice wormhole chainid for base chain
     uint16 public chainId = BASE_WORMHOLE_CHAIN_ID;
+
+    /// @notice mock core bridge for executor framework tests
+    MockCoreBridgeForAdapter public mockCoreBridge;
+
+    /// @notice mock executor quoter router for executor framework tests
+    MockExecutorQuoterRouter public mockExecutorQuoterRouter;
 
     function setUp() public virtual {
         addresses = new Addresses();
@@ -151,6 +159,21 @@ contract BaseTest is xWELLDeploy, Test {
             wormholeRelayer,
             chainIds,
             targets
+        );
+
+        /// deploy mocks for executor framework
+        mockCoreBridge = new MockCoreBridgeForAdapter();
+        mockCoreBridge.setChainId(chainId);
+        mockExecutorQuoterRouter = new MockExecutorQuoterRouter();
+
+        /// V3: set wormhole core bridge
+        wormholeBridgeAdapterProxy.initializeV3(address(mockCoreBridge));
+
+        /// V5: migrate to executor framework
+        wormholeBridgeAdapterProxy.initializeV5(
+            address(mockExecutorQuoterRouter), /// executor (off-chain quote)
+            address(mockExecutorQuoterRouter), /// executorQuoterRouter (on-chain quote)
+            address(mockExecutorQuoterRouter) /// quoter address
         );
 
         sigUtils = new SigUtils(xwellProxy.DOMAIN_SEPARATOR());

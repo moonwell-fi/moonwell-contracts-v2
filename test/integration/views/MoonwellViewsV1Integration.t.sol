@@ -29,7 +29,7 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
 
         comptroller = addresses.getAddress("UNITROLLER");
         tokenSaleDistributor = addresses.getAddress("TOKENSALE");
-        safetyModule = addresses.getAddress("STKGOVTOKEN");
+        safetyModule = addresses.getAddress("STK_GOVTOKEN_PROXY");
         governanceToken = addresses.getAddress("GOVTOKEN");
         nativeMarket = addresses.getAddress("MNATIVE");
         governanceTokenLP = addresses.getAddress("GOVTOKEN_LP");
@@ -79,6 +79,26 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
                 _votes.tokenVotes.votingPower +
                 _votes.claimsVotes.votingPower,
             5000001 * 1e18
+        );
+    }
+
+    /// @notice Regression: stkWELL snapshots (ERC20WithSnapshot) are keyed by
+    /// block.timestamp, so getUserStakingVotingPower must query getPriorVotes
+    /// with a timestamp. Before the fix it passed block.number, making
+    /// delegatedVotingPower always 0 for a user with a non-zero staked balance.
+    function testUserStakingVotingPowerUsesTimestamp() public view {
+        MoonwellViewsV1.Votes memory _stakingVotes = viewsContract
+            .getUserStakingVotingPower(user);
+
+        assertGt(
+            _stakingVotes.votingPower,
+            0,
+            "user expected to have a staked balance"
+        );
+        assertEq(
+            _stakingVotes.delegatedVotingPower,
+            _stakingVotes.votingPower,
+            "delegatedVotingPower should match the staked snapshot balance"
         );
     }
 

@@ -5,7 +5,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 enum ActionType {
     Moonbeam,
     Base,
-    Optimism
+    Optimism,
+    Ethereum
 }
 
 struct ProposalAction {
@@ -48,7 +49,7 @@ interface IProposal {
     // Actually run the proposal (e.g. queue actions in the Timelock,
     // or execute a serie of Multisig calls...).
     // See contracts/proposals/proposalTypes for helper contracts.
-    function run(Addresses, address) external;
+    function simulate(Addresses, address) external;
 
     // After a proposal executed, if you mocked some behavior in the
     // afterDeploy step, you might want to tear down the mocks here.

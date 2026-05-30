@@ -241,9 +241,10 @@ contract ERC4626EthLiveIntegrationTest is Configs {
     }
 
     function testMintcbEth4626Shares(uint256 amount) public {
-        uint256 maxSupplyAmount = marketBase.getMaxSupplyAmount(
-            MToken(addresses.getAddress("MOONWELL_cbETH"))
-        );
+        address mcbEth = addresses.getAddress("MOONWELL_cbETH");
+        _raiseSupplyCapIfNeeded(mcbEth, 10e18);
+
+        uint256 maxSupplyAmount = marketBase.getMaxSupplyAmount(MToken(mcbEth));
         maxSupplyAmount = maxSupplyAmount > 1.0000001e18
             ? maxSupplyAmount - 1e18
             : maxSupplyAmount;
@@ -456,6 +457,31 @@ contract ERC4626EthLiveIntegrationTest is Configs {
 
         /// weth balance
         assertEq(weth.balanceOf(address(router)), 0, "router weth balance");
+    }
+
+    function _raiseSupplyCapIfNeeded(
+        address mTokenAddr,
+        uint256 additionalAmount
+    ) private {
+        uint256 supplyCap = comptroller.supplyCaps(mTokenAddr);
+        if (supplyCap == 0) return;
+
+        MToken mt = MToken(mTokenAddr);
+        mt.accrueInterest();
+        uint256 cash = MErc20(mTokenAddr).getCash();
+        uint256 borrows = mt.totalBorrows();
+        uint256 reserves = mt.totalReserves();
+        uint256 totalUnderlying = cash + borrows - reserves;
+
+        if (totalUnderlying + additionalAmount >= supplyCap) {
+            vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            MToken[] memory mTokens = new MToken[](1);
+            mTokens[0] = mt;
+            uint256[] memory newCaps = new uint256[](1);
+            newCaps[0] = (totalUnderlying + additionalAmount) * 2;
+            comptroller._setMarketSupplyCaps(mTokens, newCaps);
+            vm.stopPrank();
+        }
     }
 
     receive() external payable {}

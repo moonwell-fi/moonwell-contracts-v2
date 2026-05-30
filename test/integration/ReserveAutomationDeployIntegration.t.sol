@@ -65,7 +65,7 @@ contract ReserveAutomationLiveSystemIntegrationTest is
 
         // Set up common variables
         well = ERC20(addresses.getAddress("xWELL_PROXY"));
-        guardian = addresses.getAddress("PAUSE_GUARDIAN");
+        guardian = addresses.getAddress("PAUSE_GUARDIAN_DEPRECATED");
         holder = ERC20HoldingDeposit(
             addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT")
         );

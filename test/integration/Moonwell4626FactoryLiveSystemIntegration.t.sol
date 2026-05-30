@@ -128,6 +128,8 @@ contract ERC4626FactoryIntegrationTest is Configs {
         address mcbEth = addresses.getAddress("MOONWELL_cbETH");
         address rewardRecipient = address(0xeeeeeeeeeeee);
 
+        _raiseSupplyCapIfNeeded(mcbEth, .01 ether);
+
         deal(cbEth, address(this), .01 ether);
         ERC20(cbEth).approve(address(factory), .01 ether);
 
@@ -230,5 +232,28 @@ contract ERC4626FactoryIntegrationTest is Configs {
             MoonwellERC4626(vault).balanceOf(address(0)),
             "incorrect balance of address(0)"
         );
+    }
+
+    function _raiseSupplyCapIfNeeded(
+        address mToken,
+        uint256 mintAmount
+    ) private {
+        uint256 supplyCap = comptroller.supplyCaps(mToken);
+        if (supplyCap == 0) return;
+
+        MToken mt = MToken(mToken);
+        uint256 totalSupply = mt.totalSupply();
+        uint256 exchangeRate = mt.exchangeRateStored();
+        uint256 totalUnderlying = (totalSupply * exchangeRate) / 1e18;
+
+        if (totalUnderlying + mintAmount >= supplyCap) {
+            vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            MToken[] memory mTokens = new MToken[](1);
+            mTokens[0] = mt;
+            uint256[] memory newCaps = new uint256[](1);
+            newCaps[0] = (totalUnderlying + mintAmount) * 2;
+            comptroller._setMarketSupplyCaps(mTokens, newCaps);
+            vm.stopPrank();
+        }
     }
 }

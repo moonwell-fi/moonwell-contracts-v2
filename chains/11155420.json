@@ -42,7 +42,7 @@
     {
         "addr": "0x354804005a80e5f87cf43beD9Bd4fCc6512Be98c",
         "isContract": false,
-        "name": "PAUSE_GUARDIAN"
+        "name": "PAUSE_GUARDIAN_DEPRECATED"
     },
     {
         "addr": "0x354804005a80e5f87cf43beD9Bd4fCc6512Be98c",

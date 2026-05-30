@@ -1,0 +1,566 @@
+name: Proposal Summary
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths:
+      - 'proposals/mips/**'
+
+concurrency:
+  group: proposal-summary-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  generate-summary:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find existing summary comment
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COMMENT_ID=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+            --paginate --jq '[.[] | select(.body | contains("<!-- proposal-summary -->"))] | first | .id // empty')
+          if [ -n "$COMMENT_ID" ]; then
+            echo "comment_id=$COMMENT_ID" >> "$GITHUB_OUTPUT"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect proposal directories and changed test files
+        id: detect
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          DIRS=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'proposals/mips/' \
+            | grep -oP 'proposals/mips/mip-[^/]+' \
+            | sort -u)
+          DIRS=$(echo "$DIRS" | xargs)
+          if [ -z "$DIRS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "dirs=$DIRS" >> "$GITHUB_OUTPUT"
+          fi
+          TEST_FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'test/' 'src/' \
+            | sort -u | xargs)
+          echo "test_files=$TEST_FILES" >> "$GITHUB_OUTPUT"
+
+      - name: Classify proposal types
+        id: classify
+        if: steps.detect.outputs.skip != 'true'
+        run: |
+          MARKET_ADD_DIRS=""
+          STANDARD_DIRS=""
+          REWARDS_DIST_DIRS=""
+          for DIR in ${{ steps.detect.outputs.dirs }}; do
+            IS_MARKET_ADD="false"
+            HAS_CUSTOM_ACTIONS="false"
+            IS_REWARDS_DIST="false"
+
+            # Check for market-add signals
+            if [ -f "$DIR/MTokens.json" ]; then
+              IS_MARKET_ADD="true"
+            else
+              for SOL in "$DIR"/*.sol; do
+                if [ -f "$SOL" ] && grep -q "MarketAddV2\|MarketAdd " "$SOL"; then
+                  IS_MARKET_ADD="true"
+                  break
+                fi
+              done
+            fi
+
+            # Check for rewards-distribution signals:
+            # (1) mips.json entry for this dir points at the RewardsDistribution template
+            BASENAME=$(basename "$DIR")
+            if [ -f "proposals/mips/mips.json" ] \
+               && jq -e --arg bn "$BASENAME" \
+                    '.[] | select((.envpath // "") | contains($bn)) | select(.path == "RewardsDistribution.sol/RewardsDistributionTemplate.json")' \
+                    proposals/mips/mips.json >/dev/null 2>&1; then
+              IS_REWARDS_DIST="true"
+            fi
+            # (2) any .sol in the dir inherits RewardsDistributionTemplate (subclasses)
+            if [ "$IS_REWARDS_DIST" != "true" ]; then
+              for SOL in "$DIR"/*.sol; do
+                if [ -f "$SOL" ] && grep -qE "is[[:space:]]+RewardsDistributionTemplate\b" "$SOL"; then
+                  IS_REWARDS_DIST="true"
+                  break
+                fi
+              done
+            fi
+
+            # Check for custom actions beyond the template (has _pushAction in its own .sol)
+            for SOL in "$DIR"/*.sol; do
+              if [ -f "$SOL" ] && grep -q "_pushAction" "$SOL"; then
+                HAS_CUSTOM_ACTIONS="true"
+                break
+              fi
+            done
+
+            # A proposal can be market-add AND standard; rewards-distribution is
+            # exclusive — it uses a dedicated audit template. Subclasses that add
+            # custom actions are still audited under the Rewards Distribution
+            # template (which covers subclass actions explicitly).
+            if [ "$IS_REWARDS_DIST" = "true" ]; then
+              REWARDS_DIST_DIRS="$REWARDS_DIST_DIRS $DIR"
+            else
+              if [ "$IS_MARKET_ADD" = "true" ]; then
+                MARKET_ADD_DIRS="$MARKET_ADD_DIRS $DIR"
+              fi
+              if [ "$HAS_CUSTOM_ACTIONS" = "true" ] || [ "$IS_MARKET_ADD" = "false" ]; then
+                STANDARD_DIRS="$STANDARD_DIRS $DIR"
+              fi
+            fi
+          done
+          echo "market_add_dirs=$(echo $MARKET_ADD_DIRS | xargs)" >> "$GITHUB_OUTPUT"
+          echo "standard_dirs=$(echo $STANDARD_DIRS | xargs)" >> "$GITHUB_OUTPUT"
+          echo "rewards_dist_dirs=$(echo $REWARDS_DIST_DIRS | xargs)" >> "$GITHUB_OUTPUT"
+
+      - name: Run deterministic rewards-distribution math check
+        if: steps.detect.outputs.skip != 'true' && steps.classify.outputs.rewards_dist_dirs != ''
+        run: |
+          set -euo pipefail
+          FAILED=0
+          for DIR in ${{ steps.classify.outputs.rewards_dist_dirs }}; do
+            echo "::group::Checking $DIR"
+            if ! ./script/rewards/check-rewards-math.sh "$DIR"; then
+              FAILED=$((FAILED + 1))
+            fi
+            echo "::endgroup::"
+          done
+          if [ "$FAILED" -ne 0 ]; then
+            echo "::error::$FAILED rewards-distribution proposal(s) failed math checks"
+            exit 1
+          fi
+
+      - name: Generate proposal summary
+        if: steps.check.outputs.exists != 'true' && steps.detect.outputs.skip != 'true'
+        id: generate
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          claude_args: '--allowedTools "Write,WebFetch"'
+          show_full_output: true
+          prompt: |
+            You are a DeFi governance proposal auditor for the Moonwell protocol.
+
+            ## Proposal Classification
+
+            Market-add proposals (use the **Market Add Audit** template below):
+            ${{ steps.classify.outputs.market_add_dirs }}
+
+            Standard proposals (use the **Standard Audit** template below):
+            ${{ steps.classify.outputs.standard_dirs }}
+
+            Rewards-distribution proposals (use the **Rewards Distribution Audit** template below):
+            ${{ steps.classify.outputs.rewards_dist_dirs }}
+
+            The following test and source files were also changed in this PR:
+            ${{ steps.detect.outputs.test_files }}
+
+            If a directory appears in BOTH the market-add AND standard lists, produce BOTH audit
+            sections for it:
+            - The Market Add Audit covers parameter correctness (MTokens.json vs forum vs markdown).
+            - The Standard Audit covers ONLY the custom actions added beyond the MarketAddV2 template.
+              Skip any actions from the template's super.build() (supply/borrow caps, collateral factor,
+              reserve factor, market initialization, emissions config, etc.) — those are already validated
+              by the parameter comparison. Focus only on actions in the proposal's own build() override
+              (e.g., OEV wrapper deployment, fee redeemer whitelisting, custom contract calls).
+              Similarly, for validate(), only audit assertions beyond super.validate().
+            Rewards-distribution proposals use ONLY the Rewards Distribution Audit template — do NOT
+            produce a Standard Audit for them even if their .sol file contains _pushAction, since the
+            Rewards Distribution Audit covers both template actions and any subclass additions.
+            If a directory appears in only one list, use only that template.
+
+            Write the full audit to a file called `pr_comment.md` using the Write tool.
+            The file MUST start with the exact HTML comment marker on its own line:
+            <!-- proposal-summary -->
+
+            ---
+
+            ## Market Add Audit Template
+
+            For each market-add proposal directory, perform the following four-phase audit.
+            This replaces the standard onchain state verification — market-add proposals use the
+            well-tested `MarketAddV2.sol` template, so the audit focuses on **parameter correctness**
+            across three sources: the risk partner's recommendation, the JSON config, and the MIP markdown.
+
+            ### Phase 1 — Read Local Files
+
+            1. Read `MTokens.json` — parse all token configurations per chain ID. Extract:
+               - `collateralFactor`, `reserveFactor`, `seizeShare`, `supplyCap`, `borrowCap`
+               - `jrm.baseRatePerYear`, `jrm.multiplierPerYear`, `jrm.jumpMultiplierPerYear`, `jrm.kink`
+               - `priceFeedName`, `tokenAddressName`, `name`, `symbol`
+            2. Read the MIP markdown (.md file) — find the "Risk Analysis and Recommendations" or
+               "Initial Risk Parameters" section and extract the parameter table
+            3. Read `RewardStreams.json` — note emission token, rates, and end times
+            4. Read the `.sh` file and `.sol` file for additional context
+
+            ### Phase 2 — Find the Forum Discussion and Risk Partner's Comment
+
+            The Moonwell governance forum (forum.moonwell.fi) is the primary source for risk parameter
+            recommendations. Every market listing has a forum discussion thread where Anthias Labs
+            (Moonwell's risk partner) posts their recommended parameters for the new market.
+
+            **Step 1: Find the forum discussion for this market listing.**
+            Use WebFetch to search the Moonwell governance forum:
+            `https://forum.moonwell.fi/search.json?q={tokenName} market`
+            (replace {tokenName} with the `tokenAddressName` from MTokens.json, e.g., "VVV")
+
+            The JSON response has `posts` and `topics` arrays. Look at the `topics` array for
+            the topic most likely to be the formal listing proposal — pick the one whose title
+            is about adding or proposing the token as a market on Moonwell. Note its `id` and `slug`.
+
+            **Step 2: Fetch the topic and find the Anthias Labs comment.**
+            Use WebFetch to fetch: `https://forum.moonwell.fi/t/{slug}/{topic_id}.json`
+            In the JSON response, look through `post_stream.posts` for a post where `username`
+            is "AnthiasLabs" (Moonwell's risk partner). This post contains their risk parameter
+            recommendations for the new market.
+
+            **Step 3: Extract parameters from the Anthias post.**
+            From the Anthias post's `cooked` HTML, extract the risk parameter tables. Parse:
+            - Risk Parameters: Collateral Factor, Reserve Factor, Seize Share, Supply Cap, Borrow Cap
+            - Interest Rate Model: Base Rate, Multiplier, Jump Multiplier, Kink
+            Note: Seize Share may not always be present (defaults to 3%).
+
+            If the forum search fails or no Anthias comment is found, note this explicitly
+            and proceed with a two-source comparison (MTokens.json vs MIP markdown only).
+
+            ### Phase 3 — Cross-Source Parameter Comparison
+
+            Normalize `MTokens.json` Solidity-scaled values to human-readable form:
+
+            | Field | How to Normalize |
+            |-------|-----------------|
+            | `collateralFactor` | ÷ 1e18 × 100 → percentage (e.g., 0.5e18 → 50%) |
+            | `reserveFactor` | ÷ 1e18 × 100 → percentage |
+            | `seizeShare` | ÷ 1e18 × 100 → percentage |
+            | `supplyCap` | ÷ 10^decimals → human number (infer decimals from magnitude) |
+            | `borrowCap` | ÷ 10^decimals → human number |
+            | `jrm.baseRatePerYear` | ÷ 1e18 × 100 → percentage |
+            | `jrm.multiplierPerYear` | ÷ 1e18 → decimal (e.g., 0.16e18 → 0.16) |
+            | `jrm.jumpMultiplierPerYear` | ÷ 1e18 → multiplier (e.g., 3.5e18 → 3.5) |
+            | `jrm.kink` | ÷ 1e18 × 100 → percentage |
+
+            For supply/borrow caps: most ERC-20 tokens use 18 decimals. If the raw value looks like
+            `170000e18` (170000 followed by 18 zeros), the human-readable value is 170,000.
+            For 6-decimal tokens (USDC), `1000000e6` → 1,000,000.
+
+            Compare each parameter across all available sources and flag any discrepancies.
+
+            ### Market Add Output Format
+
+            For each market-add proposal, write:
+
+            # [Proposal Name] — Market Add Audit
+
+            ## Summary
+            - Token: {name} ({symbol}) on {chain name}
+            - Price feed: {priceFeedName} at `{address from chains/*.json}`
+            - Market type: [Supply-only collateral / Full lending market]
+              (supply-only if borrowCap is near zero)
+            - Emissions: {brief summary of RewardStreams.json config}
+
+            ## Parameter Comparison
+
+            | Parameter | MTokens.json | MIP Markdown | Forum Comment | Match |
+            |-----------|-------------|--------------|---------------|-------|
+            | Collateral Factor | X% | X% | X% | ✅/❌ |
+            | Reserve Factor | X% | X% | X% | ✅/❌ |
+            | Seize Share | X% | X% | X% | ✅/❌ |
+            | Supply Cap | X | X | X | ✅/❌ |
+            | Borrow Cap | X | X | X | ✅/❌ |
+            | Base Rate | X% | X% | X% | ✅/❌ |
+            | Multiplier | X | X | X | ✅/❌ |
+            | Jump Multiplier | X | X | X | ✅/❌ |
+            | Kink | X% | X% | X% | ✅/❌ |
+
+            *Anthias forum comment: [{URL}]({URL}) or "Not found"*
+
+            ## Mismatches & Flags
+
+            For each mismatch, describe:
+            - **[Critical]**: Parameter X differs: MTokens.json says A, but Anthias recommended B.
+            If no mismatches: "All parameters are consistent across all sources."
+
+            Also flag:
+            - If the Anthias forum comment was not found
+            - If any parameter appears in one source but is missing from another
+
+            ## Recommendation
+
+            One of:
+            - "Parameters verified — all sources agree. Ready for review."
+            - "Mismatch found in {parameter}: {detail}. Resolve before execution."
+            - "Anthias forum comment not found — manual verification of parameters recommended."
+
+            ---
+
+            ## Standard Audit Template
+
+            For EACH standard proposal directory:
+            1. Read ALL files in the directory (.sol, .md, .json, .sh)
+            2. Analyze onchain actions from the Solidity contract (build(), deploy(), afterDeploy(), validate())
+            3. Check the PR's changed test/source files listed above FIRST — these are the integration and unit tests
+               written alongside the proposal. Then search the test/ directory for any additional coverage.
+               When evaluating test coverage, treat tests included in this PR as dedicated tests for the proposal.
+            4. For EVERY configuration change, trace the onchain state that should be verified before and after execution
+
+            ## Onchain State Verification (CRITICAL — THE CORE PRINCIPLE)
+
+            The fundamental audit rule is:
+
+            **For every contract touched by the proposal, enumerate ALL observable state before execution,
+            then verify that state is correct after execution. Any state that changes without being validated
+            is a gap. Any state that should NOT change but isn't checked is also a gap.**
+
+            A proposal that only checks "did the address change?" but not "does the system still behave
+            correctly?" is incomplete. Structural checks (address wiring, config params) are necessary but
+            not sufficient — you must also verify functional correctness (the system produces the same
+            outputs it did before, or the expected new outputs).
+
+            Apply this principle to every action:
+
+            **Step 1: Identify every contract touched and its observable state.**
+            For each `_pushAction(target, abi.encodeWithSignature("functionName(args)", params), ...)`:
+            - Read the target contract's source code to understand what state it modifies
+            - Identify ALL public getter functions that expose state on that contract
+            - Identify ALL associated contracts whose behavior depends on this contract (e.g., an mToken
+              depends on its oracle, its comptroller, its interest rate model — changing any of those
+              changes the mToken's behavior)
+
+            **Step 2: Categorize the state into "should change" and "should NOT change".**
+            - "Should change": the state being explicitly modified (e.g., new feed address, new fee param)
+            - "Should NOT change": all other observable state on that contract and its dependents
+              (e.g., prices returned to the protocol, market listings, balances, exchange rates)
+            - Both categories need validation. The "should NOT change" category is often more important
+              because regressions there are unintentional and harder to spot.
+
+            **Step 3: Check if the proposal captures before-state.**
+            The proposal can use `beforeSimulationHook()` to snapshot state before execution. If the proposal
+            modifies state that has downstream effects (e.g., swapping an oracle feed affects prices returned
+            to all markets using that feed), it MUST capture the downstream output before the change and
+            assert it's preserved after. If it doesn't, flag this as a **Critical** gap.
+
+            Example — the correct pattern for any state-preserving change (from MIP-B57):
+            ```solidity
+            // beforeSimulationHook: capture observable output before the change
+            priceBefore = ChainlinkOracle(oracle).getUnderlyingPrice(MToken(mToken));
+
+            // validate(): assert the output is preserved after the change
+            uint256 priceAfter = ChainlinkOracle(oracle).getUnderlyingPrice(MToken(mToken));
+            assertApproxEqRel(priceAfter, priceBefore, 0.01e18, "output changed unexpectedly");
+            ```
+
+            This pattern applies universally — not just oracles. ANY time a proposal swaps an implementation,
+            changes a dependency, or upgrades a contract, the observable outputs of the system must be verified.
+
+            **Step 4: Apply to specific contract types.**
+
+            When the **Comptroller** is touched, check associated mToken state:
+            - `Comptroller.markets(mToken)` → (isListed, collateralFactorMantissa)
+            - `Comptroller.supplyCaps(mToken)` and `Comptroller.borrowCaps(mToken)`
+            - `Comptroller.mintGuardianPaused(mToken)` and `Comptroller.borrowGuardianPaused(mToken)`
+            - `MToken.interestRateModel()`, `MToken.reserveFactorMantissa()`, `MToken.protocolSeizeShareMantissa()`
+            - `MToken.admin()`, `MToken.comptroller()`, `MToken.underlying()`
+
+            When **oracle feeds** are modified:
+            - `ChainlinkOracle.getUnderlyingPrice(mToken)` → before/after must be ≈ same (±1%)
+            - `AggregatorV3Interface(feed).latestRoundData()` → answer must be > 0
+            - `AggregatorV3Interface(feed).decimals()` → must match expected
+            - Wrapper state: `priceFeed()`, `liquidatorFeeBps()`, `feeRecipient()`, `owner()`, etc.
+
+            When **proxy implementations** are upgraded:
+            - All storage-backed getters must return the same values before/after
+            - Proxy admin and implementation address must be correct
+            - Any new state from `initializeV2()` or similar must be validated
+
+            When **interest rate models** are changed:
+            - `MToken.interestRateModel()` must point to the new model
+            - Borrow/supply rates at current utilization should be verified
+
+            When **token transfers or approvals** occur:
+            - Balances before/after must be verified
+            - Allowances must be checked
+
+            **Step 5: Cross-reference with validate().**
+            For each before/after state change identified above, check if validate() actually asserts on it.
+            Flag any state change that is NOT validated — both the "should change" and "should NOT change" categories.
+
+            ## Standard Audit Output Format
+
+            IMPORTANT: Use all the analysis steps above internally to identify gaps, but the final output
+            must be CONCISE. Do NOT include the detailed state change tables, risk assessments, or per-getter
+            breakdowns in the report. Only include the four sections below.
+
+            For each standard proposal directory, include ONLY these four sections:
+
+            # [Proposal Name]
+
+            ## Summary
+            One-sentence overview of the proposal's purpose, then a bullet list of specifics:
+            - Each onchain action or deployment (one bullet per chain/action)
+            - Key parameters (caps, rates, thresholds, etc.)
+            Keep each bullet to one line. No paragraphs.
+
+            ## Recommendation
+            A 1-3 line actionable verdict. Examples:
+            - "Ready to execute — no issues found."
+            - "Fix before execution: [brief list of critical/high items from Gaps & Issues]."
+            - "Recommended: add before/after price check for oracle swap. Not blocking but high risk if feed is misconfigured."
+            Match the urgency to the severity of gaps found. If no gaps, keep it to one line.
+
+            ## Gaps & Issues
+            ONLY list gaps that could realistically cause exploits, loss of funds, bricked contracts,
+            or broken protocol functionality if the proposal executes. Think like an attacker:
+            - Could this cause oracle prices to return 0 or wrong values, enabling liquidations or bad debt?
+            - Could this brick a proxy upgrade path or leave admin keys wrong?
+            - Could this allow unauthorized fund drains, token minting, or collateral misconfiguration?
+            - Could storage be corrupted by the upgrade, breaking existing user positions?
+            - Could downstream contracts (mTokens, Comptroller, reward distributors) malfunction?
+
+            Do NOT flag cosmetic issues, missing defense-in-depth checks, or theoretical gaps that
+            have no realistic exploit path. If a state getter isn't validated but the value is
+            immutable or set in the constructor and cannot change during an upgrade, that is NOT a gap.
+
+            For each real gap:
+            - **[Critical/High]**: One-sentence description of the exploit scenario or failure mode.
+              Suggest the fix (e.g., "Add `assertApproxEqRel(priceAfter, priceBefore, ...)` in validate()").
+
+            If there are no exploitable gaps: "No issues found — all onchain actions are validated."
+
+            ## Onchain Actions
+            Table of every action from build():
+            | # | Target | Function | Validated | Test Coverage |
+            |---|--------|----------|-----------|---------------|
+            | 1 | `ContractName` | `functionName(args)` | ✅ | test/File.t.sol::testName |
+            | 2 | ... | ... | ❌ | ❌ |
+
+            Use ✅ or ❌ for Validated and Test Coverage columns. Just the emoji, nothing else in those cells.
+
+            IMPORTANT:
+            - Write the output ONLY to pr_comment.md using the Write tool — do NOT post any comments
+            - Do all detailed analysis internally but keep the final report concise
+            - Be precise about onchain actions — extract exact function signatures and parameters
+            - Cross-reference every single build() action against validate() checks and test assertions
+            - For oracle changes: read ChainlinkOracleConfigs.sol and the chain JSON files (chains/*.json) to understand the full oracle config
+            - For comptroller changes: read the Comptroller source to understand what state getters exist
+            - Use proposals/utils/ParameterValidation.sol as reference for standard validation patterns
+
+            ---
+
+            ## Rewards Distribution Audit Template
+
+            For each rewards-distribution proposal directory:
+
+            The deterministic numeric invariants (TG flow conservation, MRD budget = Σ speeds ×
+            duration, safety-module budget = stkEPS × duration, Moonbeam bridge fan-out,
+            positive-amount sanity, 4-week epoch duration) have ALREADY been verified by
+            `./script/rewards/check-rewards-math.sh` in an earlier CI step. The workflow will
+            have failed before reaching you if any of those failed, so you may assume they pass.
+
+            Your job is the narrative review that the deterministic script cannot do:
+
+            ### Phase 1 — Read Local Files
+
+            1. Read the rewards JSON (the `.json` file in the dir, or `MIP_REWARDS_PATH` from the
+               `.sh` script). Note the chain-keyed structure (1284 Moonbeam, 8453 Base, 10 Optimism).
+            2. Read the MIP markdown (.md). It has per-chain summary tables ("Total WELL to
+               distribute Markets (Config)", per-market APR changes, merkle campaign totals).
+            3. Read the `.sol` file. For template-only proposals (inherits `RewardsDistributionTemplate`
+               without overrides beyond `name`), the template handles everything. For SUBCLASSES
+               (e.g., a `build()` override that adds `_pushAction` calls beyond `super.build()`),
+               enumerate and audit those added actions with the same rigor as the Standard Audit.
+            4. Read the dir's `.sh` — confirm `MIP_REWARDS_PATH`, `DESCRIPTION_PATH`,
+               `PRIMARY_FORK_ID=0` are set and the paths exist.
+
+            ### Phase 2 — Narrative checks
+
+            Focus on what the math script cannot verify:
+
+            1. **MD ↔ JSON consistency (per-market).** For each market in the MD's per-chain
+               "### <token> (<mToken>)" tables, verify the `New Value` WELL Supply/Borrow APR
+               direction roughly matches the JSON's `setMRDSpeeds` change for that market
+               (e.g., a 100% APR increase in MD should correspond to ~2× speed in JSON).
+               Only flag divergences > 50% magnitude drift; smaller ones are price/supply-dependent.
+            2. **Recipient / chain-id mixups.** For each `transferFrom.to`, `bridgeToRecipient.target`,
+               `withdrawWell.to`: cross-check against `proposals/Addresses.sol` and `chains/*.json`.
+               A bridge to `TEMPORAL_GOVERNOR` on Base must point at Base's TemporalGovernor,
+               not Optimism's. A merkle campaign's `campaignData` encodes a target contract
+               address in its first 32 bytes — decode and verify it's a known vault/rewarder.
+            3. **Merkle campaign plausibility.** For each `merkleCampaigns[]` entry:
+               verify `campaignType`, `startTimestamp`, `duration` look reasonable (4-week
+               duration, startTimestamp within or shortly after the epoch). Flag any
+               startTimestamp far in the past (stale automation output).
+            4. **Subclass actions (if any).** Enumerate every `_pushAction` in the subclass's
+               `build()` override. For each:
+               - What contract does it target? (read the contract source)
+               - What state does it change?
+               - Is that state asserted in `validate()` (including the subclass's `validate()`
+                 override if present)?
+               - Are before/after snapshots captured in `beforeSimulationHook()` when needed?
+               Use the Standard Audit's "Onchain State Verification" rigor here.
+            5. **Worker output smell-test.** Flag any of: malformed MD tables (missing columns,
+               unparseable numbers), per-market APR changes > 500% (likely automation bug),
+               markets present in JSON but absent in MD (or vice versa), `nativeValue:0` on
+               `bridgeToRecipient` (informational — template pre-funds — but worth calling out).
+
+            ### Rewards Distribution Output Format
+
+            # [Proposal Name] — Rewards Distribution Audit
+
+            ## Summary
+            - Epoch: {startTimeStamp ISO → endTimeStamp ISO} ({duration in days})
+            - Chains covered: {list}
+            - Subclass actions (beyond template): {count, or "none — pure template proposal"}
+            - Merkle campaigns: {count × total WELL}
+            - Deterministic math checks: ✅ (verified in CI step above)
+
+            ## Recommendation
+            A 1-3 line verdict, matching urgency to severity:
+            - "Ready to execute — math passes, narrative review clean."
+            - "Fix before execution: {brief list from Narrative Gaps}."
+            - "Recommended: {mild issue}. Not blocking."
+
+            ## Narrative Gaps
+            ONLY list gaps that the deterministic math could NOT catch AND that could realistically
+            cause exploits, loss of funds, misrouted rewards, or bricked campaigns. For each real gap:
+            - **[Critical/High/Medium]**: One-sentence description + suggested fix.
+
+            If nothing: "No narrative issues — all recipients/chain-ids verified, MD matches JSON,
+            subclass actions (if any) are validated."
+
+            ## Subclass Actions (omit section if none)
+            Table of every action from the subclass's build() override:
+            | # | Target | Function | Validated in subclass validate() | Test Coverage |
+            |---|--------|----------|----------------------------------|---------------|
+            | 1 | `ContractName` | `functionName(args)` | ✅ | test/File.t.sol::testName |
+
+      - name: Post comment
+        if: steps.check.outputs.exists != 'true' && steps.detect.outputs.skip != 'true' && hashFiles('pr_comment.md') != ''
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('pr_comment.md')) {
+              const body = fs.readFileSync('pr_comment.md', 'utf8');
+              if (body.trim().length > 0) {
+                const prNumber = context.payload.pull_request.number;
+                await github.rest.issues.createComment({
+                  ...context.repo,
+                  issue_number: prNumber,
+                  body: body
+                });
+              }
+            }

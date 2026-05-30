@@ -1,0 +1,26 @@
+{
+  "lib/forge-std": {
+    "rev": "52715a217dc51d0de15877878ab8213f6cbbbab5"
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "e50c24f5839db17f46991478384bfda14acfb830"
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "rev": "3d4c0d5741b131c231e558d7a6213392ab3672a5"
+  },
+  "lib/solmate": {
+    "rev": "fadb2e2778adbf01c80275bfb99e5c14969d964b"
+  },
+  "lib/wormhole": {
+    "rev": "aa22a2b950fbbd10221c25a7e19e82e7fd688ed8"
+  },
+  "lib/wormhole-solidity-sdk": {
+    "rev": "d80e0f6cd16f281f3f9df435e98e823b4212b2ad"
+  },
+  "lib/zelt": {
+    "branch": {
+      "name": "main",
+      "rev": "447e7ab0eccfc1b6614714e3c63b8fdefae98076"
+    }
+  }
+}

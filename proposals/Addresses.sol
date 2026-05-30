@@ -531,6 +531,7 @@ contract Addresses is IAddresses, Test {
 
 contract AllChainAddresses is Addresses {
     uint256[] public supportedChainIds = [
+        1,
         8453,
         84532,
         1285,

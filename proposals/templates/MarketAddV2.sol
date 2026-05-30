@@ -99,7 +99,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
         if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
 
         if (DO_BUILD) build(addresses);
-        if (DO_RUN) run(addresses, deployerAddress);
+        if (DO_RUN) simulate(addresses, deployerAddress);
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_VALIDATE) {
             validate(addresses, deployerAddress);
@@ -114,7 +114,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
         }
     }
 
-    function name() external pure override returns (string memory) {
+    function name() external pure virtual override returns (string memory) {
         return "MIP Market Add";
     }
 
@@ -122,7 +122,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
         return MOONBEAM_FORK_ID;
     }
 
-    function initProposal(Addresses) public override {
+    function initProposal(Addresses) public virtual override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _saveMTokens(chainId);
@@ -143,7 +143,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
     function afterDeploy(
         Addresses addresses,
         address deployer
-    ) public override selectPrimaryFork {}
+    ) public virtual override selectPrimaryFork {}
 
     function build(
         Addresses addresses
@@ -157,11 +157,32 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
     function validate(
         Addresses addresses,
         address
-    ) public override selectPrimaryFork {
+    ) public virtual override selectPrimaryFork {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _validate(addresses, chainId);
         }
+    }
+
+    function _validateMarketListing(
+        Comptroller comptroller,
+        address mTokenAddress,
+        uint256 expectedCollateralFactor
+    ) internal {
+        (bool isListed, uint256 collateralFactorMantissa) = comptroller.markets(
+            mTokenAddress
+        );
+        assertTrue(isListed, "market not listed in comptroller");
+        assertEq(
+            collateralFactorMantissa,
+            expectedCollateralFactor,
+            "collateral factor incorrect"
+        );
+
+        uint256 price = comptroller.oracle().getUnderlyingPrice(
+            MToken(mTokenAddress)
+        );
+        assertGt(price, 0, "oracle price is zero");
     }
 
     function _validate(Addresses addresses, uint256 chainId) internal {
@@ -304,6 +325,12 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
                 );
                 assertEq(jrm.kink(), config.jrm.kink);
             }
+
+            _validateMarketListing(
+                comptroller,
+                addresses.getAddress(config.addressesString),
+                config.collateralFactor
+            );
         }
 
         if (vm.activeFork() != MOONBEAM_FORK_ID) {
@@ -542,7 +569,7 @@ contract MarketAddV2 is HybridProposal, Networks, ParameterValidation {
                         "_setProtocolSeizeShare(uint256)",
                         config.seizeShare
                     ),
-                    "Set reserve factor on mToken"
+                    "Set protocol seize share on mToken"
                 );
 
                 /// Approvals

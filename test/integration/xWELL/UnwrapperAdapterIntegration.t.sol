@@ -8,7 +8,6 @@ import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {mipm21} from "@proposals/mips/mip-m21/mip-m21.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
@@ -16,14 +15,14 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
+import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
+import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {Address} from "@utils/Address.sol";
 
-contract UnwrapperAdapterMoonbeamTest is mipm21 {
+contract UnwrapperAdapterPostProposalTest is PostProposalCheck {
     using Address for address;
     using ChainIds for uint256;
-
-    /// @notice all addresses
-    Addresses public addresses;
 
     /// @notice lockbox contract
     XERC20Lockbox public xerc20Lockbox;
@@ -37,6 +36,9 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
     /// @notice wormhole bridge adapter contract
     WormholeBridgeAdapter public wormholeAdapter;
 
+    /// @notice mock wormhole core for executeVAAv1 tests
+    MockWormholeCore public mockWormholeCore;
+
     /// @notice user address for testing
     address user = address(0x123);
 
@@ -45,8 +47,8 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
 
     uint16 public constant wormholeBaseChainid = uint16(BASE_WORMHOLE_CHAIN_ID);
 
-    function setUp() public {
-        addresses = new Addresses();
+    function setUp() public override {
+        super.setUp();
 
         well = ERC20(addresses.getAddress("GOVTOKEN"));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
@@ -55,11 +57,21 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
 
-        deal(address(well), user, startingWellAmount);
-    }
+        /// Set up MockWormholeCore for executeVAAv1 tests.
+        /// Override the wormhole address via vm.store since adapter is
+        /// already V3-initialized after x48+x49 execution.
+        mockWormholeCore = new MockWormholeCore();
+        mockWormholeCore.setFee(0);
+        mockWormholeCore.setChainId(uint16(MOONBEAM_WORMHOLE_CHAIN_ID));
 
-    function testValidate() public view {
-        validate(addresses, address(0));
+        /// wormhole is at storage slot 156 in WormholeBridgeAdapter
+        vm.store(
+            address(wormholeAdapter),
+            bytes32(uint256(156)),
+            bytes32(uint256(uint160(address(mockWormholeCore))))
+        );
+
+        deal(address(well), user, startingWellAmount);
     }
 
     function testInitializeLogicContractFails() public {
@@ -122,6 +134,25 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
                 address(wormholeAdapter)
             ),
             "self on moonbeam not trusted sender"
+        );
+    }
+
+    /// @notice After x51, validate V5 Executor state on Moonbeam unwrapper
+    function testExecutorStateAfterV5Upgrade() public view {
+        assertTrue(
+            address(wormholeAdapter.executor()) != address(0),
+            "Moonbeam: executor not set after V5"
+        );
+        /// Moonbeam has no on-chain quoter
+        assertEq(
+            address(wormholeAdapter.executorQuoterRouter()),
+            address(0),
+            "Moonbeam: executorQuoterRouter should be zero"
+        );
+        assertEq(
+            wormholeAdapter.bridgeCost(0),
+            0,
+            "Moonbeam: bridgeCost should be 0 (no quoter)"
         );
     }
 
@@ -193,6 +224,8 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
         );
     }
 
+    /// @notice Bridge out using off-chain signed quote path.
+    ///         Moonbeam has no on-chain quoter, so we mock the executor.
     function testBridgeOutSuccess() public {
         uint256 burnAmount = testMintViaLockbox(uint96(startingWellAmount));
 
@@ -201,13 +234,24 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         uint16 dstChainId = block.chainid.toBaseWormholeChainId();
-        uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
-        vm.deal(user, cost);
+        /// Etch mock executor so requestExecution succeeds
+        address executorAddr = address(wormholeAdapter.executor());
+        MockExecutorQuoterRouter mockExecutor = new MockExecutorQuoterRouter();
+        vm.etch(executorAddr, address(mockExecutor).code);
+
+        uint256 messageFee = wormholeAdapter.wormhole().messageFee();
+        uint256 executorFee = 0.001 ether;
+        vm.deal(user, messageFee + executorFee);
 
         vm.startPrank(user);
         xwell.approve(address(wormholeAdapter), burnAmount);
-        wormholeAdapter.bridge{value: cost}(dstChainId, burnAmount, user);
+        wormholeAdapter.bridge{value: messageFee + executorFee}(
+            dstChainId,
+            burnAmount,
+            user,
+            hex"deadbeef" // off-chain signed quote
+        );
         vm.stopPrank();
 
         uint256 endingXWellBalance = xwell.balanceOf(user);
@@ -227,6 +271,8 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
         );
     }
 
+    /// @notice After x49, the adapter is WormholeUnwrapperAdapter with lockbox
+    ///         restored. executeVAAv1 mints xWELL then unwraps to WELL via lockbox.
     function testBridgeInSuccess(uint256 mintAmount) public {
         mintAmount = _bound(
             mintAmount,
@@ -240,19 +286,26 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
         uint256 startingLockboxBuffer = xwell.buffer(address(xerc20Lockbox));
 
-        uint16 dstChainId = block.chainid.toBaseWormholeChainId();
-        bytes memory payload = abi.encode(user, mintAmount);
-        bytes32 sender = address(wormholeAdapter).toBytes();
-        bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
-
-        vm.prank(address(wormholeAdapter.wormholeRelayer()));
-        wormholeAdapter.receiveWormholeMessages(
-            payload,
-            new bytes[](0),
-            sender,
-            dstChainId,
-            nonce
+        /// Configure mock: emitter is the adapter on Base chain
+        mockWormholeCore.setStorage(
+            true,
+            wormholeBaseChainid,
+            address(wormholeAdapter).toBytes(),
+            "",
+            abi.encode(
+                user,
+                mintAmount,
+                uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
+                address(wormholeAdapter)
+            )
         );
+
+        bytes memory vaaBytes = abi.encode(
+            "bridge-in-vaa",
+            mintAmount,
+            block.timestamp
+        );
+        wormholeAdapter.executeVAAv1(vaaBytes);
 
         uint256 endingWellBalance = well.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
@@ -269,7 +322,6 @@ contract UnwrapperAdapterMoonbeamTest is mipm21 {
             startingXWellTotalSupply,
             "total xWELL supply changed"
         );
-        assertTrue(wormholeAdapter.processedNonces(nonce), "nonce not used");
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
         assertEq(
             startingLockboxBuffer + mintAmount,

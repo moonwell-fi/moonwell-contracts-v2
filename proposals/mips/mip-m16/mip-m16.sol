@@ -114,7 +114,7 @@ contract mipm16 is GovernanceProposal {
 
     function validate(Addresses addresses, address) public override {}
 
-    function run(Addresses addresses, address) public override {
+    function simulate(Addresses addresses, address) public override {
         /// @dev enable debugging
         setDebug(true);
 

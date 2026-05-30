@@ -25,6 +25,12 @@ contract ProposalMap is Script {
 
     mapping(string path => uint256) private proposalPathToIndex;
 
+    /// @notice optional IPFS description URI (e.g. ipfs://<cid>) keyed by the
+    /// prefixed artifact path that runProposal receives. Sourced from the
+    /// optional `descriptionUri` field in mips.json. Absent => "" => the
+    /// proposal falls back to its raw markdown description.
+    mapping(string path => string) private proposalPathToUri;
+
     constructor() {
         string memory data = vm.readFile(
             string(
@@ -32,16 +38,64 @@ contract ProposalMap is Script {
             )
         );
 
-        bytes memory parsedJson = vm.parseJson(data);
+        // Parse entries one-by-one instead of abi.decode'ing the whole array
+        // into ProposalFields[]. The `descriptionUri` field is OPTIONAL (present
+        // on only some entries), and forge's whole-file parse silently
+        // misaligns every field of any entry that carries an extra key. Reading
+        // each field by its explicit JSON path is immune to that, and lets the
+        // optional key simply be absent. The loop terminates when an index is
+        // out of bounds (keyExistsJson returns false rather than reverting).
+        uint256 i = 0;
+        while (
+            vm.keyExistsJson(
+                data,
+                string.concat(".[", vm.toString(i), "].path")
+            )
+        ) {
+            _addProposalFromJson(data, i);
+            i++;
+        }
+    }
 
-        ProposalFields[] memory jsonProposals = abi.decode(
-            parsedJson,
-            (ProposalFields[])
+    /// @notice read a single mips.json entry by index and register it
+    function _addProposalFromJson(string memory data, uint256 index) internal {
+        string memory base = string.concat(".[", vm.toString(index), "]");
+
+        ProposalFields memory proposal;
+        proposal.envPath = _readEnvPath(data, base);
+        proposal.governor = data.readString(string.concat(base, ".governor"));
+        proposal.id = data.readUint(string.concat(base, ".id"));
+        proposal.path = data.readString(string.concat(base, ".path"));
+        proposal.proposalType = data.readString(
+            string.concat(base, ".proposalType")
         );
 
-        for (uint256 i = 0; i < jsonProposals.length; i++) {
-            addProposal(jsonProposals[i]);
+        addProposal(proposal);
+
+        // optional IPFS description URI — keyed by the prefixed artifact path so
+        // runProposal can look it up directly
+        string memory uriKey = string.concat(base, ".descriptionUri");
+        if (vm.keyExistsJson(data, uriKey)) {
+            proposalPathToUri[
+                string(abi.encodePacked("artifacts/foundry/", proposal.path))
+            ] = data.readString(uriKey);
         }
+    }
+
+    /// @notice read an entry's env path, tolerating the historical
+    /// `envpath`/`envPath` casing drift in mips.json
+    function _readEnvPath(
+        string memory data,
+        string memory base
+    ) internal view returns (string memory) {
+        string memory key = string.concat(base, ".envpath");
+        if (!vm.keyExistsJson(data, key)) {
+            key = string.concat(base, ".envPath");
+            if (!vm.keyExistsJson(data, key)) {
+                return "";
+            }
+        }
+        return data.readString(key);
     }
 
     function addProposal(ProposalFields memory proposal) public {
@@ -84,6 +138,14 @@ contract ProposalMap is Script {
     ) public view returns (uint256 proposalId, string memory envPath) {
         ProposalFields memory proposal = proposals[proposalPathToIndex[path]];
         return (proposal.id, proposal.envPath);
+    }
+
+    /// @notice optional IPFS description URI for a (prefixed artifact) path;
+    /// empty string when the mips.json entry has no `descriptionUri`
+    function getProposalDescriptionUri(
+        string memory path
+    ) public view returns (string memory) {
+        return proposalPathToUri[path];
     }
 
     function getAllProposalsInDevelopment()
@@ -216,6 +278,10 @@ contract ProposalMap is Script {
         proposal = Proposal(deployCode(proposalPath));
         vm.makePersistent(address(proposal));
 
+        // inject the optional pinned IPFS description URI (no-op / falls back to
+        // raw markdown when the entry has no descriptionUri in mips.json)
+        proposal.setProposalDescriptionUri(proposalPathToUri[proposalPath]);
+
         vm.selectFork(proposal.primaryForkId());
 
         address deployer = address(proposal);
@@ -228,7 +294,7 @@ contract ProposalMap is Script {
         if (vm.activeFork() != proposal.primaryForkId()) {
             vm.selectFork(proposal.primaryForkId());
         }
-        proposal.run(addresses, deployer);
+        proposal.simulate(addresses, deployer);
         proposal.afterSimulationHook(addresses);
         proposal.validate(addresses, deployer);
     }

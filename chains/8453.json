@@ -1,5 +1,30 @@
 [
     {
+        "addr": "0x9c4b2B98b24F36f906517139F5f9bAca732a3cF0",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_BASE_FLAT_MIP_X55"
+    },
+    {
+        "addr": "0x4DdD7968113A037e84034eDDEc4524497B77d200",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_EURC_MIP_X50"
+    },
+    {
+        "addr": "0xF203236B9CEf1FaaEa4aCE8e8e2EB65431ef7697",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X46"
+    },
+    {
+        "addr": "0xc3831D840243C4Df57F52C063eEE2a6b44d1840e",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbETH_MIP_X46"
+    },
+    {
+        "addr": "0x2D0c1616CaeD53e3d161e53Fe0Ca1402017f2766",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_LBTC_TBTC_MIP_X42"
+    },
+    {
         "addr": "0x1b2a5f458b627Fb995F834A7B40112c27c2f77e8",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_VIRTUAL_MIP_B53"
@@ -95,6 +120,26 @@
         "isContract": true
     },
     {
+        "addr": "0x9E1936E91A4a5AE5A5F75fFc472D6cb8e93597ea",
+        "isContract": true,
+        "name": "WORMHOLE_EXECUTOR"
+    },
+    {
+        "addr": "0x265fd0500a430d65d6D79Cd8707F24C048604658",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER_ROUTER"
+    },
+    {
+        "addr": "0xA25862D222Eb8343505c12d96e097e4332468D60",
+        "isContract": true,
+        "name": "WORMHOLE_QUOTER"
+    },
+    {
+        "addr": "0xa54008017941EcE968623a0Dd8Ee907E2b133596",
+        "isContract": false,
+        "name": "WORMHOLE_QUOTER_SIGNER"
+    },
+    {
         "addr": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
         "name": "USDBC",
         "isContract": true
@@ -163,6 +208,26 @@
         "addr": "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026",
         "isContract": true,
         "name": "EURC_METAMORPHO_VAULT"
+    },
+    {
+        "addr": "0x89BeDBB1C4837444Da215A377275Ff96A84D6f53",
+        "isContract": true,
+        "name": "WETH_FLAGSHIP_METAMORPHO_VAULT"
+    },
+    {
+        "addr": "0x48a90E85be5C56b0A669985A12ee7C449fC79965",
+        "isContract": true,
+        "name": "USDC_FLAGSHIP_METAMORPHO_VAULT"
+    },
+    {
+        "addr": "0x5083b1387Ec3d4Ee6467B83890D98f1AF93F7c48",
+        "isContract": true,
+        "name": "EURC_FLAGSHIP_METAMORPHO_VAULT"
+    },
+    {
+        "addr": "0xdbA76Bc542bb07538e046B40F2e8a215B409F7A8",
+        "isContract": true,
+        "name": "cbBTC_FRONTIER_METAMORPHO_VAULT"
     },
     {
         "addr": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
@@ -246,7 +311,7 @@
     },
     {
         "addr": "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
-        "name": "PAUSE_GUARDIAN",
+        "name": "PAUSE_GUARDIAN_DEPRECATED",
         "isContract": true
     },
     {
@@ -266,7 +331,7 @@
     },
     {
         "addr": "0xB0Ba0C5D7DA4ec400C1C3E5ef2485134F89918C5",
-        "name": "cbETH_ORACLE",
+        "name": "cbETH_COMPOSITE_ORACLE",
         "isContract": true
     },
     {
@@ -462,6 +527,11 @@
     {
         "addr": "0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa",
         "name": "FOUNDATION_MULTISIG",
+        "isContract": true
+    },
+    {
+        "addr": "0x4942E15F4B3B684EEbB7eE28C922fc634Cc751B1",
+        "name": "C-BASE",
         "isContract": true
     },
     {
@@ -1050,27 +1120,27 @@
         "name": "CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED"
     },
     {
-        "addr": "0x6a3c960Bcfb69BAe78f706c9c6B168bB7693E119",
+        "addr": "0xfEA70a74d94A6b6F9764DB9C4867bBE4678A5Da6",
         "isContract": true,
         "name": "CHAINLINK_BTC_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0xd5669e0175D01cc5F6Be9607129668D0833DcbEC",
+        "addr": "0x945ab3891D7963214833B4D51F54f068c8e6b55e",
         "isContract": true,
         "name": "CHAINLINK_EURC_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0xBA5220805E43194Ff12A434fBb745f3a2E1a09db",
+        "addr": "0x605F14438A6B44a78975FA6BEC37F041687a8bAe",
         "isContract": true,
         "name": "CHAINLINK_WELL_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0x6621069673C61a143DaDF376389e82DA372BF405",
+        "addr": "0xF655eeDeDE0cD9f7a3de5E8018909c429dCfbf9B",
         "isContract": true,
         "name": "CHAINLINK_USDS_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0xBfAaA8B347dA80B909504d403CB4C8F245e921ab",
+        "addr": "0xd46e01f8517319784c58dFe2004440999a75Ea66",
         "isContract": true,
         "name": "CHAINLINK_TBTC_USD_OEV_WRAPPER"
     },
@@ -1090,7 +1160,7 @@
         "isContract": true
     },
     {
-        "addr": "0x12EC8CfEbCF5728774925feC1502733f906CB6e3",
+        "addr": "0xC19B9FF59E445E267283ca6618Ea647268F200b0",
         "isContract": true,
         "name": "CHAINLINK_VIRTUAL_USD_OEV_WRAPPER"
     },
@@ -1290,7 +1360,7 @@
         "name": "OEV_PROTOCOL_FEE_REDEEMER"
     },
     {
-        "addr": "0xeb083d234ec636A10325ea42bCbbE09Aa56d1547",
+        "addr": "0x57DA741aD933869cC9EBfb9668288053A0738f3c",
         "isContract": true,
         "name": "CHAINLINK_ETH_USD_OEV_WRAPPER"
     },
@@ -1340,12 +1410,12 @@
         "name": "MORPHO_VAULT_V2_VIEWS_PROXY"
     },
     {
-        "addr": "0x4916EC6773e14CA873be3d65022BB122CB8b89a2",
+        "addr": "0x0eaB3B9aE08B43077aD1Aeb9820462FAF99BCEc8",
         "isContract": true,
         "name": "DAI_ORACLE_OEV_WRAPPER"
     },
     {
-        "addr": "0x7600b9068bB0aFEA6adf70eD6CD0f8492117236d",
+        "addr": "0xb7967D184907737a955f39a8067Bc1a0CC313292",
         "isContract": true,
         "name": "CHAINLINK_USDC_USD_OEV_WRAPPER"
     },
@@ -1355,7 +1425,7 @@
         "name": "cbETHETH_ORACLE_OEV_WRAPPER"
     },
     {
-        "addr": "0xdC79C7D5D4dA3b237D2d078a1ee06F2FD1FfEf98",
+        "addr": "0x3623c921bfD9d7E9D88E5CBb436B68bE2C2Bc0B7",
         "isContract": true,
         "name": "CHAINLINK_AERO_ORACLE_OEV_WRAPPER"
     },
@@ -1390,18 +1460,173 @@
         "name": "CHAINLINK_VIRTUAL_USD_OEV_WRAPPER_DEPRECATED"
     },
     {
-        "addr": "0x09793267120dbF519B2B0e8Ea77A689e2Ba453F0",
+        "addr": "0x769E8D347C75502878c1844eAFaCEa3547D9a225",
         "isContract": true,
         "name": "CHAINLINK_MORPHO_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0xf2Ac6F14A094A82A6f9489364CdE9e1ba2548d49",
+        "addr": "0xE5C91119dFF7e04cd6834a9c9D0A66380EdB4aF5",
         "isContract": true,
         "name": "CHAINLINK_cbXRP_USD_OEV_WRAPPER"
     },
     {
-        "addr": "0xfbA86a013f7FD93B5454e147242CF2Bf419e120D",
+        "addr": "0xDBD37C274A70A8A3f92A227c843a6a8d3203afe6",
         "isContract": true,
         "name": "CHAINLINK_MAMO_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0xe2747A3f7dD8585eB04c7632a9561D9616454B29",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL_V2"
+    },
+    {
+        "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
+        "isContract": true,
+        "name": "PAUSE_GUARDIAN"
+    },
+    {
+        "addr": "0xb84543e036054E2cD5394A9D99fa701Eef666df4",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V3"
+    },
+    {
+        "addr": "0xf81094eedd37DA759E837D727D940f14b18b6c76",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL_V2"
+    },
+    {
+        "addr": "0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf",
+        "isContract": true,
+        "name": "VVV"
+    },
+    {
+        "addr": "0xaABc55Ca55D70B034e4daA2551A224239890282F",
+        "isContract": true,
+        "name": "CHAINLINK_VVV_USD"
+    },
+    {
+        "addr": "0xCF1A3322977ef557899ad2BF3056d8411EdC87A1",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_VVV"
+    },
+    {
+        "addr": "0xD64BCb70C613a6D1F4D7D57Ba64bb4a0767A9682",
+        "isContract": true,
+        "name": "MOONWELL_VVV"
+    },
+    {
+        "addr": "0x0208810d9d0D639D6e212Ad1B42cFB22Ab3E51A2",
+        "isContract": true,
+        "name": "CHAINLINK_VVV_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0x7599aa7F32bda9Ef644f6cB0482c64fC26f68799",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V4"
+    },
+    {
+        "addr": "0x3fBB877C8d5cF56b30FD29D21E865cA58f127472",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL_V3"
+    },
+    {
+        "addr": "0x78Feb72aeA00B912ac45438e0764A02213266568",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V5"
+    },
+    {
+        "addr": "0x2481BFB0DfA54Dc155011eF2E90ADAB9556b8D99",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_IMPL_V6"
+    },
+    {
+        "addr": "0x4916EC6773e14CA873be3d65022BB122CB8b89a2",
+        "isContract": true,
+        "name": "DAI_ORACLE_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0x7600b9068bB0aFEA6adf70eD6CD0f8492117236d",
+        "isContract": true,
+        "name": "CHAINLINK_USDC_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xeb083d234ec636A10325ea42bCbbE09Aa56d1547",
+        "isContract": true,
+        "name": "CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xdC79C7D5D4dA3b237D2d078a1ee06F2FD1FfEf98",
+        "isContract": true,
+        "name": "CHAINLINK_AERO_ORACLE_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0x6a3c960Bcfb69BAe78f706c9c6B168bB7693E119",
+        "isContract": true,
+        "name": "CHAINLINK_BTC_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xd5669e0175D01cc5F6Be9607129668D0833DcbEC",
+        "isContract": true,
+        "name": "CHAINLINK_EURC_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xBA5220805E43194Ff12A434fBb745f3a2E1a09db",
+        "isContract": true,
+        "name": "CHAINLINK_WELL_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0x6621069673C61a143DaDF376389e82DA372BF405",
+        "isContract": true,
+        "name": "CHAINLINK_USDS_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xBfAaA8B347dA80B909504d403CB4C8F245e921ab",
+        "isContract": true,
+        "name": "CHAINLINK_TBTC_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0x12EC8CfEbCF5728774925feC1502733f906CB6e3",
+        "isContract": true,
+        "name": "CHAINLINK_VIRTUAL_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0x09793267120dbF519B2B0e8Ea77A689e2Ba453F0",
+        "isContract": true,
+        "name": "CHAINLINK_MORPHO_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xf2Ac6F14A094A82A6f9489364CdE9e1ba2548d49",
+        "isContract": true,
+        "name": "CHAINLINK_cbXRP_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xfbA86a013f7FD93B5454e147242CF2Bf419e120D",
+        "isContract": true,
+        "name": "CHAINLINK_MAMO_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xD6aFC41DD78043C55273e217f69E5e1248793B7A",
+        "isContract": true,
+        "name": "CHAINLINK_VVV_USD_OEV_WRAPPER_DEPRECATED_V3"
+    },
+    {
+        "addr": "0xb22694F7280DB8832B37240C4e40C240a4eecC8a",
+        "isContract": true,
+        "name": "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2"
+    },
+    {
+        "addr": "0x701551a3cd30A29cCC012e8f160fB2Cac9b0f5Af",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR_IMPL"
+    },
+    {
+        "addr": "0xb3a9E0DCf37658a48aa9f018C44f90378ddD4357",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR"
+    },
+    {
+        "addr": "0x9d465d56d235674693A158Af40c8d53ddE59B0CE",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_V2_IMPL"
     }
 ]

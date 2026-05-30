@@ -37,8 +37,9 @@ interface IStakedWellUplift {
 
     function assets(address) external view returns (uint128, uint128, uint256);
 
-    function configureAsset(
-        uint128 emissionsPerSecond,
-        address underlyingAsset
+    function configureAssets(
+        uint128[] calldata emissionPerSecond,
+        uint256[] calldata totalStaked,
+        address[] calldata underlyingAsset
     ) external;
 }

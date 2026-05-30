@@ -1,6 +1,7 @@
 pragma solidity 0.8.19;
 
 import "@test/helper/BaseTest.t.sol";
+import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
 contract xWELLPauseUnitTest is BaseTest {
     function setUp() public override {
@@ -11,14 +12,22 @@ contract xWELLPauseUnitTest is BaseTest {
 
     /// @notice ACL tests that ensure pause/unpause can only be called by the pause guardian
     function testPauseNonGuardianFails() public {
-        vm.expectRevert("ConfigurablePauseGuardian: only pause guardian");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ConfigurablePauseGuardian.OnlyPauseGuardian.selector
+            )
+        );
         xwellProxy.pause();
     }
 
     function testUnpauseNonGuardianFails() public {
         testGuardianCanPause();
 
-        vm.expectRevert("ConfigurablePauseGuardian: only pause guardian");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ConfigurablePauseGuardian.OnlyPauseGuardian.selector
+            )
+        );
         xwellProxy.unpause();
     }
 
@@ -74,7 +83,11 @@ contract xWELLPauseUnitTest is BaseTest {
         testShouldUnpauseAutomaticallyAfterPauseDuration();
 
         vm.prank(pauseGuardian);
-        vm.expectRevert("ConfigurablePauseGuardian: pause already used");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ConfigurablePauseGuardian.PauseAlreadyUsed.selector
+            )
+        );
         xwellProxy.pause();
     }
 

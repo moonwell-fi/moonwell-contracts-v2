@@ -204,7 +204,7 @@ contract mipx01 is HybridProposal, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public override {
+    function simulate(Addresses addresses, address) public override {
         require(
             actions.proposalActionTypeCount(ActionType.Base) == 4,
             "MIP-O01: should have 4 base actions"
@@ -218,7 +218,7 @@ contract mipx01 is HybridProposal, Configs {
             "MIP-O01: should have 0 optimism actions"
         );
 
-        super.run(addresses, address(0));
+        super.simulate(addresses, address(0));
     }
 
     function validate(Addresses addresses, address) public override {

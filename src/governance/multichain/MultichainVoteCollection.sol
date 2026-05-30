@@ -6,6 +6,7 @@ import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contr
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {SnapshotInterface} from "@protocol/governance/multichain/SnapshotInterface.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 
 /// @notice Upgradeable contract, constructor disables the implementation contract
@@ -18,6 +19,7 @@ import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 /// Moonbeam will only allow receiving of votes for each chaind id and proposal id
 /// once per proposal. This is to prevent votes from external chains being double
 /// counted.
+/// NOTE: this contract is upgraded to MultichainVoteCollectionV2
 contract MultichainVoteCollection is
     IMultichainVoteCollection,
     WormholeBridgeBase,
@@ -44,6 +46,18 @@ contract MultichainVoteCollection is
 
     /// @notice mapping from proposalId to MultichainProposal
     mapping(uint256 proposalId => MultichainProposal) public proposals;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// ------------- V2 STORAGE (post-upgrade) -----------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice Wormhole core bridge for on-chain VAA verification
+    IWormhole public wormhole;
+
+    /// @notice tracks processed VAA hashes to prevent replay
+    mapping(bytes32 => bool) public processedVAAHashes;
 
     /// @notice disable the initializer to stop governance hijacking
     /// and avoid selfdestruct attacks.
@@ -77,6 +91,14 @@ contract MultichainVoteCollection is
 
         __Ownable_init();
         _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
+    }
+
+    /// @notice V2 upgrade: set the Wormhole core bridge address for direct
+    ///         VAA verification, bypassing the deprecated standard relayer.
+    /// @param wormholeCore address of the Wormhole core bridge on this chain
+    function initializeV2(address wormholeCore) external reinitializer(2) {
+        require(wormholeCore != address(0), "MultichainGovernor: zero address");
+        wormhole = IWormhole(wormholeCore);
     }
 
     /// --------------------------------------------------------- ///
@@ -292,7 +314,8 @@ contract MultichainVoteCollection is
     /// --------------------------------------------------------- ///
 
     /// @notice bridge proposals from moonbeam
-    /// @param payload the payload of the message, contains proposalId, votingStartTime, votingEndTime and voteCollectionEndTime
+    /// @param payload the payload of the message, contains proposalId, votingStartTime,
+    ///                votingEndTime and voteCollectionEndTime
     function _bridgeIn(uint16, bytes memory payload) internal override {
         /// payload should be 5 uint256s
         require(
@@ -380,5 +403,22 @@ contract MultichainVoteCollection is
         stkWell = SnapshotInterface(newStakedWell);
 
         emit NewStakedWellSet(newStakedWell);
+    }
+
+    /// @notice return the wormhole core contract
+    function _wormhole() internal view override returns (IWormhole) {
+        return wormhole;
+    }
+
+    /// @notice check if a VAA hash has been processed
+    function _isVAAHashProcessed(
+        bytes32 hash
+    ) internal view override returns (bool) {
+        return processedVAAHashes[hash];
+    }
+
+    /// @notice mark a VAA hash as processed
+    function _setVAAHashProcessed(bytes32 hash) internal override {
+        processedVAAHashes[hash] = true;
     }
 }

@@ -24,6 +24,7 @@ interface IStakedWell {
 
     function EMISSION_MANAGER() external view returns (address);
 
+    function REWARD_TOKEN() external view returns (address);
     function STAKED_TOKEN() external view returns (address);
     function REWARDS_VAULT() external view returns (address);
 
@@ -55,15 +56,10 @@ interface IStakedWell {
     function cooldown() external;
 
     // from IDistributionManager
-    function configureAsset(
-        uint128 emissionPerSecond,
-        address underlyingAsset
-    ) external;
-
     function configureAssets(
-        uint128[] memory emissionPerSecond,
-        uint256[] memory totalStaked,
-        address[] memory underlyingAsset
+        uint128[] calldata emissionPerSecond,
+        uint256[] calldata totalStaked,
+        address[] calldata underlyingAsset
     ) external;
 
     /// @notice update the unstake window

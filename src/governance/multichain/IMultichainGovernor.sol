@@ -211,15 +211,6 @@ interface IMultichainGovernor {
     /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
     function whitelistedCalldatas(bytes calldata) external view returns (bool);
 
-    /// @notice return votes for a proposal id on a given chain
-    function chainAddressVotes(
-        uint256 proposalId,
-        uint16 chainId
-    )
-        external
-        view
-        returns (uint256 forVotes, uint256 againstVotes, uint256 abstainVotes);
-
     /// break glass guardian
     function breakGlassGuardian() external view returns (address);
 
@@ -299,9 +290,6 @@ interface IMultichainGovernor {
     /// updates the proposal threshold
     function updateProposalThreshold(uint256 newProposalThreshold) external;
 
-    /// updates the maximum user live proposals
-    function updateMaxUserLiveProposals(uint256 newMaxLiveProposals) external;
-
     /// updates the quorum
     function updateQuorum(uint256 newQuorum) external;
 
@@ -348,11 +336,6 @@ interface IMultichainGovernor {
         address[] calldata targets,
         bytes[] calldata calldatas
     ) external;
-
-    /// @notice set a gas limit for the relayer on the external chain
-    /// should only be called if there is a change in gas prices on the external chain
-    /// @param newGasLimit new gas limit to set
-    function setGasLimit(uint96 newGasLimit) external;
 
     /// @notice grant new pause guardian
     /// @dev can only be called when unpaused, otherwise the

@@ -16,7 +16,10 @@ import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {ChainlinkOracleConfigs} from "@proposals/ChainlinkOracleConfigs.sol";
 import {LiquidationData, Liquidations, LiquidationState} from "@test/utils/Liquidations.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
+import {IOEVWrapperFeed} from "@protocol/oracles/IOEVWrapperFeed.sol";
+import {IChainlinkOracle} from "@protocol/interfaces/IChainlinkOracle.sol";
 import {OEVProtocolFeeRedeemer} from "@protocol/OEVProtocolFeeRedeemer.sol";
+import {MockOEVWrapperFeed} from "@test/mock/MockOEVWrapperFeed.sol";
 
 contract ChainlinkOEVWrapperIntegrationTest is
     PostProposalCheck,
@@ -113,7 +116,10 @@ contract ChainlinkOEVWrapperIntegrationTest is
         address underlying = MErc20(mToken).underlying();
 
         if (underlying == addresses.getAddress("WETH")) {
-            vm.deal(addresses.getAddress("WETH"), amount);
+            vm.deal(
+                addresses.getAddress("WETH"),
+                addresses.getAddress("WETH").balance + amount
+            );
         }
         deal(underlying, user, amount);
         vm.startPrank(user);
@@ -1033,9 +1039,15 @@ contract ChainlinkOEVWrapperIntegrationTest is
     }
 
     function testUpdatePriceEarlyAndLiquidate_RevertLiquidationFailed() public {
-        // Use ETH/WETH for this test
+        // Use ETH/WETH for this test. Resolve the wrapper dynamically through
+        // the live ChainlinkOracle registry so the test works regardless of
+        // which OEV wrapper version is currently wired (MIP-X56 swaps the
+        // canonical "WETH" feed during PostProposalCheck setUp).
+        IChainlinkOracle oracleRegistry = IChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
         ChainlinkOEVWrapper wrapper = ChainlinkOEVWrapper(
-            payable(addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"))
+            payable(address(oracleRegistry.getFeed("WETH")))
         );
         MToken mTokenCollateral = MToken(addresses.getAddress("MOONWELL_WETH"));
         MToken mTokenBorrow = MToken(addresses.getAddress("MOONWELL_USDC"));
@@ -1748,5 +1760,390 @@ contract ChainlinkOEVWrapperIntegrationTest is
             }
         }
         return (ChainlinkOEVWrapper(payable(address(0))), false);
+    }
+
+    /// @notice Expected split output from _computeExpectedSplit
+    struct ExpectedSplit {
+        uint256 liquidatorFee;
+        uint256 protocolFee;
+    }
+
+    /// @notice All parameters for _computeExpectedSplit, packed to avoid stack-too-deep.
+    struct SplitParams {
+        uint256 repayAmount;
+        int256 collateralAnswer;
+        uint8 collateralFeedDecimals;
+        uint8 collateralTokenDecimals;
+        uint256 collateralSeized;
+        int256 loanAnswer;
+        uint8 loanFeedDecimals;
+        uint8 loanTokenDecimals;
+        uint256 exchangeRate;
+        uint16 liquidatorFeeBps;
+    }
+
+    /// @notice Mirror the production _calculateCollateralSplit formula exactly.
+    /// @dev Scales both prices the same way the wrapper does, then reproduces
+    ///      the USD-then-mToken conversion arithmetic step by step.
+    function _computeExpectedSplit(
+        SplitParams memory p
+    ) internal pure returns (ExpectedSplit memory split) {
+        // --- loan price (mirrors _getLoanTokenPrice) ---
+        uint256 loanPricePerUnit = uint256(p.loanAnswer);
+        if (p.loanFeedDecimals < 18) {
+            loanPricePerUnit =
+                loanPricePerUnit *
+                (10 ** (18 - p.loanFeedDecimals));
+        } else if (p.loanFeedDecimals > 18) {
+            loanPricePerUnit =
+                loanPricePerUnit /
+                (10 ** (p.loanFeedDecimals - 18));
+        }
+        uint256 loanPrice;
+        if (p.loanTokenDecimals < 18) {
+            loanPrice = loanPricePerUnit * (10 ** (18 - p.loanTokenDecimals));
+        } else if (p.loanTokenDecimals > 18) {
+            loanPrice = loanPricePerUnit / (10 ** (p.loanTokenDecimals - 18));
+        } else {
+            loanPrice = loanPricePerUnit;
+        }
+
+        // --- collateral price (mirrors _getCollateralTokenPrice) ---
+        uint256 collateralPricePerUnit = uint256(p.collateralAnswer);
+        if (p.collateralFeedDecimals < 18) {
+            collateralPricePerUnit =
+                collateralPricePerUnit *
+                (10 ** (18 - p.collateralFeedDecimals));
+        } else if (p.collateralFeedDecimals > 18) {
+            collateralPricePerUnit =
+                collateralPricePerUnit /
+                (10 ** (p.collateralFeedDecimals - 18));
+        }
+        uint256 collateralPrice;
+        if (p.collateralTokenDecimals < 18) {
+            collateralPrice =
+                collateralPricePerUnit *
+                (10 ** (18 - p.collateralTokenDecimals));
+        } else if (p.collateralTokenDecimals > 18) {
+            collateralPrice =
+                collateralPricePerUnit /
+                (10 ** (p.collateralTokenDecimals - 18));
+        } else {
+            collateralPrice = collateralPricePerUnit;
+        }
+
+        // --- USD values (mirrors _calculateCollateralSplit) ---
+        uint256 underlyingAmount = (p.collateralSeized * p.exchangeRate) / 1e18;
+        uint256 repayUSD = (p.repayAmount * loanPrice) / 1e18;
+        uint256 collateralUSD = (underlyingAmount * collateralPrice) / 1e18;
+
+        // Degenerate case: collateral worth <= repay amount, liquidator gets all
+        if (collateralUSD <= repayUSD) {
+            split.liquidatorFee = p.collateralSeized;
+            split.protocolFee = 0;
+            return split;
+        }
+
+        uint256 liquidatorUSD = repayUSD +
+            ((collateralUSD - repayUSD) * uint256(p.liquidatorFeeBps)) /
+            uint256(10000); // MAX_BPS
+
+        uint256 liquidatorUnderlyingAmount = (liquidatorUSD * 1e18) /
+            collateralPrice;
+        split.liquidatorFee =
+            (liquidatorUnderlyingAmount * 1e18) /
+            p.exchangeRate;
+        split.protocolFee = p.collateralSeized - split.liquidatorFee;
+    }
+
+    /// @notice Read on-chain post-liquidation state and delegate to _computeExpectedSplit.
+    /// @dev Exists solely to keep testFullLiquidationDerefsWrappedLoanFeed below
+    ///      the stack-variable limit imposed by the 0.8.19 codegen without --via-ir.
+    /// @param repayAmount     Loan tokens repaid
+    /// @param collateralSeized Total mToken collateral seized (liquidatorFee + protocolFee)
+    /// @param loanAnswer      Raw int256 from the INNER loan feed captured pre-mock
+    /// @param loanFeedDecimals Decimals of the inner loan feed
+    function _resolveAndComputeSplit(
+        ChainlinkOEVWrapper wrapper,
+        address mTokenCollateralAddr,
+        address mTokenBorrowAddr,
+        uint256 repayAmount,
+        uint256 collateralSeized,
+        int256 loanAnswer,
+        uint8 loanFeedDecimals
+    ) internal view returns (ExpectedSplit memory) {
+        AggregatorV3Interface pf = wrapper.priceFeed();
+        (, int256 collateralAnswer, , , ) = pf.latestRoundData();
+        SplitParams memory p;
+        p.repayAmount = repayAmount;
+        p.collateralAnswer = collateralAnswer;
+        p.collateralFeedDecimals = pf.decimals();
+        p.collateralTokenDecimals = IERC20(
+            MErc20(mTokenCollateralAddr).underlying()
+        ).decimals();
+        p.collateralSeized = collateralSeized;
+        p.loanAnswer = loanAnswer;
+        p.loanFeedDecimals = loanFeedDecimals;
+        p.loanTokenDecimals = IERC20(MErc20(mTokenBorrowAddr).underlying())
+            .decimals();
+        p.exchangeRate = MErc20(mTokenCollateralAddr).exchangeRateStored();
+        p.liquidatorFeeBps = wrapper.liquidatorFeeBps();
+        return _computeExpectedSplit(p);
+    }
+
+    /// @notice End-to-end regression: register a MockOEVWrapperFeed under the
+    ///         loan-token's symbol with a wildly wrong OUTER price, run a real
+    ///         Core liquidation through the OEV wrapper, and assert the resulting
+    ///         split matches the math computed from the INNER (real) price within
+    ///         0.1% tolerance (accounts for exchangeRate drift between event
+    ///         emission and post-tx read).
+    /// @dev This is the missing coverage for the try-success branch of
+    ///      _resolveRawFeed when the registered loan feed is itself a wrapper.
+    ///      The unit tests cover the deref logic in isolation; this test
+    ///      proves it composes correctly inside updatePriceEarlyAndLiquidate.
+    function testFullLiquidationDerefsWrappedLoanFeed() public {
+        if (block.chainid != 8453) return;
+
+        // Pick the first OEV-wrapped collateral whose underlying isn't a
+        // stable, so we can borrow USDC against it. This reuses whichever
+        // wrappers the live ChainlinkOracleConfigs registers on Base.
+        OracleConfig[] memory oracleConfigs = getOracleConfigurations(
+            block.chainid
+        );
+        ChainlinkOEVWrapper wrapper;
+        address mTokenCollateralAddr;
+        for (uint256 i = 0; i < oracleConfigs.length; i++) {
+            // Skip stables — borrow asset for stable-collateral synthetic
+            // positions defaults to DAI in the harness, and we want USDC
+            // here so we can wrap a known feed.
+            if (
+                keccak256(bytes(oracleConfigs[i].symbol)) ==
+                keccak256(bytes("USDC")) ||
+                keccak256(bytes(oracleConfigs[i].symbol)) ==
+                keccak256(bytes("USDBC")) ||
+                keccak256(bytes(oracleConfigs[i].symbol)) ==
+                keccak256(bytes("EURC")) ||
+                keccak256(bytes(oracleConfigs[i].symbol)) ==
+                keccak256(bytes("DAI")) ||
+                keccak256(bytes(oracleConfigs[i].symbol)) ==
+                keccak256(bytes("USDS"))
+            ) {
+                continue;
+            }
+            string memory wrapperKey = string(
+                abi.encodePacked(oracleConfigs[i].oracleName, "_OEV_WRAPPER")
+            );
+            if (!addresses.isAddressSet(wrapperKey)) continue;
+
+            string memory mTokenKey = string(
+                abi.encodePacked("MOONWELL_", oracleConfigs[i].symbol)
+            );
+            if (!addresses.isAddressSet(mTokenKey)) continue;
+
+            wrapper = ChainlinkOEVWrapper(
+                payable(addresses.getAddress(wrapperKey))
+            );
+            mTokenCollateralAddr = addresses.getAddress(mTokenKey);
+            break;
+        }
+        require(
+            address(wrapper) != address(0),
+            "no OEV-wrapped non-stable collateral found"
+        );
+        require(
+            mTokenCollateralAddr != address(0),
+            "collateral mToken not resolved"
+        );
+
+        address mTokenBorrowAddr = addresses.getAddress("MOONWELL_USDC");
+        address borrower = _borrower(wrapper);
+        address liquidator = _liquidator(wrapper);
+
+        (, uint256 borrowAmount) = _setupSyntheticPosition(
+            mTokenCollateralAddr,
+            mTokenBorrowAddr,
+            borrower
+        );
+
+        // Capture the real registered USDC feed before we replace it.
+        ChainlinkOracle oracle = ChainlinkOracle(address(comptroller.oracle()));
+        AggregatorV3Interface realLoanFeed = oracle.getFeed("USDC");
+        require(
+            address(realLoanFeed) != address(0),
+            "USDC feed not registered"
+        );
+
+        // Capture the inner feed's price BEFORE doing anything else, so the
+        // expected split math can be computed without depending on values
+        // that the test will later mock.
+        (, int256 innerLoanAnswer, , , ) = realLoanFeed.latestRoundData();
+        uint8 innerLoanDecimals = realLoanFeed.decimals();
+
+        // Wrap the loan feed: outer's priceFeed() -> realLoanFeed.
+        // The OUTER reports 2× the real USDC price — high enough to keep the
+        // comptroller's underwater check valid (debt valuation stays in the
+        // ballpark) yet far enough off to make split math computed off OUTER
+        // visibly diverge from split math computed off INNER. The deref must
+        // redirect to the real inner feed; if it does not, the resulting
+        // liquidator/protocol split will be ~2× off — well above the 0.1%
+        // tolerance asserted below.
+        MockOEVWrapperFeed mockWrapper = new MockOEVWrapperFeed(
+            address(realLoanFeed),
+            innerLoanDecimals,
+            "MOCK_USDC_WRAPPER",
+            1
+        );
+        mockWrapper.setLatestRound(
+            1,
+            innerLoanAnswer * 2,
+            1,
+            block.timestamp,
+            1
+        );
+
+        vm.prank(oracle.admin());
+        oracle.setFeed("USDC", address(mockWrapper));
+
+        // Sanity-check: the registry now returns our mock outer.
+        assertEq(
+            address(oracle.getFeed("USDC")),
+            address(mockWrapper),
+            "registry not pointed at mock wrapper"
+        );
+
+        // Crash collateral price to make the position underwater.
+        _crashPriceForLiquidation(wrapper, borrower);
+
+        // Execute the liquidation. If the deref breaks, this either reverts
+        // (e.g. answer cannot be lower than 0 — but 1 is valid so it would
+        // proceed with a corrupted split) OR it produces a wildly skewed
+        // split where the liquidator gets practically all the surplus.
+        uint256 repayAmount = borrowAmount / 10;
+        deal(MErc20(mTokenBorrowAddr).underlying(), liquidator, repayAmount);
+
+        if (
+            block.timestamp <= MToken(mTokenBorrowAddr).accrualBlockTimestamp()
+        ) {
+            vm.warp(MToken(mTokenBorrowAddr).accrualBlockTimestamp() + 1);
+        }
+
+        vm.startPrank(liquidator);
+        IERC20(MErc20(mTokenBorrowAddr).underlying()).approve(
+            address(wrapper),
+            repayAmount
+        );
+
+        vm.recordLogs();
+        wrapper.updatePriceEarlyAndLiquidate(
+            borrower,
+            repayAmount,
+            mTokenCollateralAddr,
+            mTokenBorrowAddr
+        );
+        vm.stopPrank();
+
+        (uint256 protocolFee, uint256 liquidatorFee) = _parseLiquidationEvent();
+
+        // Conservation: liquidator must receive something.
+        assertGt(liquidatorFee, 0, "liquidator should receive collateral");
+
+        // Compute the expected split using the exact same formula as the
+        // production _calculateCollateralSplit.
+        ExpectedSplit memory expected = _resolveAndComputeSplit(
+            wrapper,
+            mTokenCollateralAddr,
+            mTokenBorrowAddr,
+            repayAmount,
+            liquidatorFee + protocolFee,
+            innerLoanAnswer,
+            innerLoanDecimals
+        );
+
+        // Degenerate case: collateral value <= repay value — liquidator takes all.
+        uint256 collateralSeized = liquidatorFee + protocolFee;
+        if (expected.liquidatorFee == collateralSeized) {
+            assertEq(
+                liquidatorFee,
+                collateralSeized,
+                "degenerate: liquidator should take all collateral"
+            );
+            assertEq(protocolFee, 0, "degenerate: protocol fee should be 0");
+        } else {
+            // Normal case: assert exact split to 0.1% tolerance, accounting
+            // for the tiny exchangeRate drift between event-emission time and
+            // the post-tx read above.
+            assertApproxEqRel(
+                liquidatorFee,
+                expected.liquidatorFee,
+                1e15,
+                "liquidatorFee: split does not match inner-price reproduction"
+            );
+            assertApproxEqRel(
+                protocolFee,
+                expected.protocolFee,
+                1e15,
+                "protocolFee: split does not match inner-price reproduction"
+            );
+        }
+
+        // The mockWrapper's outer price was never written to by the wrapper
+        // itself; its r_answer should still be the skewed value we configured.
+        // Sanity for the test setup itself.
+        assertEq(
+            mockWrapper.r_answer(),
+            innerLoanAnswer * 2,
+            "mock outer answer should remain untouched"
+        );
+    }
+
+    /// @notice Regression test for the loan-feed desync bounty fix.
+    ///         Verifies that on live Base chain state, each registered symbol
+    ///         either:
+    ///           (a) maps to a raw Chainlink aggregator (IOEVWrapperFeed cast
+    ///               reverts or returns zero), or
+    ///           (b) maps to an OEV wrapper whose priceFeed() points to a real,
+    ///               non-zero raw Chainlink aggregator.
+    ///         Either way the wrapper's _resolveRawFeed helper lands on a
+    ///         live contract when invoked at runtime.
+    function testLoanFeedDerefMatchesRawChainlinkAggregator() public {
+        // Only run on Base — the Core wrapper is Base-only for WETH.
+        if (block.chainid != 8453) return;
+
+        ChainlinkOEVWrapper wrapper = ChainlinkOEVWrapper(
+            payable(addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER"))
+        );
+        IChainlinkOracle oracle = wrapper.chainlinkOracle();
+
+        // Probe the WETH symbol — the ETH/USD OEV wrapper is registered
+        // against "WETH" in the ChainlinkOracle registry on Base.
+        AggregatorV3Interface registered = oracle.getFeed("WETH");
+
+        if (address(registered) == address(0)) {
+            // No WETH feed registered on this fork — nothing to assert.
+            return;
+        }
+
+        // Attempt the same cast that _resolveRawFeed performs. Pass either
+        // way — the invariant is that whichever feed is ultimately read has
+        // live code on-chain.
+        try IOEVWrapperFeed(address(registered)).priceFeed() returns (
+            AggregatorV3Interface inner
+        ) {
+            if (address(inner) != address(0)) {
+                _assertHasCode(address(inner), "WETH inner feed");
+            } else {
+                _assertHasCode(address(registered), "WETH registered feed");
+            }
+        } catch {
+            _assertHasCode(address(registered), "WETH registered feed");
+        }
+    }
+
+    function _assertHasCode(address a, string memory label) internal view {
+        uint256 codeLen;
+        assembly {
+            codeLen := extcodesize(a)
+        }
+        require(codeLen > 0, string(abi.encodePacked(label, " has no code")));
     }
 }

@@ -156,13 +156,13 @@ contract mipo01 is HybridProposal, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public override {
+    function simulate(Addresses addresses, address) public override {
         require(
             actions.proposalActionTypeCount(ActionType(primaryForkId())) > 0,
             "MIP-00: should have actions on the chain being deployed to"
         );
 
-        super.run(addresses, address(0));
+        super.simulate(addresses, address(0));
     }
 
     function teardown(Addresses addresses, address) public pure override {}

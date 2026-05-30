@@ -7,7 +7,7 @@ The "v2" release of the Moonwell Protocol is a major system upgrade to use
 solidity 0.8.19, add supply caps, and a number of improvements for user
 experience (things like `mintWithPermit` and `claimAllRewards`). Solidity
 version 0.8.20 was not used because EIP-3855 which adds the PUSH0 opcode was not
-be live on base at the time this system was deployed.
+yet live on Base at the time this system was deployed.
 
 # Table of Contents
 

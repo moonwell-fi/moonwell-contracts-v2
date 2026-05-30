@@ -56,6 +56,7 @@ abstract contract Configs is Test {
     constructor() {
         temporalGovDelay[BASE_CHAIN_ID] = 1 days;
         temporalGovDelay[OPTIMISM_CHAIN_ID] = 1 days;
+        temporalGovDelay[ETHEREUM_CHAIN_ID] = 1 days;
         temporalGovDelay[OPTIMISM_SEPOLIA_CHAIN_ID] = 0 days;
         temporalGovDelay[LOCAL_CHAIN_ID] = 0 days;
         temporalGovDelay[BASE_SEPOLIA_CHAIN_ID] = 0 days;
@@ -75,6 +76,15 @@ abstract contract Configs is Test {
     }
 
     function _setMTokenConfiguration(string memory mTokenPath) internal {
+        /// idempotent: if configs were already loaded for this chain, skip.
+        /// Without this guard, calling _setMTokenConfiguration in both deploy()
+        /// and build() pushes duplicate entries, leading to duplicate proposal
+        /// actions (e.g. minting twice on the same mToken which depletes the
+        /// proposer's underlying balance).
+        if (cTokenConfigurations[block.chainid].length != 0) {
+            return;
+        }
+
         string memory fileContents = vm.readFile(mTokenPath);
         bytes memory rawJson = vm.parseJson(fileContents);
 
@@ -110,7 +120,7 @@ abstract contract Configs is Test {
             MockWormholeCore wormholeCore = new MockWormholeCore();
 
             addresses.addAddress("WORMHOLE_CORE", address(wormholeCore));
-            addresses.addAddress("PAUSE_GUARDIAN", address(this));
+            addresses.addAddress("PAUSE_GUARDIAN_DEPRECATED", address(this));
         }
     }
 
@@ -275,14 +285,17 @@ abstract contract Configs is Test {
         }
 
         if (block.chainid == BASE_CHAIN_ID) {
-            if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
+            if (addresses.getAddress("cbETH_COMPOSITE_ORACLE") == address(0)) {
                 ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
                         addresses.getAddress("ETH_ORACLE"),
                         addresses.getAddress("cbETHETH_ORACLE"),
                         address(0)
                     );
 
-                addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+                addresses.addAddress(
+                    "cbETH_COMPOSITE_ORACLE",
+                    address(cbEthOracle)
+                );
             }
 
             return;
@@ -330,7 +343,8 @@ abstract contract Configs is Test {
 
                 if (
                     block.chainid == BASE_SEPOLIA_CHAIN_ID ||
-                    block.chainid == BASE_CHAIN_ID
+                    block.chainid == BASE_CHAIN_ID ||
+                    block.chainid == ETHEREUM_CHAIN_ID
                 ) {
                     /// pay USDBC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({

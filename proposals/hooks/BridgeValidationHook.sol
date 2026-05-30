@@ -87,20 +87,15 @@ abstract contract BridgeValidationHook {
         );
     }
 
-    /// @notice Gets bridge cost from router and validates it's non-zero
+    /// @notice Gets bridge cost from router
     /// @param router The router contract address
     /// @param wormholeChainId The destination chain ID
-    /// @return bridgeCost The validated bridge cost
+    /// @return bridgeCost The bridge cost (may be 0 when messageFee is 0)
     function _getBridgeCost(
         address router,
         uint16 wormholeChainId
     ) private view returns (uint256 bridgeCost) {
         bridgeCost = xWELLRouter(router).bridgeCost(wormholeChainId);
-
-        require(
-            bridgeCost > 0,
-            "BridgeValidationHook: bridge cost must be greater than zero"
-        );
     }
 
     /// @notice Extract uint16 value from calldata at the third parameter position

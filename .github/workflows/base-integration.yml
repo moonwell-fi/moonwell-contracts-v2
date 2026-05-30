@@ -8,6 +8,7 @@ env:
     MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
     PRIMARY_FORK_ID: 1
     FOUNDRY_PROFILE: ci
+    ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
 
 jobs:
   live-system-integration-tests:

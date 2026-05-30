@@ -13,7 +13,10 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
+import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
+import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
 contract MockTimelock {
@@ -41,9 +44,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testGovernorSetup() public view {
-        assertFalse(
+        assertTrue(
             governor.useTimestamps(),
-            "useTimestamps should start off false after initialization"
+            "useTimestamps should be true since stkWellMoonbeam uses timestamps"
         );
         assertEq(
             governor.gasLimit(),
@@ -115,14 +118,10 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
         assertEq(
             governor.bridgeCost(MOONBASE_WORMHOLE_CHAIN_ID),
-            0.1 ether,
-            "bridgecost incorrect"
+            0,
+            "bridgecost should equal messageFee (0)"
         );
-        assertEq(
-            governor.bridgeCostAll(),
-            0.1 ether,
-            "bridgecostall incorrect"
-        );
+        assertEq(governor.bridgeCostAll(), 0, "bridgecostall should equal 0");
     }
 
     function testVoteCollectionSetup() public view {
@@ -146,7 +145,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testInitLogicFails() public {
-        MultichainGovernor.InitializeData memory initData;
+        MockMultichainGovernor.InitializeData memory initData;
         WormholeTrustedSender.TrustedSender[]
             memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
@@ -154,7 +153,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         vm.expectRevert("Initializable: contract is already initialized");
 
-        MultichainGovernor(payable(governorLogic)).initialize(
+        MockMultichainGovernor(payable(governorLogic)).initialize(
             initData,
             trustedSenders,
             new bytes[](0)
@@ -237,7 +236,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].chainId = 1;
         _trustedSenders[0].addr = address(0);
 
-        vm.expectRevert("WormholeBridge: invalid target address");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.InvalidAddress.selector)
+        );
         vm.prank(address(governor));
         governor.addExternalChainConfigs(_trustedSenders);
     }
@@ -430,7 +431,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     /// PAUSE GUARDIAN
     function testPauseNonPauseGuardianFails() public {
-        vm.expectRevert("ConfigurablePauseGuardian: only pause guardian");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ConfigurablePauseGuardian.OnlyPauseGuardian.selector
+            )
+        );
         vm.prank(address(1));
         governor.pause();
     }
@@ -460,7 +465,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     function testSetNewStakedWellGovernorSucceeds() public {
         address newStakedWell = address(1);
-        assertFalse(governor.useTimestamps(), "timestamps incorrectly in use");
+        assertTrue(governor.useTimestamps(), "timestamps not in use initially");
 
         vm.prank(address(governor));
         governor.setNewStakedWell(newStakedWell, true);
@@ -474,13 +479,15 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testSetNewStakedWellBaseWellGovernorSucceeds() public {
+        // Since stkWellMoonbeam is a V2 contract using timestamps, useTimestamps should already be true
+        assertTrue(governor.useTimestamps(), "timestamps not in use initially");
+
         uint256 startingVotes = governor.getVotes(
             address(this),
             block.timestamp - 1,
             block.number - 1
         );
         address newStakedWell = address(stkWellBase);
-        assertFalse(governor.useTimestamps(), "timestamps incorrectly in use");
 
         vm.prank(address(governor));
         governor.setNewStakedWell(newStakedWell, true);
@@ -525,7 +532,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].addr = address(this);
 
         vm.prank(address(governor));
-        vm.expectRevert("WormholeBridge: chain not added");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.ChainNotAdded.selector)
+        );
         governor.removeExternalChainConfigs(_trustedSenders);
     }
 
@@ -559,7 +568,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             memory _trustedSenders = testaddExternalChainConfigsGovernorSucceeds();
 
         vm.prank(address(governor));
-        vm.expectRevert("WormholeBridge: chain already added");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeBridgeBase.ChainAlreadyAdded.selector
+            )
+        );
         governor.addExternalChainConfigs(_trustedSenders);
     }
 
@@ -783,6 +796,73 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             "governor did not accept eth"
         );
         assertTrue(success, "eth transfer failed");
+    }
+
+    function testRecoverETHNonGovernorFails() public {
+        address payable recipient = payable(address(0x123));
+
+        vm.expectRevert("MultichainGovernor: only governor");
+        governor.recoverETH(recipient);
+    }
+
+    function testRecoverETHGovernorSucceeds() public {
+        uint256 sendAmount = 5 ether;
+        address payable recipient = payable(address(0x456));
+
+        // Send ETH to governor
+        vm.deal(address(this), sendAmount);
+        (bool success, ) = address(governor).call{value: sendAmount}("");
+        assertTrue(success, "eth transfer to governor failed");
+
+        assertEq(
+            address(governor).balance,
+            sendAmount,
+            "governor did not receive eth"
+        );
+
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        // Recover ETH as governor
+        vm.prank(address(governor));
+        governor.recoverETH(recipient);
+
+        assertEq(
+            address(governor).balance,
+            0,
+            "governor should have zero balance after recovery"
+        );
+        assertEq(
+            recipient.balance,
+            recipientBalanceBefore + sendAmount,
+            "recipient did not receive recovered eth"
+        );
+    }
+
+    function testRecoverETHWithZeroBalance() public {
+        address payable recipient = payable(address(0x789));
+
+        assertEq(
+            address(governor).balance,
+            0,
+            "governor should start with zero balance"
+        );
+
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        // Recover ETH when balance is zero
+        vm.prank(address(governor));
+        governor.recoverETH(recipient);
+
+        assertEq(
+            address(governor).balance,
+            0,
+            "governor should still have zero balance"
+        );
+        assertEq(
+            recipient.balance,
+            recipientBalanceBefore,
+            "recipient balance should not change"
+        );
     }
 
     // VIEW FUNCTIONS
