@@ -1,0 +1,80 @@
+name: Pin Proposal Description to IPFS
+
+# When a proposal's description markdown changes, pin it to IPFS (Pinata) and
+# record the resulting ipfs://<cid> in the matching mips.json entry's optional
+# `descriptionUri` field, committing the update back to the PR branch.
+# HybridProposalV2 then submits that URI as the descriptionUri argument to
+# MultichainGovernorV2.propose() instead of the full markdown.
+#
+# Only fires on markdown changes, and the pin script only touches `id: 0`
+# (not-yet-submitted) proposals. Pinata is content-addressed, so unchanged
+# markdown re-pins to the same CID => no diff => no commit (no loop).
+#
+# Secrets:
+#   PINATA_JWT      (required) Pinata JWT bearer token.
+#   PIN_BOT_TOKEN   (optional) PAT used for checkout/push. Recommended: a push
+#                   made with the default GITHUB_TOKEN does NOT retrigger other
+#                   workflows, so the calldata-printing job won't auto-rerun on
+#                   the bot's commit. With a PAT the descriptionUri commit
+#                   retriggers CI so the printed calldata reflects the URI in
+#                   the same PR. Without it, the URI still lands in mips.json;
+#                   regenerate calldata after the commit (push again or re-run).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'proposals/mips/**/*.md'
+
+concurrency:
+  group: pin-description-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pin:
+    # skip drafts and fork PRs — forks cannot read repo secrets (no PINATA_JWT)
+    if: >
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.PIN_BOT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Determine changed proposal markdown
+        id: changed
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          FILES=$(git diff --name-only --diff-filter=d "$BASE_SHA" "$HEAD_SHA" -- 'proposals/mips' \
+            | grep -E '\.md$' | xargs || true)
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+          if [ -z "$FILES" ]; then
+            echo "No proposal markdown changed."
+          else
+            echo "Changed markdown: $FILES"
+          fi
+
+      - name: Pin descriptions and update mips.json
+        if: steps.changed.outputs.files != ''
+        env:
+          PINATA_JWT: ${{ secrets.PINATA_JWT }}
+        run: ./script/proposals/pin-descriptions.sh ${{ steps.changed.outputs.files }}
+
+      - name: Commit updated mips.json
+        if: steps.changed.outputs.files != ''
+        run: |
+          if git diff --quiet -- proposals/mips/mips.json; then
+            echo "No descriptionUri changes to commit (already pinned / no in-development entry)."
+            exit 0
+          fi
+          git config user.name "moonwell-bot"
+          git config user.email "bot@moonwell.fi"
+          git add proposals/mips/mips.json
+          git commit -m "chore: pin proposal description(s) to IPFS"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

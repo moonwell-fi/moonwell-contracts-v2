@@ -14,14 +14,14 @@ import {IVotingPowerAggregator} from "@protocol/governance/multichain/IVotingPow
 
 /// @notice Upgradeable contract, constructor disables the implementation contract
 /// This contract is intentionally as minimal as possible. It is only responsible for
-/// collecting votes on chains external to Moonbeam and broadcasting them back to
-/// Moonbeam. It does not have any logic for executing proposals or storing calldata.
+/// collecting votes on chains external to the governance hub and broadcasting them back to
+/// the hub (Ethereum after V3 upgrade, previously Moonbeam). It does not have any logic
+/// for executing proposals or storing calldata.
 /// While a proposal is in the Cross Chain Vote Collection phase, the vote counts can
 /// be emitted as many times as any user wants. This is to allow users to have their
-/// votes counted on the Moonbeam contract. The Multichain Governor contract on
-/// Moonbeam will only allow receiving of votes for each chaind id and proposal id
-/// once per proposal. This is to prevent votes from external chains being double
-/// counted.
+/// votes counted on the governor contract. The Multichain Governor contract will only
+/// allow receiving of votes for each chain id and proposal id once per proposal.
+/// This is to prevent votes from external chains being double counted.
 /// @custom:oz-upgrades-from MultichainVoteCollection
 contract MultichainVoteCollectionV2 is
     IMultichainVoteCollection,
@@ -345,7 +345,7 @@ contract MultichainVoteCollectionV2 is
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
 
-    /// @notice bridge proposals from moonbeam
+    /// @notice bridge proposals from the governance hub
     /// @param payload the payload of the message, contains proposalId, votingStartTime, votingEndTime and voteCollectionEndTime
     function _bridgeIn(uint16, bytes memory payload) internal override {
         /// payload should be 5 uint256s

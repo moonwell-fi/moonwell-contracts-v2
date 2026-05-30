@@ -12,13 +12,17 @@ rpc_storage_caching = { chains = "all", endpoints = "all" }
 ignored_warnings_from = ["src/MErc20Delegator.sol", "src/tokensale/TokenSaleDistributorProxy.sol"]
 gas_limit = "18446744073709551615" # u64::MAX
 block_gas_limit = "18446744073709551615"
+revert_strings = "default"
+sparse_mode = false
+# Enable these when running the oz upgrades cli
+# build_info = true
+# extra_output = ["storageLayout"]
 # Disable foundry 1.5+ check that reverts on ADDRESS opcode in the script
 # contract's own bytecode. Proposals legitimately deploy and reference an
 # ephemeral Addresses registry from the script via `new Addresses()` and
 # `vm.makePersistent(address(addresses))`, which trips the check.
 script_execution_protection = false
-# revert_strings = "debug"
-# sparse_mode = true # compiles files that match filter criteria
+
 
 # We can have quite some control over the optimiser when using the new IR one.
 [profile.default.optimizer_details]

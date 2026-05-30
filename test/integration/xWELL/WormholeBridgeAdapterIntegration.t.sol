@@ -127,10 +127,9 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         );
 
         /// owner preserved. On Moonbeam the governor owns the adapter; on
-        /// Base/Optimism the TemporalGovernor owns it. On Ethereum ownership
-        /// hands over from MOONWELL_DEPLOYER → PAUSE_GUARDIAN as part of
-        /// MIP-X55's off-chain script (transferOwnership + acceptOwnership),
-        /// so we accept either depending on whether the handover has run.
+        /// Base/Optimism the TemporalGovernor owns it. On Ethereum, MIP-E00's
+        /// acceptOwnership() runs in PostProposalCheck.setUp, handing the
+        /// adapter from PAUSE_GUARDIAN to MultichainGovernorV2.
         if (block.chainid == MOONBEAM_CHAIN_ID) {
             assertEq(
                 adapter.owner(),
@@ -138,11 +137,10 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
                 "owner changed after upgrade"
             );
         } else if (block.chainid == ETHEREUM_CHAIN_ID) {
-            address owner = adapter.owner();
-            assertTrue(
-                owner == addresses.getAddress("MOONWELL_DEPLOYER") ||
-                    owner == addresses.getAddress("PAUSE_GUARDIAN"),
-                "Ethereum owner is neither deployer nor PAUSE_GUARDIAN"
+            assertEq(
+                adapter.owner(),
+                addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY"),
+                "Ethereum owner should be MultichainGovernorV2 after MIP-E00"
             );
         } else {
             assertEq(

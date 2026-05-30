@@ -18,7 +18,7 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {MarketAddChecker} from "@protocol/governance/MarketAddChecker.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
-import {ChainIds, OPTIMISM_CHAIN_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {ChainIds, OPTIMISM_CHAIN_ID, BASE_FORK_ID, ETHEREUM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MockRedstoneMultiFeedAdapter} from "@test/mock/MockRedstoneMultiFeedAdapter.sol";
@@ -89,10 +89,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         if (underlying == addresses.getAddress("WETH")) {
             vm.deal(addresses.getAddress("WETH"), amount);
         }
-        deal(underlying, user, amount);
+        _dealUnderlying(underlying, user, amount);
         vm.startPrank(user);
 
-        IERC20(underlying).approve(mToken, amount);
+        _approveUnderlying(underlying, mToken, amount);
 
         assertEq(
             MErc20Delegator(payable(mToken)).mint(amount),
@@ -100,6 +100,54 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             "Mint failed"
         );
         vm.stopPrank();
+    }
+
+    /// @notice Fund `to` with `amount` of `token`, tolerating non-standard
+    /// ERC20 storage layouts. forge-std `deal` mis-detects the balance slot for
+    /// mainnet USDT (0xdAC17...): its stdstore probe collides with the
+    /// `deprecated` bool at slot 10 instead of the `balances` mapping at slot 2,
+    /// so the write silently lands in the wrong slot and the balance never
+    /// updates. On Ethereum we therefore write USDT's slot-2 mapping directly.
+    /// Every other token (including the standard USDT deployments on Base /
+    /// Optimism) uses `deal` as before.
+    function _dealUnderlying(
+        address token,
+        address to,
+        uint256 amount
+    ) internal {
+        if (
+            block.chainid == ETHEREUM_CHAIN_ID &&
+            token == addresses.getAddress("USDT")
+        ) {
+            vm.store(
+                token,
+                keccak256(abi.encode(to, uint256(2))),
+                bytes32(amount)
+            );
+            return;
+        }
+        deal(token, to, amount);
+    }
+
+    /// @notice Approve `spender` to pull `amount` of `token`, tolerating
+    /// non-standard ERC20s that omit the boolean return value. mainnet USDT
+    /// (0xdAC17...) returns no data from `approve`, so the high-level
+    /// `IERC20(token).approve(...)` reverts while ABI-decoding the missing
+    /// bool. A low-level call that accepts either empty or `true` returndata
+    /// works for both USDT and the standard tokens on every chain. Must be
+    /// invoked under the caller's prank so `msg.sender` is the approver.
+    function _approveUnderlying(
+        address token,
+        address spender,
+        uint256 amount
+    ) internal {
+        (bool success, bytes memory data) = token.call(
+            abi.encodeWithSignature("approve(address,uint256)", spender, amount)
+        );
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "approve failed"
+        );
     }
 
     function _calculateSupplyRewards(
@@ -170,7 +218,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
     }
 
     function testMarketAddChecker() public view {
-        checker.checkMarketAdd(addresses.getAddress("MOONWELL_cbETH"));
+        /// MOONWELL_WETH is listed on every supported chain (Base, Optimism,
+        /// Ethereum), unlike MOONWELL_cbETH which is Base-only — keep this
+        /// single-market spot check chain-agnostic.
+        checker.checkMarketAdd(addresses.getAddress("MOONWELL_WETH"));
         checker.checkAllMarkets(addresses.getAddress("UNITROLLER"));
     }
 
@@ -273,7 +324,14 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         IERC20 token = IERC20(MErc20(address(mToken)).underlying());
 
-        if (address(token) == addresses.getAddress("WETH")) {
+        /// Base/Optimism back MOONWELL_WETH with MWethDelegate, which unwraps
+        /// to native ETH on borrow — so the borrower's native balance grows.
+        /// Ethereum's MIP-E00 WETH market uses the plain MErc20Delegate, which
+        /// transfers WETH ERC20 instead, leaving the native balance untouched.
+        if (
+            address(token) == addresses.getAddress("WETH") &&
+            block.chainid != ETHEREUM_CHAIN_ID
+        ) {
             assertEq(
                 sender.balance - balanceBefore,
                 borrowAmount,
@@ -690,14 +748,15 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         {
             uint256 repayAmount = mintAmount / 6;
-            deal(
+            _dealUnderlying(
                 MErc20(address(mToken)).underlying(),
                 address(100_000_000),
                 repayAmount
             );
 
             vm.startPrank(address(100_000_000));
-            IERC20(MErc20(address(mToken)).underlying()).approve(
+            _approveUnderlying(
+                MErc20(address(mToken)).underlying(),
                 address(mToken),
                 repayAmount
             );
@@ -907,12 +966,25 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         mToken.redeem(type(uint256).max);
 
-        assertApproxEqRel(
-            address(this).balance,
-            mintAmount,
-            1e15, /// tiny loss due to rounding down
-            "incorrect test contract eth value after redeem"
-        );
+        /// Base/Optimism MWethDelegate unwraps to native ETH on redeem; the
+        /// Ethereum MIP-E00 WETH market is a plain MErc20Delegate that returns
+        /// WETH ERC20 instead, so the redeemed value lands in the WETH balance
+        /// rather than the native balance.
+        if (block.chainid == ETHEREUM_CHAIN_ID) {
+            assertApproxEqRel(
+                weth.balanceOf(address(this)),
+                mintAmount,
+                1e15, /// tiny loss due to rounding down
+                "incorrect test contract weth value after redeem"
+            );
+        } else {
+            assertApproxEqRel(
+                address(this).balance,
+                mintAmount,
+                1e15, /// tiny loss due to rounding down
+                "incorrect test contract eth value after redeem"
+            );
+        }
         assertApproxEqRel(
             startingMTokenWethBalance,
             weth.balanceOf(address(mToken)),
@@ -936,8 +1008,8 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             vm.deal(addresses.getAddress("WETH"), amount);
         }
 
-        deal(underlying, address(this), amount);
-        IERC20(underlying).approve(address(mToken), amount);
+        _dealUnderlying(underlying, address(this), amount);
+        _approveUnderlying(underlying, address(mToken), amount);
 
         vm.expectRevert("market supply cap reached");
         MErc20Delegator(payable(address(mToken))).mint(amount);
@@ -977,8 +1049,8 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             vm.deal(addresses.getAddress("WETH"), amount);
         }
 
-        deal(underlying, address(this), amount);
-        IERC20(underlying).approve(address(mToken), amount);
+        _dealUnderlying(underlying, address(this), amount);
+        _approveUnderlying(underlying, address(mToken), amount);
 
         vm.expectRevert("market borrow cap reached");
         MErc20Delegator(payable(address(mToken))).borrow(amount);
