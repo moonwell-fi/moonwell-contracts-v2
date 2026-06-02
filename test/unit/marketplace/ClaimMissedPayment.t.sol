@@ -46,7 +46,7 @@ contract MutableFeed {
 contract ClaimMissedPaymentTest is Fixture {
     event CollateralSeized(
         uint32 indexed cursor,
-        uint256 missedUsd,
+        uint256 missedPrincipalAmount,
         uint256 seizedCollateral
     );
     event KeeperBountyPaid(address indexed keeper, uint256 amount);

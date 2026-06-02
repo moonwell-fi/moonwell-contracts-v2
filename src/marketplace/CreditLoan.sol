@@ -58,9 +58,14 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     event LoanActivated(uint64 activatedAt);
     event InterestPaid(uint32 indexed cursor, uint256 amount);
     event LoanSettled();
+    /// `missedPrincipalAmount` is the nominal missed installment in
+    /// principalToken units (e.g. 6-decimal USDC) — NOT a USD-scaled value.
+    /// USD conversion for the seize math happens internally in
+    /// `_computeSeizeAmount` via the Chainlink feeds; `seizedCollateral` is
+    /// in collateralToken units.
     event CollateralSeized(
         uint32 indexed cursor,
-        uint256 missedUsd,
+        uint256 missedPrincipalAmount,
         uint256 seizedCollateral
     );
     event KeeperBountyPaid(address indexed keeper, uint256 amount);

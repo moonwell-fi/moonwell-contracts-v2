@@ -1048,7 +1048,12 @@ uint16 public minOriginationLtvBufferBps;
 mapping(address => bool) public isMTokenWhitelisted;
 mapping(address => AggregatorV3Interface) public principalTokenFeeds;
 
-// ─── Default parameters (copied into clone at init) ──────────────
+// ─── Default parameters (advisory; NOT read at createLoan) ───────
+// These are reference defaults for the off-chain pricing engine to
+// apply when building BackendTerms. The clone is initialized from the
+// backend-signed `terms.*`, NOT from these fields. The binding on-chain
+// backstop is the MAX_* cap set re-checked in `_checkTermsBounds` at
+// match time (see audit MATCH-01/F-03).
 uint32 public defaultGracePeriod;            // e.g. 86400 (24h)
 uint16 public defaultOverSeizureBps;         // e.g. 2000 (20%)
 uint16 public defaultConsecutiveMissesForDefault;  // e.g. 2
@@ -2590,19 +2595,25 @@ further.
 - **Per-loan upgrade path.** Deliberate: terms frozen at init is a feature.
   Factory can point to a new `CreditLoan` impl for future loans, but existing
   clones are immutable forever.
-- **EIP-1271 smart-account signers.** MVP requires EOAs for all three signing
-  roles. Smart accounts are a later enhancement.
+- ~~**EIP-1271 smart-account signers.**~~ **Supported.** All three signing roles
+  (lender, borrower, backend) accept EIP-1271 smart-account signatures — the
+  factory verifies via OpenZeppelin `SignatureChecker.isValidSignatureNow`,
+  which falls back to `IERC1271.isValidSignature` for contract signers.
+  (Originally scoped out for the MVP; landed during implementation — see audit
+  MATCH-05.)
 - **x402 integration.** Match-time x402 payments (e.g., a marketplace listing
   fee paid by the backend) are handled at the CLI / backend layer, not in these
   contracts.
-- **Marketplace APR floor vs Moonwell borrow APR.** Not enforced on-chain at
-  `createLoan`. Backend pricing must ensure the loan's APR exceeds the Moonwell
-  borrow APR for `mToken` by a comfortable buffer for the loan's term; otherwise
-  `_settle` can revert with `InsufficientPrincipalForRepay` and the lender
-  unwinds via §7.6. This is a deliberate MVP simplification: encoding
-  `InterestRateModel.getBorrowRate` reads into `createLoan` is straightforward
-  but adds gas and an extra failure mode for well-priced loans, so we push the
-  check off-chain.
+- ~~**Marketplace APR floor vs Moonwell borrow APR.** Not enforced on-chain.~~
+  **Now enforced on-chain at `createLoan`** via `_checkAprFloor`: the
+  marketplace per-second rate must clear `borrowRatePerTimestamp()` × (1 +
+  `aprFloorBufferBps`), else it reverts `MarketplaceAprBelowMoonwellFloor`.
+  `aprFloorBufferBps = 0` disables the buffer (allows parity). The backend
+  should still price a comfortable buffer for the loan's term, since the floor
+  is only an origination snapshot — an intra-term Moonwell rate rise can still
+  make `_settle` revert `InsufficientPrincipalForRepay`, recoverable via the
+  §7.6 unwind (see audit MATCH-04 / ACCT-03). (Originally pushed off-chain for
+  the MVP; landed during implementation.)
 - **Guardian self-heal.** Unlike `ConfigurablePauseGuardian` in `src/xWELL/`,
   there is no auto-kick-after-duration. A compromised guardian can keep
   origination paused until the Temporal Governor rotates it (~5-day cycle).
