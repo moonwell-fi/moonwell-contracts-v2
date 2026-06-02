@@ -844,4 +844,149 @@ contract CreateLoanTest is Fixture {
     function test_getLoan_defaultsZero() public view {
         assertEq(localFactory.getLoan(99), address(0));
     }
+
+    // ─── backend operational-param bounds (audit MATCH-01 / F-03) ────
+    // gracePeriod / overSeizureBps / consecutiveMissesForDefault /
+    // marketplaceFeeBps / feeRecipient live ONLY in BackendTerms — the
+    // lender and borrower never sign them. The setDefaultParams caps must
+    // therefore be re-enforced at match time so a buggy or compromised
+    // backend cannot sign out-of-bounds terms into a live clone.
+
+    function test_createLoan_revertsExcessiveMarketplaceFee() public {
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        t.marketplaceFeeBps = 2_001; // > MAX_MARKETPLACE_FEE_BPS (2_000)
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        vm.expectRevert(
+            CreditMarketplaceFactory.InvalidMarketplaceFeeBps.selector
+        );
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+    }
+
+    function test_createLoan_revertsExcessiveOverSeizure() public {
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        t.overSeizureBps = 5_001; // > MAX_OVER_SEIZURE_BPS (5_000)
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        vm.expectRevert(
+            CreditMarketplaceFactory.InvalidOverSeizureBps.selector
+        );
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+    }
+
+    function test_createLoan_revertsZeroConsecutiveMisses() public {
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        t.consecutiveMissesForDefault = 0; // would default on the first miss
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        vm.expectRevert(
+            CreditMarketplaceFactory.InvalidConsecutiveMisses.selector
+        );
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+    }
+
+    function test_createLoan_revertsExcessiveConsecutiveMisses() public {
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        t.consecutiveMissesForDefault = 11; // > MAX_CONSECUTIVE_MISSES (10)
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        vm.expectRevert(
+            CreditMarketplaceFactory.InvalidConsecutiveMisses.selector
+        );
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+    }
+
+    function test_createLoan_revertsExcessiveGracePeriod() public {
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        t.gracePeriod = 7 days + 1; // > MAX_GRACE_PERIOD (7 days)
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        vm.expectRevert(CreditMarketplaceFactory.InvalidGracePeriod.selector);
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+    }
+
+    function test_createLoan_revertsZeroFeeRecipient() public {
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        t.feeRecipient = address(0); // nonzero fee to address(0) bricks _settle
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        vm.expectRevert(CreditMarketplaceFactory.ZeroAddress.selector);
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+    }
+
+    /// Boundary: terms exactly at the caps still originate.
+    function test_createLoan_atOperationalCapsSucceeds() public {
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        BackendTerms memory t = _terms(3);
+        t.gracePeriod = 7 days; // == MAX_GRACE_PERIOD
+        t.overSeizureBps = 5_000; // == MAX_OVER_SEIZURE_BPS
+        t.consecutiveMissesForDefault = 10; // == MAX_CONSECUTIVE_MISSES
+        t.marketplaceFeeBps = 2_000; // == MAX_MARKETPLACE_FEE_BPS
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        (, address loanAddr) = localFactory.createLoan(
+            offerId,
+            requestId,
+            t,
+            oSig,
+            rSig,
+            bSig
+        );
+        assertTrue(loanAddr != address(0));
+    }
 }

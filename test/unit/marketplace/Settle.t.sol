@@ -454,4 +454,79 @@ contract SettleTest is Fixture {
         vm.expectRevert();
         clone.redeemAndReturn();
     }
+
+    // ─── pre-default interest is not stranded (audit ACCT-02) ────────
+
+    /// Pay `numToPay` interest installments on time (leaving that USDC in
+    /// the clone), then miss enough to default and close the loan.
+    function _payThenDefaultThenClose(uint32 numToPay) internal {
+        for (uint32 i = 0; i < numToPay; i++) {
+            vm.warp(firstDueAt + uint64(i) * INTERVAL);
+            vm.prank(borrower);
+            clone.makePayment();
+        }
+        for (uint32 j = 0; j < CONSECUTIVE_MISSES_FOR_DEFAULT; j++) {
+            _warpPastGrace(numToPay + j);
+            clone.claimMissedPayment();
+        }
+        assertTrue(clone.status() == LoanStatus.Defaulted);
+        vm.prank(lender);
+        clone.seizeAll();
+        assertTrue(clone.status() == LoanStatus.Closed);
+    }
+
+    /// The interest installments the borrower paid before defaulting sit
+    /// in the clone as principalToken. repayLoanAfterDefault must apply
+    /// that existing balance toward the Moonwell borrow so the lender only
+    /// funds the shortfall — not the whole debt while the interest rots.
+    function test_repayLoanAfterDefault_appliesExistingInterest() public {
+        _payThenDefaultThenClose(2); // 2 × INTEREST_AMT = 20 USDC sits in clone
+
+        uint256 interestInClone = IERC20(usdc).balanceOf(address(clone));
+        assertEq(interestInClone, 2 * INTEREST_AMT);
+        uint256 owedBefore = mockMToken.borrowOf(address(clone));
+
+        // Lender supplies NO top-up; the clone's existing interest alone
+        // must pay down the borrow.
+        vm.prank(lender);
+        clone.repayLoanAfterDefault(0);
+
+        assertEq(
+            mockMToken.borrowOf(address(clone)),
+            owedBefore - interestInClone,
+            "existing interest not applied to Moonwell borrow"
+        );
+        assertEq(IERC20(usdc).balanceOf(address(clone)), 0);
+    }
+
+    /// Any principalToken left over after the borrow is fully repaid
+    /// (pre-default interest + caller over-funding) must be swept to the
+    /// lender on redeemAndReturn, never stranded in the clone.
+    function test_redeemAndReturn_sweepsResidualPrincipal() public {
+        _payThenDefaultThenClose(2); // 20 USDC interest in clone
+
+        uint256 owed = mockMToken.borrowOf(address(clone));
+        // Lender over-funds by `owed`; combined with the 20 USDC interest
+        // the clone repays `owed` and is left with the 20 USDC residual.
+        deal(usdc, lender, owed);
+        vm.startPrank(lender);
+        IERC20(usdc).approve(address(clone), owed);
+        clone.repayLoanAfterDefault(owed);
+        vm.stopPrank();
+
+        assertEq(mockMToken.borrowOf(address(clone)), 0);
+        uint256 residual = IERC20(usdc).balanceOf(address(clone));
+        assertEq(residual, 2 * INTEREST_AMT, "expected residual interest");
+
+        uint256 lenderUsdcBefore = IERC20(usdc).balanceOf(lender);
+        vm.prank(lender);
+        clone.redeemAndReturn();
+
+        assertEq(
+            IERC20(usdc).balanceOf(lender) - lenderUsdcBefore,
+            residual,
+            "residual interest not swept to lender"
+        );
+        assertEq(IERC20(usdc).balanceOf(address(clone)), 0);
+    }
 }

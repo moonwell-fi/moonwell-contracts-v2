@@ -14,6 +14,8 @@ interface ICreditLoan {
 
     function forceDefault() external;
 
+    function forceDefaultStaleOracle() external;
+
     function seizeAll() external;
 
     function repayLoanAfterDefault(uint256 repayAmount) external;

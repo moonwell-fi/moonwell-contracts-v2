@@ -386,4 +386,121 @@ contract ClaimMissedPaymentTest is Fixture {
         assertTrue(clone.status() == LoanStatus.Defaulted);
         assertEq(clone.missedCount(), 2);
     }
+
+    // ─── forceDefaultStaleOracle (audit CDM-02) ──────────────────────
+    // When a depended-on Chainlink feed goes stale/dead during the
+    // interest phase, claimMissedPayment reverts on the oracle read and
+    // the lender otherwise has NO way to enforce a genuinely missed
+    // installment until principalDueAt + grace. This escape hatch lets the
+    // lender accelerate — but ONLY when the payment is actually missed AND
+    // the oracle is the thing blocking the normal path.
+
+    function test_forceDefaultStaleOracle_acceleratesWhenCollateralStale()
+        public
+    {
+        _warpPastGrace(0); // cursor 0 past due + grace, feeds fresh
+        feed.setUpdatedAt(block.timestamp - STALENESS - 1); // collateral dead
+
+        // Sanity: the normal progressive-clawback path is bricked.
+        vm.expectRevert(CreditLoan.StaleOraclePrice.selector);
+        clone.claimMissedPayment();
+
+        vm.prank(lender);
+        clone.forceDefaultStaleOracle();
+        assertTrue(clone.status() == LoanStatus.Defaulted);
+    }
+
+    function test_forceDefaultStaleOracle_acceleratesWhenPrincipalStale()
+        public
+    {
+        _warpPastGrace(0);
+        usdcFeed.setUpdatedAt(block.timestamp - STALENESS - 1); // principal dead
+
+        vm.prank(lender);
+        clone.forceDefaultStaleOracle();
+        assertTrue(clone.status() == LoanStatus.Defaulted);
+    }
+
+    /// A non-positive oracle answer also counts as unusable (claimMissedPayment
+    /// would revert InvalidOraclePrice), so it unlocks the hatch too.
+    function test_forceDefaultStaleOracle_acceleratesWhenAnswerInvalid()
+        public
+    {
+        _warpPastGrace(0);
+        feed.setAnswer(0); // collateral feed returns 0
+
+        vm.prank(lender);
+        clone.forceDefaultStaleOracle();
+        assertTrue(clone.status() == LoanStatus.Defaulted);
+    }
+
+    function test_forceDefaultStaleOracle_revertsWhenFeedsFresh() public {
+        _warpPastGrace(0); // both feeds fresh
+        vm.prank(lender);
+        vm.expectRevert(CreditLoan.OracleNotStale.selector);
+        clone.forceDefaultStaleOracle();
+    }
+
+    function test_forceDefaultStaleOracle_revertsWithinGrace() public {
+        vm.warp(firstDueAt + GRACE - 1); // payment not yet missed
+        feed.setUpdatedAt(block.timestamp - STALENESS - 1);
+        vm.prank(lender);
+        vm.expectRevert(CreditLoan.PaymentNotYetMissed.selector);
+        clone.forceDefaultStaleOracle();
+    }
+
+    function test_forceDefaultStaleOracle_onlyLender() public {
+        _warpPastGrace(0);
+        feed.setUpdatedAt(block.timestamp - STALENESS - 1);
+        address keeper = makeAddr("keeper");
+        vm.prank(keeper);
+        vm.expectRevert(CreditLoan.OnlyLender.selector);
+        clone.forceDefaultStaleOracle();
+    }
+
+    function test_forceDefaultStaleOracle_pastInterestPhaseReverts() public {
+        // Walk the cursor to numInterestPayments without defaulting (high
+        // threshold), then the post-interest path must use forceDefault.
+        CreditLoan fresh = new CreditLoan();
+        InitParams memory p = _defaultParams(COLLATERAL_AMOUNT);
+        p.consecutiveMissesForDefault = 10;
+        vm.prank(address(factory));
+        fresh.initialize(p);
+        _mockMoonwellSuccess();
+        deal(usdc, address(fresh), PRINCIPAL);
+        vm.prank(address(factory));
+        fresh.activate();
+        deal(cbbtc, address(fresh), COLLATERAL_AMOUNT);
+
+        for (uint32 i = 0; i < NUM_INTEREST; i++) {
+            vm.warp(firstDueAt + uint64(i) * INTERVAL + GRACE + 1);
+            feed.setUpdatedAt(block.timestamp);
+            usdcFeed.setUpdatedAt(block.timestamp);
+            fresh.claimMissedPayment();
+        }
+        assertEq(fresh.paymentCursor(), NUM_INTEREST);
+
+        feed.setUpdatedAt(block.timestamp - STALENESS - 1);
+        vm.prank(lender);
+        vm.expectRevert(CreditLoan.PastInterestPhase.selector);
+        fresh.forceDefaultStaleOracle();
+    }
+
+    /// Full recovery: stale-oracle default → seizeAll needs no oracle.
+    function test_forceDefaultStaleOracle_thenSeizeAllRecovers() public {
+        _warpPastGrace(0);
+        feed.setUpdatedAt(block.timestamp - STALENESS - 1);
+        vm.prank(lender);
+        clone.forceDefaultStaleOracle();
+
+        uint256 lenderBefore = IERC20(cbbtc).balanceOf(lender);
+        vm.prank(lender);
+        clone.seizeAll();
+        assertTrue(clone.status() == LoanStatus.Closed);
+        // No collateral seized before acceleration, so the lender takes all.
+        assertEq(
+            IERC20(cbbtc).balanceOf(lender) - lenderBefore,
+            COLLATERAL_AMOUNT
+        );
+    }
 }

@@ -964,6 +964,31 @@ contract CreditMarketplaceFactory is
         if (onchainTier < o.minBorrowerCreditTier) {
             revert BoundsViolation("creditTier");
         }
+
+        /// Operational parameters (gracePeriod, overSeizureBps,
+        /// consecutiveMissesForDefault, marketplaceFeeBps, feeRecipient)
+        /// appear ONLY in BACKEND_TERMS_TYPEHASH — neither the lender nor
+        /// the borrower signs them. Re-enforce the same caps `setDefaultParams`
+        /// applies so a buggy or compromised backend can't sign out-of-bounds
+        /// terms into a live clone: marketplaceFeeBps > 10_000 would underflow
+        /// `_settle` and permanently brick happy-path settlement,
+        /// overSeizureBps could seize a wildly disproportionate premium per
+        /// miss, consecutiveMissesForDefault == 0 would default on the first
+        /// miss, and a zero feeRecipient reverts settlement when fee > 0.
+        if (terms.gracePeriod > MAX_GRACE_PERIOD) revert InvalidGracePeriod();
+        if (terms.overSeizureBps > MAX_OVER_SEIZURE_BPS) {
+            revert InvalidOverSeizureBps();
+        }
+        if (
+            terms.consecutiveMissesForDefault == 0 ||
+            terms.consecutiveMissesForDefault > MAX_CONSECUTIVE_MISSES
+        ) {
+            revert InvalidConsecutiveMisses();
+        }
+        if (terms.marketplaceFeeBps > MAX_MARKETPLACE_FEE_BPS) {
+            revert InvalidMarketplaceFeeBps();
+        }
+        if (terms.feeRecipient == address(0)) revert ZeroAddress();
     }
 
     function _containsCollateral(

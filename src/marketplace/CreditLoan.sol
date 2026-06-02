@@ -53,6 +53,7 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     error InsufficientPrincipalForRepay(uint256 have, uint256 required);
     error RepayFailed(uint256 errorCode);
     error MoonwellBorrowOutstanding(uint256 balance);
+    error OracleNotStale();
 
     event LoanActivated(uint64 activatedAt);
     event InterestPaid(uint32 indexed cursor, uint256 amount);
@@ -420,6 +421,51 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         _accelerate();
     }
 
+    /// Lender escape hatch for the INTEREST phase when a Chainlink feed the
+    /// loan depends on has gone stale/dead: `claimMissedPayment` reverts on
+    /// the oracle read, so without this the lender cannot enforce a
+    /// genuinely missed installment until `principalDueAt + gracePeriod`
+    /// (the gate on `forceDefault`). Spec §12.10/§12.12 promise lenders can
+    /// "still enforce defaults" during oracle disturbances — this is the
+    /// path that delivers it. Only fires when (a) the current installment is
+    /// actually past due + grace AND (b) a depended-on feed is unusable —
+    /// i.e. exactly when the normal progressive-clawback path is bricked.
+    /// When the feed recovers, `claimMissedPayment` works again and this
+    /// reverts `OracleNotStale`, so it can never substitute for the
+    /// oracle-priced clawback while the oracle is healthy. Accelerates
+    /// without oracle math; the lender then `seizeAll`s remaining collateral.
+    function forceDefaultStaleOracle() external override nonReentrant {
+        if (status != LoanStatus.Active) revert LoanNotActive();
+        if (msg.sender != lender) revert OnlyLender();
+        uint32 cursor = paymentCursor;
+        if (cursor >= schedule.numInterestPayments) revert PastInterestPhase();
+        if (block.timestamp <= _interestDueAt(cursor) + gracePeriod) {
+            revert PaymentNotYetMissed();
+        }
+        if (!_oracleStale()) revert OracleNotStale();
+        _accelerate();
+    }
+
+    /// True when either the collateral or principal feed would cause
+    /// `claimMissedPayment` to revert/panic — a non-positive answer, a
+    /// future `updatedAt` (would underflow the staleness subtraction), or
+    /// staleness beyond the snapshotted per-feed window.
+    function _oracleStale() internal view returns (bool) {
+        return
+            _feedUnusable(collateralChainlinkFeed, collateralFeedStaleness) ||
+            _feedUnusable(principalChainlinkFeed, principalFeedStaleness);
+    }
+
+    function _feedUnusable(
+        AggregatorV3Interface feed,
+        uint32 maxStaleness
+    ) internal view returns (bool) {
+        (, int256 answer, , uint256 updatedAt, ) = feed.latestRoundData();
+        if (answer <= 0) return true;
+        if (updatedAt > block.timestamp) return true;
+        return block.timestamp - updatedAt > maxStaleness;
+    }
+
     /// After acceleration, the lender claims all remaining collateral
     /// without per-payment oracle math (§7.6). Status flips Closed; the
     /// Moonwell borrow stays open until the lender unwinds via the
@@ -446,17 +492,32 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         uint256 repayAmount
     ) external override nonReentrant {
         if (status != LoanStatus.Closed) revert LoanNotClosed();
-        IERC20(principalToken).safeTransferFrom(
-            msg.sender,
-            address(this),
-            repayAmount
+        if (repayAmount > 0) {
+            IERC20(principalToken).safeTransferFrom(
+                msg.sender,
+                address(this),
+                repayAmount
+            );
+        }
+
+        /// Repay against the clone's FULL principalToken balance — the
+        /// caller's top-up plus any interest installments the borrower paid
+        /// before defaulting. Repaying `min(owed, balance)` means the lender
+        /// only has to fund the shortfall instead of the entire debt while
+        /// pre-default interest sits stranded in the clone (audit ACCT-02).
+        uint256 owed = IMoonwellMToken(mToken).borrowBalanceCurrent(
+            address(this)
         );
-        IERC20(principalToken).forceApprove(mToken, repayAmount);
-        uint256 err = IMoonwellMToken(mToken).repayBorrowBehalf(
-            address(this),
-            repayAmount
-        );
-        if (err != 0) revert RepayFailed(err);
+        uint256 bal = IERC20(principalToken).balanceOf(address(this));
+        uint256 toRepay = bal < owed ? bal : owed;
+        if (toRepay > 0) {
+            IERC20(principalToken).forceApprove(mToken, toRepay);
+            uint256 err = IMoonwellMToken(mToken).repayBorrowBehalf(
+                address(this),
+                toRepay
+            );
+            if (err != 0) revert RepayFailed(err);
+        }
     }
 
     /// Post-default unwind step 2: once the Moonwell borrow is zero, the
@@ -468,6 +529,15 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
             address(this)
         );
         if (outstanding != 0) revert MoonwellBorrowOutstanding(outstanding);
+
+        /// Sweep any residual principalToken — pre-default interest plus any
+        /// over-funding from repayLoanAfterDefault — to the lender, who
+        /// absorbed the default. Without this the interest the borrower paid
+        /// before defaulting is stranded in the clone forever (audit ACCT-02).
+        uint256 principalBal = IERC20(principalToken).balanceOf(address(this));
+        if (principalBal > 0) {
+            IERC20(principalToken).safeTransfer(lender, principalBal);
+        }
 
         uint256 mBal = IERC20(mToken).balanceOf(address(this));
         if (mBal > 0) {
