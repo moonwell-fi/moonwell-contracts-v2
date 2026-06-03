@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {ETHEREUM_FORK_ID} from "@utils/ChainIds.sol";
@@ -31,6 +32,14 @@ export DO_VALIDATE=true
 
 contract mipe01 is HybridProposalV2, Configs {
     string public constant override name = "MIP-E01";
+
+    /// @notice pre-swap snapshots of storage-backed market state, captured in
+    /// afterDeploy() (which runs before simulate() executes the implementation
+    /// swap) and asserted unchanged in validate(). The MWethDelegate swap only
+    /// overrides doTransferOut and adds an immutable, so neither value should
+    /// move — this guards against an accidental storage reset during the swap.
+    uint256 public preSwapExchangeRateStored;
+    uint256 public preSwapTotalReserves;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -65,6 +74,15 @@ contract mipe01 is HybridProposalV2, Configs {
 
             addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
         }
+    }
+
+    /// @notice snapshot pre-swap market state on the Ethereum fork (impl is still
+    /// the stock MErc20Delegate here) so validate() can assert the swap left
+    /// storage-backed values untouched. Runs before build()/simulate().
+    function afterDeploy(Addresses addresses, address) public override {
+        MToken mWeth = MToken(addresses.getAddress("MOONWELL_WETH"));
+        preSwapExchangeRateStored = mWeth.exchangeRateStored();
+        preSwapTotalReserves = mWeth.totalReserves();
     }
 
     function build(Addresses addresses) public override {
@@ -153,5 +171,20 @@ contract mipe01 is HybridProposalV2, Configs {
             addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY"),
             "MOONWELL_WETH admin changed"
         ); /// ensure the MultichainGovernorV2 is still admin
+
+        /// the implementation swap must leave storage-backed market state
+        /// untouched — exchangeRate and reserves are read from the same slots
+        /// before (afterDeploy) and after the swap, so they must be identical.
+        MToken mWethToken = MToken(addresses.getAddress("MOONWELL_WETH"));
+        assertEq(
+            mWethToken.exchangeRateStored(),
+            preSwapExchangeRateStored,
+            "exchangeRateStored changed by implementation swap"
+        );
+        assertEq(
+            mWethToken.totalReserves(),
+            preSwapTotalReserves,
+            "totalReserves changed by implementation swap"
+        );
     }
 }
