@@ -1,18 +1,14 @@
-# MIP-E01: Moonwell WETH Market Improvement (Ethereum)
+# MIP-E01: Moonwell WETH Market Improvement
 
 ## Summary
 
-MIP-E01 enhances the user experience of the WETH market on Moonwell's Ethereum
+This MIP enhances the user experience of the WETH market on Moonwell's Ethereum
 deployment. Today, users who redeem their mWETH or borrow from the WETH market
 receive Wrapped ETH (WETH) rather than native ETH, forcing them to manually
 unwrap before using their funds elsewhere in the Ethereum ecosystem. This
 proposal points the WETH market's logic contract at an `MWethDelegate`
 implementation so that redemptions and borrows pay out raw ETH directly, as part
 of the same transaction.
-
-Native ETH deposits and repayments are already supported on Ethereum through the
-`WETHRouter` contract deployed in MIP-E00; MIP-E01 completes the experience by
-adding the redeem and borrow side.
 
 ## Motivation
 
@@ -37,11 +33,6 @@ is executed:
 2. **MWethDelegate Contract:** A new logic contract for the WETH market that
    overrides `doTransferOut` to route the underlying WETH through the
    `WethUnwrapper` before it reaches the user.
-3. **Set Implementation:** The Multichain Governor (the admin of the Ethereum
-   WETH market, established in MIP-E00) calls `_setImplementation` on the WETH
-   `MErc20Delegator`, repointing it from the standard delegate to the new
-   `MWethDelegate`. The market's admin, underlying, reserves, and all market
-   state are unchanged — only the logic contract is swapped.
 
 The `MWethDelegate` and `WethUnwrapper` contracts are the same designs already
 audited and deployed on Base as part of MIP-B02. Moonwell's audit reports are
@@ -52,11 +43,4 @@ available [here](https://docs.moonwell.fi/moonwell/protocol-information/audits).
 - **Yes:** Support enabling native ETH redemptions and borrows on the Ethereum
   WETH market.
 - **No:** Keep the status quo (redemptions and borrows paid out in WETH).
-
-## Conclusion
-
-MIP-E01 streamlines the WETH market on Moonwell's Ethereum deployment by
-deploying the `MWethDelegate` and `WethUnwrapper` contracts and repointing the
-WETH market's logic contract. Together with the native-ETH deposit and repay
-support already live via the `WETHRouter`, this gives Ethereum users a complete
-native-ETH experience for the WETH market.
+- **Abstain:** Remain neutral.
