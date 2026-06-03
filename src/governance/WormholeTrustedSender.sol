@@ -11,6 +11,9 @@ import {IWormholeTrustedSender} from "@protocol/governance/IWormholeTrustedSende
 contract WormholeTrustedSender is IWormholeTrustedSender {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
+    /// ------------- ERRORS -------------
+    error EnumerableSetError();
+
     /// ------------- EVENT -------------
 
     /// @notice Emitted when a trusted sender is updated
@@ -51,10 +54,9 @@ contract WormholeTrustedSender is IWormholeTrustedSender {
     /// @param trustedSender The trusted sender to add
     /// @param chainId The chain id of the trusted sender to add
     function _addTrustedSender(address trustedSender, uint16 chainId) internal {
-        require(
-            trustedSenders[chainId].add(addressToBytes(trustedSender)),
-            "WormholeTrustedSender: already in list"
-        );
+        if (!trustedSenders[chainId].add(addressToBytes(trustedSender))) {
+            revert EnumerableSetError();
+        }
 
         emit TrustedSenderUpdated(
             chainId,
@@ -70,10 +72,9 @@ contract WormholeTrustedSender is IWormholeTrustedSender {
         address trustedSender,
         uint16 chainId
     ) internal {
-        require(
-            trustedSenders[chainId].remove(addressToBytes(trustedSender)),
-            "WormholeTrustedSender: not in list"
-        );
+        if (!trustedSenders[chainId].remove(addressToBytes(trustedSender))) {
+            revert EnumerableSetError();
+        }
 
         emit TrustedSenderUpdated(
             chainId,

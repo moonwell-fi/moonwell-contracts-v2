@@ -70,7 +70,7 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
             uint80 roundId, /// always 0, value unused in ChainlinkOracle.sol
             int256 answer, /// the composite price
             uint256 startedAt, /// always 0, value unused in ChainlinkOracle.sol
-            uint256 updatedAt, /// always block.timestamp
+            uint256 updatedAt, /// minimum updatedAt across underlying feeds
             uint80 answeredInRound /// always 0, value unused in ChainlinkOracle.sol
         ) = oracle.latestRoundData();
         uint256 price = oracle.getDerivedPriceThreeOracles(
@@ -83,10 +83,15 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         assertTrue(answer > 0, "Price should be greater than 0");
 
         assertEq(price, uint256(answer), "Price should be equal to answer");
-        assertEq(
+        assertLe(
             updatedAt,
             block.timestamp,
-            "updatedAt should be equal to block.timestamp"
+            "updatedAt cannot be in the future"
+        );
+        assertGe(
+            updatedAt,
+            block.timestamp - 24 hours,
+            "updatedAt too stale (heartbeat exceeded)"
         );
         assertEq(roundId, 0, "roundId should be equal to 0");
         assertEq(startedAt, 0, "startedAt should be equal to 0");
@@ -109,7 +114,7 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
             uint80 roundId, /// always 0, value unused in ChainlinkOracle.sol
             int256 answer, /// the composite price
             uint256 startedAt, /// always 0, value unused in ChainlinkOracle.sol
-            uint256 updatedAt, /// always block.timestamp
+            uint256 updatedAt, /// minimum updatedAt across underlying feeds
             uint80 answeredInRound /// always 0, value unused in ChainlinkOracle.sol
         ) = oracle.latestRoundData();
         uint256 price = oracle.getDerivedPrice(
@@ -121,7 +126,16 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         assertTrue(answer > 0, "Price should be greater than 0");
 
         assertEq(price, uint256(answer));
-        assertEq(updatedAt, block.timestamp);
+        assertLe(
+            updatedAt,
+            block.timestamp,
+            "updatedAt cannot be in the future"
+        );
+        assertGe(
+            updatedAt,
+            block.timestamp - 24 hours,
+            "updatedAt too stale (heartbeat exceeded)"
+        );
         assertEq(roundId, 0);
         assertEq(startedAt, 0);
         assertEq(answeredInRound, 0);

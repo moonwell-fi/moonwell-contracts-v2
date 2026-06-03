@@ -5,7 +5,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 enum ActionType {
     Moonbeam,
     Base,
-    Optimism
+    Optimism,
+    Ethereum
 }
 
 struct ProposalAction {

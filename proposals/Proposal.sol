@@ -4,12 +4,14 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 import {Test} from "@forge-std/Test.sol";
+import {stdJson} from "@forge-std/StdJson.sol";
 
 import "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 abstract contract Proposal is Script, Test {
     using ChainIds for uint256;
+    using stdJson for string;
 
     bool internal DEBUG;
     bool internal DO_DEPLOY;
@@ -44,6 +46,12 @@ abstract contract Proposal is Script, Test {
         vm.makePersistent(address(addresses));
 
         vm.selectFork(primaryForkId());
+
+        // inject the optional IPFS description URI from mips.json so
+        // forge-script runs (e.g. mip-e00 mainnet deploy) emit the pinned URI
+        // in propose() calldata. ProposalMap.runProposal does the same for the
+        // test path — both paths read from the same mips.json source of truth.
+        setProposalDescriptionUri(_resolveProposalDescriptionUri(this.name()));
 
         initProposal(addresses);
 
@@ -99,6 +107,12 @@ abstract contract Proposal is Script, Test {
     /// live fork is selected
     function initProposal(Addresses) public virtual {}
 
+    /// @notice optional IPFS URI for the proposal description. When set, V2
+    /// proposal types use it as the `descriptionUri` argument to propose()
+    /// instead of the raw markdown. No-op by default so proposal types that
+    /// don't support it (and V1) simply ignore it.
+    function setProposalDescriptionUri(string memory) public virtual {}
+
     /// @dev Print recorded addresses
     function _printAddressesChanges(Addresses addresses) internal view {
         bytes
@@ -119,10 +133,11 @@ abstract contract Proposal is Script, Test {
                 "\n------- Addresses added after running proposal -------"
             );
 
-            uint256[3] memory chainIdsToCheck = [
+            uint256[4] memory chainIdsToCheck = [
                 OPTIMISM_CHAIN_ID,
                 BASE_CHAIN_ID,
-                MOONBEAM_CHAIN_ID
+                MOONBEAM_CHAIN_ID,
+                ETHEREUM_CHAIN_ID
             ];
 
             for (uint256 i = 0; i < chainIdsToCheck.length; i++) {
@@ -186,5 +201,92 @@ abstract contract Proposal is Script, Test {
                 );
             }
         }
+    }
+
+    /// @notice resolve the optional IPFS descriptionUri from mips.json by
+    /// matching the artifact stem of each entry's `path` (e.g. "mipe00" from
+    /// "mip-e00.sol/mipe00.json") against `proposalName` with '-' stripped and
+    /// lowercased (e.g. "MIP-E00" -> "mipe00"). Returns "" when no entry
+    /// matches or the matching entry has no `descriptionUri`, in which case
+    /// HybridProposalV2._proposeDescription() falls back to raw markdown.
+    function _resolveProposalDescriptionUri(
+        string memory proposalName
+    ) internal view returns (string memory) {
+        string memory data = vm.readFile(
+            string(
+                abi.encodePacked(vm.projectRoot(), "/proposals/mips/mips.json")
+            )
+        );
+
+        bytes32 targetHash = keccak256(_normalizeMipName(bytes(proposalName)));
+
+        uint256 i = 0;
+        while (
+            vm.keyExistsJson(
+                data,
+                string.concat(".[", vm.toString(i), "].path")
+            )
+        ) {
+            string memory path = data.readString(
+                string.concat(".[", vm.toString(i), "].path")
+            );
+            if (keccak256(_artifactStem(bytes(path))) == targetHash) {
+                string memory uriKey = string.concat(
+                    ".[",
+                    vm.toString(i),
+                    "].descriptionUri"
+                );
+                if (vm.keyExistsJson(data, uriKey)) {
+                    return data.readString(uriKey);
+                }
+                return "";
+            }
+            i++;
+        }
+        return "";
+    }
+
+    /// @notice "MIP-E00" -> "mipe00": strip '-' and lowercase ASCII A-Z
+    function _normalizeMipName(
+        bytes memory s
+    ) private pure returns (bytes memory) {
+        bytes memory tmp = new bytes(s.length);
+        uint256 j = 0;
+        for (uint256 i = 0; i < s.length; i++) {
+            bytes1 c = s[i];
+            if (c == 0x2D) continue; // '-'
+            if (c >= 0x41 && c <= 0x5A) c = bytes1(uint8(c) + 32);
+            tmp[j++] = c;
+        }
+        bytes memory out = new bytes(j);
+        for (uint256 i = 0; i < j; i++) out[i] = tmp[i];
+        return out;
+    }
+
+    /// @notice "mip-e00.sol/mipe00.json" -> "mipe00": take the segment after
+    /// the last '/' and drop a trailing ".json" if present
+    function _artifactStem(
+        bytes memory path
+    ) private pure returns (bytes memory) {
+        uint256 start = 0;
+        for (uint256 i = 0; i < path.length; i++) {
+            if (path[i] == 0x2F) start = i + 1; // '/'
+        }
+        uint256 end = path.length;
+        if (
+            end >= start + 5 &&
+            path[end - 5] == 0x2E && // '.'
+            path[end - 4] == 0x6A && // 'j'
+            path[end - 3] == 0x73 && // 's'
+            path[end - 2] == 0x6F && // 'o'
+            path[end - 1] == 0x6E //    'n'
+        ) {
+            end -= 5;
+        }
+        bytes memory stem = new bytes(end - start);
+        for (uint256 i = 0; i < stem.length; i++) {
+            stem[i] = path[start + i];
+        }
+        return stem;
     }
 }

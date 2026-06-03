@@ -1,5 +1,20 @@
 [
     {
+        "envpath": "",
+        "governor": "MultichainGovernorV2",
+        "id": 169,
+        "path": "mip-e00.sol/mipe00.json",
+        "proposalType": "HybridProposalV2",
+        "descriptionUri": "ipfs://bafkreiabyqbacmhjoozdmegnlht6acm25m5oimxuabdhz62tkwbbrjzuqe"
+    },
+    {
+        "envpath": "",
+        "governor": "MultichainGovernor",
+        "id": 168,
+        "path": "mip-x58.sol/mipx58.json",
+        "proposalType": "HybridProposal"
+    },
+    {
         "envpath": "proposals/mips/mip-x57/x57.sh",
         "governor": "MultichainGovernor",
         "id": 167,
@@ -41,7 +56,6 @@
         "path": "mip-x52.sol/mipx52.json",
         "proposalType": "HybridProposal"
     },
-
     {
         "envpath": "proposals/mips/mip-x51c/x51c.sh",
         "governor": "MultichainGovernor",
@@ -145,13 +159,6 @@
         "governor": "MultichainGovernor",
         "id": 140,
         "path": "mip-x42.sol/mipx42.json",
-        "proposalType": "HybridProposal"
-    },
-    {
-        "envpath": "proposals/mips/mip-x41/x41.sh",
-        "id": 138,
-        "governor": "MultichainGovernor",
-        "path": "RewardsDistribution.sol/RewardsDistributionTemplate.json",
         "proposalType": "HybridProposal"
     },
     {

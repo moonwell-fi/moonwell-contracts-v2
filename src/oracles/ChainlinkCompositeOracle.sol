@@ -44,6 +44,9 @@ contract ChainlinkCompositeOracle {
 
     /// @notice Get the latest price of a base/quote pair
     /// interface for compatabililty with getChainlinkPrice function in ChainlinkOracle.sol
+    /// @dev `updatedAt` is the minimum `updatedAt` reported across all underlying
+    /// sub-feeds. Substituting `block.timestamp` here would conceal staleness from
+    /// every downstream consumer that relies on this composite oracle (HAL-02).
     function latestRoundData()
         external
         view
@@ -51,24 +54,30 @@ contract ChainlinkCompositeOracle {
             uint80, /// roundId always 0, value unused in ChainlinkOracle.sol
             int256, /// the composite price
             uint256, /// startedAt always 0, value unused in ChainlinkOracle.sol
-            uint256, /// always block.timestamp
+            uint256, /// minimum updatedAt across all underlying feeds
             uint80 /// answeredInRound always 0, value unused in ChainlinkOracle.sol
         )
     {
         if (secondMultiplier == address(0)) {
             /// if there is only one multiplier, just use that
+            uint256 minUpdatedAt = _minUpdatedAt(base, multiplier);
             return (
                 0,
                 /// fetch uint256, then cast back to int256, this cast to uint256 is a sanity check
                 /// that chainlink did not return a negative value
                 getDerivedPrice(base, multiplier, decimals).toInt256(),
                 0,
-                block.timestamp, /// return current block timestamp
+                minUpdatedAt,
                 0
             );
         }
 
         /// if there is a second multiplier apply it
+        uint256 minUpdatedAtThree = _minUpdatedAt(
+            base,
+            multiplier,
+            secondMultiplier
+        );
         return (
             0, /// unused
             getDerivedPriceThreeOracles(
@@ -78,9 +87,42 @@ contract ChainlinkCompositeOracle {
                 decimals
             ).toInt256(),
             0, /// unused
-            block.timestamp, /// return current block timestamp
+            minUpdatedAtThree,
             0 /// unused
         );
+    }
+
+    /// @notice fetch `updatedAt` for a single Chainlink-style feed
+    function _getUpdatedAt(
+        address oracleAddress
+    ) internal view returns (uint256) {
+        (, , , uint256 updatedAt, ) = AggregatorV3Interface(oracleAddress)
+            .latestRoundData();
+        return updatedAt;
+    }
+
+    /// @notice minimum `updatedAt` across two feeds — propagates the staleness
+    /// of the most stale sub-feed instead of hiding it (HAL-02)
+    function _minUpdatedAt(
+        address a,
+        address b
+    ) internal view returns (uint256) {
+        uint256 ua = _getUpdatedAt(a);
+        uint256 ub = _getUpdatedAt(b);
+        return ua < ub ? ua : ub;
+    }
+
+    /// @notice minimum `updatedAt` across three feeds (HAL-02)
+    function _minUpdatedAt(
+        address a,
+        address b,
+        address c
+    ) internal view returns (uint256) {
+        uint256 ua = _getUpdatedAt(a);
+        uint256 ub = _getUpdatedAt(b);
+        uint256 uc = _getUpdatedAt(c);
+        uint256 m = ua < ub ? ua : ub;
+        return m < uc ? m : uc;
     }
 
     /// @notice Get the derived price of a base/quote pair with price data

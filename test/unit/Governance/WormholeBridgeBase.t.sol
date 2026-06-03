@@ -16,6 +16,7 @@ import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 
 contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
     using Address for address;
@@ -119,9 +120,6 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             "vote collection contract should be trusted sender from base"
         );
     }
-
-    /// receiveWormholeMessages was removed from WormholeBridgeBase in V2.
-    /// The function no longer exists on-chain — no revert test needed.
 
     /// processVAA delivers votes to governor via the mock adapter
     function testProcessVAASucceeds() public returns (uint256 proposalId) {

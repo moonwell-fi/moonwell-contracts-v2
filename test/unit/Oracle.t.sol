@@ -97,7 +97,7 @@ contract OracleUnitTest is Test {
             uint80 roundId, /// always 0, value unused in ChainlinkOracle.sol
             int256 answer, /// the composite price
             uint256 startedAt, /// always 0, value unused in ChainlinkOracle.sol
-            uint256 updatedAt, /// always block.timestamp
+            uint256 updatedAt, /// minimum updatedAt across all sub-feeds (HAL-02)
             uint80 answeredInRound /// always 0, value unused in ChainlinkOracle.sol
         ) = oracle.latestRoundData();
 
@@ -111,7 +111,12 @@ contract OracleUnitTest is Test {
         assertTrue(answer > 0, "Price should be greater than 0");
 
         assertEq(price, uint256(answer));
-        assertEq(updatedAt, block.timestamp);
+        /// HAL-02: composite oracle propagates the minimum sub-feed `updatedAt`
+        /// instead of `block.timestamp`. All three mocks share the same fixed
+        /// `_updatedAt`, so reading it from one sub-feed yields the minimum.
+        (, , , uint256 expectedUpdatedAt, ) = chainlinkOracleA
+            .latestRoundData();
+        assertEq(updatedAt, expectedUpdatedAt);
         assertEq(roundId, 0);
         assertEq(startedAt, 0);
         assertEq(answeredInRound, 0);
@@ -127,7 +132,7 @@ contract OracleUnitTest is Test {
             uint80 roundId, /// always 0, value unused in ChainlinkOracle.sol
             int256 answer, /// the composite price
             uint256 startedAt, /// always 0, value unused in ChainlinkOracle.sol
-            uint256 updatedAt, /// always block.timestamp
+            uint256 updatedAt, /// minimum updatedAt across both sub-feeds (HAL-02)
             uint80 answeredInRound /// always 0, value unused in ChainlinkOracle.sol
         ) = oracle.latestRoundData();
 
@@ -140,7 +145,11 @@ contract OracleUnitTest is Test {
         assertTrue(answer > 0, "Price should be greater than 0");
 
         assertEq(price, uint256(answer));
-        assertEq(updatedAt, block.timestamp);
+        /// HAL-02: minimum `updatedAt` across the two sub-feeds. The two mocks
+        /// share the same hardcoded `_updatedAt`, so either side is fine.
+        (, , , uint256 expectedUpdatedAt, ) = chainlinkOracleA
+            .latestRoundData();
+        assertEq(updatedAt, expectedUpdatedAt);
         assertEq(roundId, 0);
         assertEq(startedAt, 0);
         assertEq(answeredInRound, 0);

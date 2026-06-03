@@ -336,7 +336,11 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         sender[0].chainId = chainId;
 
         vm.prank(owner);
-        vm.expectRevert("WormholeTrustedSender: not in list");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeTrustedSender.EnumerableSetError.selector
+            )
+        );
         wormholeBridgeAdapterProxy.removeTrustedSenders(sender);
     }
 
@@ -368,7 +372,11 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         sender[0].chainId = chainId;
 
         vm.prank(owner);
-        vm.expectRevert("WormholeTrustedSender: already in list");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                WormholeTrustedSender.EnumerableSetError.selector
+            )
+        );
         wormholeBridgeAdapterProxy.addTrustedSenders(sender);
     }
 

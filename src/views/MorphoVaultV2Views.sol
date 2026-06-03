@@ -6,7 +6,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {IMorphoVaultV2, IVaultV2Adapter, IMetaMorphoV2, IMorphoBlueV2, IIrmV2, MorphoMarketParams, MorphoMarket} from "@protocol/morpho/IMorphoVaultV2.sol";
+import {IMorphoVaultV2, IVaultV2Adapter, IMetaMorphoV2, IMorphoBlueV2, IIrmV2, MorphoMarketParams, MorphoMarket, MorphoPosition} from "@protocol/morpho/IMorphoVaultV2.sol";
 
 /**
  * @title Moonwell Morpho Vault V2 Views Contract
@@ -36,6 +36,7 @@ contract MorphoVaultV2Views is Initializable {
         uint256 marketLltv;
         uint256 marketSupplyApy;
         uint256 marketBorrowApy;
+        uint256 vaultSupplied; // Actual assets the MetaMorpho vault has supplied to this market
     }
 
     /// @notice Adapter information
@@ -243,7 +244,7 @@ contract MorphoVaultV2Views is Initializable {
 
         for (uint256 i = 0; i < marketsCount; i++) {
             bytes32 marketId = _metaMorpho.withdrawQueue(i);
-            markets[i] = _getMarketInfo(marketId, morpho);
+            markets[i] = _getMarketInfo(marketId, morpho, address(_metaMorpho));
         }
 
         return markets;
@@ -252,10 +253,12 @@ contract MorphoVaultV2Views is Initializable {
     /// @notice Get market information from Morpho Blue
     /// @param _marketId The market ID
     /// @param _morpho The Morpho Blue contract
+    /// @param _vault The MetaMorpho vault address (to query its position)
     /// @return info Market information
     function _getMarketInfo(
         bytes32 _marketId,
-        IMorphoBlueV2 _morpho
+        IMorphoBlueV2 _morpho,
+        address _vault
     ) internal view returns (UnderlyingMarketInfo memory info) {
         info.marketId = _marketId;
 
@@ -291,6 +294,15 @@ contract MorphoVaultV2Views is Initializable {
             params,
             market
         );
+
+        // Calculate vaultSupplied - the actual assets the MetaMorpho vault has in this market
+        MorphoPosition memory position = _morpho.position(_marketId, _vault);
+        if (position.supplyShares > 0 && market.totalSupplyShares > 0) {
+            // Convert shares to assets: assets = shares * totalAssets / totalShares
+            info.vaultSupplied =
+                (position.supplyShares * uint256(market.totalSupplyAssets)) /
+                uint256(market.totalSupplyShares);
+        }
 
         return info;
     }

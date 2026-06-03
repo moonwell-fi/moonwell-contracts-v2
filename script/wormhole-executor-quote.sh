@@ -6,7 +6,7 @@
 # Usage:
 #   ./script/wormhole-executor-quote.sh [SRC_WH_CHAIN] [DST_WH_CHAIN] [GAS_LIMIT]
 #
-# Defaults quote both x57 pre-staging routes: Moonbeam -> Base and Moonbeam -> Optimism.
+# Defaults to quoting the Moonbeam -> Ethereum pre-staging route.
 #
 # Wormhole chain IDs (NOT EVM chain IDs):
 #   Ethereum=2  Moonbeam=16  Optimism=24  Base=30
@@ -53,6 +53,5 @@ if [[ -n "${2:-}" ]]; then
   quote "$SRC" "$2" "${3:-500000}"
 else
   GAS="${3:-500000}"
-  quote 16 30 "$GAS"   # Moonbeam -> Base
-  quote 16 24 "$GAS"   # Moonbeam -> Optimism
+  quote 16 2 "$GAS"   # Moonbeam -> Ethereum
 fi

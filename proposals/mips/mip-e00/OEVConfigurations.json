@@ -1,0 +1,36 @@
+{
+    "1": [
+        {
+            "feeMultiplier": 3000,
+            "maxDecrements": 10,
+            "maxRoundDelay": 10,
+            "mTokenName": "MOONWELL_WETH",
+            "underlyingFeedName": "CHAINLINK_ETH_USD",
+            "wrapperName": "CHAINLINK_ETH_USD_OEV_WRAPPER"
+        },
+        {
+            "feeMultiplier": 3000,
+            "maxDecrements": 10,
+            "maxRoundDelay": 10,
+            "mTokenName": "MOONWELL_USDC",
+            "underlyingFeedName": "CHAINLINK_USDC_USD",
+            "wrapperName": "CHAINLINK_USDC_USD_OEV_WRAPPER"
+        },
+        {
+            "feeMultiplier": 3000,
+            "maxDecrements": 10,
+            "maxRoundDelay": 10,
+            "mTokenName": "MOONWELL_USDT",
+            "underlyingFeedName": "CHAINLINK_USDT_USD",
+            "wrapperName": "CHAINLINK_USDT_USD_OEV_WRAPPER"
+        },
+        {
+            "feeMultiplier": 3000,
+            "maxDecrements": 10,
+            "maxRoundDelay": 10,
+            "mTokenName": "MOONWELL_cbBTC",
+            "underlyingFeedName": "CHAINLINK_CBBTC_USD",
+            "wrapperName": "CHAINLINK_CBBTC_USD_OEV_WRAPPER"
+        }
+    ]
+}

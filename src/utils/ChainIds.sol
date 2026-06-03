@@ -111,6 +111,30 @@ library ChainIds {
         }
     }
 
+    function toEthereumChainId(
+        uint256 chainId
+    ) internal pure returns (uint256) {
+        /// map mainnet base, optimism, moonbeam, and ethereum chain id to ethereum chain id
+        if (
+            chainId == BASE_CHAIN_ID ||
+            chainId == OPTIMISM_CHAIN_ID ||
+            chainId == MOONBEAM_CHAIN_ID ||
+            chainId == ETHEREUM_CHAIN_ID
+        ) {
+            return ETHEREUM_CHAIN_ID;
+        } else if (
+            chainId == MOONBASE_CHAIN_ID ||
+            chainId == BASE_SEPOLIA_CHAIN_ID ||
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
+            chainId == ETHEREUM_SEPOLIA_CHAIN_ID
+        ) {
+            /// map base sepolia, optimism sepolia, moonbase, and ethereum sepolia chain id to ethereum sepolia chain id
+            return ETHEREUM_SEPOLIA_CHAIN_ID;
+        } else {
+            revert("ChainIds: invalid chain id to ethereum chain id");
+        }
+    }
+
     function toForkId(uint256 chainId) internal pure returns (uint256) {
         if (chainId == MOONBEAM_CHAIN_ID || chainId == MOONBASE_CHAIN_ID) {
             return MOONBEAM_FORK_ID;
@@ -315,6 +339,28 @@ library ChainIds {
         }
     }
 
+    function toEthereumWormholeChainId(
+        uint256 chainId
+    ) internal pure returns (uint16) {
+        if (
+            chainId == MOONBEAM_CHAIN_ID ||
+            chainId == BASE_CHAIN_ID ||
+            chainId == OPTIMISM_CHAIN_ID ||
+            chainId == ETHEREUM_CHAIN_ID
+        ) {
+            return ETHEREUM_WORMHOLE_CHAIN_ID;
+        } else if (
+            chainId == MOONBASE_CHAIN_ID ||
+            chainId == BASE_SEPOLIA_CHAIN_ID ||
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
+            chainId == ETHEREUM_SEPOLIA_CHAIN_ID
+        ) {
+            return ETHEREUM_WORMHOLE_SEPOLIA_CHAIN_ID;
+        } else {
+            revert("ChainIds: invalid chain id");
+        }
+    }
+
     function toChainId(
         uint256 wormholeChainId
     ) internal pure returns (uint256) {
@@ -381,5 +427,11 @@ library ChainIds {
 
     function nonMoonbeamChainIds(uint256 chainId) internal pure returns (bool) {
         return chainId != MOONBEAM_CHAIN_ID && chainId != MOONBASE_CHAIN_ID;
+    }
+
+    function nonEthereumChainIds(uint256 chainId) internal pure returns (bool) {
+        return
+            chainId != ETHEREUM_CHAIN_ID &&
+            chainId != ETHEREUM_SEPOLIA_CHAIN_ID;
     }
 }

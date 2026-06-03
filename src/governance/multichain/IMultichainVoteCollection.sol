@@ -166,15 +166,4 @@ interface IMultichainVoteCollection {
         address account,
         uint256 timestamp
     ) external view returns (uint256);
-
-    //// ---------------------------------------------- ////
-    //// ---------------------------------------------- ////
-    //// ----------------- ADMIN ONLY ----------------- ////
-    //// ---------------------------------------------- ////
-    //// ---------------------------------------------- ////
-
-    /// @notice set a gas limit for the relayer on the external chain
-    /// should only be called if there is a change in gas prices on the external chain
-    /// @param newGasLimit new gas limit to set
-    function setGasLimit(uint96 newGasLimit) external;
 }

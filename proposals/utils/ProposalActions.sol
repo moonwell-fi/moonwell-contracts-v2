@@ -67,4 +67,16 @@ library ProposalActions {
             }
         }
     }
+
+    /// @notice returns the sum of values for Ethereum actions only
+    /// @dev Used for MultichainGovernorV2.execute() which only needs value for Ethereum actions
+    function sumEthereumValue(
+        ProposalAction[] storage actions
+    ) internal view returns (uint256 totalValue) {
+        for (uint256 i = 0; i < actions.length; i++) {
+            if (actions[i].actionType == ActionType.Ethereum) {
+                totalValue += actions[i].value;
+            }
+        }
+    }
 }
