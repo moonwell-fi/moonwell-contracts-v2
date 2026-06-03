@@ -358,5 +358,15 @@
         "addr": "0x86A1f72ffEAfd397eAd099a5A359Fe81749351B5",
         "isContract": true,
         "name": "CHAINLINK_CBBTC_USD_OEV_WRAPPER"
+    },
+    {
+        "addr": "0x4605dA8b6B0d8d8aC4389606eA135e27b61DA2f6",
+        "isContract": true,
+        "name": "WETH_UNWRAPPER"
+    },
+    {
+        "addr": "0x9b1eeac01DED2155D93A23E9Dd5E99954f1021fe",
+        "isContract": true,
+        "name": "MWETH_IMPLEMENTATION"
     }
 ]
