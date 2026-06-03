@@ -324,14 +324,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         IERC20 token = IERC20(MErc20(address(mToken)).underlying());
 
-        /// Base/Optimism back MOONWELL_WETH with MWethDelegate, which unwraps
-        /// to native ETH on borrow — so the borrower's native balance grows.
-        /// Ethereum's MIP-E00 WETH market uses the plain MErc20Delegate, which
-        /// transfers WETH ERC20 instead, leaving the native balance untouched.
-        if (
-            address(token) == addresses.getAddress("WETH") &&
-            block.chainid != ETHEREUM_CHAIN_ID
-        ) {
+        /// All chains back MOONWELL_WETH with MWethDelegate, which unwraps to
+        /// native ETH on borrow — so the borrower's native balance grows.
+        /// Ethereum joined this path in MIP-E01 (Base/Optimism via MIP-B02).
+        if (address(token) == addresses.getAddress("WETH")) {
             assertEq(
                 sender.balance - balanceBefore,
                 borrowAmount,
@@ -966,25 +962,16 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         mToken.redeem(type(uint256).max);
 
-        /// Base/Optimism MWethDelegate unwraps to native ETH on redeem; the
-        /// Ethereum MIP-E00 WETH market is a plain MErc20Delegate that returns
-        /// WETH ERC20 instead, so the redeemed value lands in the WETH balance
-        /// rather than the native balance.
-        if (block.chainid == ETHEREUM_CHAIN_ID) {
-            assertApproxEqRel(
-                weth.balanceOf(address(this)),
-                mintAmount,
-                1e15, /// tiny loss due to rounding down
-                "incorrect test contract weth value after redeem"
-            );
-        } else {
-            assertApproxEqRel(
-                address(this).balance,
-                mintAmount,
-                1e15, /// tiny loss due to rounding down
-                "incorrect test contract eth value after redeem"
-            );
-        }
+        /// All chains back MOONWELL_WETH with MWethDelegate, which unwraps to
+        /// native ETH on redeem — so the redeemed value lands in the native
+        /// balance. Ethereum joined this path in MIP-E01 (Base/Optimism via
+        /// MIP-B02).
+        assertApproxEqRel(
+            address(this).balance,
+            mintAmount,
+            1e15, /// tiny loss due to rounding down
+            "incorrect test contract eth value after redeem"
+        );
         assertApproxEqRel(
             startingMTokenWethBalance,
             weth.balanceOf(address(mToken)),
