@@ -34,6 +34,7 @@ contract RewardsDistributionExternalChainTemplate is HybridProposal, Networks {
         uint256 amount;
         uint256 nativeValue;
         uint256 network;
+        bytes signedQuote;
         string target;
     }
 
@@ -450,14 +451,20 @@ contract RewardsDistributionExternalChainTemplate is HybridProposal, Networks {
 
             uint256 wormholeChainId = bridgeWell.network.toWormholeChainId();
 
+            // Moonbeam adapter has no on-chain Wormhole quoter (V5 init wired
+            // executorQuoterRouter = address(0) on Moonbeam). Use the 4-arg
+            // overload with a pre-signed off-chain quote from the Wormhole
+            // Executor signer; the per-MIP quote is supplied via the spec
+            // JSON's BridgeWell.signedQuote (hex bytes).
             _pushAction(
                 router,
                 bridgeWell.nativeValue,
                 abi.encodeWithSignature(
-                    "bridgeToRecipient(address,uint256,uint16)",
+                    "bridgeToRecipient(address,uint256,uint16,bytes)",
                     target,
                     bridgeWell.amount,
-                    wormholeChainId
+                    wormholeChainId,
+                    bridgeWell.signedQuote
                 ),
                 string(
                     abi.encodePacked(

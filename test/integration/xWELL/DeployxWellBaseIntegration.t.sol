@@ -52,8 +52,22 @@ contract xWellIntegrationTest is Test {
         _upgradeAdapterToV5();
     }
 
-    /// @notice Deploy V5 impl and upgrade via proxy admin
+    /// @notice Deploy V5 impl and upgrade via proxy admin.
+    ///         Skips when the live adapter is already on V5+ (mip-x52
+    ///         executed on mainnet) — `initializeV5` is `reinitializer(5)`
+    ///         and re-calling it reverts with "Initializable: contract is
+    ///         already initialized". Detect by probing `executor()` which
+    ///         was added in V5 storage layout: non-zero return ⇒ already V5+.
     function _upgradeAdapterToV5() internal {
+        (bool ok, bytes memory ret) = address(wormholeAdapter).staticcall(
+            abi.encodeWithSignature("executor()")
+        );
+        if (
+            ok && ret.length == 32 && abi.decode(ret, (address)) != address(0)
+        ) {
+            return; // adapter already on V5+; re-initialize would revert
+        }
+
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
         address proxy = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
 

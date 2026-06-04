@@ -1,5 +1,10 @@
 [
     {
+        "addr": "0xDcB85eCF9746302aC59d4BA565dc322BB0b173B3",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONBEAM_FLAT_MIP_X55"
+    },
+    {
         "addr": "0x091608f4e4a15335145be0A279483C0f8E4c7955",
         "name": "mGLIMMER",
         "isContract": true
@@ -131,7 +136,7 @@
     },
     {
         "addr": "0xf0A4a985254F5D419E70e52f634B75D36e668D1a",
-        "name": "MOONWELL_VIEWS_IMPLEMENTATION",
+        "name": "MOONWELL_VIEWS_IMPLEMENTATION_DEPRECATED",
         "isContract": true
     },
     {
@@ -175,7 +180,7 @@
         "isContract": true
     },
     {
-        "addr": "0xb84543e036054E2cD5394A9D99fa701Eef666df4",
+        "addr": "0x78c504b6c0ea2adbf6a58b208c9888f3692db169",
         "name": "xWELL_ROUTER",
         "isContract": true
     },
@@ -413,5 +418,45 @@
         "addr": "0x11dbA16fb4cc80D80f371825137a6D3e2f77EbcF",
         "isContract": true,
         "name": "WORMHOLE_UNWRAPPER_ADAPTER_IMPL_V5"
+    },
+    {
+        "addr": "0x908dF70C2EDEA165eE22fe63549af46944Ea4689",
+        "name": "TEMPORAL_GOVERNOR",
+        "isContract": true
+    },
+    {
+        "addr": "0x8769B70ac7c93AF0e75de0D69877709B66d75838",
+        "isContract": true,
+        "name": "MULTICHAIN_GOVERNOR_V1_1_IMPL"
+    },
+    {
+        "addr": "0xDeD4deD0bADACF87714C90405f8983eFDf2D5c30",
+        "isContract": true,
+        "name": "PROPOSAL_VIEW"
+    },
+    {
+        "addr": "0x02bcE061C68976e2A63Ebde959cf9f9044055c22",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR_IMPL"
+    },
+    {
+        "addr": "0x4Da5872C158763aE092D38f5E71f93173f8Ca986",
+        "isContract": true,
+        "name": "VOTING_POWER_AGGREGATOR"
+    },
+    {
+        "addr": "0xCb44138f3e2e25B72338372488d2a74A580a0E15",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_V2_IMPL"
+    },
+    {
+        "addr": "0xB8A798a50a7274A13449B7f2Dd6Df22faF2d40E5",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_V2_PROXY"
+    },
+    {
+        "addr": "0xdec80bB934397575594E91970b37baf65f5b21bE",
+        "name": "MOONWELL_VIEWS_IMPLEMENTATION_V2",
+        "isContract": true
     }
 ]

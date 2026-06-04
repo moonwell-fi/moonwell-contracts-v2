@@ -18,6 +18,7 @@ import {MultichainVoteCollection} from "@protocol/governance/multichain/Multicha
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 
 contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     bool private _receivingFunds;
@@ -339,7 +340,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.deal(address(this), excessValue);
 
         _receivingFunds = false;
-        vm.expectRevert("WormholeBridge: refund failed");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.RefundFailed.selector)
+        );
         governor.propose{value: excessValue}(
             targets,
             values,
@@ -487,7 +490,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         emit BridgeOutFailed(BASE_WORMHOLE_CHAIN_ID, payload, 0);
 
         _receivingFunds = false;
-        vm.expectRevert("WormholeBridge: refund failed");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.RefundFailed.selector)
+        );
         vm.prank(proposer);
         governor.propose{value: excessValue}(
             targets,
@@ -818,7 +823,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.deal(address(this), excessValue);
 
         _receivingFunds = false;
-        vm.expectRevert("WormholeBridge: refund failed");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.RefundFailed.selector)
+        );
         governor.rebroadcastProposal{value: excessValue}(proposalId);
 
         _assertGovernanceBalance();
@@ -1948,10 +1955,14 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         bytes32 validAddress4 = 0x000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000;
         bytes32 validAddress5 = 0x0000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000;
 
-        vm.expectRevert("WormholeBridge: invalid address");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.InvalidAddress.selector)
+        );
         governor.fromWormholeFormat(invalidAddress1);
 
-        vm.expectRevert("WormholeBridge: invalid address");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.InvalidAddress.selector)
+        );
         governor.fromWormholeFormat(invalidAddress2);
 
         assertEq(

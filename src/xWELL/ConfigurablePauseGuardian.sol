@@ -8,6 +8,9 @@ import {ConfigurablePause} from "@protocol/xWELL/ConfigurablePause.sol";
 ///     3. unpaused, pauseStartTime <= block.timestamp - pauseDuration, guardian != address(0)
 ///     4. unpaused after kick, pauseStartTime == 0, guardian == address(0)
 contract ConfigurablePauseGuardian is ConfigurablePause {
+    error OnlyPauseGuardian();
+    error PauseAlreadyUsed();
+
     /// @notice address of the pause guardian
     address public pauseGuardian;
 
@@ -55,11 +58,12 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     /// @notice pause the contracts, can only pause while the contracts are unpaused
     /// uses up the pause, and starts the pause timer
     function pause() public virtual whenNotPaused {
-        require(
-            msg.sender == pauseGuardian,
-            "ConfigurablePauseGuardian: only pause guardian"
-        );
-        require(!pauseUsed(), "ConfigurablePauseGuardian: pause already used");
+        if (msg.sender != pauseGuardian) {
+            revert OnlyPauseGuardian();
+        }
+        if (pauseUsed()) {
+            revert PauseAlreadyUsed();
+        }
 
         /// pause, set pauseStartTime to current block timestamp
         _setPauseTime(uint128(block.timestamp));
@@ -70,10 +74,9 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     /// @notice unpause the contracts as pause guardian.
     /// revokes pause guardian role after unpausing
     function unpause() external whenPaused {
-        require(
-            msg.sender == pauseGuardian,
-            "ConfigurablePauseGuardian: only pause guardian"
-        );
+        if (msg.sender != pauseGuardian) {
+            revert OnlyPauseGuardian();
+        }
 
         /// kick the guardian
         /// set pauseUsed to false

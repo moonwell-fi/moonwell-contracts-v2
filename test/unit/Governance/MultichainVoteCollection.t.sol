@@ -8,6 +8,7 @@ import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/mult
 import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
@@ -1196,7 +1197,9 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.deal(address(this), excessValue);
 
         _receivingFunds = false;
-        vm.expectRevert("WormholeBridge: refund failed");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.RefundFailed.selector)
+        );
         voteCollection.emitVotes{value: excessValue}(proposalId);
     }
 
@@ -1259,7 +1262,9 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.deal(address(this), excessValue);
 
         _receivingFunds = false;
-        vm.expectRevert("WormholeBridge: refund failed");
+        vm.expectRevert(
+            abi.encodeWithSelector(WormholeBridgeBase.RefundFailed.selector)
+        );
         voteCollection.emitVotes{value: excessValue}(proposalId);
 
         _assertGovernanceBalance();

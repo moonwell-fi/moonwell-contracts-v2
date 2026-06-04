@@ -93,8 +93,18 @@ case "$PROPOSAL_DIR" in
 esac
 
 if [ ! -d "$PROPOSAL_DIR" ]; then
-  echo "Error: not a directory: $PROPOSAL_DIR" >&2
-  exit 2
+  # Auto-detected paths (CI git-diff) may include dirs deleted in the PR.
+  # Skip rather than fail so the workflow doesn't block on removed proposals.
+  case "$PROPOSAL_DIR" in
+    *proposals/mips/mip-*)
+      echo "[skip] directory was deleted: $PROPOSAL_DIR" >&2
+      exit 0
+      ;;
+    *)
+      echo "Error: not a directory: $PROPOSAL_DIR" >&2
+      exit 2
+      ;;
+  esac
 fi
 
 BASENAME=$(basename "$PROPOSAL_DIR")
@@ -235,10 +245,17 @@ for CHAIN in $CHAINS; do
 
   # --- Check 1: flow conservation on TEMPORAL_GOVERNOR ---
   # (skipped for sending chain 1284 — Moonbeam has its own conservation)
-  # TG receives: bridge + withdrawWell(to=TG)
+  # TG receives: bridge + withdrawWell(to=TG) + preStagedTG (external pre-stage)
   # TG sends:    transferFrom(from=TG, to=*) + merkleCampaign.amount (approved, pulled)
+  #
+  # preStagedTG is for MIPs that intentionally do NOT bridge from Moonbeam in
+  # the proposal itself (because off-chain Wormhole Executor signed quotes
+  # expire in ~1h while governance takes ~5 days). The proposal author commits
+  # to having xWELL pre-staged on the destination TG via a separate fast-path
+  # (prep MIP or multisig action) before this proposal executes on-chain.
+  PRESTAGED_TG=$(jq -r --arg c "$CHAIN" '.[$c].preStagedTG // "0"' "$JSON_PATH")
   if [ "$CHAIN" != "1284" ]; then
-    INFLOW=$(awkf -v a="$BRIDGE_IN" -v b="$WITHDRAW_TO_TG" 'BEGIN{printf "%.0f", a+b}')
+    INFLOW=$(awkf -v a="$BRIDGE_IN" -v b="$WITHDRAW_TO_TG" -v p="$PRESTAGED_TG" 'BEGIN{printf "%.0f", a+b+p}')
     OUTFLOW=$(awkf -v a="$TRANSFER_MRD" -v b="$TRANSFER_ECOSYSTEM" -v c="$MERKLE_TOTAL" 'BEGIN{printf "%.0f", a+b+c}')
     DIFF=$(awkf -v x="$INFLOW" -v y="$OUTFLOW" 'BEGIN{d=x-y; if (d<0) d=-d; printf "%.0f", d}')
     TOLERANCE="20000000000000000000"  # 20 WELL

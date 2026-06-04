@@ -233,9 +233,11 @@ contract BaseMoonwellViews is Initializable {
         address _user
     ) public view virtual returns (Votes memory _result) {
         if (address(safetyModule) != address(0)) {
+            // stkWELL snapshots (ERC20WithSnapshot) are keyed by block.timestamp,
+            // not block.number — query getPriorVotes with a timestamp.
             uint _priorVotes = safetyModule.getPriorVotes(
                 _user,
-                block.number - 1
+                block.timestamp - 1
             );
             _result = Votes(
                 _priorVotes,
