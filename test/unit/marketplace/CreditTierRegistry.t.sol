@@ -350,6 +350,27 @@ contract CreditTierRegistryTest is Test, Signers {
         registry.setTierFromAttestation(att, sig);
     }
 
+    function test_setTierFromAttestation_everyTier() public {
+        // Each valid tier code 0..4 writes through, on distinct subjects so
+        // the monotonic guard is irrelevant.
+        for (uint16 t = 0; t <= registry.MAX_TIER(); t++) {
+            address subj = address(uint160(0xA11CE00 + t));
+            CreditAttestation memory att = _att(
+                subj,
+                t,
+                uint64(block.timestamp)
+            );
+            bytes memory sig = signCreditAttestation(
+                att,
+                attestorKey,
+                registry.DOMAIN_SEPARATOR()
+            );
+            registry.setTierFromAttestation(att, sig);
+            assertEq(registry.tier(subj), t);
+            assertEq(registry.tierAttestedAt(subj), att.issuedAt);
+        }
+    }
+
     function test_setTierFromAttestation_newerOverwrites() public {
         vm.warp(1_000_000);
         CreditAttestation memory a1 = _att(alice, 2, uint64(block.timestamp));

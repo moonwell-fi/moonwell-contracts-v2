@@ -989,4 +989,100 @@ contract CreateLoanTest is Fixture {
         );
         assertTrue(loanAddr != address(0));
     }
+
+    // ─── credit-tier gate: every tier ────────────────────────────────
+
+    function _createLoanAtTier(
+        uint16 tierVal,
+        uint256 baseNonce
+    ) internal returns (address loanAddr) {
+        vm.prank(tierRegistryOwner);
+        tierRegistry.setTier(borrower, tierVal);
+        // Re-fund for this iteration (the prior loan escrowed the lender's
+        // mMOCK and the borrower's cbBTC).
+        mockMToken.mintTo(lender, M_TOKEN_AMOUNT);
+        deal(cbbtc, borrower, COLLATERAL_AMOUNT);
+
+        Offer memory o = _offer(baseNonce);
+        o.minBorrowerCreditTier = tierVal;
+        Request memory r = _request(baseNonce + 1);
+        BackendTerms memory t = _terms(baseNonce + 2);
+        t.borrowerCreditTier = tierVal;
+
+        uint256 offerId = localFactory.postOffer(o, _offerSig(o));
+        uint256 requestId = localFactory.postRequest(r, _requestSig(r));
+        (, loanAddr) = localFactory.createLoan(
+            offerId,
+            requestId,
+            t,
+            _offerSig(o),
+            _requestSig(r),
+            _signedTerms(t)
+        );
+    }
+
+    /// A borrower registered at tier T matches an offer whose
+    /// minBorrowerCreditTier == T, for every tier 1..4.
+    function test_createLoan_gate_acceptsEveryTier() public {
+        for (uint16 tierVal = 1; tierVal <= 4; tierVal++) {
+            assertTrue(
+                _createLoanAtTier(tierVal, uint256(tierVal) * 100) != address(0)
+            );
+        }
+    }
+
+    /// An offer requiring T+1 rejects a tier-T borrower, for every tier 1..4.
+    function test_createLoan_gate_rejectsBelowEveryTier() public {
+        for (uint16 tierVal = 1; tierVal <= 4; tierVal++) {
+            vm.prank(tierRegistryOwner);
+            tierRegistry.setTier(borrower, tierVal);
+
+            Offer memory o = _offer(uint256(tierVal) * 1000);
+            o.minBorrowerCreditTier = tierVal + 1; // above the borrower's tier
+            Request memory r = _request(uint256(tierVal) * 1000 + 1);
+            BackendTerms memory t = _terms(uint256(tierVal) * 1000 + 2);
+            t.borrowerCreditTier = tierVal; // exact-matches the registry
+
+            uint256 offerId = localFactory.postOffer(o, _offerSig(o));
+            uint256 requestId = localFactory.postRequest(r, _requestSig(r));
+            // Precompute sigs BEFORE expectRevert — the sig helpers call
+            // vm.sign, which would otherwise consume the expectRevert.
+            bytes memory oSig = _offerSig(o);
+            bytes memory rSig = _requestSig(r);
+            bytes memory bSig = _signedTerms(t);
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    CreditMarketplaceFactory.BoundsViolation.selector,
+                    bytes32("creditTier")
+                )
+            );
+            localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+        }
+    }
+
+    /// The backend-signed tier must EXACTLY equal the registry tier.
+    function test_createLoan_gate_exactTierMismatchReverts() public {
+        vm.prank(tierRegistryOwner);
+        tierRegistry.setTier(borrower, 3);
+
+        Offer memory o = _offer(1);
+        Request memory r = _request(2);
+        BackendTerms memory t = _terms(3);
+        t.borrowerCreditTier = 2; // != registry's 3
+
+        uint256 offerId = localFactory.postOffer(o, _offerSig(o));
+        uint256 requestId = localFactory.postRequest(r, _requestSig(r));
+        // Precompute sigs BEFORE expectRevert (sig helpers call vm.sign).
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CreditMarketplaceFactory.BorrowerTierMismatch.selector,
+                uint16(2),
+                uint16(3)
+            )
+        );
+        localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
+    }
 }

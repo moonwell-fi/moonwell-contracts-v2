@@ -21,6 +21,10 @@ interface IMErc20Mint {
     function mint(uint256 amount) external returns (uint256);
 }
 
+interface IMTokenBorrowRate {
+    function borrowRatePerTimestamp() external view returns (uint256);
+}
+
 /// End-to-end integration test against a forked Base with real Moonwell.
 /// No mocks, no stubs: the lender supplies real USDC, receives real
 /// mUSDC, and the clone performs real `enterMarkets` + `borrow` +
@@ -66,6 +70,10 @@ contract CreditMarketplaceIntegration is Test, Signers {
     uint32 internal constant GRACE = 1 days;
     uint16 internal constant FEE_BPS = 500; // 5%
     uint16 internal constant OVER_SEIZURE_BPS = 2_000;
+    /// Loan APR (bps), computed from Moonwell's live USDC borrow rate so the
+    /// on-chain APR floor clears at any (unpinned) fork block. apr is inert
+    /// for payment math — installments come from the schedule.
+    uint16 internal loanApr;
 
     function setUp() public {
         vm.createSelectFork("base");
@@ -135,6 +143,10 @@ contract CreditMarketplaceIntegration is Test, Signers {
         require(err == 0, "mUSDC mint failed");
         vm.stopPrank();
 
+        // Price the loan APR just above Moonwell's live USDC borrow rate (read
+        // after the supply mint) so _checkAprFloor clears at any fork block.
+        loanApr = _aprAboveMoonwell();
+
         // Borrower holds the non-Moonwell collateral.
         deal(cbbtc, borrower, COLLATERAL_AMOUNT);
 
@@ -149,6 +161,16 @@ contract CreditMarketplaceIntegration is Test, Signers {
         return IERC20(mUsdc).balanceOf(lender);
     }
 
+    /// Smallest loan APR (bps) that clears _checkAprFloor (buffer = 0) plus a
+    /// 1% margin. Inverts the factory's per-second conversion.
+    function _aprAboveMoonwell() internal view returns (uint16) {
+        uint256 ratePerSec = IMTokenBorrowRate(mUsdc).borrowRatePerTimestamp();
+        uint256 minBps = (ratePerSec * 365 days) / 1e14;
+        uint256 aprBps = minBps + 100;
+        require(aprBps <= 65535, "moonwell borrow APR too high for uint16");
+        return uint16(aprBps);
+    }
+
     function _offer(
         uint256 nonce,
         uint256 mTokenAmount
@@ -161,8 +183,8 @@ contract CreditMarketplaceIntegration is Test, Signers {
             mTokenAmount: mTokenAmount,
             principalToken: usdc,
             maxPrincipal: 500e6,
-            maxApr: 1_000,
-            minApr: 500,
+            maxApr: loanApr,
+            minApr: 0,
             minTerm: 1 days,
             maxTerm: 60 days,
             acceptedCollateral: col,
@@ -180,7 +202,7 @@ contract CreditMarketplaceIntegration is Test, Signers {
             principal: PRINCIPAL,
             collateralToken: cbbtc,
             collateralAmount: COLLATERAL_AMOUNT,
-            maxApr: 1_000,
+            maxApr: loanApr,
             minTerm: 1 days,
             maxTerm: 60 days,
             expiresAt: uint64(block.timestamp + 1 hours),
@@ -214,7 +236,7 @@ contract CreditMarketplaceIntegration is Test, Signers {
             principal: PRINCIPAL,
             collateralToken: cbbtc,
             collateralAmount: COLLATERAL_AMOUNT,
-            apr: 800,
+            apr: loanApr,
             term: 30 days,
             schedule: s,
             gracePeriod: GRACE,
@@ -565,8 +587,23 @@ contract CreditMarketplaceIntegration is Test, Signers {
     /// against 400 USDC principal).
     /// forge-config: default.fuzz.runs = 32
     /// forge-config: ci.fuzz.runs = 256
+    /// Minimum interest-per-installment that keeps the loan solvent at the
+    /// live Moonwell borrow rate: the 5 interest payments (NUM_INTEREST
+    /// installments + trailing stub) must each cover the full ~term borrow
+    /// accrual on PRINCIPAL — a comfortable >5x margin over Moonwell's cost.
+    /// Below this, _settle correctly reverts InsufficientPrincipalForRepay
+    /// (recoverable via the §7.6 default path), which is not what this
+    /// happy-path fuzz asserts.
+    function _minSolventInterest() internal view returns (uint256) {
+        uint256 ratePerSec = IMTokenBorrowRate(mUsdc).borrowRatePerTimestamp();
+        uint256 termSecs = uint256(INTERVAL) * (NUM_INTEREST + 1); // ~35 days
+        uint256 accrual = (PRINCIPAL * ratePerSec * termSecs) / 1e18;
+        return accrual + 1e6;
+    }
+
     function testFuzz_fullLifecycle_varyInterest(uint256 seed) public {
-        uint256 interestAmt = bound(seed, 1e6, 100e6);
+        uint256 minInterest = _minSolventInterest();
+        uint256 interestAmt = bound(seed, minInterest, minInterest + 100e6);
 
         uint256 mTokenAmount = _lenderMTokenBalance();
         uint64 firstDueAt = uint64(block.timestamp + INTERVAL);
