@@ -17,6 +17,13 @@ interface IMoonwellComptroller {
     function enterMarkets(
         address[] calldata mTokens
     ) external returns (uint256[] memory);
+
+    function getHypotheticalAccountLiquidity(
+        address account,
+        address mToken,
+        uint256 redeemTokens,
+        uint256 borrowAmount
+    ) external view returns (uint256, uint256, uint256);
 }
 
 interface IMoonwellMToken {
@@ -54,6 +61,7 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     error RepayFailed(uint256 errorCode);
     error MoonwellBorrowOutstanding(uint256 balance);
     error OracleNotStale();
+    error InsufficientMoonwellHealth();
 
     event LoanActivated(uint64 activatedAt);
     event InterestPaid(uint32 indexed cursor, uint256 amount);
@@ -105,6 +113,12 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
     /// `claimMissedPayment` (msg.sender). 0 disables the bounty.
     uint16 public keeperBountyBps;
     address public comptrollerAddr;
+    /// Minimum Moonwell health buffer (bps above 1.0) the clone's borrow must
+    /// clear at activation, snapshotted from the factory. Blocks a lender who
+    /// pledges the bare Moonwell minimum (health 1.0, liquidatable on the next
+    /// interest tick) from originating (risk-report Axis B). 0 = no buffer
+    /// beyond Moonwell's own borrow check.
+    uint16 public moonwellHealthBufferBps;
 
     uint32 public paymentCursor;
     uint16 public missedCount;
@@ -150,6 +164,7 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         principalFeedStaleness = params.principalFeedStaleness;
         keeperBountyBps = params.keeperBountyBps;
         comptrollerAddr = params.comptrollerAddr;
+        moonwellHealthBufferBps = params.moonwellHealthBufferBps;
 
         status = LoanStatus.Pending;
     }
@@ -168,6 +183,27 @@ contract CreditLoan is ICreditLoan, ReentrancyGuard {
         uint256[] memory errs = IMoonwellComptroller(comptrollerAddr)
             .enterMarkets(markets);
         if (errs[0] != 0) revert EnterMarketsFailed(errs[0]);
+
+        /// Lender-side Moonwell health buffer (risk-report Axis B): require the
+        /// position could borrow principal*(1+buffer) without shortfall — i.e.
+        /// the clone's health is >= 1+buffer — so a bare-minimum pledge (health
+        /// 1.0, liquidatable on the next interest tick) is rejected. Moonwell
+        /// already gates the real borrow at health 1.0; this raises the bar.
+        if (moonwellHealthBufferBps > 0) {
+            uint256 bufferedBorrow = (principal *
+                (10_000 + moonwellHealthBufferBps)) / 10_000;
+            (uint256 liqErr, , uint256 shortfall) = IMoonwellComptroller(
+                comptrollerAddr
+            ).getHypotheticalAccountLiquidity(
+                    address(this),
+                    mToken,
+                    0,
+                    bufferedBorrow
+                );
+            if (liqErr != 0 || shortfall != 0) {
+                revert InsufficientMoonwellHealth();
+            }
+        }
 
         uint256 err = IMoonwellMToken(mToken).borrow(principal);
         if (err != 0) revert BorrowFailed(err);

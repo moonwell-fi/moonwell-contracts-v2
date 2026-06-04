@@ -122,6 +122,7 @@ struct InitParams {
     uint32 principalFeedStaleness;
     uint16 keeperBountyBps;
     address comptrollerAddr;
+    uint16 moonwellHealthBufferBps;
 }
 
 /// EIP-712 credit attestation signed off-chain by the credit bureau

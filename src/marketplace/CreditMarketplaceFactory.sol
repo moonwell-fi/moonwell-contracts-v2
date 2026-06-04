@@ -76,6 +76,15 @@ contract CreditMarketplaceFactory is
         uint256 marketplaceRatePerSec,
         uint256 minRequiredRatePerSec
     );
+    /// The backend-signed payment schedule's total interest can't cover the
+    /// projected Moonwell borrow accrual over the term. The `apr` field is
+    /// dead storage post-match — solvency depends on the schedule, which the
+    /// APR floor does NOT validate. Without this, `_settle` reverts
+    /// InsufficientPrincipalForRepay and the lender funds the shortfall.
+    error ScheduleUndercoversMoonwell(
+        uint256 scheduleInterest,
+        uint256 projectedAccrual
+    );
     /// Backend signed a tier that doesn't match the registry's current
     /// value for the borrower. Catches a backend that's lying about
     /// tier, or a registry that's drifted ahead of backend signatures.
@@ -101,6 +110,11 @@ contract CreditMarketplaceFactory is
     );
     event StalenessWindowUpdated(uint32 seconds_);
     event MinOriginationLtvBufferBpsUpdated(uint16 previous, uint16 updated);
+    event CollateralBufferBpsUpdated(
+        address indexed token,
+        uint16 previous,
+        uint16 updated
+    );
     event DefaultParamsUpdated(
         uint32 gracePeriod,
         uint16 overSeizureBps,
@@ -117,6 +131,7 @@ contract CreditMarketplaceFactory is
     );
     event AprFloorBufferBpsUpdated(uint16 previous, uint16 updated);
     event KeeperBountyBpsUpdated(uint16 previous, uint16 updated);
+    event MinMoonwellHealthBufferBpsUpdated(uint16 previous, uint16 updated);
     event OfferPosted(
         uint256 indexed offerId,
         address indexed lender,
@@ -210,6 +225,11 @@ contract CreditMarketplaceFactory is
     uint32 public stalenessWindow;
     uint16 public minOriginationLtvBufferBps;
     uint16 public keeperBountyBps;
+    /// Minimum Moonwell health buffer (bps above 1.0) every clone's borrow must
+    /// clear at activation, snapshotted into each loan. Prevents a lender from
+    /// pledging the bare Moonwell minimum and being liquidatable immediately
+    /// (risk-report Axis B). 0 = no buffer beyond Moonwell's own borrow check.
+    uint16 public minMoonwellHealthBufferBps;
     /// Required margin between marketplace APR and Moonwell's borrow APR
     /// at match time, in bps. Marketplace per-second rate must be at
     /// least `moonwellRate * (10_000 + bufferBps) / 10_000` for a match
@@ -224,6 +244,11 @@ contract CreditMarketplaceFactory is
     mapping(address => bool) public isMTokenWhitelisted;
     mapping(address => FeedConfig) public collateralFeeds;
     mapping(address => bool) public isCollateralWhitelisted;
+    /// Per-collateral origination buffer floor (bps). The effective buffer at
+    /// match is `max(minOriginationLtvBufferBps, collateralBufferBps[token])`,
+    /// letting governance demand more over-collateralization for volatile
+    /// assets while keeping the global as a floor. 0 = defer to the global.
+    mapping(address => uint16) public collateralBufferBps;
     /// Feed for the principal side of each match, keyed by the mToken's
     /// underlying. Populated via `whitelistMToken` — the principal token
     /// is always `IMErc20(mToken).underlying()`, so it's not its own
@@ -418,6 +443,20 @@ contract CreditMarketplaceFactory is
         emit MinOriginationLtvBufferBpsUpdated(previous, bufferBps);
     }
 
+    /// Set the per-collateral origination buffer floor. Capped at
+    /// MAX_LTV_BUFFER_BPS (100%); assets needing more than 100% over-
+    /// collateralization to be safe (e.g. memecoins) should not be listed.
+    /// 0 defers to the global `minOriginationLtvBufferBps`.
+    function setCollateralBufferBps(
+        address token,
+        uint16 bufferBps
+    ) external override onlyOwner {
+        if (bufferBps > MAX_LTV_BUFFER_BPS) revert InvalidBufferBps();
+        uint16 previous = collateralBufferBps[token];
+        collateralBufferBps[token] = bufferBps;
+        emit CollateralBufferBpsUpdated(token, previous, bufferBps);
+    }
+
     /// Capped at 10_000 bps (100%) — marketplace APR must be no more
     /// than 2× Moonwell's borrow APR. 0 disables the floor (allow
     /// marketplace APR == Moonwell APR, which would still typically
@@ -442,6 +481,18 @@ contract CreditMarketplaceFactory is
         uint16 previous = keeperBountyBps;
         keeperBountyBps = bountyBps;
         emit KeeperBountyBpsUpdated(previous, bountyBps);
+    }
+
+    /// Set the minimum Moonwell health buffer applied to new loans. Capped at
+    /// MAX_LTV_BUFFER_BPS (100%). 0 disables (Moonwell's own health-1.0 borrow
+    /// check still applies).
+    function setMinMoonwellHealthBufferBps(
+        uint16 bufferBps
+    ) external override onlyOwner {
+        if (bufferBps > MAX_LTV_BUFFER_BPS) revert InvalidBufferBps();
+        uint16 previous = minMoonwellHealthBufferBps;
+        minMoonwellHealthBufferBps = bufferBps;
+        emit MinMoonwellHealthBufferBpsUpdated(previous, bufferBps);
     }
 
     function setDefaultParams(
@@ -850,6 +901,41 @@ contract CreditMarketplaceFactory is
 
         _checkOriginationLtv(o, r, terms);
         _checkAprFloor(o.mToken, terms.apr);
+        _checkScheduleSolvency(o.mToken, terms);
+    }
+
+    /// The borrower's actual cashflows come from `terms.schedule`, not the
+    /// `apr` field the APR floor checks. Require the schedule's total interest
+    /// to cover the Moonwell borrow accrual projected over the borrow's
+    /// lifetime (origination → principalDueAt) at the current per-second rate.
+    /// This is a FLOOR only — the live rate drifts with utilization, so the
+    /// backend must still leave headroom — but it blocks grossly under-priced
+    /// schedules (the Axis-C insolvency where `_settle` reverts).
+    function _checkScheduleSolvency(
+        address mToken,
+        BackendTerms calldata terms
+    ) private view {
+        uint256 scheduleInterest = uint256(terms.schedule.numInterestPayments) *
+            terms.schedule.interestAmountPerPayment;
+        if (terms.schedule.finalPaymentAmount > terms.principal) {
+            scheduleInterest +=
+                terms.schedule.finalPaymentAmount -
+                terms.principal;
+        }
+
+        uint256 ratePerSec = IMTokenBorrowRate(mToken).borrowRatePerTimestamp();
+        uint256 duration = terms.schedule.principalDueAt > block.timestamp
+            ? terms.schedule.principalDueAt - block.timestamp
+            : 0;
+        uint256 projectedAccrual = (terms.principal * ratePerSec * duration) /
+            1e18;
+
+        if (scheduleInterest < projectedAccrual) {
+            revert ScheduleUndercoversMoonwell(
+                scheduleInterest,
+                projectedAccrual
+            );
+        }
     }
 
     /// Marketplace per-second rate must clear Moonwell's current borrow
@@ -1027,8 +1113,15 @@ contract CreditMarketplaceFactory is
             principalCfg.feed,
             principalCfg.staleness
         );
-        uint256 requiredUsd1e18 = (principalUsd1e18 *
-            (10_000 + minOriginationLtvBufferBps)) / 10_000;
+        // Effective buffer = max(global floor, per-collateral floor), so a
+        // volatile collateral can require more over-collateralization than the
+        // protocol-wide minimum (risk-report §5.1).
+        uint16 buffer = collateralBufferBps[r.collateralToken];
+        if (buffer < minOriginationLtvBufferBps) {
+            buffer = minOriginationLtvBufferBps;
+        }
+        uint256 requiredUsd1e18 = (principalUsd1e18 * (10_000 + buffer)) /
+            10_000;
         if (collateralUsd1e18 < requiredUsd1e18) {
             revert InsufficientCollateral(collateralUsd1e18, requiredUsd1e18);
         }
@@ -1065,5 +1158,6 @@ contract CreditMarketplaceFactory is
         p.principalFeedStaleness = principalCfg.staleness;
         p.keeperBountyBps = keeperBountyBps;
         p.comptrollerAddr = comptroller;
+        p.moonwellHealthBufferBps = minMoonwellHealthBufferBps;
     }
 }

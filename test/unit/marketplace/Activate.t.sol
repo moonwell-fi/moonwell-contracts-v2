@@ -132,6 +132,66 @@ contract ActivateTest is Fixture {
         clone.activate();
     }
 
+    // ─── lender-side Moonwell health buffer (risk-report Axis B) ─────
+
+    bytes4 internal constant HYPO_LIQ_SEL =
+        bytes4(
+            keccak256(
+                "getHypotheticalAccountLiquidity(address,address,uint256,uint256)"
+            )
+        );
+
+    function _cloneWithHealthBuffer(
+        uint16 bufferBps
+    ) internal returns (CreditLoan c) {
+        c = new CreditLoan();
+        InitParams memory p = _defaultParams();
+        p.moonwellHealthBufferBps = bufferBps;
+        vm.prank(address(factory));
+        c.initialize(p);
+        uint256[] memory errs = new uint256[](1);
+        vm.mockCall(
+            unitroller,
+            abi.encodeWithSelector(ENTER_MARKETS_SEL),
+            abi.encode(errs)
+        );
+    }
+
+    /// A bare-minimum pledge (Moonwell reports a shortfall at the buffered
+    /// borrow) is rejected at activation.
+    function test_activate_insufficientMoonwellHealthReverts() public {
+        CreditLoan c = _cloneWithHealthBuffer(2_000); // require health >= 1.2
+        // Comptroller reports a shortfall for the buffered borrow → too thin.
+        vm.mockCall(
+            unitroller,
+            abi.encodeWithSelector(HYPO_LIQ_SEL),
+            abi.encode(uint256(0), uint256(0), uint256(1))
+        );
+        vm.prank(address(factory));
+        vm.expectRevert(CreditLoan.InsufficientMoonwellHealth.selector);
+        c.activate();
+    }
+
+    /// A well-collateralized pledge (no shortfall at the buffered borrow)
+    /// activates.
+    function test_activate_sufficientMoonwellHealthProceeds() public {
+        CreditLoan c = _cloneWithHealthBuffer(2_000);
+        vm.mockCall(
+            unitroller,
+            abi.encodeWithSelector(HYPO_LIQ_SEL),
+            abi.encode(uint256(0), uint256(1_000e18), uint256(0))
+        );
+        vm.mockCall(
+            mUsdc,
+            abi.encodeWithSelector(BORROW_SEL, PRINCIPAL),
+            abi.encode(uint256(0))
+        );
+        deal(usdc, address(c), PRINCIPAL);
+        vm.prank(address(factory));
+        c.activate();
+        assertTrue(c.status() == LoanStatus.Active);
+    }
+
     function test_activate_borrowFailureReverts() public {
         uint256[] memory errs = new uint256[](1);
         vm.mockCall(

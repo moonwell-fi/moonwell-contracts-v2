@@ -70,9 +70,13 @@ interface ICreditMarketplaceFactory {
 
     function setMinOriginationLtvBufferBps(uint16 bufferBps) external;
 
+    function setCollateralBufferBps(address token, uint16 bufferBps) external;
+
     function setAprFloorBufferBps(uint16 bufferBps) external;
 
     function setKeeperBountyBps(uint16 bountyBps) external;
+
+    function setMinMoonwellHealthBufferBps(uint16 bufferBps) external;
 
     function setDefaultParams(
         uint32 gracePeriod,

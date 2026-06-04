@@ -1085,4 +1085,158 @@ contract CreateLoanTest is Fixture {
         );
         localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig);
     }
+
+    // ─── schedule solvency vs Moonwell accrual (risk-report Axis C) ──
+
+    bytes4 internal constant BORROW_RATE_SEL =
+        bytes4(keccak256("borrowRatePerTimestamp()"));
+
+    /// A schedule whose total interest can't cover the projected Moonwell
+    /// borrow accrual over the term must be rejected at origination (else
+    /// _settle reverts InsufficientPrincipalForRepay and the lender eats it).
+    function test_createLoan_scheduleUndercoversMoonwell_reverts() public {
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        // ~5% APR per-second rate: below the 8% apr field (so the APR floor
+        // passes) but nonzero so accrual > 0.
+        vm.mockCall(
+            address(mockMToken),
+            abi.encodeWithSelector(BORROW_RATE_SEL),
+            abi.encode(uint256(1585e6))
+        );
+        BackendTerms memory t = _terms(3);
+        t.schedule.interestAmountPerPayment = 0; // insolvent: no interest
+        t.schedule.finalPaymentAmount = PRINCIPAL; // no trailing stub either
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        // try/catch selector compare — ScheduleUndercoversMoonwell carries
+        // live-rate-dependent args, so match on the selector only.
+        try
+            localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig)
+        returns (uint256, address) {
+            revert("expected ScheduleUndercoversMoonwell");
+        } catch (bytes memory reason) {
+            assertEq(
+                bytes4(reason),
+                CreditMarketplaceFactory.ScheduleUndercoversMoonwell.selector
+            );
+        }
+    }
+
+    /// A schedule whose interest comfortably covers the projected accrual
+    /// originates fine even at a nonzero Moonwell rate.
+    function test_createLoan_solventScheduleAtNonzeroRate_succeeds() public {
+        (
+            uint256 offerId,
+            Offer memory o,
+            uint256 requestId,
+            Request memory r
+        ) = _postMatchable(1, 2);
+        vm.mockCall(
+            address(mockMToken),
+            abi.encodeWithSelector(BORROW_RATE_SEL),
+            abi.encode(uint256(1585e6))
+        );
+        BackendTerms memory t = _terms(3); // default ~$50 interest >> ~$2 accrual
+        (, address loanAddr) = localFactory.createLoan(
+            offerId,
+            requestId,
+            t,
+            _offerSig(o),
+            _requestSig(r),
+            _signedTerms(t)
+        );
+        assertTrue(loanAddr != address(0));
+    }
+
+    // ─── per-collateral buffer floor (risk-report §5.1) ──────────────
+
+    event CollateralBufferBpsUpdated(
+        address indexed token,
+        uint16 previous,
+        uint16 updated
+    );
+
+    // cbBTC ($100k feed) units worth ~112% of the $400 principal: clears the
+    // 10% global floor, but not a 30% per-collateral floor.
+    uint256 internal constant TIGHT_COLLATERAL = 448_000; // 0.00448 cbBTC ≈ $448
+
+    function test_setCollateralBufferBps_happy() public {
+        vm.expectEmit(true, true, true, true, address(localFactory));
+        emit CollateralBufferBpsUpdated(cbbtc, 0, 3000);
+        vm.prank(temporalGovernor);
+        localFactory.setCollateralBufferBps(cbbtc, 3000);
+        assertEq(localFactory.collateralBufferBps(cbbtc), 3000);
+    }
+
+    function test_setCollateralBufferBps_onlyOwnerReverts() public {
+        vm.prank(borrower);
+        vm.expectRevert("Ownable: caller is not the owner");
+        localFactory.setCollateralBufferBps(cbbtc, 3000);
+    }
+
+    function test_setCollateralBufferBps_capExceededReverts() public {
+        vm.prank(temporalGovernor);
+        vm.expectRevert(CreditMarketplaceFactory.InvalidBufferBps.selector);
+        localFactory.setCollateralBufferBps(cbbtc, 10_001);
+    }
+
+    /// With a 30% per-collateral floor set, a ~112% collateralized loan (which
+    /// clears the 10% global) is rejected.
+    function test_createLoan_perCollateralBufferFloor_reverts() public {
+        vm.prank(temporalGovernor);
+        localFactory.setCollateralBufferBps(cbbtc, 3000);
+
+        deal(cbbtc, borrower, TIGHT_COLLATERAL);
+        Offer memory o = _offer(1);
+        Request memory r = _request(2);
+        r.collateralAmount = TIGHT_COLLATERAL;
+        BackendTerms memory t = _terms(3);
+        t.collateralAmount = TIGHT_COLLATERAL;
+        uint256 offerId = localFactory.postOffer(o, _offerSig(o));
+        uint256 requestId = localFactory.postRequest(r, _requestSig(r));
+        bytes memory oSig = _offerSig(o);
+        bytes memory rSig = _requestSig(r);
+        bytes memory bSig = _signedTerms(t);
+
+        try
+            localFactory.createLoan(offerId, requestId, t, oSig, rSig, bSig)
+        returns (uint256, address) {
+            revert("expected InsufficientCollateral");
+        } catch (bytes memory reason) {
+            assertEq(
+                bytes4(reason),
+                CreditMarketplaceFactory.InsufficientCollateral.selector
+            );
+        }
+    }
+
+    /// The same ~112% loan with NO per-collateral floor (default 0) clears the
+    /// 10% global and originates — proving the revert above is the buffer, not
+    /// the collateral.
+    function test_createLoan_perCollateralBuffer_zeroDefersToGlobal() public {
+        deal(cbbtc, borrower, TIGHT_COLLATERAL);
+        Offer memory o = _offer(1);
+        Request memory r = _request(2);
+        r.collateralAmount = TIGHT_COLLATERAL;
+        BackendTerms memory t = _terms(3);
+        t.collateralAmount = TIGHT_COLLATERAL;
+        uint256 offerId = localFactory.postOffer(o, _offerSig(o));
+        uint256 requestId = localFactory.postRequest(r, _requestSig(r));
+        (, address loanAddr) = localFactory.createLoan(
+            offerId,
+            requestId,
+            t,
+            _offerSig(o),
+            _requestSig(r),
+            _signedTerms(t)
+        );
+        assertTrue(loanAddr != address(0));
+    }
 }

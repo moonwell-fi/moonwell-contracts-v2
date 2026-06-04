@@ -366,6 +366,17 @@ together and does **not** by itself create relative insolvency.)
 
 ## 7. Recommendations
 
+> **Shipped on-chain** (this PR, TDD'd): the trust-minimized backstops for #3,
+> #4, and the coarse on-chain layer of #1 are now enforced at `createLoan`:
+> **#3** `_checkScheduleSolvency` (schedule interest ≥ projected Moonwell
+> accrual); **#1** per-collateral buffer floor (`setCollateralBufferBps` →
+> effective buffer = `max(global, per-collateral)` in `_checkOriginationLtv`);
+> **#4** `setMinMoonwellHealthBufferBps` → the clone's `activate` rejects a
+> pledge that can't borrow `principal·(1+buffer)` without a Moonwell shortfall.
+> All default to off/unchanged, so they're opt-in floors; the **dynamic,
+> vol-aware** sizing (#1 main, #2) still belongs in the backend with a short
+> `validUntil`.
+
 1. **Size the buffer to _live_ volatility — not a flat 10% and not a static
    per-token value.** Target ≈ `2·σ·√term + borrowAPR·term` per match (§5.1: ~5%
    stable, ~33% BTC/ETH, delist memecoin), set **dynamically by the backend**
