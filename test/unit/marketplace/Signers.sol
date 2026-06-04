@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {CommonBase} from "@forge-std/Base.sol";
 
-import {Offer, Request, BackendTerms} from "@protocol/marketplace/CreditTypes.sol";
+import {Offer, Request, BackendTerms, CreditAttestation} from "@protocol/marketplace/CreditTypes.sol";
 import {CreditTypeHashes} from "@protocol/marketplace/CreditTypeHashes.sol";
 import {EIP712Lib} from "@protocol/marketplace/EIP712Lib.sol";
 
@@ -44,6 +44,18 @@ abstract contract Signers is CommonBase {
         bytes32 digest = EIP712Lib.hash(
             domainSeparator,
             CreditTypeHashes.hashBackendTerms(terms)
+        );
+        return _sign(digest, privateKey);
+    }
+
+    function signCreditAttestation(
+        CreditAttestation memory attestation,
+        uint256 privateKey,
+        bytes32 domainSeparator
+    ) internal pure returns (bytes memory) {
+        bytes32 digest = EIP712Lib.hash(
+            domainSeparator,
+            CreditTypeHashes.hashCreditAttestation(attestation)
         );
         return _sign(digest, privateKey);
     }

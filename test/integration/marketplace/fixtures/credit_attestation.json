@@ -1,0 +1,15 @@
+{
+    "subject": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    "tier": 4,
+    "score": 750,
+    "reportHash": "0x6f5dc171188fd8eec4af598c49108d85eb9d5a207d1c27bf39d2c6a708d305b6",
+    "issuedAt": 1700000000,
+    "validUntil": 2000000000,
+    "signature": "0x21ef7da9f6a87845d826458a89705494b2fd5a58bdf73180803039f5429a977a58c52cfc78d19989b52b4b888e46815ef9732371ed9390399898545178fd487e1c",
+    "_meta": {
+        "chainId": 8453,
+        "verifyingContract": "0x00000000000000000000000000000000C0FFEE01",
+        "attestorAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "note": "Bootstrap fixture (anvil#0 signer). Regenerate from the moonwell-ai API for true API<->contract validation; see fixtures README."
+    }
+}

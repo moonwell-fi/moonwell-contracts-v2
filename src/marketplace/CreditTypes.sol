@@ -123,3 +123,20 @@ struct InitParams {
     uint16 keeperBountyBps;
     address comptrollerAddr;
 }
+
+/// EIP-712 credit attestation signed off-chain by the credit bureau
+/// (`creditBureauAttestor`) and verified on-chain. Phase 2a: consumed by
+/// `CreditTierRegistry.setTierFromAttestation` to write a borrower's tier
+/// from a bureau-signed report, making the factory's existing
+/// `tierRegistry.tier(borrower)` gate load-bearing with no factory change.
+/// The EIP-712 verifyingContract is the registry in Phase 2a (the factory
+/// in Phase 2b, with the same struct + typehash + attestor key — only the
+/// domain's verifyingContract differs).
+struct CreditAttestation {
+    address subject; // borrower the report is about
+    uint16 tier; // mapped 0..4 (0 = unrated / insufficient history)
+    uint16 score; // raw 300–850, or 0 when insufficient history
+    bytes32 reportHash; // keccak256(abi.encode(subject,score,tier,windowDays,generatedAt))
+    uint64 issuedAt;
+    uint64 validUntil; // keep SHORT (minutes)
+}

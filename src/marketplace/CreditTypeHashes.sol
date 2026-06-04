@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Offer, Request, BackendTerms, PaymentSchedule} from "@protocol/marketplace/CreditTypes.sol";
+import {Offer, Request, BackendTerms, PaymentSchedule, CreditAttestation} from "@protocol/marketplace/CreditTypes.sol";
 
 library CreditTypeHashes {
     bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
@@ -35,6 +35,14 @@ library CreditTypeHashes {
     bytes32 internal constant REQUEST_CANCEL_TYPEHASH =
         keccak256(
             "RequestCancel(uint256 requestId,address borrower,uint256 nonce)"
+        );
+
+    /// Phase 2a credit attestation. Field order MUST match the off-chain
+    /// signer's EIP-712 type (moonwell-ai `buildTypedData`) byte-for-byte:
+    /// subject, tier, score, reportHash, issuedAt, validUntil.
+    bytes32 internal constant CREDIT_ATTESTATION_TYPEHASH =
+        keccak256(
+            "CreditAttestation(address subject,uint16 tier,uint16 score,bytes32 reportHash,uint64 issuedAt,uint64 validUntil)"
         );
 
     function hashOffer(Offer memory o) internal pure returns (bytes32) {
@@ -150,6 +158,23 @@ library CreditTypeHashes {
         return
             keccak256(
                 abi.encode(REQUEST_CANCEL_TYPEHASH, requestId, borrower, nonce)
+            );
+    }
+
+    function hashCreditAttestation(
+        CreditAttestation memory a
+    ) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    CREDIT_ATTESTATION_TYPEHASH,
+                    a.subject,
+                    a.tier,
+                    a.score,
+                    a.reportHash,
+                    a.issuedAt,
+                    a.validUntil
+                )
             );
     }
 }
