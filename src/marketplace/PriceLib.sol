@@ -13,7 +13,7 @@ library PriceLib {
         uint256 amount,
         AggregatorV3Interface feed,
         uint32 maxAge
-    ) internal view returns (uint256) {
+    ) public view returns (uint256) {
         (, int256 answer, , uint256 updatedAt, ) = feed.latestRoundData();
         if (answer <= 0) revert InvalidOraclePrice();
         if (block.timestamp - updatedAt > maxAge) revert StaleOraclePrice();

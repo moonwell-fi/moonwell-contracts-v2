@@ -16,6 +16,7 @@ import {CreditTierRegistry} from "@protocol/marketplace/CreditTierRegistry.sol";
 import {CreditTypeHashes} from "@protocol/marketplace/CreditTypeHashes.sol";
 import {EIP712Lib} from "@protocol/marketplace/EIP712Lib.sol";
 import {PriceLib} from "@protocol/marketplace/PriceLib.sol";
+import {CreditFactoryLib} from "@protocol/marketplace/CreditFactoryLib.sol";
 import {InitParams, Offer, Request, BackendTerms, OfferStatus, RequestStatus} from "@protocol/marketplace/CreditTypes.sol";
 
 interface IComptrollerProbe {
@@ -893,7 +894,12 @@ contract CreditMarketplaceFactory is
         _consumeNonce(r.borrower, r.nonce);
         _consumeNonce(backendSigner, terms.loanNonce);
 
-        _checkTermsBounds(o, r, terms);
+        CreditFactoryLib.checkTermsBounds(
+            o,
+            r,
+            terms,
+            tierRegistry.tier(r.borrower)
+        );
 
         if (IERC20(o.mToken).balanceOf(o.lender) < o.mTokenAmount) {
             revert InsufficientLenderBalance();
@@ -994,97 +1000,6 @@ contract CreditMarketplaceFactory is
         ) {
             revert InvalidSignature(backendSigner);
         }
-    }
-
-    function _checkTermsBounds(
-        Offer storage o,
-        Request storage r,
-        BackendTerms calldata terms
-    ) private view {
-        if (terms.lender != o.lender) revert BoundsViolation("lender");
-        if (terms.borrower != r.borrower) revert BoundsViolation("borrower");
-        if (terms.mToken != o.mToken) revert BoundsViolation("mToken");
-        if (terms.mTokenAmount != o.mTokenAmount) {
-            revert BoundsViolation("mTokenAmount");
-        }
-        if (terms.principalToken != o.principalToken) {
-            revert BoundsViolation("principalToken.offer");
-        }
-        if (terms.principalToken != r.principalToken) {
-            revert BoundsViolation("principalToken.request");
-        }
-        if (terms.principal > o.maxPrincipal) {
-            revert BoundsViolation("principal.max");
-        }
-        if (terms.principal != r.principal) {
-            revert BoundsViolation("principal.request");
-        }
-        if (terms.collateralToken != r.collateralToken) {
-            revert BoundsViolation("collateralToken");
-        }
-        if (terms.collateralAmount != r.collateralAmount) {
-            revert BoundsViolation("collateralAmount");
-        }
-        if (terms.apr < o.minApr || terms.apr > o.maxApr) {
-            revert BoundsViolation("apr.offer");
-        }
-        if (terms.apr > r.maxApr) revert BoundsViolation("apr.request");
-        if (terms.term < o.minTerm || terms.term > o.maxTerm) {
-            revert BoundsViolation("term.offer");
-        }
-        if (terms.term < r.minTerm || terms.term > r.maxTerm) {
-            revert BoundsViolation("term.request");
-        }
-        if (!_containsCollateral(o.acceptedCollateral, r.collateralToken)) {
-            revert BoundsViolation("collateral.notAccepted");
-        }
-        /// Backend's signed tier must match registry exactly. This
-        /// ties the off-chain risk-engine's view of the borrower to
-        /// onchain state, so a compromised backend can't grant a
-        /// borrower a higher tier than the registry shows. The
-        /// registry value is then gated against the offer's minimum.
-        uint16 onchainTier = tierRegistry.tier(r.borrower);
-        if (terms.borrowerCreditTier != onchainTier) {
-            revert BorrowerTierMismatch(terms.borrowerCreditTier, onchainTier);
-        }
-        if (onchainTier < o.minBorrowerCreditTier) {
-            revert BoundsViolation("creditTier");
-        }
-
-        /// Operational parameters (gracePeriod, overSeizureBps,
-        /// consecutiveMissesForDefault, marketplaceFeeBps, feeRecipient)
-        /// appear ONLY in BACKEND_TERMS_TYPEHASH — neither the lender nor
-        /// the borrower signs them. Re-enforce the same caps `setDefaultParams`
-        /// applies so a buggy or compromised backend can't sign out-of-bounds
-        /// terms into a live clone: marketplaceFeeBps > 10_000 would underflow
-        /// `_settle` and permanently brick happy-path settlement,
-        /// overSeizureBps could seize a wildly disproportionate premium per
-        /// miss, consecutiveMissesForDefault == 0 would default on the first
-        /// miss, and a zero feeRecipient reverts settlement when fee > 0.
-        if (terms.gracePeriod > MAX_GRACE_PERIOD) revert InvalidGracePeriod();
-        if (terms.overSeizureBps > MAX_OVER_SEIZURE_BPS) {
-            revert InvalidOverSeizureBps();
-        }
-        if (
-            terms.consecutiveMissesForDefault == 0 ||
-            terms.consecutiveMissesForDefault > MAX_CONSECUTIVE_MISSES
-        ) {
-            revert InvalidConsecutiveMisses();
-        }
-        if (terms.marketplaceFeeBps > MAX_MARKETPLACE_FEE_BPS) {
-            revert InvalidMarketplaceFeeBps();
-        }
-        if (terms.feeRecipient == address(0)) revert ZeroAddress();
-    }
-
-    function _containsCollateral(
-        address[] memory list,
-        address token
-    ) private pure returns (bool) {
-        for (uint256 i = 0; i < list.length; i++) {
-            if (list[i] == token) return true;
-        }
-        return false;
     }
 
     function _checkOriginationLtv(

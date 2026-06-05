@@ -45,7 +45,7 @@ library CreditTypeHashes {
             "CreditAttestation(address subject,uint16 tier,uint16 score,bytes32 reportHash,uint64 issuedAt,uint64 validUntil)"
         );
 
-    function hashOffer(Offer memory o) internal pure returns (bytes32) {
+    function hashOffer(Offer memory o) public pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(
@@ -67,7 +67,7 @@ library CreditTypeHashes {
             );
     }
 
-    function hashRequest(Request memory r) internal pure returns (bytes32) {
+    function hashRequest(Request memory r) public pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(
@@ -88,7 +88,7 @@ library CreditTypeHashes {
 
     function hashPaymentSchedule(
         PaymentSchedule memory s
-    ) internal pure returns (bytes32) {
+    ) public pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(
@@ -108,7 +108,7 @@ library CreditTypeHashes {
     /// the concatenation is byte-equivalent to a single encode.
     function hashBackendTerms(
         BackendTerms memory t
-    ) internal pure returns (bytes32) {
+    ) public pure returns (bytes32) {
         bytes memory head = abi.encode(
             BACKEND_TERMS_TYPEHASH,
             t.chainId,
@@ -143,7 +143,7 @@ library CreditTypeHashes {
         uint256 offerId,
         address lender,
         uint256 nonce
-    ) internal pure returns (bytes32) {
+    ) public pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(OFFER_CANCEL_TYPEHASH, offerId, lender, nonce)
@@ -154,7 +154,7 @@ library CreditTypeHashes {
         uint256 requestId,
         address borrower,
         uint256 nonce
-    ) internal pure returns (bytes32) {
+    ) public pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(REQUEST_CANCEL_TYPEHASH, requestId, borrower, nonce)
@@ -163,7 +163,7 @@ library CreditTypeHashes {
 
     function hashCreditAttestation(
         CreditAttestation memory a
-    ) internal pure returns (bytes32) {
+    ) public pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(

@@ -339,6 +339,40 @@ contract CreateLoanTest is Fixture {
         ) = _postMatchable(1, 2);
         BackendTerms memory t = _terms(3);
 
+        // The signatures are computed (as args to the helper below) BEFORE the
+        // helper's `expectEmit`. The sig helpers call the EIP-712 hashers, now
+        // `public` deployed-library functions reached via delegatecall — i.e.
+        // external calls. Evaluated inline after a pending expectEmit they would
+        // be consumed by it (same gotcha as expectRevert + sig helpers), so the
+        // emit would bind to a sig-helper call instead of createLoan. Routing
+        // through `_expectLoanCreated` also moves the 14-arg emit into its own
+        // frame, keeping this function under the optimizer_runs=1 stack limit.
+        _expectLoanCreated(
+            offerId,
+            requestId,
+            t,
+            MatchSigs(_offerSig(o), _requestSig(r), _signedTerms(t))
+        );
+    }
+
+    /// Carries the three match signatures as one stack slot so the
+    /// emit-assertion helper stays under the optimizer_runs=1 stack limit.
+    struct MatchSigs {
+        bytes offer;
+        bytes request;
+        bytes backend;
+    }
+
+    /// Asserts `createLoan` emits `LoanCreated` with the matched offer/request
+    /// data. The sigs in `s` are pre-evaluated by the caller (before this
+    /// frame's `expectEmit`), so the expectation binds to `createLoan`, not a
+    /// sig helper's delegatecall.
+    function _expectLoanCreated(
+        uint256 offerId,
+        uint256 requestId,
+        BackendTerms memory t,
+        MatchSigs memory s
+    ) internal {
         // Match all topics (loanId, loanAddress, lender) and full data:
         // mToken, mTokenAmount, principalToken, principal, collateralToken,
         // collateralAmount, apr, term, marketplaceFeeBps, principalDueAt.
@@ -367,9 +401,9 @@ contract CreateLoanTest is Fixture {
             offerId,
             requestId,
             t,
-            _offerSig(o),
-            _requestSig(r),
-            _signedTerms(t)
+            s.offer,
+            s.request,
+            s.backend
         );
     }
 
