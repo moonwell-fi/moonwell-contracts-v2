@@ -1,0 +1,39 @@
+{
+    "8453": {
+        "markets": [
+            {
+                "collateralFactor": 0.68e18,
+                "irm": "",
+                "market": "MOONWELL_wrsETH",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": [
+        ]
+    },
+    "10": {
+        "markets": [
+            {
+                "collateralFactor": 0.01e18,
+                "irm": "JUMP_RATE_IRM_cbETH_FLAT_MIP_X59",
+                "market": "MOONWELL_cbETH",
+                "reserveFactor": 0.99e18
+            },
+            {
+                "collateralFactor": 0.68e18,
+                "irm": "",
+                "market": "MOONWELL_wrsETH",
+                "reserveFactor": -1 
+            }
+        ],
+        "irModels": [
+            {
+                "baseRatePerYear": 0.01e18,
+                "jumpMultiplierPerYear": 0,
+                "kink": 0,
+                "multiplierPerYear": 0,
+                "name": "JUMP_RATE_IRM_cbETH_FLAT_MIP_X59"
+            }
+        ]
+    }
+}
