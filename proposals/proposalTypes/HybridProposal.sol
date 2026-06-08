@@ -812,24 +812,25 @@ abstract contract HybridProposal is
             payloads
         );
 
-        /// allow querying of Moonbeam
-        addresses.addRestriction(block.chainid.toMoonbeamChainId());
+        /// Governance lives on Ethereum (MultichainGovernorV2): cross-chain
+        /// governance messages originate from the MultichainGovernorV2 on Ethereum,
+        /// so the simulated VAA must be emitted from that governor for the
+        /// TemporalGovernor trusted-sender check to pass.
+        uint256 governorChainId = block.chainid.toEthereumChainId();
+
+        /// allow querying of Ethereum (governance hub)
+        addresses.addRestriction(governorChainId);
 
         bytes32 governor = addresses
-            .getAddress(
-                "MULTICHAIN_GOVERNOR_PROXY",
-                block.chainid.toMoonbeamChainId()
-            )
+            .getAddress("MULTICHAIN_GOVERNOR_V2_PROXY", governorChainId)
             .toBytes();
 
-        /// disallow querying of Moonbeam
+        /// disallow querying of Ethereum
         addresses.removeRestriction();
 
         bytes memory vaa = generateVAA(
             uint32(block.timestamp),
-            /// we can hardcode this wormhole chainID because all proposals
-            /// should come from Moonbeam
-            MOONBEAM_WORMHOLE_CHAIN_ID,
+            ETHEREUM_WORMHOLE_CHAIN_ID,
             governor,
             payload
         );
