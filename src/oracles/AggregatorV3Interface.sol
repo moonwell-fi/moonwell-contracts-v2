@@ -42,4 +42,10 @@ interface AggregatorV3Interface {
         );
 
     function latestRound() external view returns (uint256);
+
+    /// @notice circuit breaker minimum answer
+    function minAnswer() external view returns (int256);
+
+    /// @notice circuit breaker maximum answer
+    function maxAnswer() external view returns (int256);
 }
