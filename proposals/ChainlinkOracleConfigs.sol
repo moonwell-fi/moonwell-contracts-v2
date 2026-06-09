@@ -211,6 +211,22 @@ abstract contract ChainlinkOracleConfigs is Test {
             )
         );
 
+        /// Initialize oracle configurations for Ethereum.
+        /// These four Core markets each route their ChainlinkOracle feed
+        /// through a ChainlinkOEVWrapper activated by MIP-E00.
+        _oracleConfigs[ETHEREUM_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_ETH_USD", "WETH", "MOONWELL_WETH")
+        );
+        _oracleConfigs[ETHEREUM_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_USDC_USD", "USDC", "MOONWELL_USDC")
+        );
+        _oracleConfigs[ETHEREUM_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_USDT_USD", "USDT", "MOONWELL_USDT")
+        );
+        _oracleConfigs[ETHEREUM_CHAIN_ID].push(
+            OracleConfig("CHAINLINK_CBBTC_USD", "cbBTC", "MOONWELL_cbBTC")
+        );
+
         /// Initialize Morpho market configurations for Base
         _MorphoOracleConfigs[BASE_CHAIN_ID].push(
             MorphoOracleConfig("CHAINLINK_WELL_USD", "CHAINLINK_WELL_USD")

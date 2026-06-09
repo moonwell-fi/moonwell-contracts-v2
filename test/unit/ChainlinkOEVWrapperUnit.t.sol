@@ -10,6 +10,7 @@ import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {MockERC20Decimals} from "@test/mock/MockERC20Decimals.sol";
 import {IOEVWrapperFeed} from "@protocol/oracles/IOEVWrapperFeed.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract ChainlinkOEVWrapperUnitTest is Test {
     address public owner = address(0x1);
@@ -1400,6 +1401,122 @@ contract ChainlinkOEVWrapperUnitTest is Test {
         // Must be middle's 4_242e18, NOT innerInner's 9_999e18 and NOT outer's 1e18.
         assertEq(priceScaled, 4_242e18, "deref took more than one hop");
     }
+
+    /// @notice C4 #289 regression: a dust liquidation prices at the fresh round only during its own nested liquidation, then re-locks — never globally unlocking it for follow-on callers.
+    function testDustLiquidationDoesNotGloballyUnlockFreshRound() public {
+        vm.warp(1_000);
+
+        // Collateral feed: round 1 = $100 (old), round 2 = $80 (fresh).
+        MockRoundFeed collateralFeed = new MockRoundFeed(8);
+        collateralFeed.setRound(1, 100e8, 900, 1);
+        collateralFeed.setLatestRound(1);
+
+        // Loan feed: $1, stable.
+        MockRoundFeed loanFeed = new MockRoundFeed(8);
+        loanFeed.setRound(1, 1e8, 900, 1);
+        loanFeed.setLatestRound(1);
+
+        address mockOracleAddr = address(0x1111);
+        ChainlinkOEVWrapper wrapper = new ChainlinkOEVWrapper(
+            address(collateralFeed),
+            owner,
+            mockOracleAddr,
+            feeRecipient,
+            defaultFeeBps,
+            defaultMaxRoundDelay,
+            defaultMaxDecrements
+        );
+
+        assertEq(wrapper.cachedRoundId(), 1, "constructor caches round 1");
+
+        // A fresh Chainlink round arrives inside maxRoundDelay.
+        collateralFeed.setRound(2, 80e8, block.timestamp, 2);
+        collateralFeed.setLatestRound(2);
+
+        // Before any OEV liquidation, the wrapper hides the fresh round.
+        (, int256 delayedBefore, , , ) = wrapper.latestRoundData();
+        assertEq(
+            delayedBefore,
+            100e8,
+            "fresh round must be hidden pre-liquidation"
+        );
+
+        // Underlying tokens + mock markets.
+        MockERC20Decimals underlyingCollateral = new MockERC20Decimals(
+            "Collateral",
+            "COLL",
+            18
+        );
+        MockERC20Decimals underlyingLoan = new MockERC20Decimals(
+            "Loan",
+            "LOAN",
+            18
+        );
+        MockLiquidationMToken collateralMarket = new MockLiquidationMToken(
+            address(underlyingCollateral),
+            1e18
+        );
+        MockLiquidationMToken mTokenLoan = new MockLiquidationMToken(
+            address(underlyingLoan),
+            1e18
+        );
+        mTokenLoan.setCollateralToSeize(address(collateralMarket), 2e6);
+        // Record the price the wrapper exposes DURING its own liquidation.
+        mTokenLoan.setPriceObserver(address(wrapper));
+
+        vm.mockCall(
+            mockOracleAddr,
+            abi.encodeWithSignature("getFeed(string)", "COLL"),
+            abi.encode(address(wrapper))
+        );
+        vm.mockCall(
+            mockOracleAddr,
+            abi.encodeWithSignature("getFeed(string)", "LOAN"),
+            abi.encode(address(loanFeed))
+        );
+
+        address attacker = address(0xA11CE);
+        underlyingLoan.mint(attacker, 1e6);
+        vm.startPrank(attacker);
+        underlyingLoan.approve(address(wrapper), 1e6);
+        wrapper.updatePriceEarlyAndLiquidate(
+            address(0xB0B),
+            1e6,
+            address(collateralMarket),
+            address(mTokenLoan)
+        );
+        vm.stopPrank();
+
+        // The legitimate liquidation executed at the FRESH price...
+        assertEq(
+            mTokenLoan.observedPrice(),
+            80e8,
+            "nested liquidation must see the fresh round"
+        );
+        assertGt(
+            collateralMarket.balanceOf(attacker),
+            0,
+            "liquidator received its share"
+        );
+        assertGt(
+            collateralMarket.balanceOf(feeRecipient),
+            0,
+            "protocol received the OEV split"
+        );
+
+        // ...but THE FIX: the unlock did not persist globally.
+        assertEq(
+            wrapper.cachedRoundId(),
+            1,
+            "cachedRoundId must NOT advance globally"
+        );
+        (, int256 delayedAfter, , , ) = wrapper.latestRoundData();
+        assertEq(
+            delayedAfter,
+            100e8,
+            "fresh round must be re-locked for ordinary consumers"
+        );
+    }
 }
 
 /// @notice Mock price feed with configurable decimals for testing
@@ -1530,5 +1647,148 @@ contract MockMToken {
 
     function exchangeRateStored() external view returns (uint256) {
         return _exchangeRate;
+    }
+}
+
+/// @notice Chainlink aggregator mock with independent per-round data (unlike MockChainlinkOracle's single answer).
+contract MockRoundFeed is AggregatorV3Interface {
+    uint8 private immutable _decimals;
+    uint80 private _latestRoundId;
+
+    struct RoundData {
+        int256 answer;
+        uint256 updatedAt;
+        uint80 answeredInRound;
+        bool set;
+    }
+
+    mapping(uint80 => RoundData) private _rounds;
+
+    constructor(uint8 decimals_) {
+        _decimals = decimals_;
+    }
+
+    function setRound(
+        uint80 roundId,
+        int256 answer,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    ) external {
+        _rounds[roundId] = RoundData(answer, updatedAt, answeredInRound, true);
+    }
+
+    function setLatestRound(uint80 roundId) external {
+        _latestRoundId = roundId;
+    }
+
+    function decimals() external view override returns (uint8) {
+        return _decimals;
+    }
+
+    function description() external pure override returns (string memory) {
+        return "MockRoundFeed";
+    }
+
+    function version() external pure override returns (uint256) {
+        return 1;
+    }
+
+    function getRoundData(
+        uint80 roundId
+    )
+        external
+        view
+        override
+        returns (uint80, int256, uint256, uint256, uint80)
+    {
+        RoundData memory r = _rounds[roundId];
+        // Revert on unset rounds so the wrapper's try/catch decrement works.
+        require(r.set, "MockRoundFeed: round not set");
+        return (roundId, r.answer, r.updatedAt, r.updatedAt, r.answeredInRound);
+    }
+
+    function latestRoundData()
+        external
+        view
+        override
+        returns (uint80, int256, uint256, uint256, uint80)
+    {
+        RoundData memory r = _rounds[_latestRoundId];
+        return (
+            _latestRoundId,
+            r.answer,
+            r.updatedAt,
+            r.updatedAt,
+            r.answeredInRound
+        );
+    }
+
+    function latestRound() external view override returns (uint256) {
+        return _latestRoundId;
+    }
+}
+
+/// @notice mToken mock whose liquidateBorrow() pulls the repay and credits configured collateral; also acts as the collateral market.
+contract MockLiquidationMToken {
+    address public underlying;
+    uint256 private _exchangeRate;
+    mapping(address => uint256) public balanceOf;
+
+    address private _collateralMToken;
+    uint256 private _collateralToSeize;
+
+    // Optional: record the price exposed by a source oracle during liquidation.
+    address private _priceObserver;
+    int256 public observedPrice;
+
+    constructor(address underlying_, uint256 exchangeRate_) {
+        underlying = underlying_;
+        _exchangeRate = exchangeRate_;
+    }
+
+    function exchangeRateStored() external view returns (uint256) {
+        return _exchangeRate;
+    }
+
+    function setCollateralToSeize(
+        address collateralMToken_,
+        uint256 amount_
+    ) external {
+        _collateralMToken = collateralMToken_;
+        _collateralToSeize = amount_;
+    }
+
+    function setPriceObserver(address source) external {
+        _priceObserver = source;
+    }
+
+    /// @notice Called on the LOAN market by the wrapper.
+    function liquidateBorrow(
+        address,
+        uint256 repayAmount,
+        address mTokenCollateral
+    ) external returns (uint256) {
+        if (_priceObserver != address(0)) {
+            (, observedPrice, , , ) = AggregatorV3Interface(_priceObserver)
+                .latestRoundData();
+        }
+        // Pull the repaid loan underlying from the caller (the wrapper).
+        IERC20(underlying).transferFrom(msg.sender, address(this), repayAmount);
+        // Seize: credit collateral mTokens to the caller (the wrapper).
+        MockLiquidationMToken(mTokenCollateral).creditMTokens(
+            msg.sender,
+            _collateralToSeize
+        );
+        return 0;
+    }
+
+    function creditMTokens(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        return true;
     }
 }

@@ -459,6 +459,8 @@ contract ChainlinkOEVMorphoWrapper is
 
         // get the latest round data and update cached round id
         int256 collateralAnswer;
+        // snapshot so the fresh-round unlock is scoped to this nested liquidation, not persisted globally.
+        uint256 previousCachedRoundId = cachedRoundId;
         {
             (
                 uint80 roundId,
@@ -500,6 +502,8 @@ contract ChainlinkOEVMorphoWrapper is
                 0,
                 ""
             );
+            // restore before the refund below (which yields control to the loan token), so the fresh round is not globally unlocked.
+            cachedRoundId = previousCachedRoundId;
             // HAL-08: zero out the residual allowance so a future caller can't
             // skip a fresh approval for the leftover (maxRepay - actualRepaid).
             IERC20(address(loanToken)).forceApprove(address(morphoBlue), 0);
