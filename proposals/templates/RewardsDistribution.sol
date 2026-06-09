@@ -168,6 +168,13 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
     JsonSpecMoonbeam moonbeamActions;
 
+    /// @notice when true, the Moonbeam safety-module emission is configured
+    /// even when stkWellEmissionsPerSecond is 0, letting a MIP intentionally
+    /// zero the emission. Parsed optionally from the ".1284.setStkWellEmissions"
+    /// JSON key; absent/false preserves the legacy "0 == skip" behavior that
+    /// split MIPs (e.g. x51b/x51c) rely on to avoid re-configuring Moonbeam.
+    bool public moonbeamSetStkWellEmissions;
+
     uint256 chainId;
     uint256 startTimeStamp;
     uint256 endTimeStamp;
@@ -550,6 +557,17 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
         moonbeamActions.stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
+
+        // optional flag: when present and true, the Moonbeam safety-module
+        // emission is configured even if it is 0 (intentional zeroing). Absent
+        // key keeps the legacy "0 == skip" behavior.
+        string memory setStkWellKey = string.concat(
+            chain,
+            ".setStkWellEmissions"
+        );
+        if (vm.keyExistsJson(data, setStkWellKey)) {
+            moonbeamSetStkWellEmissions = vm.parseJsonBool(data, setStkWellKey);
+        }
 
         uint256 totalEpochRewards = 0;
 
@@ -1267,7 +1285,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
             );
         }
 
-        if (spec.stkWellEmissionsPerSecond > 0) {
+        if (spec.stkWellEmissionsPerSecond > 0 || moonbeamSetStkWellEmissions) {
             address safetyModule = addresses.getAddress("STK_GOVTOKEN_PROXY");
             uint128[] memory emissionPerSecond = new uint128[](1);
             emissionPerSecond[0] = spec.stkWellEmissionsPerSecond.toUint128();
@@ -1857,7 +1875,10 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         }
 
         {
-            if (spec.stkWellEmissionsPerSecond > 0) {
+            if (
+                spec.stkWellEmissionsPerSecond > 0 ||
+                moonbeamSetStkWellEmissions
+            ) {
                 address stkGovToken = addresses.getAddress(
                     "STK_GOVTOKEN_PROXY"
                 );
