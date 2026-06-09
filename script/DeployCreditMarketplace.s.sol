@@ -10,6 +10,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {CreditLoan} from "@protocol/marketplace/CreditLoan.sol";
 import {CreditMarketplaceFactory} from "@protocol/marketplace/CreditMarketplaceFactory.sol";
 import {CreditTierRegistry} from "@protocol/marketplace/CreditTierRegistry.sol";
+import {DataStreamsAggregatorAdapter, IVerifierProxy} from "@protocol/oracles/DataStreamsAggregatorAdapter.sol";
+import {MockDataStreamsVerifierV10} from "@test/mock/MockDataStreamsVerifierV10.sol";
 
 /// Deploys (and optionally configures) the Credit Marketplace per spec §14.
 ///
@@ -73,6 +75,15 @@ contract DeployCreditMarketplace is Script {
     uint16 internal constant CONSECUTIVE_MISSES = 2;
     uint16 internal constant MARKETPLACE_FEE_BPS = 500; // 5%
 
+    // wbCOIN collateral via Chainlink Data Streams v10 (tokenized-asset).
+    // cbETH is added as an mToken *market* (no per-collateral buffer).
+    uint16 internal constant WBCOIN_BUFFER_BPS = 4_000; // 40% (tokenized-equity vol + market-hours gaps)
+    uint8 internal constant WBCOIN_PRICE_DECIMALS = 18; // DEMO assumption; confirm vs the real stream
+    int192 internal constant WBCOIN_DEMO_PRICE = 250e18; // static fork price (mock); ~$250/share @ 18-dec
+    int192 internal constant WBCOIN_MULTIPLIER = 1e18; // 1.0 share per token (1e18 ratio)
+    bytes32 internal constant WBCOIN_DS_FEED_ID =
+        0x000a9811a9bef734e52059c184312bd9ebf24b3ce5f86285f693eacbb7151baa;
+
     /// Resolved deploy inputs. A struct keeps `run`'s live-local count below
     /// the optimizer_runs = 1 stack-too-deep threshold.
     struct DeployConfig {
@@ -116,7 +127,14 @@ contract DeployCreditMarketplace is Script {
         );
 
         if (cfg.configure) {
-            _configure(factory, tierRegistry, addresses, cfg.attestor);
+            // factoryOwner == deployer in FORK mode (see _resolveConfig).
+            _configure(
+                factory,
+                tierRegistry,
+                addresses,
+                cfg.attestor,
+                cfg.factoryOwner
+            );
             if (cfg.transferToTg) {
                 factory.transferOwnership(cfg.realTg);
             }
@@ -149,11 +167,21 @@ contract DeployCreditMarketplace is Script {
         cfg.pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
 
         if (cfg.configure) {
+            // FORK/demo: deployer owns + keeps everything. The trusted signers
+            // must match the off-chain API/CLI keys, so allow overriding them
+            // at broadcast time (DEMO_* env); fall back to fail-safe
+            // placeholders when unset.
             cfg.factoryOwner = deployer;
             cfg.registryOwner = deployer;
-            cfg.backendSigner = PLACEHOLDER_BACKEND_SIGNER;
-            cfg.feeRecipient = PLACEHOLDER_FEE_RECIPIENT;
-            cfg.attestor = PLACEHOLDER_ATTESTOR;
+            cfg.backendSigner = vm.envOr(
+                "DEMO_BACKEND_SIGNER",
+                PLACEHOLDER_BACKEND_SIGNER
+            );
+            cfg.feeRecipient = vm.envOr(
+                "DEMO_FEE_RECIPIENT",
+                PLACEHOLDER_FEE_RECIPIENT
+            );
+            cfg.attestor = vm.envOr("DEMO_ATTESTOR", PLACEHOLDER_ATTESTOR);
         } else {
             cfg.factoryOwner = cfg.realTg;
             cfg.registryOwner = addresses.getAddress(
@@ -205,7 +233,8 @@ contract DeployCreditMarketplace is Script {
         CreditMarketplaceFactory factory,
         CreditTierRegistry tierRegistry,
         Addresses addresses,
-        address attestor
+        address attestor,
+        address deployer
     ) internal {
         address mUsdc = addresses.getAddress("MOONWELL_USDC");
         address cbbtc = addresses.getAddress("cbBTC");
@@ -241,5 +270,68 @@ contract DeployCreditMarketplace is Script {
 
         // Phase 2a: the registry's attestation signer.
         tierRegistry.setCreditBureauAttestor(attestor);
+
+        // Extra markets/collateral (split into helpers to keep this frame
+        // under the optimizer_runs = 1 stack limit).
+        _configureCbethMarket(factory, addresses);
+        _configureWbCoinCollateral(factory, addresses, deployer);
+    }
+
+    /// cbETH as an additional mToken *market* (lender pledges mcbETH), priced
+    /// off the existing composite oracle. Not a collateral token, so no
+    /// per-collateral buffer.
+    function _configureCbethMarket(
+        CreditMarketplaceFactory factory,
+        Addresses addresses
+    ) internal {
+        factory.whitelistMToken(
+            addresses.getAddress("MOONWELL_cbETH"),
+            true,
+            AggregatorV3Interface(addresses.getAddress("cbETH_COMPOSITE_ORACLE")),
+            FEED_STALENESS
+        );
+    }
+
+    /// wbCOIN collateral priced via a Chainlink Data Streams v10 adapter.
+    /// FORK/local: deploy a MOCK verifier returning a static, settable COIN
+    /// price (no DS API creds / DON signature needed) and seed the adapter
+    /// through the real verify path so `_probeFeed` sees a fresh, positive
+    /// answer at whitelist time. PROD points the adapter at the real verifier
+    /// proxy (`0xDE1A…7387a`) instead — same adapter code.
+    function _configureWbCoinCollateral(
+        CreditMarketplaceFactory factory,
+        Addresses addresses,
+        address deployer
+    ) internal {
+        MockDataStreamsVerifierV10 mockVerifier = new MockDataStreamsVerifierV10(
+            WBCOIN_DS_FEED_ID,
+            WBCOIN_DEMO_PRICE,
+            WBCOIN_MULTIPLIER
+        );
+        DataStreamsAggregatorAdapter adapter = new DataStreamsAggregatorAdapter(
+            IVerifierProxy(address(mockVerifier)),
+            WBCOIN_DS_FEED_ID,
+            WBCOIN_PRICE_DECIMALS,
+            deployer, // owner
+            deployer // keeper
+        );
+
+        // Seed via the real verify→decode→gates→theoretical-price path.
+        bytes32[3] memory ctx;
+        adapter.verifyAndUpdate(abi.encode(ctx, bytes("")));
+
+        factory.whitelistCollateralToken(
+            addresses.getAddress("wbCOIN"),
+            true,
+            AggregatorV3Interface(address(adapter)),
+            FEED_STALENESS
+        );
+        factory.setCollateralBufferBps(
+            addresses.getAddress("wbCOIN"),
+            WBCOIN_BUFFER_BPS
+        );
+
+        console.log("wbCOIN Data Streams adapter:", address(adapter));
+        console.log("wbCOIN DS verifier (FORK mock stub):", address(mockVerifier));
     }
 }

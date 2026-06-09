@@ -48,6 +48,7 @@ moonbeam = { endpoint= "${MOONBEAM_RPC_URL}", retries = 3, retry_backoff = 1000 
 moonbase = { endpoint= "${MOONBASE_RPC_URL}", retries = 3, retry_backoff = 1000 }
 ethereum = { endpoint= "${ETH_RPC_URL}", retries = 3, retry_backoff = 1000 }
 base = { endpoint= "${BASE_RPC_URL}", retries = 3, retry_backoff = 1000 }
+vnet = { endpoint= "${FORK_RPC_URL_BASE}", retries = 3, retry_backoff = 1000 }
 baseSepolia = { endpoint= "${BASE_SEPOLIA_RPC_URL}", retries = 3, retry_backoff = 1000 }
 arbitrum = { endpoint= "${ARB_RPC_URL}", retries = 3, retry_backoff = 1000 }
 optimism = { endpoint= "${OP_RPC_URL}", retries = 3, retry_backoff = 1000 }

@@ -810,6 +810,11 @@
         "name": "cbBTC"
     },
     {
+        "addr": "0xDEc933e2392AD908263e70A386fbF34e703Ffe8F",
+        "isContract": true,
+        "name": "wbCOIN"
+    },
+    {
         "addr": "0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F",
         "isContract": true,
         "name": "CHAINLINK_BTC_USD"
