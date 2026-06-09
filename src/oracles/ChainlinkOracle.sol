@@ -103,6 +103,16 @@ contract ChainlinkOracle is PriceOracle {
         require(answer > 0, "Chainlink price cannot be lower than 0");
         require(updatedAt != 0, "Round is in incompleted state");
 
+        // Validate against Chainlink circuit breaker bounds
+        // Uses try/catch for backward compatibility with feeds that
+        // do not implement minAnswer/maxAnswer
+        try AggregatorV3Interface(feed).minAnswer() returns (int256 minA) {
+            require(answer >= minA, "Price below feed minAnswer");
+        } catch {}
+        try AggregatorV3Interface(feed).maxAnswer() returns (int256 maxA) {
+            require(answer <= maxA, "Price above feed maxAnswer");
+        } catch {}
+
         // Chainlink USD-denominated feeds store answers at 8 decimals
         uint256 decimalDelta = uint256(18).sub(feed.decimals());
         // Ensure that we don't multiply the result by 0
