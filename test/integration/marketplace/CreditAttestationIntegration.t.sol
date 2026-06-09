@@ -486,11 +486,20 @@ contract CreditAttestationIntegration is Test, Signers {
 
         uint256 mAmt = _lenderMTokenBalance();
         uint64 firstDueAt = uint64(block.timestamp + INTERVAL);
+        // Assert the DELTA, not the absolute balance: the borrower (anvil #2) is
+        // a real Base EOA that holds USDC dust on the unpinned fork, so an
+        // absolute `== PRINCIPAL` check is fork-block-dependent. The contract
+        // forwards exactly PRINCIPAL (CreditLoan.activate).
+        uint256 borrowerUsdcBefore = IERC20(usdc).balanceOf(borrower);
         CreditLoan clone = CreditLoan(
             _matchGated(mAmt, firstDueAt, cbbtc, COLLATERAL_AMOUNT)
         );
         assertTrue(clone.status() == LoanStatus.Active);
-        assertEq(IERC20(usdc).balanceOf(borrower), PRINCIPAL, "principal sent");
+        assertEq(
+            IERC20(usdc).balanceOf(borrower) - borrowerUsdcBefore,
+            PRINCIPAL,
+            "principal sent"
+        );
         _runPaymentLoopToSettle(clone, firstDueAt);
         assertEq(
             IERC20(cbbtc).balanceOf(borrower),
