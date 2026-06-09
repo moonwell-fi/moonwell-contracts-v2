@@ -14,6 +14,10 @@ contract MockChainlinkOracle is AggregatorV3Interface {
     uint256 _updatedAt;
     uint80 _answeredInRound;
 
+    // circuit breaker bounds
+    int256 public _minAnswer;
+    int256 public _maxAnswer;
+
     constructor(int256 value, uint8 oracleDecimals) {
         _value = value;
         _decimals = oracleDecimals;
@@ -21,6 +25,8 @@ contract MockChainlinkOracle is AggregatorV3Interface {
         _startedAt = 1620651856;
         _updatedAt = 1620651856;
         _answeredInRound = 42;
+        _minAnswer = type(int256).min;
+        _maxAnswer = type(int256).max;
     }
 
     function decimals() external view override returns (uint8) {
@@ -75,6 +81,19 @@ contract MockChainlinkOracle is AggregatorV3Interface {
         _startedAt = startedAt;
         _updatedAt = updatedAt;
         _answeredInRound = answeredInRound;
+    }
+
+    function setMinMax(int256 minAnswer, int256 maxAnswer) external {
+        _minAnswer = minAnswer;
+        _maxAnswer = maxAnswer;
+    }
+
+    function minAnswer() external view override returns (int256) {
+        return _minAnswer;
+    }
+
+    function maxAnswer() external view override returns (int256) {
+        return _maxAnswer;
     }
 
     function version() external pure override returns (uint256) {
