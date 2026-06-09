@@ -1622,6 +1622,12 @@ contract MultichainProposalTestV2 is PostProposalCheck {
 
     function testLiveProposalsView() public {
         vm.selectFork(ETHEREUM_FORK_ID);
+
+        // The Ethereum fork runs at `latest`, so the governor may already have
+        // real proposals live on-chain. Snapshot the baseline and assert on the
+        // delta this test contributes, rather than an absolute count.
+        uint256 baselineLive = governorV2.liveProposals().length;
+
         vm.startPrank(PROPOSER);
 
         // Create first proposal
@@ -1662,8 +1668,21 @@ contract MultichainProposalTestV2 is PostProposalCheck {
         // Init state proposals are NOT considered "live" for the liveProposals view
         uint256[] memory liveProposals = governorV2.liveProposals();
 
-        // Only the first proposal (Active) should be live
-        assertEq(liveProposals.length, 1);
-        assertEq(liveProposals[0], proposalId1);
+        // Only the first proposal (finalize=true => Active) should be newly
+        // live; the second (finalize=false => Init) must not be counted.
+        assertEq(
+            liveProposals.length,
+            baselineLive + 1,
+            "exactly one new live proposal expected"
+        );
+
+        bool foundActive;
+        bool foundInit;
+        for (uint256 i = 0; i < liveProposals.length; i++) {
+            if (liveProposals[i] == proposalId1) foundActive = true;
+            if (liveProposals[i] == proposalId2) foundInit = true;
+        }
+        assertTrue(foundActive, "Active proposal1 should be live");
+        assertFalse(foundInit, "Init proposal2 should not be live");
     }
 }
