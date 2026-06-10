@@ -383,5 +383,10 @@
         "addr": "0x9b1eeac01DED2155D93A23E9Dd5E99954f1021fe",
         "isContract": true,
         "name": "MWETH_IMPLEMENTATION"
+    },
+    {
+        "addr": "0xE6d2687d6e4576560592C7E0c4e1a13672a24541",
+        "isContract": true,
+        "name": "FOUNDATION_MULTISIG"
     }
 ]
