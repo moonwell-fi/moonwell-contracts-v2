@@ -80,18 +80,20 @@ jobs:
             fi
 
             # Check for rewards-distribution signals:
-            # (1) mips.json entry for this dir points at the RewardsDistribution template
+            # (1) mips.json entry for this dir points at a RewardsDistribution template (V1 or V2)
             BASENAME=$(basename "$DIR")
             if [ -f "proposals/mips/mips.json" ] \
                && jq -e --arg bn "$BASENAME" \
-                    '.[] | select((.envpath // "") | contains($bn)) | select(.path == "RewardsDistribution.sol/RewardsDistributionTemplate.json")' \
+                    '.[] | select((.envpath // "") | contains($bn))
+                         | select(.path == "RewardsDistribution.sol/RewardsDistributionTemplate.json"
+                               or .path == "RewardsDistributionV2.sol/RewardsDistributionV2Template.json")' \
                     proposals/mips/mips.json >/dev/null 2>&1; then
               IS_REWARDS_DIST="true"
             fi
-            # (2) any .sol in the dir inherits RewardsDistributionTemplate (subclasses)
+            # (2) any .sol in the dir inherits a RewardsDistribution template (V1 or V2 subclasses)
             if [ "$IS_REWARDS_DIST" != "true" ]; then
               for SOL in "$DIR"/*.sol; do
-                if [ -f "$SOL" ] && grep -qE "is[[:space:]]+RewardsDistributionTemplate\b" "$SOL"; then
+                if [ -f "$SOL" ] && grep -qE "is[[:space:]]+RewardsDistribution(V2)?Template\b" "$SOL"; then
                   IS_REWARDS_DIST="true"
                   break
                 fi
@@ -465,7 +467,7 @@ jobs:
 
             The deterministic numeric invariants (TG flow conservation, MRD budget = Σ speeds ×
             duration, safety-module budget = stkEPS × duration, Moonbeam bridge fan-out,
-            positive-amount sanity, 4-week epoch duration) have ALREADY been verified by
+            positive-amount sanity, epoch duration 27-32 days) have ALREADY been verified by
             `./script/rewards/check-rewards-math.sh` in an earlier CI step. The workflow will
             have failed before reaching you if any of those failed, so you may assume they pass.
 
@@ -474,15 +476,22 @@ jobs:
             ### Phase 1 — Read Local Files
 
             1. Read the rewards JSON (the `.json` file in the dir, or `MIP_REWARDS_PATH` from the
-               `.sh` script). Note the chain-keyed structure (1284 Moonbeam, 8453 Base, 10 Optimism).
+               `.sh` script). Note the chain-keyed structure (1 Ethereum, 1284 Moonbeam,
+               8453 Base, 10 Optimism). V1 (Moonbeam-source) proposals fan out bridges from
+               the "1284" object; V2 (Ethereum-source) proposals fan out from the "1" object,
+               funded by FOUNDATION_MULTISIG -> MULTICHAIN_GOVERNOR_V2_PROXY xWELL transfers,
+               with chain 1 doubling as a destination (direct FOUNDATION -> MRD_PROXY funding,
+               no bridge, no nativeValue — the xWELLBridgeFeePayer pays executor fees on-chain).
             2. Read the MIP markdown (.md). It has per-chain summary tables ("Total WELL to
                distribute Markets (Config)", per-market APR changes, merkle campaign totals).
             3. Read the `.sol` file. For template-only proposals (inherits `RewardsDistributionTemplate`
-               without overrides beyond `name`), the template handles everything. For SUBCLASSES
+               or `RewardsDistributionV2Template` without overrides beyond `name`), the template
+               handles everything. For SUBCLASSES
                (e.g., a `build()` override that adds `_pushAction` calls beyond `super.build()`),
                enumerate and audit those added actions with the same rigor as the Standard Audit.
-            4. Read the dir's `.sh` — confirm `MIP_REWARDS_PATH`, `DESCRIPTION_PATH`,
-               `PRIMARY_FORK_ID=0` are set and the paths exist.
+            4. Read the dir's `.sh` — confirm `MIP_REWARDS_PATH`, `DESCRIPTION_PATH`, and
+               `PRIMARY_FORK_ID` (0 = Moonbeam for V1, 3 = Ethereum for V2) are set and the
+               paths exist.
 
             ### Phase 2 — Narrative checks
 
