@@ -123,4 +123,16 @@ contract xWELLBridgeFeePayer {
 
         emit Swept(to, amount);
     }
+
+    /// @notice recover accidentally-sent tokens to `to`
+    /// @param token the token to sweep
+    /// @param to address receiving the full token balance
+    function sweepToken(address token, address to) external {
+        require(msg.sender == sweeper, "FeePayer: only sweeper");
+
+        uint256 amount = ERC20(token).balanceOf(address(this));
+        ERC20(token).safeTransfer(to, amount);
+
+        emit Swept(to, amount);
+    }
 }

@@ -185,6 +185,11 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     /// @notice we save this value to check if the transferFrom amount was successfully transferred
     mapping(address => uint256) public wellBalancesBefore;
 
+    /// @notice true when deploy() created an ephemeral fee payer this run
+    /// (no canonical instance in chains/1.json yet); gates whether the
+    /// simulation hook deals executor-fee ETH or asserts the real balance
+    bool internal feePayerDeployedHere;
+
     /// @notice Track reserve automation contract balances before proposal execution
     mapping(address => uint256) public reserveAutomationBalancesBefore;
 
@@ -363,6 +368,9 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
             vm.stopBroadcast();
 
             addresses.addAddress("xWELL_BRIDGE_FEE_PAYER", address(feePayer));
+
+            // remember this instance is fresh (no canonical funding to assert)
+            feePayerDeployedHere = true;
         }
     }
 
@@ -371,10 +379,15 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
 
         vm.selectFork(ETHEREUM_FORK_ID);
 
-        // Fund the fee payer with the executor fees for this epoch's bridges.
-        // On mainnet ops pre-funds it (anyone can send ETH; ~0.01 ETH covers
-        // years of epochs at current quotes); top up here so simulation works
-        // before the canonical instance is funded.
+        // Executor-fee funding for this epoch's bridges. Two modes:
+        // - fee payer deployed ephemerally in deploy() (not yet canonical):
+        //   deal() the fees so simulation works end-to-end.
+        // - canonical instance from chains/1.json: assert its REAL balance
+        //   covers the fees, mirroring the foundation allowance assertions —
+        //   simulation must catch an unfunded fee payer before mainnet
+        //   execution reverts with "FeePayer: insufficient fee balance".
+        //   (Ops pre-funds it; anyone can send ETH; ~0.01 ETH covers ~150
+        //   bridges at current quotes.)
         if (bridgeOuts.length > 0) {
             address feePayer = addresses.getAddress("xWELL_BRIDGE_FEE_PAYER");
             WormholeBridgeAdapter adapter = WormholeBridgeAdapter(
@@ -388,8 +401,16 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                 );
             }
 
-            if (feePayer.balance < totalBridgeCost) {
-                vm.deal(feePayer, totalBridgeCost);
+            if (feePayerDeployedHere) {
+                if (feePayer.balance < totalBridgeCost) {
+                    vm.deal(feePayer, totalBridgeCost);
+                }
+            } else {
+                assertGe(
+                    feePayer.balance,
+                    totalBridgeCost,
+                    "xWELL_BRIDGE_FEE_PAYER ETH balance below this epoch's executor fees; top it up before proposing"
+                );
             }
         }
 

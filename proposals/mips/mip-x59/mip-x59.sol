@@ -25,9 +25,10 @@ interface IComptrollerMarkets {
 ///           Ethereum MRD directly via transferFrom
 ///         - Base/Optimism remain external destination chains
 ///         - Moonbeam is a pure destination chain in wind-down mode
-///         The template's beforeSimulationHook already simulates the
-///         foundation's xWELL approval (and sim-only balance top-up), so no
-///         extra hook is needed here.
+///         The template's beforeSimulationHook asserts the LIVE foundation
+///         approval and balance on the fork (no mocking): the foundation's
+///         xWELL allowance to the V2 governor is already in place on mainnet
+///         and must cover the epoch outflow, so no extra hook is needed here.
 ///
 ///         This MIP also completes the MIP-X58 Moonbeam admin migration:
 ///         X58 called _setPendingAdmin(TEMPORAL_GOVERNOR) on the Unitroller

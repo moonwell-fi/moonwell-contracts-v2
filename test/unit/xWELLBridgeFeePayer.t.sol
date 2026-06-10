@@ -131,4 +131,16 @@ contract xWELLBridgeFeePayerUnitTest is Test {
         assertEq(address(feePayer).balance, 0, "swept");
         assertEq(sweeper.balance, 1 ether, "received");
     }
+
+    function testSweepTokenOnlySweeper() public {
+        xwell.mint(address(feePayer), 123e18); // accidentally-sent tokens
+
+        vm.expectRevert("FeePayer: only sweeper");
+        feePayer.sweepToken(address(xwell), address(this));
+
+        vm.prank(sweeper);
+        feePayer.sweepToken(address(xwell), sweeper);
+        assertEq(xwell.balanceOf(address(feePayer)), 0, "token swept");
+        assertEq(xwell.balanceOf(sweeper), 123e18, "token received");
+    }
 }
