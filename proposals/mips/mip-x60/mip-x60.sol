@@ -10,8 +10,8 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {MarketUpdateTemplate} from "@proposals/templates/MarketUpdate.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-/// @title MIP-X59: Reserve Recommendations June 2026
-/// @notice In addition to the market updates configured in x59.json, this
+/// @title MIP-X60: Reserve Recommendations June 2026
+/// @notice In addition to the market updates configured in x60.json, this
 ///         proposal executes two remediation initiatives on Base:
 ///         1. Repay ~$550K of bad debt on behalf of addresses supplying no
 ///            collateral, funded from protocol reserves
@@ -20,7 +20,7 @@ import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/
 ///         2. Withdraw 1.45 cbBTC from reserves and transfer it to the
 ///            FOUNDATION_MULTISIG to be swapped to WETH for the next round
 ///            of cbETH incident remediation (following MIP-B52).
-contract mipx59 is MarketUpdateTemplate {
+contract mipx60 is MarketUpdateTemplate {
     struct Repayment {
         string market;
         address borrower;
@@ -50,7 +50,7 @@ contract mipx59 is MarketUpdateTemplate {
     uint256 internal foundationCbBtcBefore;
 
     function name() external pure override returns (string memory) {
-        return "MIP-X59";
+        return "MIP-X60";
     }
 
     function _repayments() internal pure returns (Repayment[] memory r) {
