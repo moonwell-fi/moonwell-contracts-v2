@@ -41,6 +41,10 @@ contract mipx59 is MarketUpdateTemplate {
     uint256 public constant VIRTUAL_RESERVES_DOWN = 16652.5804e18;
     uint256 public constant CBBTC_RESERVES_DOWN = 0.2730562e8 + 1.45e8;
 
+    /// @notice minimum live cash required per market, in basis points of the
+    ///         total amount its _reduceReserves actions pull (1.1x buffer)
+    uint256 public constant CASH_HEADROOM_BPS = 11_000;
+
     mapping(address market => uint256 reserves) internal reservesBefore;
     mapping(bytes32 pair => uint256 borrowBalance) internal borrowBefore;
     uint256 internal foundationCbBtcBefore;
@@ -175,6 +179,47 @@ contract mipx59 is MarketUpdateTemplate {
         foundationCbBtcBefore = IERC20(
             MErc20(addresses.getAddress("MOONWELL_cbBTC")).underlying()
         ).balanceOf(addresses.getAddress("FOUNDATION_MULTISIG"));
+
+        _assertExecutionHeadroom(
+            addresses,
+            "MOONWELL_WETH",
+            WETH_RESERVES_DOWN
+        );
+        _assertExecutionHeadroom(
+            addresses,
+            "MOONWELL_AERO",
+            AERO_RESERVES_DOWN
+        );
+        _assertExecutionHeadroom(
+            addresses,
+            "MOONWELL_wstETH",
+            WSTETH_RESERVES_DOWN
+        );
+        _assertExecutionHeadroom(
+            addresses,
+            "MOONWELL_USDC",
+            USDC_RESERVES_DOWN
+        );
+        _assertExecutionHeadroom(
+            addresses,
+            "MOONWELL_MORPHO",
+            MORPHO_RESERVES_DOWN
+        );
+        _assertExecutionHeadroom(
+            addresses,
+            "MOONWELL_EURC",
+            EURC_RESERVES_DOWN
+        );
+        _assertExecutionHeadroom(
+            addresses,
+            "MOONWELL_VIRTUAL",
+            VIRTUAL_RESERVES_DOWN
+        );
+        _assertExecutionHeadroom(
+            addresses,
+            "MOONWELL_cbBTC",
+            CBBTC_RESERVES_DOWN
+        );
     }
 
     function validate(Addresses addresses, address deployer) public override {
@@ -330,6 +375,41 @@ contract mipx59 is MarketUpdateTemplate {
             underlying.allowance(tempGov, address(market)),
             0,
             string.concat("allowance not fully consumed on ", rec.market)
+        );
+    }
+
+    /// @notice _reduceReserves fails silently (returns an error code, no
+    ///         revert) when totalReserves or cash drop below the requested
+    ///         amount, after which the paired repayBorrowBehalf reverts and
+    ///         rolls back the entire proposal. The reduce amounts are sized
+    ///         to ~100% of snapshot reserves, so execution is all-or-nothing
+    ///         across every market. Reserves only grow between snapshot and
+    ///         execution (interest accrual), but cash can drain. Asserting
+    ///         live headroom pre-simulation makes every CI run of this
+    ///         pending proposal (PostProposalCheck simulates against fresh
+    ///         fork state) fail loudly if drift erodes the margin during the
+    ///         voting window, while there is still time to resize, instead
+    ///         of the proposal bricking at on-chain execution.
+    function _assertExecutionHeadroom(
+        Addresses addresses,
+        string memory marketName,
+        uint256 required
+    ) internal view {
+        MErc20 market = MErc20(addresses.getAddress(marketName));
+
+        assertGe(
+            market.totalReserves(),
+            required,
+            string.concat(
+                "insufficient reserves to execute _reduceReserves on ",
+                marketName
+            )
+        );
+
+        assertGe(
+            market.getCash(),
+            (required * CASH_HEADROOM_BPS) / 10_000,
+            string.concat("cash headroom below 1.1x on ", marketName)
         );
     }
 
