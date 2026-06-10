@@ -89,7 +89,7 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         // 168 (mip-x58): the Ethereum governance-migration proposal. build()
         // reads registry entries the migration itself added/renamed after
         // execution, and the Moonbeam admin handoff is still completing
-        // (mip-x60), so the rebuild cannot reproduce the queued calldata.
+        // (mip-x59), so the rebuild cannot reproduce the queued calldata.
         return
             id == 0 ||
             id == 29 ||

@@ -1,8 +1,9 @@
 #!/bin/bash
-export JSON_PATH=proposals/mips/mip-x59/x59.json
-export DESCRIPTION_PATH=proposals/mips/mip-x59/x59.md
-export PRIMARY_FORK_ID=0
+export MIP_REWARDS_PATH=proposals/mips/mip-x59/x59.json
+echo "MIP_REWARDS_PATH=$MIP_REWARDS_PATH"
 
-echo "JSON_PATH=$JSON_PATH"
+export DESCRIPTION_PATH=proposals/mips/mip-x59/x59.md
 echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
+
+export PRIMARY_FORK_ID=3
 echo "PRIMARY_FORK_ID=$PRIMARY_FORK_ID"
