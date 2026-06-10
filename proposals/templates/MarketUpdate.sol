@@ -326,7 +326,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         }
     }
 
-    function beforeSimulationHook(Addresses addresses) public override {
+    function beforeSimulationHook(Addresses addresses) public virtual override {
         uint256 forkBefore = vm.activeFork();
         vm.selectFork(BASE_FORK_ID);
 
