@@ -20,6 +20,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {xWELLBridgeFeePayer} from "@protocol/xWELL/xWELLBridgeFeePayer.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
@@ -335,10 +336,52 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
         }
     }
 
+    function deploy(Addresses addresses, address) public virtual override {
+        // The fee payer pays the Wormhole Executor fee from its own pre-funded
+        // ETH balance so bridge actions carry zero value (see
+        // _buildBridgeOutActions). Deploy an instance when none is recorded so
+        // simulations work end-to-end; on mainnet the canonical instance must
+        // be deployed and added to chains/1.json BEFORE proposing, since the
+        // proposal calldata references its address.
+        vm.selectFork(ETHEREUM_FORK_ID);
+
+        if (!addresses.isAddressSet("xWELL_BRIDGE_FEE_PAYER")) {
+            xWELLBridgeFeePayer feePayer = new xWELLBridgeFeePayer(
+                addresses.getAddress("xWELL_PROXY"),
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY"),
+                addresses.getAddress("FOUNDATION_MULTISIG")
+            );
+            addresses.addAddress("xWELL_BRIDGE_FEE_PAYER", address(feePayer));
+        }
+    }
+
     function beforeSimulationHook(Addresses addresses) public virtual override {
         _validateSafetyModuleActions();
 
         vm.selectFork(ETHEREUM_FORK_ID);
+
+        // Fund the fee payer with the executor fees for this epoch's bridges.
+        // On mainnet ops pre-funds it (anyone can send ETH; ~0.01 ETH covers
+        // years of epochs at current quotes); top up here so simulation works
+        // before the canonical instance is funded.
+        if (bridgeOuts.length > 0) {
+            address feePayer = addresses.getAddress("xWELL_BRIDGE_FEE_PAYER");
+            WormholeBridgeAdapter adapter = WormholeBridgeAdapter(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            );
+
+            uint256 totalBridgeCost = 0;
+            for (uint256 i = 0; i < bridgeOuts.length; i++) {
+                totalBridgeCost += adapter.bridgeCost(
+                    bridgeOuts[i].network.toWormholeChainId()
+                );
+            }
+
+            if (feePayer.balance < totalBridgeCost) {
+                vm.deal(feePayer, totalBridgeCost);
+            }
+        }
 
         // The chain-1 transferFroms are executed by the governor as
         // token.transferFrom(FOUNDATION_MULTISIG, to, amount). The foundation's
@@ -1858,12 +1901,14 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
         }
     }
 
-    /// @notice build the xWELL bridge-out actions on Ethereum. Uses the
-    /// WormholeBridgeAdapter's on-chain-quoted path —
-    /// `bridge(uint256 dstWormholeChainId, uint256 amount, address to)` —
-    /// which requires `msg.value == bridgeCost(dstWormholeChainId)` exactly
-    /// (no padding allowed; the adapter quotes the Executor on-chain at
-    /// execution time).
+    /// @notice build the xWELL bridge-out actions on Ethereum, routed through
+    /// the xWELLBridgeFeePayer with ZERO attached value. The adapter's
+    /// on-chain-quoted path requires `msg.value == bridgeCost()` exactly, but
+    /// proposal action values are frozen at propose time while the gas-priced
+    /// quote keeps moving — a direct governor -> adapter call is therefore
+    /// near-guaranteed to revert at execution. The fee payer reads the quote
+    /// and pays the executor fee from its own pre-funded ETH balance inside
+    /// the execution transaction itself, so the quote can never drift.
     function _buildBridgeOutActions(Addresses addresses) private {
         vm.selectFork(ETHEREUM_FORK_ID);
 
@@ -1871,9 +1916,7 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
             return;
         }
 
-        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-        );
+        address feePayer = addresses.getAddress("xWELL_BRIDGE_FEE_PAYER");
         address xwell = addresses.getAddress("xWELL_PROXY");
 
         for (uint256 i = 0; i < bridgeOuts.length; i++) {
@@ -1886,42 +1929,30 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
 
             uint16 wormholeChainId = bridgeOut.network.toWormholeChainId();
 
-            // the adapter burns xWELL from the caller (the governor), which
-            // requires a prior approval
+            // the fee payer pulls xWELL from the governor, which requires a
+            // prior approval
             _pushAction(
                 xwell,
                 abi.encodeWithSignature(
                     "approve(address,uint256)",
-                    address(wormholeBridgeAdapter),
+                    feePayer,
                     bridgeOut.amount
                 ),
                 string.concat(
-                    "Approve the Wormhole Bridge Adapter to spend ",
+                    "Approve the xWELL Bridge Fee Payer to spend ",
                     vm.toString(bridgeOut.amount / 1e18),
                     " xWELL"
                 ),
                 ActionType.Ethereum
             );
 
-            // quote the bridge cost on-chain at build time; the adapter
-            // re-quotes at execution and requires msg.value to match exactly
-            uint256 bridgeCost = wormholeBridgeAdapter.bridgeCost(
-                wormholeChainId
-            );
-
-            require(
-                bridgeCost > 0,
-                "BridgeOut: bridgeCost quote failed (executor quoter unavailable)"
-            );
-
             _pushAction(
-                address(wormholeBridgeAdapter),
-                bridgeCost,
+                feePayer,
                 abi.encodeWithSignature(
-                    "bridge(uint256,uint256,address)",
-                    uint256(wormholeChainId),
+                    "bridgeToRecipient(address,uint256,uint16)",
+                    target,
                     bridgeOut.amount,
-                    target
+                    wormholeChainId
                 ),
                 string.concat(
                     "Bridge ",
@@ -1929,7 +1960,8 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                     " xWELL to ",
                     vm.getLabel(target),
                     " on ",
-                    bridgeOut.network.chainIdToName()
+                    bridgeOut.network.chainIdToName(),
+                    " via the fee payer (executor fee quoted on-chain at execution)"
                 ),
                 ActionType.Ethereum
             );
