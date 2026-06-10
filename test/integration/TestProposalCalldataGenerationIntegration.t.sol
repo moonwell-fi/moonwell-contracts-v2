@@ -76,6 +76,16 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         // reverts on CI (constructor calls vm.readFile via envString); passes
         // locally so the issue is CI environment-specific. Excluding to
         // unblock CI; the proposal is already executed onchain.
+        // 106 (mip-x25): build() iterates the Networks set, which gained
+        // Ethereum in Jan 2026 (chains/mainnetchains.json) — the rebuild now
+        // reverts on ANTHIAS_MULTISIG (never registered on chain 1) and
+        // would emit extra actions vs the queued 3-network calldata anyway.
+        // Same grows-over-time class as the ChainlinkOracleConfigs
+        // exclusions (134, 141, 143).
+        // 165 (mip-x56): OEV wrapper redeploy. build() mirrors live wrapper
+        // params/registry names that the proposal's own execution changed
+        // (archive-then-promote), so the rebuild structurally diverges from
+        // the queued calldata (1 vs 2 actions).
         return
             id == 0 ||
             id == 29 ||
@@ -95,6 +105,7 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             id == 92 ||
             id == 97 ||
             id == 100 ||
+            id == 106 ||
             id == 107 ||
             id == 118 ||
             id == 121 ||
@@ -113,10 +124,53 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             id == 151 ||
             id == 158 ||
             id == 159 ||
-            id == 160;
+            id == 160 ||
+            id == 165;
+    }
+
+    /// @notice extract the wormhole consistencyLevel a proposal was queued
+    /// with onchain. Proposals queued before the Ethereum governance
+    /// migration used the Moonbeam instant-finality value (200); proposals
+    /// queued after use 1 (finalized). Rebuilding with the queued value keeps
+    /// the calldata comparison byte-exact across both eras.
+    function _queuedConsistencyLevel(
+        bytes[] memory onchainCalldatas
+    ) internal pure returns (uint8) {
+        for (uint256 i = 0; i < onchainCalldatas.length; i++) {
+            bytes memory data = onchainCalldatas[i];
+            // publishMessage(uint32,bytes,uint8) head: nonce, payload
+            // offset, consistencyLevel
+            if (data.length >= 100 && bytes4(data) == bytes4(0xb19a437e)) {
+                uint256 level;
+                assembly ("memory-safe") {
+                    // skip 32-byte length + 4-byte selector + 2 head words
+                    level := mload(add(data, 100))
+                }
+                return uint8(level);
+            }
+        }
+        return 1;
     }
 
     function _verifyMultichainProposal(ProposalFields memory p) internal {
+        vm.selectFork(MOONBEAM_FORK_ID);
+
+        bytes32 onchainHash;
+        uint8 queuedConsistencyLevel;
+        {
+            (
+                address[] memory onchainTargets,
+                uint256[] memory onchainValues,
+                bytes[] memory onchainCalldatas
+            ) = governor.getProposalData(p.id);
+
+            onchainHash = keccak256(
+                abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+            );
+
+            queuedConsistencyLevel = _queuedConsistencyLevel(onchainCalldatas);
+        }
+
         setEnv(p.envPath);
 
         string memory proposalPath = p.path;
@@ -138,6 +192,11 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         );
         vm.makePersistent(address(proposal));
 
+        // rebuild with the consistency level the proposal was queued with
+        // onchain so the comparison stays byte-exact across the Ethereum
+        // governance migration (which changed the default from 200 to 1)
+        proposal.setConsistencyLevel(queuedConsistencyLevel);
+
         vm.selectFork(proposal.primaryForkId());
 
         proposal.initProposal(addresses);
@@ -151,21 +210,6 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
 
         cleanEnv(p.envPath);
-
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        bytes32 onchainHash;
-        {
-            (
-                address[] memory onchainTargets,
-                uint256[] memory onchainValues,
-                bytes[] memory onchainCalldatas
-            ) = governor.getProposalData(p.id);
-
-            onchainHash = keccak256(
-                abi.encode(onchainTargets, onchainValues, onchainCalldatas)
-            );
-        }
 
         assertEq(
             hash,
@@ -317,6 +361,13 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
 
             HybridProposal proposal = HybridProposal(deployCode(proposalPath));
             vm.makePersistent(address(proposal));
+
+            // Artemis-era proposals were queued onchain with the Moonbeam
+            // instant-finality consistency level (200). HybridProposal now
+            // defaults to 1 (finalized) since the Ethereum governance
+            // migration, so rebuild historical proposals with the
+            // historical value to stay byte-exact with the queued calldata.
+            proposal.setConsistencyLevel(200);
 
             vm.selectFork(proposal.primaryForkId());
 
