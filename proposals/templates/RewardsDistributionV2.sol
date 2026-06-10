@@ -341,11 +341,10 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
         vm.selectFork(ETHEREUM_FORK_ID);
 
         // The chain-1 transferFroms are executed by the governor as
-        // token.transferFrom(FOUNDATION_MULTISIG, to, amount). On-chain this
-        // requires the foundation's prior approval to the governor (real
-        // world precondition, done by the multisig before the proposal
-        // executes). Simulate it here, topping up the foundation balance if
-        // the fork snapshot does not hold enough xWELL.
+        // token.transferFrom(FOUNDATION_MULTISIG, to, amount). The foundation's
+        // xWELL approval to the governor is already in place on mainnet, so the
+        // fork carries the real allowance and balance — no mocking. Fail loudly
+        // here if either ever becomes insufficient for the epoch's outflow.
         {
             address foundation = addresses.getAddress("FOUNDATION_MULTISIG");
             address governor = addresses.getAddress(
@@ -366,14 +365,16 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                 }
             }
 
-            if (IERC20(xwell).balanceOf(foundation) < totalFoundationOutflow) {
-                // sim-only top-up; on-chain the foundation must hold the funds
-                deal(xwell, foundation, totalFoundationOutflow);
-            }
-
-            vm.startPrank(foundation);
-            IERC20(xwell).approve(governor, type(uint256).max);
-            vm.stopPrank();
+            assertGe(
+                IERC20(xwell).balanceOf(foundation),
+                totalFoundationOutflow,
+                "FOUNDATION_MULTISIG xWELL balance below epoch outflow"
+            );
+            assertGe(
+                IERC20(xwell).allowance(foundation, governor),
+                totalFoundationOutflow,
+                "FOUNDATION_MULTISIG xWELL allowance to governor below epoch outflow"
+            );
         }
 
         // Get the real on-chain Wormhole relayer to query actual bridge costs
