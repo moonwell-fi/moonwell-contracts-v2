@@ -184,6 +184,7 @@ contract MErc20 is MToken, MErc20Interface {
         );
         uint256 balance = token.balanceOf(address(this));
         token.transfer(admin, balance);
+        require(token.balanceOf(address(this)) == 0, "sweepToken: transfer must move all tokens");
     }
 
     /**

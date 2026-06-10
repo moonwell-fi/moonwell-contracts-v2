@@ -107,7 +107,7 @@ contract xWELLRouter {
         well.safeTransferFrom(msg.sender, address(this), amount);
 
         /// approve the lockbox to spend the WELL
-        well.approve(address(lockbox), amount);
+        well.safeApprove(address(lockbox), amount);
 
         /// deposit the WELL into the lockbox, which credits the router contract the xWELL
         lockbox.deposit(amount);
@@ -116,7 +116,7 @@ contract xWELLRouter {
         uint256 xwellAmount = xwell.balanceOf(address(this));
 
         /// approve the wormhole bridge to spend the xWELL
-        xwell.approve(address(wormholeBridge), xwellAmount);
+        ERC20(address(xwell)).safeApprove(address(wormholeBridge), xwellAmount);
 
         /// bridge the xWELL to the base chain
         wormholeBridge.bridge{value: bridgeCostGlmr}(

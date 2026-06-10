@@ -206,7 +206,8 @@ contract MultiRewardDistributor is
         );
 
         // Pop out the MarketConfigs to return them
-        for (uint256 index = 0; index < configs.length; index++) {
+        uint256 configsLength = configs.length;
+        for (uint256 index = 0; index < configsLength; index++) {
             MarketEmissionConfig storage emissionConfig = configs[index];
             outputMarketConfigs[index] = emissionConfig.config;
         }
@@ -278,7 +279,8 @@ contract MultiRewardDistributor is
             })
         });
 
-        for (uint256 index = 0; index < configs.length; index++) {
+        uint256 configsLength = configs.length;
+        for (uint256 index = 0; index < configsLength; index++) {
             MarketEmissionConfig storage emissionConfig = configs[index];
 
             // Calculate our new global supply index
@@ -416,7 +418,8 @@ contract MultiRewardDistributor is
         ];
 
         // Sanity check to ensure that the emission token doesn't already exist in a config
-        for (uint256 index = 0; index < configs.length; index++) {
+        uint256 configsLength = configs.length;
+        for (uint256 index = 0; index < configsLength; index++) {
             MarketEmissionConfig storage mTokenConfig = configs[index];
             require(
                 mTokenConfig.config.emissionToken != _emissionToken,
@@ -981,7 +984,8 @@ contract MultiRewardDistributor is
         MarketEmissionConfig[] storage configs = marketConfigs[
             address(_mToken)
         ];
-        for (uint256 index = 0; index < configs.length; index++) {
+        uint256 configsLength = configs.length;
+        for (uint256 index = 0; index < configsLength; index++) {
             MarketEmissionConfig storage emissionConfig = configs[index];
             if (emissionConfig.config.emissionToken == _emissionToken) {
                 return emissionConfig;
@@ -1007,7 +1011,8 @@ contract MultiRewardDistributor is
         uint256 totalMTokens = MTokenInterface(_mToken).totalSupply();
 
         // Iterate over all market configs and update their indexes + timestamps
-        for (uint256 index = 0; index < configs.length; index++) {
+        uint256 supplyConfigsLength = configs.length;
+        for (uint256 index = 0; index < supplyConfigsLength; index++) {
             MarketEmissionConfig storage emissionConfig = configs[index];
 
             // Go calculate our new values
@@ -1051,7 +1056,8 @@ contract MultiRewardDistributor is
         uint256 supplierTokens = _mToken.balanceOf(_supplier);
 
         // Iterate over all market configs and update their indexes + timestamps
-        for (uint256 index = 0; index < configs.length; index++) {
+        uint256 supplyConfigsLength = configs.length;
+        for (uint256 index = 0; index < supplyConfigsLength; index++) {
             MarketEmissionConfig storage emissionConfig = configs[index];
 
             uint256 totalRewardsOwed = calculateSupplyRewardsForUser(
@@ -1110,7 +1116,8 @@ contract MultiRewardDistributor is
         uint256 totalBorrows = MToken(_mToken).totalBorrows();
 
         // Iterate over all market configs and update their indexes + timestamps
-        for (uint256 index = 0; index < configs.length; index++) {
+        uint256 borrowConfigsLength = configs.length;
+        for (uint256 index = 0; index < borrowConfigsLength; index++) {
             MarketEmissionConfig storage emissionConfig = configs[index];
 
             // Go calculate our new borrow index
@@ -1161,7 +1168,8 @@ contract MultiRewardDistributor is
         });
 
         // Iterate over all market configs and update their indexes + timestamps
-        for (uint256 index = 0; index < configs.length; index++) {
+        uint256 borrowConfigsLength = configs.length;
+        for (uint256 index = 0; index < borrowConfigsLength; index++) {
             MarketEmissionConfig storage emissionConfig = configs[index];
 
             // Go calculate the total outstanding rewards for this user

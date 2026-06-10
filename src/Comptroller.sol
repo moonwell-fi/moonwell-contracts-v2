@@ -1037,7 +1037,8 @@ contract Comptroller is
     }
 
     function _addMarketInternal(address mToken) internal {
-        for (uint i = 0; i < allMarkets.length; i++) {
+        uint256 numMarkets = allMarkets.length;
+        for (uint i = 0; i < numMarkets; i++) {
             require(allMarkets[i] != MToken(mToken), "market already added");
         }
         allMarkets.push(MToken(mToken));
@@ -1255,9 +1256,9 @@ contract Comptroller is
         IERC20 token = IERC20(_tokenAddress);
         // Similar to mTokens, if this is uint.max that means "transfer everything"
         if (_amount == type(uint).max) {
-            token.transfer(admin, token.balanceOf(address(this)));
+            require(token.transfer(admin, token.balanceOf(address(this))), "transfer failed");
         } else {
-            token.transfer(admin, _amount);
+            require(token.transfer(admin, _amount), "transfer failed");
         }
     }
 
