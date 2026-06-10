@@ -337,21 +337,31 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     }
 
     function deploy(Addresses addresses, address) public virtual override {
-        // The fee payer pays the Wormhole Executor fee from its own pre-funded
-        // ETH balance so bridge actions carry zero value (see
-        // _buildBridgeOutActions). Deploy an instance when none is recorded so
-        // simulations work end-to-end; on mainnet the canonical instance must
-        // be deployed and added to chains/1.json BEFORE proposing, since the
-        // proposal calldata references its address.
+        // Canonical deployment of the xWELLBridgeFeePayer: it pays the
+        // Wormhole Executor fee from its own pre-funded ETH balance so bridge
+        // actions carry zero value (see _buildBridgeOutActions). Running the
+        // proposal's deploy step with broadcast deploys it for real; record
+        // the printed address as xWELL_BRIDGE_FEE_PAYER in chains/1.json and
+        // fund it with a little ETH (~0.01 ETH covers years of epochs).
+        // Once recorded, this block becomes a no-op; it can be removed
+        // entirely when the adapter drops its exact msg.value requirement
+        // (https://github.com/moonwell-fi/moonwell-contracts-v2/issues/667).
         vm.selectFork(ETHEREUM_FORK_ID);
 
         if (!addresses.isAddressSet("xWELL_BRIDGE_FEE_PAYER")) {
+            vm.startBroadcast(
+                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
+            );
+
             xWELLBridgeFeePayer feePayer = new xWELLBridgeFeePayer(
                 addresses.getAddress("xWELL_PROXY"),
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY"),
                 addresses.getAddress("FOUNDATION_MULTISIG")
             );
+
+            vm.stopBroadcast();
+
             addresses.addAddress("xWELL_BRIDGE_FEE_PAYER", address(feePayer));
         }
     }
