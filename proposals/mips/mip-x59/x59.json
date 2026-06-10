@@ -8,8 +8,7 @@
                 "reserveFactor": -1
             }
         ],
-        "irModels": [
-        ]
+        "irModels": []
     },
     "10": {
         "markets": [
@@ -23,7 +22,7 @@
                 "collateralFactor": 0.68e18,
                 "irm": "",
                 "market": "MOONWELL_wrsETH",
-                "reserveFactor": -1 
+                "reserveFactor": -1
             }
         ],
         "irModels": [
