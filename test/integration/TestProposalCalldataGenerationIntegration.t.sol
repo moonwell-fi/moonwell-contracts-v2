@@ -86,6 +86,10 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
         // params/registry names that the proposal's own execution changed
         // (archive-then-promote), so the rebuild structurally diverges from
         // the queued calldata (1 vs 2 actions).
+        // 168 (mip-x58): the Ethereum governance-migration proposal. build()
+        // reads registry entries the migration itself added/renamed after
+        // execution, and the Moonbeam admin handoff is still completing
+        // (mip-x60), so the rebuild cannot reproduce the queued calldata.
         return
             id == 0 ||
             id == 29 ||
@@ -125,7 +129,8 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             id == 158 ||
             id == 159 ||
             id == 160 ||
-            id == 165;
+            id == 165 ||
+            id == 168;
     }
 
     /// @notice extract the wormhole consistencyLevel a proposal was queued

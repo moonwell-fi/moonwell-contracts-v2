@@ -178,6 +178,12 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
     mapping(uint256 => JsonSpecExternalChain) externalChainActions;
 
+    /// @notice whether the rewards JSON has a section for a given chain.
+    /// The Networks set grows over time (Ethereum was added after many
+    /// rewards JSONs were authored), so chains without a section must be
+    /// skipped across the whole proposal lifecycle.
+    mapping(uint256 => bool) public chainConfigured;
+
     /// @notice we save this value to check if the transferFrom amount was successfully transferred
     mapping(address => uint256) public wellBalancesBefore;
 
@@ -215,6 +221,19 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
         for (uint256 i = 0; i < networks.length; i++) {
             chainId = networks[i].chainId;
             if (chainId != MOONBEAM_CHAIN_ID) {
+                // skip chains the rewards JSON does not configure (e.g.
+                // Ethereum joined the Networks set after older rewards
+                // JSONs were generated)
+                if (
+                    !vm.keyExistsJson(
+                        encodedJson,
+                        string.concat(".", vm.toString(chainId))
+                    )
+                ) {
+                    continue;
+                }
+                chainConfigured[chainId] = true;
+
                 vm.selectFork(networks[i].forkId);
                 _saveExternalChainActions(addresses, encodedJson, chainId);
 
@@ -290,7 +309,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
         for (uint256 i = 0; i < networks.length; i++) {
             chainId = networks[i].chainId;
-            if (chainId != MOONBEAM_CHAIN_ID) {
+            if (chainId != MOONBEAM_CHAIN_ID && chainConfigured[chainId]) {
                 vm.selectFork(networks[i].forkId);
                 _buildExternalChainActions(addresses, chainId);
             }
@@ -371,7 +390,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
         for (uint256 i = 0; i < networks.length; i++) {
             chainId = networks[i].chainId;
-            if (chainId != MOONBEAM_CHAIN_ID) {
+            if (chainId != MOONBEAM_CHAIN_ID && chainConfigured[chainId]) {
                 vm.selectFork(networks[i].forkId);
 
                 vm.store(
@@ -474,7 +493,7 @@ contract RewardsDistributionTemplate is HybridProposal, Networks {
 
         for (uint256 i = 0; i < networks.length; i++) {
             chainId = networks[i].chainId;
-            if (chainId != MOONBEAM_CHAIN_ID) {
+            if (chainId != MOONBEAM_CHAIN_ID && chainConfigured[chainId]) {
                 vm.selectFork(networks[i].forkId);
                 _validateExternalChainActions(addresses, chainId);
             }
