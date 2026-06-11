@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ActionType, ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
+import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MErc20} from "@protocol/MErc20.sol";
@@ -46,71 +46,12 @@ contract mipx60 is MarketUpdateV2Template {
     ///         total amount its _reduceReserves actions pull (1.1x buffer)
     uint256 public constant CASH_HEADROOM_BPS = 11_000;
 
-    /// @notice the full propose() calldata (~17KB, 34 Base actions in one
-    ///         wormhole payload) is too large to submit in a single call, so
-    ///         the Base bundle is split into two wormhole chunks and the
-    ///         proposal submitted via the governor's init + append batching.
-    ///         First 17 of the 34 Base actions go in chunk 0; the boundary
-    ///         sits between the MORPHO and EURC repayment sequences so no
-    ///         reduce -> approve -> repay chain is split across VAAs.
-    uint256 public constant BASE_CHUNK_BOUNDARY = 17;
-
     mapping(address market => uint256 reserves) internal reservesBefore;
     mapping(bytes32 pair => uint256 borrowBalance) internal borrowBefore;
     uint256 internal foundationCbBtcBefore;
 
     function name() external pure override returns (string memory) {
         return "MIP-X60";
-    }
-
-    /// @notice split the Base action bundle into two wormhole payloads
-    function chunkCount(
-        ActionType actionType
-    ) public pure override returns (uint256) {
-        return actionType == ActionType.Base ? 2 : 1;
-    }
-
-    function chunkActions(
-        ActionType actionType,
-        uint256 index
-    ) public view override returns (ProposalAction[] memory chunk) {
-        if (actionType != ActionType.Base) {
-            return super.chunkActions(actionType, index);
-        }
-
-        ProposalAction[] memory baseActions = getActionsByType(ActionType.Base);
-        uint256 start = index == 0 ? 0 : BASE_CHUNK_BOUNDARY;
-        uint256 end = index == 0 ? BASE_CHUNK_BOUNDARY : baseActions.length;
-        require(end > start && end <= baseActions.length, "x60: bad chunk");
-
-        chunk = new ProposalAction[](end - start);
-        for (uint256 i = start; i < end; i++) {
-            chunk[i - start] = baseActions[i];
-        }
-
-        // each chunk executes as an independent VAA on the Base Temporal
-        // Governor, so the second chunk must start a fresh
-        // reduce -> approve -> repay sequence
-        if (index == 1) {
-            require(
-                bytes4(chunk[0].data) ==
-                    bytes4(keccak256("_reduceReserves(uint256)")),
-                "x60: chunk boundary splits a repayment sequence"
-            );
-        }
-    }
-
-    /// @notice submit in two propose() calls: call 1 = Base chunk 0
-    ///         (finalize = false), call 2 = Base chunk 1 + Optimism bundle
-    ///         (finalize = true)
-    function batchProposeSplits()
-        public
-        pure
-        override
-        returns (uint256[] memory splits)
-    {
-        splits = new uint256[](1);
-        splits[0] = 1;
     }
 
     function _repayments() internal pure returns (Repayment[] memory r) {
