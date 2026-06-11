@@ -1,0 +1,361 @@
+//SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity 0.8.19;
+
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+
+import "@forge-std/Test.sol";
+import "@forge-std/StdJson.sol";
+
+import "@protocol/utils/ChainIds.sol";
+
+import {etch} from "@proposals/utils/PrecompileEtching.sol";
+import {Networks} from "@proposals/utils/Networks.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
+import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MockRedstoneMultiFeedAdapter} from "@test/mock/MockRedstoneMultiFeedAdapter.sol";
+
+/// @title MarketUpdateV2Template
+/// @notice post-x58 version of MarketUpdateTemplate: same JSON-driven market
+/// updates (reserve factor, collateral factor, IRM) but mounted on
+/// HybridProposalV2, where Ethereum is the governance hub. Cross-chain
+/// actions are published from Ethereum's Wormhole Core and the destination
+/// TemporalGovernors only trust the Ethereum MultichainGovernorV2, so any
+/// new market-update proposal MUST use this template — the Moonbeam-hub
+/// MarketUpdateTemplate only remains for rebuilding historical proposals.
+contract MarketUpdateV2Template is
+    HybridProposalV2,
+    Networks,
+    ParameterValidation
+{
+    using SafeCast for *;
+    using stdJson for string;
+    using ChainIds for uint256;
+    using stdStorage for StdStorage;
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
+    struct MarketUpdate {
+        int256 collateralFactor;
+        string jrm;
+        string market;
+        int256 reserveFactor;
+    }
+
+    struct JRM {
+        uint256 baseRatePerYear;
+        uint256 jumpMultiplierPerYear;
+        uint256 kink;
+        uint256 multiplierPerYear;
+        string name;
+    }
+
+    mapping(uint256 chainId => MarketUpdate[]) public marketUpdates;
+    mapping(uint256 chainId => mapping(string name => JRM)) public irModels;
+    mapping(uint256 chainId => string[] names) private _irmNames;
+    mapping(uint256 chainId => EnumerableSet.AddressSet markets)
+        private _markets;
+    mapping(uint256 chainId => EnumerableSet.Bytes32Set models)
+        private _irModels;
+
+    constructor() {
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile(vm.envString("DESCRIPTION_PATH"))
+        );
+
+        _setProposalDescription(proposalDescription);
+    }
+
+    function name() external pure virtual override returns (string memory) {
+        return "MIP Market Update V2";
+    }
+
+    function primaryForkId() public pure override returns (uint256) {
+        return ETHEREUM_FORK_ID;
+    }
+
+    function run() public override {
+        primaryForkId().createForksAndSelect();
+
+        Addresses addresses = new Addresses();
+        vm.makePersistent(address(addresses));
+
+        initProposal(addresses);
+
+        (, address deployerAddress, ) = vm.readCallers();
+
+        if (DO_DEPLOY) deploy(addresses, deployerAddress);
+        if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
+
+        if (DO_BUILD) build(addresses);
+        if (DO_RUN) simulate(addresses, deployerAddress);
+        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
+        if (DO_VALIDATE) {
+            validate(addresses, deployerAddress);
+        }
+        if (DO_PRINT) {
+            printProposalActionSteps();
+
+            addresses.removeAllRestrictions();
+            printCalldata(addresses);
+
+            _printAddressesChanges(addresses);
+        }
+    }
+
+    function initProposal(Addresses addresses) public override {
+        string memory encodedJson = vm.readFile(vm.envString("JSON_PATH"));
+
+        // the xcUSDT/xcUSDC/xcDOT precompile mocks only exist on Moonbeam,
+        // so the etch must run on that fork (the primary fork is Ethereum)
+        vm.selectFork(MOONBEAM_FORK_ID);
+        etch(vm, addresses);
+
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+
+            _saveChainMarketUpdate(addresses, chainId, encodedJson);
+            _saveIRModels(chainId, encodedJson);
+        }
+    }
+
+    function deploy(Addresses addresses, address deployer) public override {
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            _deployIRModels(addresses, deployer, chainId);
+        }
+    }
+
+    function build(Addresses addresses) public virtual override {
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            _buildChainActions(addresses, chainId);
+        }
+    }
+
+    function validate(Addresses addresses, address) public virtual override {
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            _validateChain(addresses, chainId);
+        }
+    }
+
+    function _saveChainMarketUpdate(
+        Addresses addresses,
+        uint256 chainId,
+        string memory data
+    ) internal {
+        string memory chain = string.concat(
+            ".",
+            vm.toString(chainId),
+            ".markets"
+        );
+
+        if (!vm.keyExistsJson(data, chain)) {
+            return;
+        }
+
+        vm.selectFork(chainId.toForkId());
+
+        bytes memory parsedJson = vm.parseJson(data, chain);
+
+        MarketUpdate[] memory updates = abi.decode(
+            parsedJson,
+            (MarketUpdate[])
+        );
+
+        for (uint256 i = 0; i < updates.length; i++) {
+            MarketUpdate memory rec = updates[i];
+
+            address market = addresses.getAddress(rec.market);
+
+            require(_markets[chainId].add(market), "Duplication in Markets");
+
+            marketUpdates[chainId].push(rec);
+        }
+    }
+
+    function _saveIRModels(uint256 chainId, string memory data) internal {
+        string memory chain = string.concat(
+            ".",
+            vm.toString(chainId),
+            ".irModels"
+        );
+
+        if (!vm.keyExistsJson(data, chain)) {
+            return;
+        }
+
+        vm.selectFork(chainId.toForkId());
+
+        bytes memory parsedJson = vm.parseJson(data, chain);
+
+        JRM[] memory models = abi.decode(parsedJson, (JRM[]));
+
+        for (uint256 i = 0; i < models.length; i++) {
+            JRM memory model = models[i];
+
+            require(
+                _irModels[chainId].add(bytes32(abi.encodePacked(model.name))),
+                "Duplicate IR model"
+            );
+
+            irModels[chainId][model.name] = model;
+            _irmNames[chainId].push(model.name);
+        }
+    }
+
+    function _deployIRModels(
+        Addresses addresses,
+        address deployer,
+        uint256 chainId
+    ) internal {
+        vm.selectFork(chainId.toForkId());
+
+        for (uint256 i = 0; i < _irmNames[chainId].length; i++) {
+            JRM memory model = irModels[chainId][_irmNames[chainId][i]];
+
+            if (!addresses.isAddressSet(model.name)) {
+                vm.startBroadcast(deployer);
+                address irModel = address(
+                    new JumpRateModel(
+                        model.baseRatePerYear,
+                        model.multiplierPerYear,
+                        model.jumpMultiplierPerYear,
+                        model.kink
+                    )
+                );
+                vm.stopBroadcast();
+
+                addresses.addAddress(model.name, address(irModel));
+            }
+        }
+    }
+
+    function _buildChainActions(Addresses addresses, uint256 chainId) internal {
+        vm.selectFork(chainId.toForkId());
+
+        MarketUpdate[] memory updates = marketUpdates[chainId];
+        address unitroller = addresses.getAddress("UNITROLLER");
+
+        for (uint256 i = 0; i < updates.length; i++) {
+            MarketUpdate memory rec = updates[i];
+            if (rec.reserveFactor != -1) {
+                _pushAction(
+                    addresses.getAddress(rec.market),
+                    abi.encodeWithSignature(
+                        "_setReserveFactor(uint256)",
+                        rec.reserveFactor.toUint256()
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Set reserve factor to ",
+                            vm.toString(rec.reserveFactor),
+                            " for ",
+                            rec.market
+                        )
+                    )
+                );
+            }
+
+            if (rec.collateralFactor != -1) {
+                _pushAction(
+                    unitroller,
+                    abi.encodeWithSignature(
+                        "_setCollateralFactor(address,uint256)",
+                        addresses.getAddress(rec.market),
+                        rec.collateralFactor.toUint256()
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Set collateral factor to ",
+                            vm.toString(rec.collateralFactor),
+                            " for ",
+                            rec.market
+                        )
+                    )
+                );
+            }
+
+            if (keccak256(abi.encodePacked(rec.jrm)) != keccak256("")) {
+                _pushAction(
+                    addresses.getAddress(rec.market),
+                    abi.encodeWithSignature(
+                        "_setInterestRateModel(address)",
+                        addresses.getAddress(rec.jrm)
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Set JRM for ",
+                            vm.toString(addresses.getAddress(rec.jrm)),
+                            " for ",
+                            rec.market
+                        )
+                    )
+                );
+            }
+        }
+    }
+
+    function _validateChain(Addresses addresses, uint256 chainId) internal {
+        MarketUpdate[] memory updates = marketUpdates[chainId];
+
+        if (updates.length == 0) {
+            return;
+        }
+
+        vm.selectFork(chainId.toForkId());
+
+        for (uint256 i = 0; i < updates.length; i++) {
+            MarketUpdate memory rec = updates[i];
+
+            if (rec.collateralFactor != -1) {
+                _validateCF(
+                    addresses,
+                    addresses.getAddress(rec.market),
+                    rec.collateralFactor.toUint256()
+                );
+            }
+
+            if (rec.reserveFactor != -1) {
+                _validateRF(
+                    addresses.getAddress(rec.market),
+                    rec.reserveFactor.toUint256()
+                );
+            }
+
+            if (keccak256(abi.encodePacked(rec.jrm)) != keccak256("")) {
+                JRM memory params = irModels[chainId][rec.jrm];
+                _validateJRM(
+                    addresses.getAddress(rec.jrm),
+                    addresses.getAddress(rec.market),
+                    IRParams({
+                        baseRatePerTimestamp: params.baseRatePerYear,
+                        kink: params.kink,
+                        multiplierPerTimestamp: params.multiplierPerYear,
+                        jumpMultiplierPerTimestamp: params.jumpMultiplierPerYear
+                    })
+                );
+            }
+        }
+    }
+
+    function beforeSimulationHook(Addresses addresses) public virtual override {
+        uint256 forkBefore = vm.activeFork();
+        vm.selectFork(BASE_FORK_ID);
+
+        MockRedstoneMultiFeedAdapter redstoneMock = new MockRedstoneMultiFeedAdapter();
+
+        vm.etch(
+            0xb81131B6368b3F0a83af09dB4E39Ac23DA96C2Db,
+            address(redstoneMock).code
+        );
+
+        if (vm.activeFork() != forkBefore) {
+            vm.selectFork(forkBefore);
+        }
+        super.beforeSimulationHook(addresses);
+    }
+}

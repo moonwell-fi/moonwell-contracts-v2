@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MErc20} from "@protocol/MErc20.sol";
-import {MarketUpdateTemplate} from "@proposals/templates/MarketUpdate.sol";
+import {MarketUpdateV2Template} from "@proposals/templates/MarketUpdateV2.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /// @title MIP-X60: Reserve Recommendations June 2026
@@ -20,7 +20,7 @@ import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/
 ///         2. Withdraw 1.45 cbBTC from reserves and transfer it to the
 ///            FOUNDATION_MULTISIG to be swapped to WETH for the next round
 ///            of cbETH incident remediation (following MIP-B52).
-contract mipx60 is MarketUpdateTemplate {
+contract mipx60 is MarketUpdateV2Template {
     struct Repayment {
         string market;
         address borrower;
@@ -168,12 +168,34 @@ contract mipx60 is MarketUpdateTemplate {
         for (uint256 i = 0; i < repayments.length; i++) {
             MErc20 market = MErc20(addresses.getAddress(repayments[i].market));
 
+            uint256 borrowBalance = market.borrowBalanceStored(
+                repayments[i].borrower
+            );
+
+            // repayBorrowFresh underflows (and bricks the whole proposal)
+            // if a borrower's debt drops below the literal repay amount
+            // (self-repay, liquidation) between snapshot and execution.
+            // Debt only grows via interest accrual, so asserting the live
+            // balance here gives the same loud CI failure during the voting
+            // window that _assertExecutionHeadroom provides for reserve/cash
+            // drift.
+            assertGe(
+                borrowBalance,
+                repayments[i].amount,
+                string.concat(
+                    "borrow balance below repay amount for ",
+                    vm.toString(repayments[i].borrower),
+                    " on ",
+                    repayments[i].market
+                )
+            );
+
             reservesBefore[address(market)] = market.totalReserves();
             borrowBefore[
                 keccak256(
                     abi.encodePacked(address(market), repayments[i].borrower)
                 )
-            ] = market.borrowBalanceStored(repayments[i].borrower);
+            ] = borrowBalance;
         }
 
         foundationCbBtcBefore = IERC20(
@@ -444,11 +466,21 @@ contract mipx60 is MarketUpdateTemplate {
             string.concat("totalReserves did not decrease on ", marketName)
         );
 
-        assertApproxEqRel(
-            before - market.totalReserves(),
+        // the measured decrease is the reduced amount minus reserves accrued
+        // (via reserve factor) during the governance warps, which vary per
+        // PostProposalCheck consumer and drift 1-7% on high-accrual markets.
+        // Mirror the borrow-side bounds: never more than the reduced amount,
+        // never less than 80% of it.
+        uint256 reservesDecrease = before - market.totalReserves();
+        assertLe(
+            reservesDecrease,
             expected,
-            0.02e18,
-            string.concat("reserves decrease far from target on ", marketName)
+            string.concat("reserves decrease exceeds target on ", marketName)
+        );
+        assertGe(
+            reservesDecrease,
+            (expected * 80) / 100,
+            string.concat("reserves decrease far below target on ", marketName)
         );
     }
 }
