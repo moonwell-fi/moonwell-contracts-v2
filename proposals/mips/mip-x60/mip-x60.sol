@@ -13,10 +13,12 @@ import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/
 /// @title MIP-X60: Reserve Recommendations June 2026
 /// @notice In addition to the market updates configured in x60.json, this
 ///         proposal executes two remediation initiatives on Base:
-///         1. Repay ~$550K of bad debt on behalf of addresses supplying no
+///         1. Repay ~$538K of bad debt on behalf of addresses supplying no
 ///            collateral, funded from protocol reserves
 ///            (reduce reserves -> approve -> repayBorrowBehalf, following
-///            MIP-X51C).
+///            MIP-X51C). The VIRTUAL repayment from the original
+///            recommendation is omitted: the market's live cash (~6.2K
+///            VIRTUAL) cannot cover the 16,652.58 reserve reduction.
 ///         2. Withdraw 1.45 cbBTC from reserves and transfer it to the
 ///            FOUNDATION_MULTISIG to be swapped to WETH for the next round
 ///            of cbETH incident remediation (following MIP-B52).
@@ -38,7 +40,6 @@ contract mipx60 is MarketUpdateV2Template {
     uint256 public constant USDC_RESERVES_DOWN = 69573.3004e6;
     uint256 public constant MORPHO_RESERVES_DOWN = 14771.2359e18;
     uint256 public constant EURC_RESERVES_DOWN = 25767.0938e6;
-    uint256 public constant VIRTUAL_RESERVES_DOWN = 16652.5804e18;
     uint256 public constant CBBTC_RESERVES_DOWN = 0.2730562e8 + 1.45e8;
 
     /// @notice minimum live cash required per market, in basis points of the
@@ -54,7 +55,7 @@ contract mipx60 is MarketUpdateV2Template {
     }
 
     function _repayments() internal pure returns (Repayment[] memory r) {
-        r = new Repayment[](11);
+        r = new Repayment[](10);
         r[0] = Repayment(
             "MOONWELL_WETH",
             0x3B87f7D473550ef9e53e46Baae856608f8b8A0C4,
@@ -104,18 +105,12 @@ contract mipx60 is MarketUpdateV2Template {
             "42,904.3292 AERO"
         );
         r[8] = Repayment(
-            "MOONWELL_VIRTUAL",
-            0xA98E339f5a0F135792286d481B4e23d91A667d3f,
-            16652.5804e18,
-            "16,652.5804 VIRTUAL"
-        );
-        r[9] = Repayment(
             "MOONWELL_cbBTC",
             0x6A8ee608D88DB389796B9c02A1aaa36b89AC660c,
             0.14764634e8,
             "0.14764634 cbBTC"
         );
-        r[10] = Repayment(
+        r[9] = Repayment(
             "MOONWELL_cbBTC",
             0x5877022fe1a776E5275eD535b50d83A69634089C,
             0.12540986e8,
@@ -234,11 +229,6 @@ contract mipx60 is MarketUpdateV2Template {
         );
         _assertExecutionHeadroom(
             addresses,
-            "MOONWELL_VIRTUAL",
-            VIRTUAL_RESERVES_DOWN
-        );
-        _assertExecutionHeadroom(
-            addresses,
             "MOONWELL_cbBTC",
             CBBTC_RESERVES_DOWN
         );
@@ -260,11 +250,6 @@ contract mipx60 is MarketUpdateV2Template {
         _assertReservesDown(addresses, "MOONWELL_USDC", USDC_RESERVES_DOWN);
         _assertReservesDown(addresses, "MOONWELL_MORPHO", MORPHO_RESERVES_DOWN);
         _assertReservesDown(addresses, "MOONWELL_EURC", EURC_RESERVES_DOWN);
-        _assertReservesDown(
-            addresses,
-            "MOONWELL_VIRTUAL",
-            VIRTUAL_RESERVES_DOWN
-        );
         _assertReservesDown(addresses, "MOONWELL_cbBTC", CBBTC_RESERVES_DOWN);
 
         // cbETH remediation transfer is exact
@@ -383,8 +368,8 @@ contract mipx60 is MarketUpdateV2Template {
 
         // the measured decrease is the repaid amount minus interest accrued
         // on the borrower's FULL principal during the simulation warps. For
-        // partial repays of large positions (e.g. VIRTUAL: 16.6K repaid on a
-        // 1.26M borrow) that accrual exceeds a tight relative tolerance and
+        // partial repays of large positions (e.g. MORPHO: 14.7K repaid on a
+        // 119K borrow) that accrual exceeds a tight relative tolerance and
         // varies per PostProposalCheck consumer, so bound the decrease
         // instead: never more than the repaid amount, never less than 80%
         // of it.
