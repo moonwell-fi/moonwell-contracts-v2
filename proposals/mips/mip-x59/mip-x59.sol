@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import "@utils/ChainIds.sol";
 
+import {xWELLBridgeFeePayer} from "@protocol/xWELL/xWELLBridgeFeePayer.sol";
 import {RewardsDistributionV2Template} from "@proposals/templates/RewardsDistributionV2.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
