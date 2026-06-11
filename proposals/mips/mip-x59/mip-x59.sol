@@ -6,6 +6,7 @@ import "@utils/ChainIds.sol";
 import {xWELLBridgeFeePayer} from "@protocol/xWELL/xWELLBridgeFeePayer.sol";
 import {RewardsDistributionV2Template} from "@proposals/templates/RewardsDistributionV2.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ActionType, ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 
 interface IAdminTwoStep {
     function admin() external view returns (address);
@@ -44,6 +45,69 @@ contract mipx59 is RewardsDistributionV2Template {
 
     function name() external pure override returns (string memory) {
         return "MIP-X59";
+    }
+
+    /// @notice the full propose() calldata (~37KB across 129 actions) is far
+    ///         too large to submit in a single call. The Base bundle alone is
+    ///         ~20KB, so it is split into two wormhole chunks and the
+    ///         proposal submitted through the governor's init + append
+    ///         batching in four calls of ~7-12KB each:
+    ///         call 1 = Ethereum actions + Moonbeam bundle (finalize = false)
+    ///         call 2 = Base chunk 0
+    ///         call 3 = Base chunk 1
+    ///         call 4 = Optimism bundle (finalize = true)
+    ///
+    ///         Base action layout is [0] = TG -> MRD xWELL transfer,
+    ///         [1..46] = independent MRD reward speed / end time calls,
+    ///         [47..61] = five atomic approve -> accept -> create merkle
+    ///         campaign triples. The chunk boundary (32) falls inside the
+    ///         independent speed calls, so no dependent sequence is split
+    ///         across VAAs. Re-tune the boundary if x59.json is regenerated.
+    uint256 public constant BASE_CHUNK_BOUNDARY = 32;
+
+    /// @notice split the Base action bundle into two wormhole payloads
+    function chunkCount(
+        ActionType actionType
+    ) public pure override returns (uint256) {
+        return actionType == ActionType.Base ? 2 : 1;
+    }
+
+    function chunkActions(
+        ActionType actionType,
+        uint256 index
+    ) public view override returns (ProposalAction[] memory chunk) {
+        if (actionType != ActionType.Base) {
+            return super.chunkActions(actionType, index);
+        }
+
+        ProposalAction[] memory baseActions = getActionsByType(ActionType.Base);
+        uint256 start = index == 0 ? 0 : BASE_CHUNK_BOUNDARY;
+        uint256 end = index == 0 ? BASE_CHUNK_BOUNDARY : baseActions.length;
+        require(end > start && end <= baseActions.length, "x59: bad chunk");
+
+        chunk = new ProposalAction[](end - start);
+        for (uint256 i = start; i < end; i++) {
+            chunk[i - start] = baseActions[i];
+        }
+    }
+
+    /// @notice governor action layout is [Ethereum actions..., Moonbeam
+    ///         bundle, Base chunk 0, Base chunk 1, Optimism bundle]. The
+    ///         Ethereum action count and the Moonbeam _acceptAdmin actions
+    ///         depend on live chain state, so indices are computed.
+    function batchProposeSplits()
+        public
+        view
+        override
+        returns (uint256[] memory splits)
+    {
+        uint256 ethereumCount = getActionsByType(ActionType.Ethereum).length;
+
+        splits = new uint256[](3);
+        splits[0] = ethereumCount + 1; // call 1: Ethereum + Moonbeam bundle
+        splits[1] = ethereumCount + 2; // call 2: Base chunk 0
+        splits[2] = ethereumCount + 3; // call 3: Base chunk 1
+        // call 4: Optimism bundle (finalize = true)
     }
 
     function deploy(Addresses addresses, address) public virtual override {

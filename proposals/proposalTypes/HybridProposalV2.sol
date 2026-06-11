@@ -334,14 +334,21 @@ abstract contract HybridProposalV2 is
         return actions.filter(actionType);
     }
 
-    /// @notice number of governor actions included in the first propose()
-    /// call when the proposal is submitted in two batched calls. Default 0:
-    /// single propose() call carrying every action (finalize = true).
-    /// Override with a non-zero index to submit via
-    /// propose(targets,values,calldatas,uri,false) + propose(id,...,true),
-    /// keeping each call's calldata small enough for gas estimation.
-    function batchProposeSplitIndex() public view virtual returns (uint256) {
-        return 0;
+    /// @notice strictly increasing governor-action indices at which the
+    /// proposal is split into successive propose() calls when submitted in
+    /// batches. Empty (default): single propose() call with finalize = true.
+    /// With n split points the proposal is submitted in n + 1 calls: the
+    /// first initializes the proposal with actions [0, splits[0]) and
+    /// finalize = false, each subsequent call appends the next segment, and
+    /// the last call sets finalize = true. Use together with chunkCount /
+    /// chunkActions to keep each call's calldata small enough to submit.
+    function batchProposeSplits()
+        public
+        view
+        virtual
+        returns (uint256[] memory)
+    {
+        return new uint256[](0);
     }
 
     /// @notice returns the total number of actions in the proposal
@@ -556,16 +563,14 @@ abstract contract HybridProposalV2 is
         return proposalCalldata;
     }
 
-    /// @notice calldata for the first of the two batched propose() calls:
-    /// the first batchProposeSplitIndex() governor actions, finalize = false.
-    /// Only meaningful when batchProposeSplitIndex() > 0.
+    /// @notice calldata for the first of the batched propose() calls:
+    /// governor actions [0, batchProposeSplits()[0]), finalize = false.
+    /// Only meaningful when batchProposeSplits() is non-empty.
     function getBatchProposeCalldata(
         Addresses addresses
     ) public view returns (bytes memory) {
-        require(
-            batchProposeSplitIndex() > 0,
-            "batch propose submission not enabled"
-        );
+        uint256[] memory splits = batchProposeSplits();
+        require(splits.length > 0, "batch propose submission not enabled");
 
         (
             address[] memory targets,
@@ -573,20 +578,22 @@ abstract contract HybridProposalV2 is
             bytes[] memory payloads
         ) = getTargetsPayloadsValues(addresses);
 
-        return _encodeBatchPropose(targets, values, payloads);
+        _validateBatchSplits(splits, targets.length);
+
+        return _encodeBatchPropose(targets, values, payloads, splits[0]);
     }
 
-    /// @notice calldata for the second of the two batched propose() calls:
-    /// the remaining governor actions appended to `proposalId`, finalize =
-    /// true. `proposalId` is the id returned by the first call.
+    /// @notice calldata for append call `appendIndex` (0-based, in
+    /// [0, batchProposeSplits().length)): the segment's governor actions
+    /// appended to `proposalId`, finalize = true on the last segment.
+    /// `proposalId` is the id returned by the first call.
     function getBatchAppendCalldata(
         Addresses addresses,
-        uint256 proposalId
+        uint256 proposalId,
+        uint256 appendIndex
     ) public view returns (bytes memory) {
-        require(
-            batchProposeSplitIndex() > 0,
-            "batch propose submission not enabled"
-        );
+        uint256[] memory splits = batchProposeSplits();
+        require(appendIndex < splits.length, "invalid batch append index");
 
         (
             address[] memory targets,
@@ -594,19 +601,124 @@ abstract contract HybridProposalV2 is
             bytes[] memory payloads
         ) = getTargetsPayloadsValues(addresses);
 
-        return _encodeBatchAppend(proposalId, targets, values, payloads);
+        _validateBatchSplits(splits, targets.length);
+
+        return
+            _encodeBatchAppend(
+                proposalId,
+                targets,
+                values,
+                payloads,
+                splits[appendIndex],
+                appendIndex + 1 < splits.length
+                    ? splits[appendIndex + 1]
+                    : targets.length,
+                appendIndex + 1 == splits.length // finalize on last segment
+            );
+    }
+
+    /// @notice submit the proposal to the governor in splits.length + 1
+    /// batched propose() calls: init with the first segment (finalize =
+    /// false), then append each remaining segment, finalizing on the last
+    /// one. Returns the init call's returndata (the abi-encoded proposal id).
+    function _submitBatchPropose(
+        address payable governorAddress,
+        address caller,
+        uint256 cost,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory payloads,
+        uint256[] memory splits
+    ) internal returns (bytes memory data) {
+        _validateBatchSplits(splits, targets.length);
+
+        // The id the init call will be assigned (propose does ++proposalCount)
+        uint256 batchProposalId = MultichainGovernorV2(governorAddress)
+            .proposalCount() + 1;
+
+        // Encode every call up front: init with the first segment
+        // (finalize = false), then one append per remaining segment,
+        // finalizing on the last
+        bytes[] memory calls = new bytes[](splits.length + 1);
+        calls[0] = _encodeBatchPropose(targets, values, payloads, splits[0]);
+
+        for (uint256 s = 1; s <= splits.length; s++) {
+            uint256 end = s == splits.length ? targets.length : splits[s];
+            calls[s] = _encodeBatchAppend(
+                batchProposalId,
+                targets,
+                values,
+                payloads,
+                splits[s - 1],
+                end,
+                s == splits.length // finalize on the last segment
+            );
+        }
+
+        data = _submitGovernorCalls(governorAddress, caller, cost, calls);
+
+        require(
+            abi.decode(data, (uint256)) == batchProposalId,
+            "batch propose proposal id mismatch"
+        );
+    }
+
+    /// @notice submit the encoded propose() calls in order. Only the last
+    /// call carries value (bridging happens at finalize). Returns the first
+    /// call's returndata (the abi-encoded proposal id).
+    function _submitGovernorCalls(
+        address payable governorAddress,
+        address caller,
+        uint256 finalValue,
+        bytes[] memory calls
+    ) internal returns (bytes memory data) {
+        for (uint256 i = 0; i < calls.length; i++) {
+            vm.prank(caller);
+            (bool success, bytes memory returndata) = governorAddress.call{
+                value: i == calls.length - 1 ? finalValue : 0,
+                gas: 52_000_000
+            }(calls[i]);
+
+            if (i == 0) {
+                data = returndata;
+            }
+
+            if (!success) {
+                _revertWithReturndata(
+                    returndata,
+                    "batch propose multichain governor v2 failed"
+                );
+            }
+        }
+    }
+
+    function _validateBatchSplits(
+        uint256[] memory splits,
+        uint256 actionCount
+    ) internal pure {
+        for (uint256 i = 0; i < splits.length; i++) {
+            require(
+                splits[i] > 0 && splits[i] < actionCount,
+                "batch split index out of range"
+            );
+            require(
+                i == 0 || splits[i] > splits[i - 1],
+                "batch splits not strictly increasing"
+            );
+        }
     }
 
     function _encodeBatchPropose(
         address[] memory targets,
         uint256[] memory values,
-        bytes[] memory payloads
+        bytes[] memory payloads,
+        uint256 end
     ) internal view returns (bytes memory) {
         (
             address[] memory t,
             uint256[] memory v,
             bytes[] memory p
-        ) = _sliceRange(targets, values, payloads, 0, batchProposeSplitIndex());
+        ) = _sliceRange(targets, values, payloads, 0, end);
 
         return
             abi.encodeWithSignature(
@@ -615,7 +727,7 @@ abstract contract HybridProposalV2 is
                 v,
                 p,
                 _proposeDescription(),
-                false // finalize = false, completed by the append call
+                false // finalize = false, completed by the append calls
             );
     }
 
@@ -623,19 +735,16 @@ abstract contract HybridProposalV2 is
         uint256 proposalId,
         address[] memory targets,
         uint256[] memory values,
-        bytes[] memory payloads
-    ) internal view returns (bytes memory) {
+        bytes[] memory payloads,
+        uint256 start,
+        uint256 end,
+        bool finalize
+    ) internal pure returns (bytes memory) {
         (
             address[] memory t,
             uint256[] memory v,
             bytes[] memory p
-        ) = _sliceRange(
-                targets,
-                values,
-                payloads,
-                batchProposeSplitIndex(),
-                targets.length
-            );
+        ) = _sliceRange(targets, values, payloads, start, end);
 
         return
             abi.encodeWithSignature(
@@ -644,7 +753,7 @@ abstract contract HybridProposalV2 is
                 t,
                 v,
                 p,
-                true // finalize = true
+                finalize
             );
     }
 
@@ -698,24 +807,35 @@ abstract contract HybridProposalV2 is
         );
         console.logBytes(getCalldata(addresses));
 
-        if (batchProposeSplitIndex() != 0) {
+        uint256[] memory splits = batchProposeSplits();
+        if (splits.length != 0) {
             console.log(
                 "\n\n------------- Batched Proposal Calldata --------------\n"
             );
             console.log(
-                "call 1 - initializes the proposal (finalize = false):"
+                "call 1 of %s - initializes the proposal (finalize = false):",
+                splits.length + 1
             );
             console.logBytes(getBatchProposeCalldata(addresses));
 
             uint256 proposalId = vm.envOr("BATCH_PROPOSAL_ID", uint256(0));
             console.log(
-                "\ncall 2 - appends remaining actions and finalizes, encoded for proposal id %s.",
+                "\nappend calls below are encoded for proposal id %s. After call 1 is mined, set BATCH_PROPOSAL_ID to the returned id and re-run DO_PRINT to regenerate.",
                 proposalId
             );
-            console.log(
-                "After call 1 is mined, set BATCH_PROPOSAL_ID to the returned id and re-run DO_PRINT to regenerate:"
-            );
-            console.logBytes(getBatchAppendCalldata(addresses, proposalId));
+
+            for (uint256 s = 0; s < splits.length; s++) {
+                console.log(
+                    s == splits.length - 1
+                        ? "\ncall %s of %s - appends the last segment and finalizes:"
+                        : "\ncall %s of %s - appends the next segment (finalize = false):",
+                    s + 2,
+                    splits.length + 1
+                );
+                console.logBytes(
+                    getBatchAppendCalldata(addresses, proposalId, s)
+                );
+            }
         }
     }
 
@@ -880,9 +1000,9 @@ abstract contract HybridProposalV2 is
             vm.deal(caller, cost * 2);
 
             uint256 gasStart = gasleft();
-            uint256 splitIndex = batchProposeSplitIndex();
+            uint256[] memory splits = batchProposeSplits();
 
-            if (splitIndex == 0) {
+            if (splits.length == 0) {
                 bytes memory proposeCalldata = abi.encodeWithSignature(
                     "propose(address[],uint256[],bytes[],string,bool)",
                     targets,
@@ -906,50 +1026,15 @@ abstract contract HybridProposalV2 is
                     );
                 }
             } else {
-                require(
-                    splitIndex < targets.length,
-                    "invalid batch propose split index"
+                data = _submitBatchPropose(
+                    governorAddress,
+                    caller,
+                    cost,
+                    targets,
+                    values,
+                    payloads,
+                    splits
                 );
-
-                // First call: initialize the proposal with the first
-                // splitIndex actions, finalize = false. No bridging happens
-                // until finalize, so no value is sent.
-                vm.prank(caller);
-                (bool success, bytes memory returndata) = address(
-                    payable(governorAddress)
-                ).call{gas: 52_000_000}(
-                    _encodeBatchPropose(targets, values, payloads)
-                );
-                data = returndata;
-
-                if (!success) {
-                    _revertWithReturndata(
-                        returndata,
-                        "batch propose (init) multichain governor v2 failed"
-                    );
-                }
-
-                // Second call: append the remaining actions and finalize,
-                // which bridges the vote collection payload out.
-                vm.prank(caller);
-                (success, returndata) = address(payable(governorAddress)).call{
-                    value: cost,
-                    gas: 52_000_000
-                }(
-                    _encodeBatchAppend(
-                        abi.decode(data, (uint256)),
-                        targets,
-                        values,
-                        payloads
-                    )
-                );
-
-                if (!success) {
-                    _revertWithReturndata(
-                        returndata,
-                        "batch propose (append) multichain governor v2 failed"
-                    );
-                }
             }
 
             require(

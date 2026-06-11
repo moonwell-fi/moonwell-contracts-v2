@@ -103,8 +103,14 @@ contract mipx60 is MarketUpdateV2Template {
     /// @notice submit in two propose() calls: call 1 = Base chunk 0
     ///         (finalize = false), call 2 = Base chunk 1 + Optimism bundle
     ///         (finalize = true)
-    function batchProposeSplitIndex() public pure override returns (uint256) {
-        return 1;
+    function batchProposeSplits()
+        public
+        pure
+        override
+        returns (uint256[] memory splits)
+    {
+        splits = new uint256[](1);
+        splits[0] = 1;
     }
 
     function _repayments() internal pure returns (Repayment[] memory r) {
