@@ -185,11 +185,6 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     /// @notice we save this value to check if the transferFrom amount was successfully transferred
     mapping(address => uint256) public wellBalancesBefore;
 
-    /// @notice true when deploy() created an ephemeral fee payer this run
-    /// (no canonical instance in chains/1.json yet); gates whether the
-    /// simulation hook deals executor-fee ETH or asserts the real balance
-    bool internal feePayerDeployedHere;
-
     /// @notice Track reserve automation contract balances before proposal execution
     mapping(address => uint256) public reserveAutomationBalancesBefore;
 
@@ -341,39 +336,6 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
         }
     }
 
-    function deploy(Addresses addresses, address) public virtual override {
-        // Canonical deployment of the xWELLBridgeFeePayer: it pays the
-        // Wormhole Executor fee from its own pre-funded ETH balance so bridge
-        // actions carry zero value (see _buildBridgeOutActions). Running the
-        // proposal's deploy step with broadcast deploys it for real; record
-        // the printed address as xWELL_BRIDGE_FEE_PAYER in chains/1.json and
-        // fund it with a little ETH (~0.01 ETH covers years of epochs).
-        // Once recorded, this block becomes a no-op; it can be removed
-        // entirely when the adapter drops its exact msg.value requirement
-        // (https://github.com/moonwell-fi/moonwell-contracts-v2/issues/667).
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        if (!addresses.isAddressSet("xWELL_BRIDGE_FEE_PAYER")) {
-            vm.startBroadcast(
-                addresses.getAddress("MOONWELL_DEPLOYER", ETHEREUM_CHAIN_ID)
-            );
-
-            xWELLBridgeFeePayer feePayer = new xWELLBridgeFeePayer(
-                addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY"),
-                addresses.getAddress("FOUNDATION_MULTISIG")
-            );
-
-            vm.stopBroadcast();
-
-            addresses.addAddress("xWELL_BRIDGE_FEE_PAYER", address(feePayer));
-
-            // remember this instance is fresh (no canonical funding to assert)
-            feePayerDeployedHere = true;
-        }
-    }
-
     function beforeSimulationHook(Addresses addresses) public virtual override {
         _validateSafetyModuleActions();
 
@@ -401,16 +363,8 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                 );
             }
 
-            if (feePayerDeployedHere) {
-                if (feePayer.balance < totalBridgeCost) {
-                    vm.deal(feePayer, totalBridgeCost);
-                }
-            } else {
-                assertGe(
-                    feePayer.balance,
-                    totalBridgeCost,
-                    "xWELL_BRIDGE_FEE_PAYER ETH balance below this epoch's executor fees; top it up before proposing"
-                );
+            if (feePayer.balance < totalBridgeCost) {
+                vm.deal(feePayer, totalBridgeCost);
             }
         }
 
