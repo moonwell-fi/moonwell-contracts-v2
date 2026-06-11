@@ -1032,18 +1032,26 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
         );
 
         for (uint256 i = 0; i < transferFroms.length; i++) {
-            // xWELL top-up of the MRD must match the epoch rewards. The
-            // funding source differs per chain (TEMPORAL_GOVERNOR on Base
-            // and Optimism, FOUNDATION_MULTISIG on Ethereum) so only match
-            // on destination and token.
+            // xWELL top-up of the MRD must match the epoch rewards and
+            // come from the chain's expected funding source
+            // (FOUNDATION_MULTISIG on Ethereum, TEMPORAL_GOVERNOR on Base
+            // and Optimism).
             if (
                 addresses.getAddress(transferFroms[i].to) ==
                 addresses.getAddress("MRD_PROXY") &&
                 addresses.getAddress(transferFroms[i].token) ==
                 addresses.getAddress("xWELL_PROXY")
             ) {
-                console.log("totalWellEpochRewards", totalWellEpochRewards);
-                console.log("transferFroms[i].amount", transferFroms[i].amount);
+                assertEq(
+                    addresses.getAddress(transferFroms[i].from),
+                    _chainId == ETHEREUM_CHAIN_ID
+                        ? addresses.getAddress(
+                            "FOUNDATION_MULTISIG",
+                            ETHEREUM_CHAIN_ID
+                        )
+                        : addresses.getAddress("TEMPORAL_GOVERNOR", _chainId),
+                    "MRD xWELL top-up from unexpected source"
+                );
                 assertApproxEqRel(
                     transferFroms[i].amount,
                     totalWellEpochRewards,
@@ -1065,8 +1073,6 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                 addresses.getAddress(transferFroms[i].token) ==
                 addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
             ) {
-                console.log("totalOpEpochRewards", totalOpEpochRewards);
-                console.log("transferFroms[i].amount", transferFroms[i].amount);
                 assertApproxEqRel(
                     transferFroms[i].amount,
                     totalOpEpochRewards,
