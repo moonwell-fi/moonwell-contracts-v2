@@ -13,13 +13,15 @@ import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, ETHEREUM_CHAIN_ID} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, ETHEREUM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
-/// @notice MIP-E02: ship the C4 #289 fix by redeploying the non-upgradeable Core
+/// @notice MIP-X61: ship the C4 #289 fix by redeploying the non-upgradeable Core
 /// ChainlinkOEVWrapper (mirroring live params, repointing feeds via setFeed) and
 /// upgrading the Base Morpho wrapper proxies in place, across Ethereum/Base/Optimism.
-contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
-    string public constant override name = "MIP-E02";
+contract mipx61 is HybridProposalV2, ChainlinkOracleConfigs {
+    using ChainIds for uint256;
+
+    string public constant override name = "MIP-X61";
 
     /// @notice Registry key for the fixed Morpho wrapper implementation.
     string public constant MORPHO_IMPLEMENTATION_NAME =
@@ -57,12 +59,52 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
 
     constructor() {
         _setProposalDescription(
-            bytes(vm.readFile("./proposals/mips/mip-e02/MIP-E02.md"))
+            bytes(vm.readFile("./proposals/mips/mip-x61/MIP-X61.md"))
         );
     }
 
     function primaryForkId() public pure override returns (uint256) {
         return ETHEREUM_FORK_ID;
+    }
+
+    /// @notice Override the base run() so deploy() is NOT wrapped in a single
+    /// vm.startBroadcast. This proposal deploys across the Base, Optimism, and
+    /// Ethereum forks, and vm.selectFork is illegal while a broadcast is active.
+    /// Each per-chain deploy helper opens its own broadcast after selecting its
+    /// fork (see _deployCoreWrappers / _deployMorphoImplementation); every fork
+    /// switch below happens outside any broadcast. Otherwise mirrors the base
+    /// Proposal.run() (including the IPFS descriptionUri injection).
+    function run() public override {
+        primaryForkId().createForksAndSelect();
+
+        Addresses addresses = new Addresses();
+        vm.makePersistent(address(addresses));
+
+        vm.selectFork(primaryForkId());
+
+        setProposalDescriptionUri(_resolveProposalDescriptionUri(this.name()));
+
+        initProposal(addresses);
+
+        (, address deployerAddress, ) = vm.readCallers();
+
+        if (DO_DEPLOY) deploy(addresses, deployerAddress);
+        if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
+
+        if (DO_BUILD) build(addresses);
+        if (DO_RUN) simulate(addresses, deployerAddress);
+        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
+        if (DO_VALIDATE) {
+            validate(addresses, deployerAddress);
+        }
+        if (DO_PRINT) {
+            printProposalActionSteps();
+
+            addresses.removeAllRestrictions();
+            printCalldata(addresses);
+
+            _printAddressesChanges(addresses);
+        }
     }
 
     function deploy(Addresses addresses, address) public override {
@@ -86,6 +128,10 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
             block.chainid
         );
 
+        // Broadcast is opened here (after deploy() selected this chain's fork)
+        // rather than around the whole deploy(), so the cross-fork vm.selectFork
+        // calls in deploy() happen outside any active broadcast.
+        vm.startBroadcast();
         for (uint256 i = 0; i < oracleConfigs.length; i++) {
             string memory wrapperName = string(
                 abi.encodePacked(oracleConfigs[i].oracleName, "_OEV_WRAPPER")
@@ -119,10 +165,12 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
             addresses.addAddress(deprecatedName, oldWrapper);
             addresses.changeAddress(wrapperName, address(wrapper), true);
         }
+        vm.stopBroadcast();
     }
 
     /// @notice Deploy the fixed Morpho wrapper implementation on Base, archiving the previous one.
     function _deployMorphoImplementation(Addresses addresses) internal {
+        vm.startBroadcast();
         ChainlinkOEVMorphoWrapper impl = new ChainlinkOEVMorphoWrapper();
 
         if (addresses.isAddressSet(MORPHO_IMPLEMENTATION_NAME)) {
@@ -143,6 +191,7 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
         } else {
             addresses.addAddress(MORPHO_IMPLEMENTATION_NAME, address(impl));
         }
+        vm.stopBroadcast();
     }
 
     /// @notice Snapshot pre-execution oracle prices + Morpho state on every chain so
@@ -307,7 +356,7 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
             );
             require(
                 addresses.isAddressSet(wrapperName),
-                "MIP-E02: Morpho wrapper proxy not registered"
+                "MIP-X61: Morpho wrapper proxy not registered"
             );
 
             _pushAction(
@@ -377,51 +426,51 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
             assertEq(
                 address(oracle.getFeed(symbol)),
                 address(newWrapper),
-                string.concat("E02: feed not repointed for ", symbol)
+                string.concat("X61: feed not repointed for ", symbol)
             );
             assertTrue(
                 address(newWrapper) != address(oldWrapper),
-                string.concat("E02: wrapper not redeployed for ", wrapperName)
+                string.concat("X61: wrapper not redeployed for ", wrapperName)
             );
             assertEq(
                 address(newWrapper.priceFeed()),
                 address(oldWrapper.priceFeed()),
-                string.concat("E02: priceFeed drift for ", wrapperName)
+                string.concat("X61: priceFeed drift for ", wrapperName)
             );
             assertEq(
                 newWrapper.owner(),
                 oldWrapper.owner(),
-                string.concat("E02: owner drift for ", wrapperName)
+                string.concat("X61: owner drift for ", wrapperName)
             );
             assertEq(
                 address(newWrapper.chainlinkOracle()),
                 address(oldWrapper.chainlinkOracle()),
-                string.concat("E02: chainlinkOracle drift for ", wrapperName)
+                string.concat("X61: chainlinkOracle drift for ", wrapperName)
             );
             assertEq(
                 newWrapper.feeRecipient(),
                 oldWrapper.feeRecipient(),
-                string.concat("E02: feeRecipient drift for ", wrapperName)
+                string.concat("X61: feeRecipient drift for ", wrapperName)
             );
             assertEq(
                 newWrapper.liquidatorFeeBps(),
                 oldWrapper.liquidatorFeeBps(),
-                string.concat("E02: liquidatorFeeBps drift for ", wrapperName)
+                string.concat("X61: liquidatorFeeBps drift for ", wrapperName)
             );
             assertEq(
                 newWrapper.maxRoundDelay(),
                 oldWrapper.maxRoundDelay(),
-                string.concat("E02: maxRoundDelay drift for ", wrapperName)
+                string.concat("X61: maxRoundDelay drift for ", wrapperName)
             );
             assertEq(
                 newWrapper.maxDecrements(),
                 oldWrapper.maxDecrements(),
-                string.concat("E02: maxDecrements drift for ", wrapperName)
+                string.concat("X61: maxDecrements drift for ", wrapperName)
             );
             assertGt(
                 newWrapper.cachedRoundId(),
                 0,
-                string.concat("E02: cachedRoundId unseeded for ", wrapperName)
+                string.concat("X61: cachedRoundId unseeded for ", wrapperName)
             );
 
             _assertCorePricePreserved(
@@ -450,13 +499,13 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
         assertEq(
             ans,
             _rawAnswerPre[chainId][config.oracleName],
-            string.concat("E02: answer != raw pre-snapshot for ", wrapperName)
+            string.concat("X61: answer != raw pre-snapshot for ", wrapperName)
         );
         assertEq(
             up,
             _rawUpdatedAtPre[chainId][config.oracleName],
             string.concat(
-                "E02: updatedAt != raw pre-snapshot for ",
+                "X61: updatedAt != raw pre-snapshot for ",
                 wrapperName
             )
         );
@@ -477,7 +526,7 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
                     pre,
                     0.02e18,
                     string.concat(
-                        "E02: getUnderlyingPrice drifted >2% for ",
+                        "X61: getUnderlyingPrice drifted >2% for ",
                         config.mTokenKey
                     )
                 );
@@ -511,11 +560,11 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
                 addresses.getAddress(wrapperName),
                 newImpl,
                 proxyAdmin,
-                string.concat("E02 morpho upgrade: ", wrapperName)
+                string.concat("X61 morpho upgrade: ", wrapperName)
             );
 
             MorphoSnapshot memory snap = _morphoSnap[wrapperName];
-            require(snap.taken, "MIP-E02: missing Morpho snapshot");
+            require(snap.taken, "MIP-X61: missing Morpho snapshot");
 
             ChainlinkOEVMorphoWrapper w = ChainlinkOEVMorphoWrapper(
                 addresses.getAddress(wrapperName)
@@ -524,18 +573,18 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
             assertEq(
                 address(w.priceFeed()),
                 snap.priceFeed,
-                string.concat("E02: morpho priceFeed reset for ", wrapperName)
+                string.concat("X61: morpho priceFeed reset for ", wrapperName)
             );
             assertEq(
                 address(w.morphoBlue()),
                 snap.morphoBlue,
-                string.concat("E02: morpho morphoBlue reset for ", wrapperName)
+                string.concat("X61: morpho morphoBlue reset for ", wrapperName)
             );
             assertEq(
                 address(w.chainlinkOracle()),
                 snap.chainlinkOracle,
                 string.concat(
-                    "E02: morpho chainlinkOracle reset for ",
+                    "X61: morpho chainlinkOracle reset for ",
                     wrapperName
                 )
             );
@@ -543,7 +592,7 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
                 w.feeRecipient(),
                 snap.feeRecipient,
                 string.concat(
-                    "E02: morpho feeRecipient reset for ",
+                    "X61: morpho feeRecipient reset for ",
                     wrapperName
                 )
             );
@@ -551,7 +600,7 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
                 w.liquidatorFeeBps(),
                 snap.liquidatorFeeBps,
                 string.concat(
-                    "E02: morpho liquidatorFeeBps reset for ",
+                    "X61: morpho liquidatorFeeBps reset for ",
                     wrapperName
                 )
             );
@@ -559,7 +608,7 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
                 w.maxRoundDelay(),
                 snap.maxRoundDelay,
                 string.concat(
-                    "E02: morpho maxRoundDelay reset for ",
+                    "X61: morpho maxRoundDelay reset for ",
                     wrapperName
                 )
             );
@@ -567,7 +616,7 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
                 w.maxDecrements(),
                 snap.maxDecrements,
                 string.concat(
-                    "E02: morpho maxDecrements reset for ",
+                    "X61: morpho maxDecrements reset for ",
                     wrapperName
                 )
             );
@@ -575,14 +624,14 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
                 w.cachedRoundId(),
                 snap.cachedRoundId,
                 string.concat(
-                    "E02: morpho cachedRoundId reset for ",
+                    "X61: morpho cachedRoundId reset for ",
                     wrapperName
                 )
             );
             assertEq(
                 w.owner(),
                 snap.owner,
-                string.concat("E02: morpho owner reset for ", wrapperName)
+                string.concat("X61: morpho owner reset for ", wrapperName)
             );
 
             // Liveness: the upgraded impl still serves a valid price. Storage is
@@ -594,7 +643,7 @@ contract mipe02 is HybridProposalV2, ChainlinkOracleConfigs {
             assertGt(
                 ans,
                 0,
-                string.concat("E02: morpho price invalid for ", wrapperName)
+                string.concat("X61: morpho price invalid for ", wrapperName)
             );
         }
     }
