@@ -82,6 +82,11 @@ contract MarketUpdateV2Template is
         Addresses addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
+        // inject the optional IPFS description URI from mips.json so
+        // forge-script runs emit the pinned URI in propose() calldata instead
+        // of the full markdown (same as Proposal.run / ProposalMap.runProposal)
+        setProposalDescriptionUri(_resolveProposalDescriptionUri(this.name()));
+
         initProposal(addresses);
 
         (, address deployerAddress, ) = vm.readCallers();
