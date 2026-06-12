@@ -44,7 +44,16 @@ abstract contract HybridProposal is
     uint32 public nonce = uint32(vm.envOr("NONCE", uint256(0)));
 
     /// @notice finalized finality https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
-    uint8 public constant consistencyLevel = 1;
+    uint8 public consistencyLevel = 1;
+
+    /// @notice override the wormhole consistency level for this proposal
+    /// instance. Used by the calldata-generation check to rebuild historical
+    /// proposals byte-exact: Moonbeam-era proposals were queued with the
+    /// instant-finality value of 200 before the Ethereum governance
+    /// migration switched new proposals to 1 (finalized).
+    function setConsistencyLevel(uint8 newConsistencyLevel) external {
+        consistencyLevel = newConsistencyLevel;
+    }
 
     /// @notice Verify all proposal actions before execution
     /// @dev Calls both market creation and bridge validation hooks

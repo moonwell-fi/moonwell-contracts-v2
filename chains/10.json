@@ -1,5 +1,10 @@
 [
     {
+        "addr": "0x9c4b2B98b24F36f906517139F5f9bAca732a3cF0",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_cbETH_FLAT_MIP_X60"
+    },
+    {
         "addr": "0x4DdD7968113A037e84034eDDEc4524497B77d200",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_MIP_X50"
