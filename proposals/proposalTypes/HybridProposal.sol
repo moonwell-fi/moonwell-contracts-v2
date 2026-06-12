@@ -84,6 +84,13 @@ abstract contract HybridProposal is
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
 
+    /// @notice optional IPFS URI (e.g. ipfs://<cid>) pointing at the pinned
+    /// proposal description. When set, used as the description argument to
+    /// propose() (printed calldata and simulation) instead of the raw markdown.
+    /// Populated off-chain (see ProposalMap) from the optional `descriptionUri`
+    /// field in mips.json.
+    string public PROPOSAL_DESCRIPTION_URI;
+
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
         address indexed sender,
@@ -98,6 +105,20 @@ abstract contract HybridProposal is
         bytes memory newProposalDescription
     ) internal {
         PROPOSAL_DESCRIPTION = newProposalDescription;
+    }
+
+    /// @notice set the optional IPFS URI for the proposal description
+    function setProposalDescriptionUri(string memory uri) public override {
+        PROPOSAL_DESCRIPTION_URI = uri;
+    }
+
+    /// @notice description argument used in propose(): the pinned IPFS URI when
+    /// available, otherwise the raw markdown (backwards compatible)
+    function _proposeDescription() internal view returns (string memory) {
+        return
+            bytes(PROPOSAL_DESCRIPTION_URI).length > 0
+                ? PROPOSAL_DESCRIPTION_URI
+                : string(PROPOSAL_DESCRIPTION);
     }
 
     /// @notice push an action to the Hybrid proposal without specifying a
@@ -443,7 +464,7 @@ abstract contract HybridProposal is
             targets,
             values,
             payloads,
-            string(PROPOSAL_DESCRIPTION)
+            _proposeDescription()
         );
 
         return proposalCalldata;
@@ -582,7 +603,7 @@ abstract contract HybridProposal is
                 targets,
                 values,
                 payloads,
-                string(PROPOSAL_DESCRIPTION)
+                _proposeDescription()
             );
 
             uint256 cost = governor.bridgeCostAll();
