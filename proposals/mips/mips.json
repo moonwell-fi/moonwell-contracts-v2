@@ -1017,7 +1017,7 @@
     {
         "envpath": "proposals/mips/mip-x59/x59.sh",
         "governor": "MultichainGovernorV2",
-        "id": 0,
+        "id": 174,
         "path": "mip-x59.sol/mipx59.json",
         "proposalType": "HybridProposalV2",
         "descriptionUri": "ipfs://bafkreibvyunirnovno3hbqq5mzq2gly7muw3refonm43zt3amxkgrzxix4"
