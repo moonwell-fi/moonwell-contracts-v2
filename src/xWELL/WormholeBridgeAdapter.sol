@@ -431,6 +431,10 @@ contract WormholeBridgeAdapter is
             relayInstructions
         );
 
+        /// refund any surplus above the live quote back to the caller. This is
+        /// the last external interaction (after burn + publish + request), and a
+        /// re-entrant bridge() call would carry msg.value == 0, failing the
+        /// `msg.value >= cost` floor — so no reentrancy guard is required.
         uint256 refund = msg.value - cost;
         if (refund != 0) {
             (bool success, ) = msg.sender.call{value: refund}("");

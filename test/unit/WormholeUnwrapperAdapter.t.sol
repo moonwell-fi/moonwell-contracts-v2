@@ -8,6 +8,7 @@ import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MockCoreBridgeForAdapter} from "@test/mock/MockCoreBridgeForAdapter.sol";
 import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract WormholeUnwrapperAdapterUnitTest is BaseTest {
     /// events
@@ -463,6 +464,57 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
         );
     }
 
+    function testBridgeOutExactPaySucceedsNoRefund() public {
+        amount = externalChainBufferCap / 2;
+        to = address(this);
+        _bridgeInViaVaa(0);
+
+        amount = externalChainBufferCap;
+        _lockboxCanMintTo(address(this), uint112(amount));
+        xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
+
+        mockExecutorQuoterRouter.setQuote(0.001 ether);
+        mockCoreBridge.setMessageFee(0.0001 ether);
+
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        uint256 messageFee = mockCoreBridge.mockMessageFee();
+        vm.deal(address(this), cost);
+
+        wormholeBridgeAdapterProxy.bridge{value: cost}(chainId, amount, to);
+
+        assertEq(address(this).balance, 0, "no refund expected on exact pay");
+        assertEq(
+            mockExecutorQuoterRouter.lastRequestValue(),
+            cost - messageFee,
+            "router must receive quote net of message fee"
+        );
+    }
+
+    function testBridgeOutRevertsWhenRefundRejected() public {
+        /// build burn buffer (buffer is global to the adapter, not per-user)
+        amount = externalChainBufferCap / 2;
+        to = address(this);
+        _bridgeInViaVaa(0);
+
+        RejectingReceiver bridger = new RejectingReceiver(
+            wormholeBridgeAdapterProxy,
+            IERC20(address(xwellProxy))
+        );
+
+        uint256 outAmount = externalChainBufferCap;
+        _lockboxCanMintTo(address(bridger), uint112(outAmount));
+
+        mockExecutorQuoterRouter.setQuote(0.001 ether);
+        mockCoreBridge.setMessageFee(0.0001 ether);
+
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        uint256 value = cost + 1; // overpay forces the refund path
+        vm.deal(address(bridger), value);
+
+        vm.expectRevert("WormholeBridge: refund failed");
+        bridger.doBridge{value: value}(chainId, outAmount, address(this));
+    }
+
     function testBridgeOutFailsIncorrectTargetChain() public {
         vm.expectRevert("WormholeBridge: invalid target chain");
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId + 1, amount, to);
@@ -531,5 +583,28 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
         );
         emit TokensSent(chainId, to, amount);
         wormholeBridgeAdapterProxy.bridge{value: cost}(chainId, amount, to);
+    }
+}
+
+contract RejectingReceiver {
+    WormholeBridgeAdapter public immutable adapter;
+    IERC20 public immutable token;
+
+    constructor(WormholeBridgeAdapter _adapter, IERC20 _token) {
+        adapter = _adapter;
+        token = _token;
+    }
+
+    function doBridge(
+        uint16 dstChainId,
+        uint256 amount,
+        address to
+    ) external payable {
+        token.approve(address(adapter), amount);
+        adapter.bridge{value: msg.value}(dstChainId, amount, to);
+    }
+
+    receive() external payable {
+        revert("reject");
     }
 }
