@@ -43,6 +43,9 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
 
     event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
 
+    /// @notice allow this test contract to receive ETH refunds from the adapter
+    receive() external payable {}
+
     /// state variables
     address to;
     uint256 amount;
@@ -90,6 +93,18 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
 
         wormholeBridgeAdapterProxy.executeVAAv1(encodedVaa);
+    }
+
+    /// @notice build burn buffer + give this contract xWELL to bridge out
+    /// mirrors the setup proven in testBridgeOutSucceeds
+    function _setupBridgeOut() internal {
+        amount = externalChainBufferCap / 2;
+        to = address(this);
+        _bridgeInViaVaa(0);
+
+        amount = externalChainBufferCap;
+        _lockboxCanMintTo(address(this), uint112(amount));
+        xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
     }
 
     /// --------------------------------------------------------
@@ -584,15 +599,41 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     /// ------------------- Bridge Out Tests -------------------
     /// --------------------------------------------------------
 
-    function testBridgeOutFailsIncorrectCost() public {
+    function testBridgeOutOverpaySucceedsAndRefunds() public {
+        _setupBridgeOut();
+
         mockExecutorQuoterRouter.setQuote(0.001 ether);
         mockCoreBridge.setMessageFee(0.0001 ether);
 
         uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
-        vm.deal(address(this), cost + 1);
+        uint256 messageFee = mockCoreBridge.mockMessageFee();
+        uint256 overpay = 0.0005 ether;
+        vm.deal(address(this), cost + overpay);
 
-        vm.expectRevert("WormholeBridge: cost not equal to quote");
-        wormholeBridgeAdapterProxy.bridge{value: cost + 1}(chainId, amount, to);
+        vm.expectEmit(
+            true,
+            true,
+            true,
+            true,
+            address(wormholeBridgeAdapterProxy)
+        );
+        emit TokensSent(chainId, to, amount);
+        wormholeBridgeAdapterProxy.bridge{value: cost + overpay}(
+            chainId,
+            amount,
+            to
+        );
+
+        assertEq(
+            address(this).balance,
+            overpay,
+            "surplus should be refunded to caller"
+        );
+        assertEq(
+            mockExecutorQuoterRouter.lastRequestValue(),
+            cost - messageFee,
+            "router must receive exactly quote net of message fee"
+        );
     }
 
     function testBridgeOutFailsIncorrectTargetChain() public {
