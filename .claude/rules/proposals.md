@@ -65,6 +65,12 @@
   redeploy + rewire via `setFeed`. `*_ORACLE_PROXY` keys are upgradeable
   `ChainlinkOEVMorphoWrapper` (Morpho-Blue) — upgrade impl behind the proxy via
   `ProxyAdmin.upgrade`.
+- `WormholeBridgeAdapter` proxy admin differs by chain: `PROXY_ADMIN` on
+  Ethereum, `MRD_PROXY_ADMIN` on Base/Optimism, `MOONBEAM_PROXY_ADMIN` on
+  Moonbeam. Do NOT assume `MRD_PROXY_ADMIN` everywhere — on Ethereum it resolves
+  to a different, unrelated admin and a `ProxyAdmin.upgrade` call silently
+  delegates to the impl and reverts. Confirm by reading the ERC1967 admin slot
+  (`cast storage <proxy> 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103 --rpc-url <chain>`).
 - For wrapper redeploys, follow MIP-X43's archive-then-promote pattern:
   `addAddress("<name>_OEV_WRAPPER_DEPRECATED_VN", oldAddr)` then
   `changeAddress("<name>_OEV_WRAPPER", newAddr, true)` to atomically swap the
