@@ -386,15 +386,15 @@ contract WormholeBridgeAdapter is
             "WormholeBridge: onchain quoting not available, use bridge with signedQuote"
         );
         uint16 targetChainId = targetChain.toUint16();
+        require(
+            targetAddress[targetChainId] != address(0),
+            "WormholeBridge: invalid target chain"
+        );
         uint256 cost = bridgeCost(targetChainId);
         require(cost != 0, "WormholeBridge: quote unavailable");
         require(
             msg.value >= cost,
             "WormholeBridge: insufficient value for quote"
-        );
-        require(
-            targetAddress[targetChainId] != address(0),
-            "WormholeBridge: invalid target chain"
         );
 
         /// user must burn xERC20 tokens first

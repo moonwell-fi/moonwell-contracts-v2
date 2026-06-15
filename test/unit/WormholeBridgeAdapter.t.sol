@@ -715,16 +715,26 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     }
 
     function testBridgeOutFailsNoApproval() public {
+        mockExecutorQuoterRouter.setQuote(0.001 ether);
+        mockCoreBridge.setMessageFee(0.0001 ether);
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        vm.deal(address(this), cost);
+
         vm.expectRevert("ERC20: insufficient allowance");
-        wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
+        wormholeBridgeAdapterProxy.bridge{value: cost}(chainId, amount, to);
     }
 
     function testBridgeOutFailsNotEnoughBalance() public {
         deal(address(xwellProxy), address(this), amount - 1);
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
 
+        mockExecutorQuoterRouter.setQuote(0.001 ether);
+        mockCoreBridge.setMessageFee(0.0001 ether);
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        vm.deal(address(this), cost);
+
         vm.expectRevert("ERC20: burn amount exceeds balance");
-        wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
+        wormholeBridgeAdapterProxy.bridge{value: cost}(chainId, amount, to);
     }
 
     function testBridgeOutFailsNotEnoughBuffer() public {
@@ -735,8 +745,13 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         amount = externalChainBufferCap;
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
 
+        mockExecutorQuoterRouter.setQuote(0.001 ether);
+        mockCoreBridge.setMessageFee(0.0001 ether);
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        vm.deal(address(this), cost);
+
         vm.expectRevert("RateLimited: buffer cap overflow");
-        wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount + 1, to);
+        wormholeBridgeAdapterProxy.bridge{value: cost}(chainId, amount + 1, to);
     }
 
     function testBridgeOutSucceeds() public {
@@ -748,6 +763,11 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         _lockboxCanMintTo(address(this), uint112(amount));
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
 
+        mockExecutorQuoterRouter.setQuote(0.001 ether);
+        mockCoreBridge.setMessageFee(0.0001 ether);
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        vm.deal(address(this), cost);
+
         vm.expectEmit(
             true,
             true,
@@ -756,7 +776,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             address(wormholeBridgeAdapterProxy)
         );
         emit TokensSent(chainId, to, amount);
-        wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
+        wormholeBridgeAdapterProxy.bridge{value: cost}(chainId, amount, to);
     }
 
     /// --------------------------------------------------------
