@@ -311,22 +311,66 @@ abstract contract HybridProposalV2 is
             );
     }
 
+    /// @notice number of wormhole publishMessage chunks a chain's bundled
+    /// actions are split into. Default 1: all of a chain's actions ride in a
+    /// single temporal governor payload. Override to split an oversized chain
+    /// bundle across multiple governor actions (each chunk becomes its own
+    /// publishMessage call / VAA) so the proposal can be submitted in parts
+    /// via the governor's init + append propose() batching.
+    function chunkCount(ActionType) public view virtual returns (uint256) {
+        return 1;
+    }
+
+    /// @notice the actions belonging to chunk `index` for `actionType`.
+    /// Overrides must partition actions.filter(actionType) in order without
+    /// splitting dependent action sequences (e.g. reduce -> approve -> repay)
+    /// across chunks, since each chunk executes as an independent temporal
+    /// governor proposal on the destination chain.
+    function chunkActions(
+        ActionType actionType,
+        uint256 index
+    ) public view virtual returns (ProposalAction[] memory) {
+        index;
+        return actions.filter(actionType);
+    }
+
+    /// @notice strictly increasing governor-action indices at which the
+    /// proposal is split into successive propose() calls when submitted in
+    /// batches. Empty (default): single propose() call with finalize = true.
+    /// With n split points the proposal is submitted in n + 1 calls: the
+    /// first initializes the proposal with actions [0, splits[0]) and
+    /// finalize = false, each subsequent call appends the next segment, and
+    /// the last call sets finalize = true. Use together with chunkCount /
+    /// chunkActions to keep each call's calldata small enough to submit.
+    function batchProposeSplits()
+        public
+        view
+        virtual
+        returns (uint256[] memory)
+    {
+        return new uint256[](0);
+    }
+
     /// @notice returns the total number of actions in the proposal
-    /// including moonbeam, base and optimism actions which are each bundled into a
-    /// single action to wormhole core on Ethereum.
+    /// including moonbeam, base and optimism actions which are each bundled into
+    /// chunkCount() actions to wormhole core on Ethereum (default one).
     function allActionTypesCount() public view returns (uint256 count) {
         uint256 moonbeamActions = actions.proposalActionTypeCount(
             ActionType.Moonbeam
         );
-        moonbeamActions = moonbeamActions > 0 ? 1 : 0;
+        moonbeamActions = moonbeamActions > 0
+            ? chunkCount(ActionType.Moonbeam)
+            : 0;
 
         uint256 baseActions = actions.proposalActionTypeCount(ActionType.Base);
-        baseActions = baseActions > 0 ? 1 : 0;
+        baseActions = baseActions > 0 ? chunkCount(ActionType.Base) : 0;
 
         uint256 optimismActions = actions.proposalActionTypeCount(
             ActionType.Optimism
         );
-        optimismActions = optimismActions > 0 ? 1 : 0;
+        optimismActions = optimismActions > 0
+            ? chunkCount(ActionType.Optimism)
+            : 0;
 
         uint256 ethereumActions = actions.proposalActionTypeCount(
             ActionType.Ethereum
@@ -407,24 +451,28 @@ abstract contract HybridProposalV2 is
             temporalGovernorMoonbeam != address(0) &&
             actions.proposalActionTypeCount(ActionType.Moonbeam) != 0
         ) {
-            targets[currIndex] = wormholeCore;
-            values[currIndex] = 0;
-            payloads[currIndex] = getTemporalGovCalldata(
-                temporalGovernorMoonbeam,
-                actions.filter(ActionType.Moonbeam)
-            );
-            currIndex++;
+            for (uint256 c = 0; c < chunkCount(ActionType.Moonbeam); c++) {
+                targets[currIndex] = wormholeCore;
+                values[currIndex] = 0;
+                payloads[currIndex] = getTemporalGovCalldata(
+                    temporalGovernorMoonbeam,
+                    chunkActions(ActionType.Moonbeam, c)
+                );
+                currIndex++;
+            }
         }
 
         /// only get temporal governor calldata if there are actions to execute on Base
         if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
-            targets[currIndex] = wormholeCore;
-            values[currIndex] = 0;
-            payloads[currIndex] = getTemporalGovCalldata(
-                temporalGovernorBase,
-                actions.filter(ActionType.Base)
-            );
-            currIndex++;
+            for (uint256 c = 0; c < chunkCount(ActionType.Base); c++) {
+                targets[currIndex] = wormholeCore;
+                values[currIndex] = 0;
+                payloads[currIndex] = getTemporalGovCalldata(
+                    temporalGovernorBase,
+                    chunkActions(ActionType.Base, c)
+                );
+                currIndex++;
+            }
         }
 
         /// only get temporal governor calldata if there are actions to execute on Optimism
@@ -432,13 +480,15 @@ abstract contract HybridProposalV2 is
             temporalGovernorOptimism != address(0) &&
             actions.proposalActionTypeCount(ActionType.Optimism) != 0
         ) {
-            targets[currIndex] = wormholeCore;
-            values[currIndex] = 0;
-            payloads[currIndex] = getTemporalGovCalldata(
-                temporalGovernorOptimism,
-                actions.filter(ActionType.Optimism)
-            );
-            currIndex++;
+            for (uint256 c = 0; c < chunkCount(ActionType.Optimism); c++) {
+                targets[currIndex] = wormholeCore;
+                values[currIndex] = 0;
+                payloads[currIndex] = getTemporalGovCalldata(
+                    temporalGovernorOptimism,
+                    chunkActions(ActionType.Optimism, c)
+                );
+                currIndex++;
+            }
         }
 
         return (targets, values, payloads);
@@ -513,6 +563,237 @@ abstract contract HybridProposalV2 is
         return proposalCalldata;
     }
 
+    /// @notice calldata for the first of the batched propose() calls:
+    /// governor actions [0, batchProposeSplits()[0]), finalize = false.
+    /// Only meaningful when batchProposeSplits() is non-empty.
+    function getBatchProposeCalldata(
+        Addresses addresses
+    ) public view returns (bytes memory) {
+        uint256[] memory splits = batchProposeSplits();
+        require(splits.length > 0, "batch propose submission not enabled");
+
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory payloads
+        ) = getTargetsPayloadsValues(addresses);
+
+        _validateBatchSplits(splits, targets.length);
+
+        return _encodeBatchPropose(targets, values, payloads, splits[0]);
+    }
+
+    /// @notice calldata for append call `appendIndex` (0-based, in
+    /// [0, batchProposeSplits().length)): the segment's governor actions
+    /// appended to `proposalId`, finalize = true on the last segment.
+    /// `proposalId` is the id returned by the first call.
+    function getBatchAppendCalldata(
+        Addresses addresses,
+        uint256 proposalId,
+        uint256 appendIndex
+    ) public view returns (bytes memory) {
+        uint256[] memory splits = batchProposeSplits();
+        require(appendIndex < splits.length, "invalid batch append index");
+
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory payloads
+        ) = getTargetsPayloadsValues(addresses);
+
+        _validateBatchSplits(splits, targets.length);
+
+        return
+            _encodeBatchAppend(
+                proposalId,
+                targets,
+                values,
+                payloads,
+                splits[appendIndex],
+                appendIndex + 1 < splits.length
+                    ? splits[appendIndex + 1]
+                    : targets.length,
+                appendIndex + 1 == splits.length // finalize on last segment
+            );
+    }
+
+    /// @notice submit the proposal to the governor in splits.length + 1
+    /// batched propose() calls: init with the first segment (finalize =
+    /// false), then append each remaining segment, finalizing on the last
+    /// one. Returns the init call's returndata (the abi-encoded proposal id).
+    function _submitBatchPropose(
+        address payable governorAddress,
+        address caller,
+        uint256 cost,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory payloads,
+        uint256[] memory splits
+    ) internal returns (bytes memory data) {
+        _validateBatchSplits(splits, targets.length);
+
+        // The id the init call will be assigned (propose does ++proposalCount)
+        uint256 batchProposalId = MultichainGovernorV2(governorAddress)
+            .proposalCount() + 1;
+
+        // Encode every call up front: init with the first segment
+        // (finalize = false), then one append per remaining segment,
+        // finalizing on the last
+        bytes[] memory calls = new bytes[](splits.length + 1);
+        calls[0] = _encodeBatchPropose(targets, values, payloads, splits[0]);
+
+        for (uint256 s = 1; s <= splits.length; s++) {
+            uint256 end = s == splits.length ? targets.length : splits[s];
+            calls[s] = _encodeBatchAppend(
+                batchProposalId,
+                targets,
+                values,
+                payloads,
+                splits[s - 1],
+                end,
+                s == splits.length // finalize on the last segment
+            );
+        }
+
+        data = _submitGovernorCalls(governorAddress, caller, cost, calls);
+
+        require(
+            abi.decode(data, (uint256)) == batchProposalId,
+            "batch propose proposal id mismatch"
+        );
+    }
+
+    /// @notice submit the encoded propose() calls in order. Only the last
+    /// call carries value (bridging happens at finalize). Returns the first
+    /// call's returndata (the abi-encoded proposal id).
+    function _submitGovernorCalls(
+        address payable governorAddress,
+        address caller,
+        uint256 finalValue,
+        bytes[] memory calls
+    ) internal returns (bytes memory data) {
+        for (uint256 i = 0; i < calls.length; i++) {
+            vm.prank(caller);
+            (bool success, bytes memory returndata) = governorAddress.call{
+                value: i == calls.length - 1 ? finalValue : 0,
+                gas: 52_000_000
+            }(calls[i]);
+
+            if (i == 0) {
+                data = returndata;
+            }
+
+            if (!success) {
+                _revertWithReturndata(
+                    returndata,
+                    "batch propose multichain governor v2 failed"
+                );
+            }
+        }
+    }
+
+    function _validateBatchSplits(
+        uint256[] memory splits,
+        uint256 actionCount
+    ) internal pure {
+        for (uint256 i = 0; i < splits.length; i++) {
+            require(
+                splits[i] > 0 && splits[i] < actionCount,
+                "batch split index out of range"
+            );
+            require(
+                i == 0 || splits[i] > splits[i - 1],
+                "batch splits not strictly increasing"
+            );
+        }
+    }
+
+    function _encodeBatchPropose(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory payloads,
+        uint256 end
+    ) internal view returns (bytes memory) {
+        (
+            address[] memory t,
+            uint256[] memory v,
+            bytes[] memory p
+        ) = _sliceRange(targets, values, payloads, 0, end);
+
+        return
+            abi.encodeWithSignature(
+                "propose(address[],uint256[],bytes[],string,bool)",
+                t,
+                v,
+                p,
+                _proposeDescription(),
+                false // finalize = false, completed by the append calls
+            );
+    }
+
+    function _encodeBatchAppend(
+        uint256 proposalId,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory payloads,
+        uint256 start,
+        uint256 end,
+        bool finalize
+    ) internal pure returns (bytes memory) {
+        (
+            address[] memory t,
+            uint256[] memory v,
+            bytes[] memory p
+        ) = _sliceRange(targets, values, payloads, start, end);
+
+        return
+            abi.encodeWithSignature(
+                "propose(uint256,address[],uint256[],bytes[],bool)",
+                proposalId,
+                t,
+                v,
+                p,
+                finalize
+            );
+    }
+
+    function _sliceRange(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory payloads,
+        uint256 start,
+        uint256 end
+    )
+        internal
+        pure
+        returns (address[] memory, uint256[] memory, bytes[] memory)
+    {
+        address[] memory t = new address[](end - start);
+        uint256[] memory v = new uint256[](end - start);
+        bytes[] memory p = new bytes[](end - start);
+
+        for (uint256 i = start; i < end; i++) {
+            t[i - start] = targets[i];
+            v[i - start] = values[i];
+            p[i - start] = payloads[i];
+        }
+
+        return (t, v, p);
+    }
+
+    function _revertWithReturndata(
+        bytes memory returndata,
+        string memory fallbackMessage
+    ) internal pure {
+        if (returndata.length > 0) {
+            assembly {
+                let returndata_size := mload(returndata)
+                revert(add(32, returndata), returndata_size)
+            }
+        }
+        revert(fallbackMessage);
+    }
+
     /// -----------------------------------------------------
     /// -----------------------------------------------------
     /// -------------------- OVERRIDES ----------------------
@@ -525,6 +806,37 @@ abstract contract HybridProposalV2 is
             "\n\n----------------- Proposal Calldata ------------------\n"
         );
         console.logBytes(getCalldata(addresses));
+
+        uint256[] memory splits = batchProposeSplits();
+        if (splits.length != 0) {
+            console.log(
+                "\n\n------------- Batched Proposal Calldata --------------\n"
+            );
+            console.log(
+                "call 1 of %s - initializes the proposal (finalize = false):",
+                splits.length + 1
+            );
+            console.logBytes(getBatchProposeCalldata(addresses));
+
+            uint256 proposalId = vm.envOr("BATCH_PROPOSAL_ID", uint256(0));
+            console.log(
+                "\nappend calls below are encoded for proposal id %s. After call 1 is mined, set BATCH_PROPOSAL_ID to the returned id and re-run DO_PRINT to regenerate.",
+                proposalId
+            );
+
+            for (uint256 s = 0; s < splits.length; s++) {
+                console.log(
+                    s == splits.length - 1
+                        ? "\ncall %s of %s - appends the last segment and finalizes:"
+                        : "\ncall %s of %s - appends the next segment (finalize = false):",
+                    s + 2,
+                    splits.length + 1
+                );
+                console.logBytes(
+                    getBatchAppendCalldata(addresses, proposalId, s)
+                );
+            }
+        }
     }
 
     function deploy(Addresses, address) public virtual override {}
@@ -684,35 +996,45 @@ abstract contract HybridProposalV2 is
                 );
             }
 
-            bytes memory proposeCalldata = abi.encodeWithSignature(
-                "propose(address[],uint256[],bytes[],string,bool)",
-                targets,
-                values,
-                payloads,
-                _proposeDescription(),
-                true // finalize = true
-            );
-
             uint256 cost = governor.bridgeCostAll();
             vm.deal(caller, cost * 2);
 
             uint256 gasStart = gasleft();
+            uint256[] memory splits = batchProposeSplits();
 
-            // Execute the proposal
-            vm.prank(caller);
-            (bool success, bytes memory returndata) = address(
-                payable(governorAddress)
-            ).call{value: cost, gas: 52_000_000}(proposeCalldata);
-            data = returndata;
+            if (splits.length == 0) {
+                bytes memory proposeCalldata = abi.encodeWithSignature(
+                    "propose(address[],uint256[],bytes[],string,bool)",
+                    targets,
+                    values,
+                    payloads,
+                    _proposeDescription(),
+                    true // finalize = true
+                );
 
-            if (!success) {
-                if (returndata.length > 0) {
-                    assembly {
-                        let returndata_size := mload(returndata)
-                        revert(add(32, returndata), returndata_size)
-                    }
+                // Execute the proposal
+                vm.prank(caller);
+                (bool success, bytes memory returndata) = address(
+                    payable(governorAddress)
+                ).call{value: cost, gas: 52_000_000}(proposeCalldata);
+                data = returndata;
+
+                if (!success) {
+                    _revertWithReturndata(
+                        returndata,
+                        "propose multichain governor v2 failed"
+                    );
                 }
-                revert("propose multichain governor v2 failed");
+            } else {
+                data = _submitBatchPropose(
+                    governorAddress,
+                    caller,
+                    cost,
+                    targets,
+                    values,
+                    payloads,
+                    splits
+                );
             }
 
             require(
@@ -760,26 +1082,26 @@ abstract contract HybridProposalV2 is
                 block.chainid.toEthereumChainId()
             );
 
-            bytes memory temporalGovExecDataMoonbeam;
-            bytes memory temporalGovExecDataBase;
-            bytes memory temporalGovExecDataOptimism;
+            bytes[] memory temporalGovExecDataMoonbeam;
+            bytes[] memory temporalGovExecDataBase;
+            bytes[] memory temporalGovExecDataOptimism;
 
             if (actions.proposalActionTypeCount(ActionType.Moonbeam) != 0) {
-                temporalGovExecDataMoonbeam = getTemporalGovPayloadByChain(
+                temporalGovExecDataMoonbeam = getTemporalGovPayloadsByChain(
                     addresses,
                     block.chainid.toMoonbeamChainId()
                 );
             }
 
             if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
-                temporalGovExecDataBase = getTemporalGovPayloadByChain(
+                temporalGovExecDataBase = getTemporalGovPayloadsByChain(
                     addresses,
                     block.chainid.toBaseChainId()
                 );
             }
 
             if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
-                temporalGovExecDataOptimism = getTemporalGovPayloadByChain(
+                temporalGovExecDataOptimism = getTemporalGovPayloadsByChain(
                     addresses,
                     block.chainid.toOptimismChainId()
                 );
@@ -806,117 +1128,25 @@ abstract contract HybridProposalV2 is
 
             // Verify LogMessagePublished events were emitted with correct payloads
             Vm.Log[] memory logs = vm.getRecordedLogs();
-            bytes32 sig = keccak256(
-                "LogMessagePublished(address,uint64,uint32,bytes,uint8)"
+
+            _assertPayloadsPublished(
+                logs,
+                wormholeCoreEthereum,
+                temporalGovExecDataMoonbeam,
+                "Moonbeam"
             );
-
-            if (temporalGovExecDataMoonbeam.length != 0) {
-                bool seenMoonbeam = false;
-                for (uint256 k = 0; k < logs.length; k++) {
-                    if (
-                        logs[k].emitter == wormholeCoreEthereum &&
-                        logs[k].topics.length > 0 &&
-                        logs[k].topics[0] == sig
-                    ) {
-                        (
-                            uint64 sequence,
-                            uint32 nonce2,
-                            bytes memory payload,
-                            uint8 cl
-                        ) = abi.decode(
-                                logs[k].data,
-                                (uint64, uint32, bytes, uint8)
-                            );
-                        sequence;
-                        nonce2;
-                        cl;
-
-                        if (
-                            keccak256(payload) ==
-                            keccak256(temporalGovExecDataMoonbeam)
-                        ) {
-                            seenMoonbeam = true;
-                            break;
-                        }
-                    }
-                }
-                assertTrue(
-                    seenMoonbeam,
-                    "Missing LogMessagePublished event for Moonbeam"
-                );
-            }
-
-            if (temporalGovExecDataBase.length != 0) {
-                bool seenBase = false;
-                for (uint256 k = 0; k < logs.length; k++) {
-                    if (
-                        logs[k].emitter == wormholeCoreEthereum &&
-                        logs[k].topics.length > 0 &&
-                        logs[k].topics[0] == sig
-                    ) {
-                        (
-                            uint64 sequence,
-                            uint32 nonce2,
-                            bytes memory payload,
-                            uint8 cl
-                        ) = abi.decode(
-                                logs[k].data,
-                                (uint64, uint32, bytes, uint8)
-                            );
-                        sequence;
-                        nonce2;
-                        cl;
-
-                        if (
-                            keccak256(payload) ==
-                            keccak256(temporalGovExecDataBase)
-                        ) {
-                            seenBase = true;
-                            break;
-                        }
-                    }
-                }
-                assertTrue(
-                    seenBase,
-                    "Missing LogMessagePublished event for Base"
-                );
-            }
-
-            if (temporalGovExecDataOptimism.length != 0) {
-                bool seenOptimism = false;
-                for (uint256 k = 0; k < logs.length; k++) {
-                    if (
-                        logs[k].emitter == wormholeCoreEthereum &&
-                        logs[k].topics.length > 0 &&
-                        logs[k].topics[0] == sig
-                    ) {
-                        (
-                            uint64 sequence,
-                            uint32 nonce2,
-                            bytes memory payload,
-                            uint8 cl
-                        ) = abi.decode(
-                                logs[k].data,
-                                (uint64, uint32, bytes, uint8)
-                            );
-                        sequence;
-                        nonce2;
-                        cl;
-
-                        if (
-                            keccak256(payload) ==
-                            keccak256(temporalGovExecDataOptimism)
-                        ) {
-                            seenOptimism = true;
-                            break;
-                        }
-                    }
-                }
-                assertTrue(
-                    seenOptimism,
-                    "Missing LogMessagePublished event for Optimism"
-                );
-            }
+            _assertPayloadsPublished(
+                logs,
+                wormholeCoreEthereum,
+                temporalGovExecDataBase,
+                "Base"
+            );
+            _assertPayloadsPublished(
+                logs,
+                wormholeCoreEthereum,
+                temporalGovExecDataOptimism,
+                "Optimism"
+            );
         }
 
         require(
@@ -1083,5 +1313,101 @@ abstract contract HybridProposalV2 is
             calldatas
         );
         addresses.removeRestriction();
+    }
+
+    /// @notice per-chunk temporal governor payloads for a chain: one element
+    /// per chunkCount() chunk, a single element by default. Each element is
+    /// the payload of one wormhole publishMessage call the governor makes
+    /// for this chain during execute().
+    function getTemporalGovPayloadsByChain(
+        Addresses addresses,
+        uint256 chainId
+    ) public returns (bytes[] memory payloads) {
+        ActionType actionType = _forkIdToActionType(chainId.toForkId());
+
+        require(
+            actions.proposalActionTypeCount(actionType) > 0,
+            string(
+                abi.encodePacked(
+                    "No actions found for chain %s",
+                    chainId.chainIdToName()
+                )
+            )
+        );
+
+        addresses.addRestriction(chainId);
+        address temporalGovernor = addresses.getAddress(
+            "TEMPORAL_GOVERNOR",
+            chainId
+        );
+        addresses.removeRestriction();
+
+        uint256 chunks = chunkCount(actionType);
+        payloads = new bytes[](chunks);
+
+        for (uint256 c = 0; c < chunks; c++) {
+            ProposalAction[] memory chunk = chunkActions(actionType, c);
+            require(chunk.length > 0, "empty action chunk");
+
+            address[] memory targets = new address[](chunk.length);
+            uint256[] memory values = new uint256[](chunk.length);
+            bytes[] memory calldatas = new bytes[](chunk.length);
+
+            for (uint256 i = 0; i < chunk.length; i++) {
+                targets[i] = chunk[i].target;
+                values[i] = chunk[i].value;
+                calldatas[i] = chunk[i].data;
+            }
+
+            payloads[c] = abi.encode(
+                temporalGovernor,
+                targets,
+                values,
+                calldatas
+            );
+        }
+    }
+
+    /// @notice asserts every expected temporal governor payload for a chain
+    /// was published from the wormhole core during proposal execution
+    function _assertPayloadsPublished(
+        Vm.Log[] memory logs,
+        address wormholeCore,
+        bytes[] memory expectedPayloads,
+        string memory chainName
+    ) internal pure {
+        bytes32 sig = keccak256(
+            "LogMessagePublished(address,uint64,uint32,bytes,uint8)"
+        );
+
+        for (uint256 i = 0; i < expectedPayloads.length; i++) {
+            bool seen = false;
+            for (uint256 k = 0; k < logs.length; k++) {
+                if (
+                    logs[k].emitter == wormholeCore &&
+                    logs[k].topics.length > 0 &&
+                    logs[k].topics[0] == sig
+                ) {
+                    (, , bytes memory payload, ) = abi.decode(
+                        logs[k].data,
+                        (uint64, uint32, bytes, uint8)
+                    );
+
+                    if (keccak256(payload) == keccak256(expectedPayloads[i])) {
+                        seen = true;
+                        break;
+                    }
+                }
+            }
+            assertTrue(
+                seen,
+                string(
+                    abi.encodePacked(
+                        "Missing LogMessagePublished event for ",
+                        chainName
+                    )
+                )
+            );
+        }
     }
 }
