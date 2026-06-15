@@ -70,6 +70,11 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         Addresses addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
+        // inject the optional IPFS description URI from mips.json so forge-script
+        // runs emit the pinned URI in propose() calldata (ProposalMap.runProposal
+        // does the same for the test path).
+        setProposalDescriptionUri(_resolveProposalDescriptionUri(this.name()));
+
         initProposal(addresses);
 
         (, address deployerAddress, ) = vm.readCallers();

@@ -50,6 +50,14 @@ contract HybridProposalV2DescriptionUriTest is Test {
         harness.setProposalDescriptionUri("");
         assertEq(harness.proposeDescription(), "# Full markdown body");
     }
+
+    /// @notice a pinned URI is a valid description even with empty raw markdown
+    /// (getCalldata()'s guard checks _proposeDescription(), not PROPOSAL_DESCRIPTION)
+    function test_uriOnlyWithoutMarkdown() public {
+        harness.setMarkdown("");
+        harness.setProposalDescriptionUri("ipfs://bafytest");
+        assertEq(harness.proposeDescription(), "ipfs://bafytest");
+    }
 }
 
 /// @notice Minimal concrete HybridProposal (V1) used to exercise how the V1

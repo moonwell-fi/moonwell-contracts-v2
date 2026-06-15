@@ -86,15 +86,6 @@ abstract contract HybridProposalV2 is
     /// @notice actions to run against contracts
     ProposalAction[] public actions;
 
-    /// @notice hex encoded description of the proposal
-    bytes public PROPOSAL_DESCRIPTION;
-
-    /// @notice optional IPFS URI (e.g. ipfs://<cid>) pointing at the pinned
-    /// proposal description. When set, it is used as the `descriptionUri`
-    /// argument to propose() instead of the raw markdown. Populated off-chain
-    /// (see ProposalMap) from the optional `descriptionUri` field in mips.json.
-    string public PROPOSAL_DESCRIPTION_URI;
-
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
         address indexed sender,
@@ -103,27 +94,6 @@ abstract contract HybridProposalV2 is
         bytes payload,
         uint8 consistencyLevel
     );
-
-    /// @notice set the governance proposal's description
-    function _setProposalDescription(
-        bytes memory newProposalDescription
-    ) internal {
-        PROPOSAL_DESCRIPTION = newProposalDescription;
-    }
-
-    /// @notice set the optional IPFS URI for the proposal description
-    function setProposalDescriptionUri(string memory uri) public override {
-        PROPOSAL_DESCRIPTION_URI = uri;
-    }
-
-    /// @notice description argument used in propose() calldata: the pinned IPFS
-    /// URI when available, otherwise the raw markdown (backwards compatible)
-    function _proposeDescription() internal view returns (string memory) {
-        return
-            bytes(PROPOSAL_DESCRIPTION_URI).length > 0
-                ? PROPOSAL_DESCRIPTION_URI
-                : string(PROPOSAL_DESCRIPTION);
-    }
 
     /// @notice push an action to the Hybrid proposal without specifying a
     /// proposal type. infer the proposal type from the current chainid
@@ -491,7 +461,7 @@ abstract contract HybridProposalV2 is
         Addresses addresses
     ) public view virtual returns (bytes memory) {
         require(
-            bytes(PROPOSAL_DESCRIPTION).length > 0,
+            bytes(_proposeDescription()).length > 0,
             "No proposal description"
         );
 

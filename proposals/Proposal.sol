@@ -107,11 +107,36 @@ abstract contract Proposal is Script, Test {
     /// live fork is selected
     function initProposal(Addresses) public virtual {}
 
-    /// @notice optional IPFS URI for the proposal description. When set, V2
-    /// proposal types use it as the `descriptionUri` argument to propose()
-    /// instead of the raw markdown. No-op by default so proposal types that
-    /// don't support it (and V1) simply ignore it.
-    function setProposalDescriptionUri(string memory) public virtual {}
+    /// @notice hex encoded description of the proposal (raw markdown)
+    bytes public PROPOSAL_DESCRIPTION;
+
+    /// @notice optional IPFS URI (e.g. ipfs://<cid>) pointing at the pinned
+    /// proposal description. When set, it is used as the description argument to
+    /// propose() (printed calldata and simulation) instead of the raw markdown.
+    /// Populated off-chain (see ProposalMap) from the optional `descriptionUri`
+    /// field in mips.json, and by run() via _resolveProposalDescriptionUri().
+    string public PROPOSAL_DESCRIPTION_URI;
+
+    /// @notice set the proposal's raw markdown description
+    function _setProposalDescription(
+        bytes memory newProposalDescription
+    ) internal {
+        PROPOSAL_DESCRIPTION = newProposalDescription;
+    }
+
+    /// @notice set the optional IPFS URI for the proposal description
+    function setProposalDescriptionUri(string memory uri) public virtual {
+        PROPOSAL_DESCRIPTION_URI = uri;
+    }
+
+    /// @notice description argument used in propose(): the pinned IPFS URI when
+    /// available, otherwise the raw markdown (backwards compatible)
+    function _proposeDescription() internal view returns (string memory) {
+        return
+            bytes(PROPOSAL_DESCRIPTION_URI).length > 0
+                ? PROPOSAL_DESCRIPTION_URI
+                : string(PROPOSAL_DESCRIPTION);
+    }
 
     /// @dev Print recorded addresses
     function _printAddressesChanges(Addresses addresses) internal view {
