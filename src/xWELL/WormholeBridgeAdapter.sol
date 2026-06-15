@@ -386,11 +386,15 @@ contract WormholeBridgeAdapter is
             "WormholeBridge: onchain quoting not available, use bridge with signedQuote"
         );
         uint16 targetChainId = targetChain.toUint16();
-        uint256 cost = bridgeCost(targetChainId);
-        require(msg.value == cost, "WormholeBridge: cost not equal to quote");
         require(
             targetAddress[targetChainId] != address(0),
             "WormholeBridge: invalid target chain"
+        );
+        uint256 cost = bridgeCost(targetChainId);
+        require(cost != 0, "WormholeBridge: quote unavailable");
+        require(
+            msg.value >= cost,
+            "WormholeBridge: insufficient value for quote"
         );
 
         /// user must burn xERC20 tokens first
@@ -426,6 +430,16 @@ contract WormholeBridgeAdapter is
             requestBytes,
             relayInstructions
         );
+
+        /// refund any surplus above the live quote back to the caller. This is
+        /// the last external interaction (after burn + publish + request), and a
+        /// re-entrant bridge() call would carry msg.value == 0, failing the
+        /// `msg.value >= cost` floor — so no reentrancy guard is required.
+        uint256 refund = msg.value - cost;
+        if (refund != 0) {
+            (bool success, ) = msg.sender.call{value: refund}("");
+            require(success, "WormholeBridge: refund failed");
+        }
 
         emit TokensSent(targetChainId, to, amount);
     }
