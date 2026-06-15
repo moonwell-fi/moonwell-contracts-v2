@@ -12,12 +12,24 @@ import "@protocol/utils/ChainIds.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
 import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MockRedstoneMultiFeedAdapter} from "@test/mock/MockRedstoneMultiFeedAdapter.sol";
 
-contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
+/// @title MarketUpdateV2Template
+/// @notice post-x58 version of MarketUpdateTemplate: same JSON-driven market
+/// updates (reserve factor, collateral factor, IRM) but mounted on
+/// HybridProposalV2, where Ethereum is the governance hub. Cross-chain
+/// actions are published from Ethereum's Wormhole Core and the destination
+/// TemporalGovernors only trust the Ethereum MultichainGovernorV2, so any
+/// new market-update proposal MUST use this template — the Moonbeam-hub
+/// MarketUpdateTemplate only remains for rebuilding historical proposals.
+contract MarketUpdateV2Template is
+    HybridProposalV2,
+    Networks,
+    ParameterValidation
+{
     using SafeCast for *;
     using stdJson for string;
     using ChainIds for uint256;
@@ -57,11 +69,11 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     }
 
     function name() external pure virtual override returns (string memory) {
-        return "MIP Market Update";
+        return "MIP Market Update V2";
     }
 
     function primaryForkId() public pure override returns (uint256) {
-        return MOONBEAM_FORK_ID;
+        return ETHEREUM_FORK_ID;
     }
 
     function run() public override {
@@ -70,9 +82,9 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         Addresses addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        // inject the optional IPFS description URI from mips.json so forge-script
-        // runs emit the pinned URI in propose() calldata (ProposalMap.runProposal
-        // does the same for the test path).
+        // inject the optional IPFS description URI from mips.json so
+        // forge-script runs emit the pinned URI in propose() calldata instead
+        // of the full markdown (same as Proposal.run / ProposalMap.runProposal)
         setProposalDescriptionUri(_resolveProposalDescriptionUri(this.name()));
 
         initProposal(addresses);
@@ -100,6 +112,10 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
     function initProposal(Addresses addresses) public override {
         string memory encodedJson = vm.readFile(vm.envString("JSON_PATH"));
+
+        // the xcUSDT/xcUSDC/xcDOT precompile mocks only exist on Moonbeam,
+        // so the etch must run on that fork (the primary fork is Ethereum)
+        vm.selectFork(MOONBEAM_FORK_ID);
         etch(vm, addresses);
 
         for (uint256 i = 0; i < networks.length; i++) {

@@ -114,20 +114,22 @@ MIPS_JSON="$REPO_ROOT/proposals/mips/mips.json"
 
 IS_REWARDS_DIST=false
 
-# Case 1: mips.json entry points at the RewardsDistribution template.
+# Case 1: mips.json entry points at a RewardsDistribution template (V1 or V2).
 if [ -f "$MIPS_JSON" ] && jq -e \
   --arg bn "$BASENAME" \
-  '.[] | select((.envpath // "") | contains($bn)) | select(.path == "RewardsDistribution.sol/RewardsDistributionTemplate.json")' \
+  '.[] | select((.envpath // "") | contains($bn))
+       | select(.path == "RewardsDistribution.sol/RewardsDistributionTemplate.json"
+             or .path == "RewardsDistributionV2.sol/RewardsDistributionV2Template.json")' \
   "$MIPS_JSON" >/dev/null 2>&1
 then
   IS_REWARDS_DIST=true
 fi
 
-# Case 2: any .sol in the dir inherits RewardsDistributionTemplate.
+# Case 2: any .sol in the dir inherits a RewardsDistribution template (V1 or V2).
 if ! $IS_REWARDS_DIST; then
   for sol in "$PROPOSAL_DIR"/*.sol; do
     [ -f "$sol" ] || continue
-    if grep -qE "is[[:space:]]+RewardsDistributionTemplate\b" "$sol"; then
+    if grep -qE "is[[:space:]]+RewardsDistribution(V2)?Template\b" "$sol"; then
       IS_REWARDS_DIST=true
       break
     fi
@@ -189,12 +191,14 @@ printf "Epoch: %s → %s (%d days %d hours)\n" \
   $((DURATION / 86400)) $((DURATION % 86400 / 3600))
 echo
 
-# Check 6 (global): duration 27–29 days
+# Check 6 (global): duration matches the epoch model.
+# Calendar-month epochs (15th -> 15th UTC) run 28-31 days; legacy fixed epochs
+# ran 28 days. Accept [27, 32] days to cover both with one day of slack.
 printf "${BOLD}[global]${RESET} epoch duration\n"
-if [ "$DURATION" -ge $((27 * 86400)) ] && [ "$DURATION" -le $((29 * 86400)) ]; then
-  pass "duration ${DURATION}s is within [27, 29] days"
+if [ "$DURATION" -ge $((27 * 86400)) ] && [ "$DURATION" -le $((32 * 86400)) ]; then
+  pass "duration ${DURATION}s is within [27, 32] days"
 else
-  fail "duration ${DURATION}s is outside [27, 29] days"
+  fail "duration ${DURATION}s is outside [27, 32] days"
 fi
 echo
 
@@ -202,8 +206,27 @@ echo
 
 CHAINS=$(jq -r 'keys[] | select(test("^[0-9]+$"))' "$JSON_PATH")
 
-# Extract all Moonbeam → <chain D> bridge amounts once; used by per-chain inflow.
-MOONBEAM_BRIDGES_JSON=$(jq -c '.["1284"].bridgeToRecipient // []' "$JSON_PATH")
+# Detect the SOURCE chain (where the bridge fan-out originates):
+#   V2 (Ethereum-source): chain "1" carries bridgeToRecipient, funded by
+#     FOUNDATION_MULTISIG -> MULTICHAIN_GOVERNOR_V2_PROXY xWELL transfers.
+#   V1 (Moonbeam-source): chain "1284" carries bridgeToRecipient, funded by
+#     MGLIMMER_MULTISIG -> MULTICHAIN_GOVERNOR_PROXY GOVTOKEN transfers.
+if jq -e '(.["1"].bridgeToRecipient // []) | length > 0' "$JSON_PATH" >/dev/null 2>&1; then
+  SOURCE_CHAIN="1"
+elif jq -e '(.["1284"].bridgeToRecipient // []) | length > 0' "$JSON_PATH" >/dev/null 2>&1; then
+  SOURCE_CHAIN="1284"
+else
+  # no in-proposal bridging at all (fully pre-staged, x57-style)
+  SOURCE_CHAIN=""
+fi
+
+# Extract all source -> <chain D> bridge amounts once; used by per-chain inflow.
+if [ -n "$SOURCE_CHAIN" ]; then
+  SOURCE_BRIDGES_JSON=$(jq -c --arg s "$SOURCE_CHAIN" '.[$s].bridgeToRecipient // []' "$JSON_PATH")
+  info_printed=false
+else
+  SOURCE_BRIDGES_JSON='[]'
+fi
 
 for CHAIN in $CHAINS; do
   case "$CHAIN" in
@@ -216,10 +239,10 @@ for CHAIN in $CHAINS; do
   printf "${BOLD}[%s (%s)]${RESET}\n" "$NAME" "$CHAIN"
 
   # --- flow totals (wei) ---
-  BRIDGE_IN=$(printf "%s" "$MOONBEAM_BRIDGES_JSON" \
+  BRIDGE_IN=$(printf "%s" "$SOURCE_BRIDGES_JSON" \
     | jq -r --argjson c "$CHAIN" '.[]? | select(.network == $c) | .amount' \
     | awkf 'BEGIN{s=0} {s+=$1} END{printf "%.0f", s}')
-  [ "$CHAIN" = "1284" ] && BRIDGE_IN=0
+  [ "$CHAIN" = "$SOURCE_CHAIN" ] && BRIDGE_IN=0
 
   # withdrawWell(to=TEMPORAL_GOVERNOR) — funds that flow through TG.
   # withdrawWell(to=ECOSYSTEM_RESERVE_PROXY) — direct safety-module allocation,
@@ -254,7 +277,12 @@ for CHAIN in $CHAINS; do
   # to having xWELL pre-staged on the destination TG via a separate fast-path
   # (prep MIP or multisig action) before this proposal executes on-chain.
   PRESTAGED_TG=$(jq -r --arg c "$CHAIN" '.[$c].preStagedTG // "0"' "$JSON_PATH")
-  if [ "$CHAIN" != "1284" ]; then
+  # Skip TG conservation on the source chain: its funds move
+  # foundation/multisig -> governor -> bridge, not through a Temporal Governor.
+  # When nothing bridges in-proposal (fully pre-staged), default to the legacy
+  # Moonbeam source so historical V1 proposals keep auditing identically.
+  SKIP_TG_CHAIN="${SOURCE_CHAIN:-1284}"
+  if [ "$CHAIN" != "$SKIP_TG_CHAIN" ]; then
     INFLOW=$(awkf -v a="$BRIDGE_IN" -v b="$WITHDRAW_TO_TG" -v p="$PRESTAGED_TG" 'BEGIN{printf "%.0f", a+b+p}')
     OUTFLOW=$(awkf -v a="$TRANSFER_MRD" -v b="$TRANSFER_ECOSYSTEM" -v c="$MERKLE_TOTAL" 'BEGIN{printf "%.0f", a+b+c}')
     DIFF=$(awkf -v x="$INFLOW" -v y="$OUTFLOW" 'BEGIN{d=x-y; if (d<0) d=-d; printf "%.0f", d}')
@@ -318,11 +346,20 @@ for CHAIN in $CHAINS; do
     info "no stkWellEmissionsPerSecond → ECOSYSTEM_RESERVE flow on this chain; skip safety-module check"
   fi
 
-  # --- Check 4: Moonbeam bridge fan-out matches pre-bridge transferFrom ---
-  if [ "$CHAIN" = "1284" ]; then
-    # For each bridgeToRecipient on Moonbeam, there must be a matching transferFrom
-    # MGLIMMER_MULTISIG → MULTICHAIN_GOVERNOR_PROXY of equal amount (±1 WELL).
-    BRIDGES=$(jq -c '.["1284"].bridgeToRecipient[]?' "$JSON_PATH")
+  # --- Check 4: source-chain bridge fan-out matches pre-bridge transferFrom ---
+  # V1 (Moonbeam source): each bridgeToRecipient on 1284 must match a
+  #   MGLIMMER_MULTISIG -> MULTICHAIN_GOVERNOR_PROXY GOVTOKEN transfer (±1 WELL).
+  # V2 (Ethereum source): each bridgeToRecipient on 1 must match a
+  #   FOUNDATION_MULTISIG -> MULTICHAIN_GOVERNOR_V2_PROXY xWELL transfer (±1 WELL);
+  #   no nativeValue exists — the xWELLBridgeFeePayer pays the executor fee,
+  #   quoted on-chain inside the execution transaction.
+  if [ -n "$SOURCE_CHAIN" ] && [ "$CHAIN" = "$SOURCE_CHAIN" ]; then
+    if [ "$SOURCE_CHAIN" = "1284" ]; then
+      M_FROM="MGLIMMER_MULTISIG"; M_TO="MULTICHAIN_GOVERNOR_PROXY"; M_TOKEN="GOVTOKEN"
+    else
+      M_FROM="FOUNDATION_MULTISIG"; M_TO="MULTICHAIN_GOVERNOR_V2_PROXY"; M_TOKEN="xWELL_PROXY"
+    fi
+    BRIDGES=$(jq -c --arg s "$SOURCE_CHAIN" '.[$s].bridgeToRecipient[]?' "$JSON_PATH")
     if [ -n "$BRIDGES" ]; then
       MISMATCH=0
       while IFS= read -r BRIDGE; do
@@ -331,21 +368,22 @@ for CHAIN in $CHAINS; do
         B_AMT=$(echo "$BRIDGE" | jq -r '.amount' | awkf '{printf "%.0f", $1}')
         B_NATIVE=$(echo "$BRIDGE" | jq -r '.nativeValue // 0')
         # find matching transferFrom
-        MATCH=$(jq -r --argjson amt "$B_AMT" '
-          .["1284"].transferFrom[]?
-          | select(.from == "MGLIMMER_MULTISIG" and .to == "MULTICHAIN_GOVERNOR_PROXY" and .token == "GOVTOKEN")
+        MATCH=$(jq -r --arg s "$SOURCE_CHAIN" --arg f "$M_FROM" --arg t "$M_TO" --arg k "$M_TOKEN" '
+          .[$s].transferFrom[]?
+          | select(.from == $f and .to == $t and .token == $k)
           | .amount
         ' "$JSON_PATH" | awkf -v amt="$B_AMT" 'BEGIN{best=1e30} {d=$1-amt; if (d<0) d=-d; if (d<best) best=d} END{printf "%.0f", best+0}')
         TOL="1000000000000000000"  # 1 WELL
         OK=$(awkf -v d="$MATCH" -v t="$TOL" 'BEGIN{print (d<=t) ? 1 : 0}')
         if [ "$OK" = "1" ]; then
-          pass "bridge → chain $B_NET amount $(fmt_well "$B_AMT") matches pre-bridge transferFrom"
+          pass "bridge → chain $B_NET amount $(fmt_well "$B_AMT") matches pre-bridge transferFrom ($M_FROM → $M_TO)"
         else
-          fail "bridge → chain $B_NET amount $(fmt_well "$B_AMT") has no matching transferFrom on Moonbeam (closest Δ=$(fmt_well "$MATCH"))"
+          fail "bridge → chain $B_NET amount $(fmt_well "$B_AMT") has no matching transferFrom on chain $SOURCE_CHAIN (closest Δ=$(fmt_well "$MATCH"))"
           MISMATCH=1
         fi
-        # nativeValue = 0 is a sim-breaker unless template pre-funds; informational.
-        if [ "$B_NATIVE" = "0" ]; then
+        # nativeValue = 0 is a sim-breaker on the V1 Moonbeam path unless the
+        # template pre-funds; V2 bridges intentionally carry no value.
+        if [ "$SOURCE_CHAIN" = "1284" ] && [ "$B_NATIVE" = "0" ]; then
           warn "bridge → chain $B_NET has nativeValue:0 (template must pre-fund TEMPORAL_GOVERNOR, see CLAUDE.md)"
         fi
       done <<<"$BRIDGES"
@@ -361,11 +399,11 @@ for CHAIN in $CHAINS; do
       fail "withdrawWell.amount must be > 0 (found: $line)"
     done <<<"$NEG_WITHDRAW"
   fi
-  # 5b: multiRewarder.duration == 4 weeks
-  BAD_MR=$(jq -r --arg c "$CHAIN" '.[$c].multiRewarder[]? | select(.duration != 2419200) | "\(.vault):\(.duration)"' "$JSON_PATH")
+  # 5b: multiRewarder.duration == the epoch duration (variable with calendar epochs)
+  BAD_MR=$(jq -r --arg c "$CHAIN" --argjson d "$DURATION" '.[$c].multiRewarder[]? | select(.duration != $d) | "\(.vault):\(.duration)"' "$JSON_PATH")
   if [ -n "$BAD_MR" ]; then
     while IFS= read -r line; do
-      fail "multiRewarder.duration must be 2,419,200s / 4 weeks (found: $line)"
+      fail "multiRewarder.duration must equal the epoch duration ${DURATION}s (found: $line)"
     done <<<"$BAD_MR"
   fi
 

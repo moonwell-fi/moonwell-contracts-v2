@@ -44,7 +44,16 @@ abstract contract HybridProposal is
     uint32 public nonce = uint32(vm.envOr("NONCE", uint256(0)));
 
     /// @notice finalized finality https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
-    uint8 public constant consistencyLevel = 1;
+    uint8 public consistencyLevel = 1;
+
+    /// @notice override the wormhole consistency level for this proposal
+    /// instance. Used by the calldata-generation check to rebuild historical
+    /// proposals byte-exact: Moonbeam-era proposals were queued with the
+    /// instant-finality value of 200 before the Ethereum governance
+    /// migration switched new proposals to 1 (finalized).
+    function setConsistencyLevel(uint8 newConsistencyLevel) external {
+        consistencyLevel = newConsistencyLevel;
+    }
 
     /// @notice Verify all proposal actions before execution
     /// @dev Calls both market creation and bridge validation hooks
@@ -81,9 +90,6 @@ abstract contract HybridProposal is
     /// @notice actions to run against contracts
     ProposalAction[] public actions;
 
-    /// @notice hex encoded description of the proposal
-    bytes public PROPOSAL_DESCRIPTION;
-
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
         address indexed sender,
@@ -92,13 +98,6 @@ abstract contract HybridProposal is
         bytes payload,
         uint8 consistencyLevel
     );
-
-    /// @notice set the governance proposal's description
-    function _setProposalDescription(
-        bytes memory newProposalDescription
-    ) internal {
-        PROPOSAL_DESCRIPTION = newProposalDescription;
-    }
 
     /// @notice push an action to the Hybrid proposal without specifying a
     /// proposal type. infer the proposal type from the current chainid
@@ -428,7 +427,7 @@ abstract contract HybridProposal is
         Addresses addresses
     ) public view virtual returns (bytes memory) {
         require(
-            bytes(PROPOSAL_DESCRIPTION).length > 0,
+            bytes(_proposeDescription()).length > 0,
             "No proposal description"
         );
 
@@ -443,7 +442,7 @@ abstract contract HybridProposal is
             targets,
             values,
             payloads,
-            string(PROPOSAL_DESCRIPTION)
+            _proposeDescription()
         );
 
         return proposalCalldata;
@@ -582,7 +581,7 @@ abstract contract HybridProposal is
                 targets,
                 values,
                 payloads,
-                string(PROPOSAL_DESCRIPTION)
+                _proposeDescription()
             );
 
             uint256 cost = governor.bridgeCostAll();

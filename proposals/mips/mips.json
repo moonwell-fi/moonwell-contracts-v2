@@ -1,5 +1,13 @@
 [
     {
+        "envpath": "proposals/mips/mip-x60/x60.sh",
+        "governor": "MultichainGovernorV2",
+        "id": 175,
+        "path": "mip-x60.sol/mipx60.json",
+        "proposalType": "HybridProposalV2",
+        "descriptionUri": "ipfs://bafkreie4gxunpyssatzgxd7yev76nbaz42pdqm2oupyv2rb3fk6cshxpzy"
+    },
+    {
         "envpath": "",
         "governor": "MultichainGovernorV2",
         "id": 0,
@@ -56,7 +64,8 @@
         "governor": "MultichainGovernor",
         "id": 163,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "",
@@ -98,7 +107,8 @@
         "governor": "MultichainGovernor",
         "id": 154,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "",
@@ -133,7 +143,8 @@
         "governor": "MultichainGovernor",
         "id": 148,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "",
@@ -224,7 +235,8 @@
         "governor": "MultichainGovernor",
         "id": 132,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "proposals/mips/mip-x37/x37.sh",
@@ -245,7 +257,8 @@
         "governor": "MultichainGovernor",
         "id": 128,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "",
@@ -280,7 +293,8 @@
         "governor": "MultichainGovernor",
         "id": 122,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "proposals/mips/mip-b48/b48.sh",
@@ -301,7 +315,8 @@
         "governor": "MultichainGovernor",
         "id": 119,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "",
@@ -315,14 +330,16 @@
         "governor": "MultichainGovernor",
         "id": 112,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "proposals/mips/mip-x27/x27.sh",
         "governor": "MultichainGovernor",
         "id": 110,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "",
@@ -350,7 +367,8 @@
         "governor": "MultichainGovernor",
         "id": 105,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "",
@@ -378,7 +396,8 @@
         "governor": "MultichainGovernor",
         "id": 99,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "proposals/mips/mip-o14/o14.sh",
@@ -399,7 +418,8 @@
         "governor": "MultichainGovernor",
         "id": 94,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "",
@@ -427,7 +447,8 @@
         "governor": "MultichainGovernor",
         "id": 86,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envPath": "proposals/mips/mip-x16/x16.sh",
@@ -448,7 +469,8 @@
         "governor": "MultichainGovernor",
         "id": 83,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "",
@@ -497,7 +519,8 @@
         "governor": "MultichainGovernor",
         "id": 76,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envpath": "",
@@ -518,7 +541,8 @@
         "governor": "MultichainGovernor",
         "id": 72,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envPath": "proposals/mips/mip-x09/x09.sh",
@@ -539,7 +563,8 @@
         "governor": "MultichainGovernor",
         "id": 69,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envPath": "proposals/mips/mip-x06/x06.sh",
@@ -637,7 +662,8 @@
         "governor": "MultichainGovernor",
         "id": 55,
         "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
-        "proposalType": "HybridProposal"
+        "proposalType": "HybridProposal",
+        "descriptionUri": "ipfs://bafkreiberhpo7xwqx5z6pwsafa7rcdbgiqbicwbcwuqr3do5notsajujiu"
     },
     {
         "envPath": "proposals/mips/mip-x02/x02.sh",
@@ -995,5 +1021,13 @@
         "id": 39,
         "path": "mip-b00.sol/mipb00.json",
         "proposalType": "HybridProposal"
+    },
+    {
+        "envpath": "proposals/mips/mip-x59/x59.sh",
+        "governor": "MultichainGovernorV2",
+        "id": 174,
+        "path": "mip-x59.sol/mipx59.json",
+        "proposalType": "HybridProposalV2",
+        "descriptionUri": "ipfs://bafkreibvyunirnovno3hbqq5mzq2gly7muw3refonm43zt3amxkgrzxix4"
     }
 ]

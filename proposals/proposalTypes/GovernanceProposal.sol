@@ -19,16 +19,6 @@ abstract contract GovernanceProposal is Proposal {
 
     GovernanceAction[] public actions;
 
-    /// @notice hex encoded description of the proposal
-    bytes public PROPOSAL_DESCRIPTION;
-
-    /// @notice set the governance proposal's description
-    function _setProposalDescription(
-        bytes memory newProposalDescription
-    ) internal {
-        PROPOSAL_DESCRIPTION = newProposalDescription;
-    }
-
     /// @notice set the debug flag
     function setDebug(bool debug) public {
         DEBUG = debug;
