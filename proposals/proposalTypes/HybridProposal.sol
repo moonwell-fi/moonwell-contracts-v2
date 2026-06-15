@@ -90,9 +90,6 @@ abstract contract HybridProposal is
     /// @notice actions to run against contracts
     ProposalAction[] public actions;
 
-    /// @notice hex encoded description of the proposal
-    bytes public PROPOSAL_DESCRIPTION;
-
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
         address indexed sender,
@@ -101,13 +98,6 @@ abstract contract HybridProposal is
         bytes payload,
         uint8 consistencyLevel
     );
-
-    /// @notice set the governance proposal's description
-    function _setProposalDescription(
-        bytes memory newProposalDescription
-    ) internal {
-        PROPOSAL_DESCRIPTION = newProposalDescription;
-    }
 
     /// @notice push an action to the Hybrid proposal without specifying a
     /// proposal type. infer the proposal type from the current chainid
@@ -437,7 +427,7 @@ abstract contract HybridProposal is
         Addresses addresses
     ) public view virtual returns (bytes memory) {
         require(
-            bytes(PROPOSAL_DESCRIPTION).length > 0,
+            bytes(_proposeDescription()).length > 0,
             "No proposal description"
         );
 
@@ -452,7 +442,7 @@ abstract contract HybridProposal is
             targets,
             values,
             payloads,
-            string(PROPOSAL_DESCRIPTION)
+            _proposeDescription()
         );
 
         return proposalCalldata;
@@ -591,7 +581,7 @@ abstract contract HybridProposal is
                 targets,
                 values,
                 payloads,
-                string(PROPOSAL_DESCRIPTION)
+                _proposeDescription()
             );
 
             uint256 cost = governor.bridgeCostAll();
