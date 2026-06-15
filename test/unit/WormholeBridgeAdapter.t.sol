@@ -669,6 +669,20 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.bridge{value: cost - 1}(chainId, amount, to);
     }
 
+    function testBridgeOutRevertsQuoteUnavailable() public {
+        _setupBridgeOut();
+
+        /// no setQuote / no setMessageFee => bridgeCost == 0
+        assertEq(
+            wormholeBridgeAdapterProxy.bridgeCost(chainId),
+            0,
+            "precondition: quote should be zero"
+        );
+
+        vm.expectRevert("WormholeBridge: quote unavailable");
+        wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
+    }
+
     function testBridgeOutFailsIncorrectTargetChain() public {
         vm.expectRevert("WormholeBridge: invalid target chain");
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId + 1, amount, to);
