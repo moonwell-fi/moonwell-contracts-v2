@@ -1,6 +1,7 @@
 pragma solidity 0.8.19;
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
@@ -683,6 +684,31 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
     }
 
+    function testBridgeOutRevertsWhenRefundRejected() public {
+        /// build burn buffer (buffer is global to the adapter, not per-user)
+        amount = externalChainBufferCap / 2;
+        to = address(this);
+        _bridgeInViaVaa(0);
+
+        RejectingReceiver bridger = new RejectingReceiver(
+            wormholeBridgeAdapterProxy,
+            IERC20(address(xwellProxy))
+        );
+
+        uint256 outAmount = externalChainBufferCap;
+        _lockboxCanMintTo(address(bridger), uint112(outAmount));
+
+        mockExecutorQuoterRouter.setQuote(0.001 ether);
+        mockCoreBridge.setMessageFee(0.0001 ether);
+
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        uint256 value = cost + 1; // overpay forces the refund path
+        vm.deal(address(bridger), value);
+
+        vm.expectRevert("WormholeBridge: refund failed");
+        bridger.doBridge{value: value}(chainId, outAmount, address(this));
+    }
+
     function testBridgeOutFailsIncorrectTargetChain() public {
         vm.expectRevert("WormholeBridge: invalid target chain");
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId + 1, amount, to);
@@ -827,5 +853,30 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             to,
             signedQuote
         );
+    }
+}
+
+/// @notice bridges out via the adapter but reverts on any ETH refund,
+/// used to test the "refund failed" path
+contract RejectingReceiver {
+    WormholeBridgeAdapter public immutable adapter;
+    IERC20 public immutable token;
+
+    constructor(WormholeBridgeAdapter _adapter, IERC20 _token) {
+        adapter = _adapter;
+        token = _token;
+    }
+
+    function doBridge(
+        uint16 dstChainId,
+        uint256 amount,
+        address to
+    ) external payable {
+        token.approve(address(adapter), amount);
+        adapter.bridge{value: msg.value}(dstChainId, amount, to);
+    }
+
+    receive() external payable {
+        revert("reject");
     }
 }
