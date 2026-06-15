@@ -636,6 +636,39 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
+    function testBridgeOutExactPaySucceedsNoRefund() public {
+        _setupBridgeOut();
+
+        mockExecutorQuoterRouter.setQuote(0.001 ether);
+        mockCoreBridge.setMessageFee(0.0001 ether);
+
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        uint256 messageFee = mockCoreBridge.mockMessageFee();
+        vm.deal(address(this), cost);
+
+        wormholeBridgeAdapterProxy.bridge{value: cost}(chainId, amount, to);
+
+        assertEq(address(this).balance, 0, "no refund expected on exact pay");
+        assertEq(
+            mockExecutorQuoterRouter.lastRequestValue(),
+            cost - messageFee,
+            "router must receive quote net of message fee"
+        );
+    }
+
+    function testBridgeOutRevertsInsufficientValue() public {
+        _setupBridgeOut();
+
+        mockExecutorQuoterRouter.setQuote(0.001 ether);
+        mockCoreBridge.setMessageFee(0.0001 ether);
+
+        uint256 cost = wormholeBridgeAdapterProxy.bridgeCost(chainId);
+        vm.deal(address(this), cost);
+
+        vm.expectRevert("WormholeBridge: insufficient value for quote");
+        wormholeBridgeAdapterProxy.bridge{value: cost - 1}(chainId, amount, to);
+    }
+
     function testBridgeOutFailsIncorrectTargetChain() public {
         vm.expectRevert("WormholeBridge: invalid target chain");
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId + 1, amount, to);
