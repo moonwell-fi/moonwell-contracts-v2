@@ -364,7 +364,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
                 "WormholeBridge: onchain quoting not available, use bridge with signedQuote"
             );
         } else {
-            vm.expectRevert("WormholeBridge: cost not equal to quote");
+            vm.expectRevert("WormholeBridge: insufficient value for quote");
         }
         adapter.bridge{value: 0}(uint256(sourceWormholeChainId), amount, user);
         vm.stopPrank();
