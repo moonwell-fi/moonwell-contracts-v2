@@ -51,29 +51,47 @@ abstract contract BridgeValidationHook {
                 // Get the actual bridge cost from the router with validation
                 uint256 bridgeCost = _getBridgeCost(router, wormholeChainId);
 
-                // Validate that action value is between 4x and 10x the bridge cost
-                uint256 minValue = bridgeCost * MIN_BRIDGE_COST_MULTIPLIER;
-                uint256 maxValue = bridgeCost * MAX_BRIDGE_COST_MULTIPLIER;
+                if (actionValue == 0) {
+                    // Self-funded router (xWELLBridgeFeePayer pattern): the
+                    // router pays the executor fee from its own ETH balance,
+                    // quoting on-chain inside the execution transaction, so
+                    // the action carries no value. Valid iff the router can
+                    // cover the current quote.
+                    require(
+                        router.balance >= bridgeCost,
+                        string.concat(
+                            "BridgeValidationHook: self-funded router balance too low. Expected >= ",
+                            _toString(bridgeCost),
+                            ", got ",
+                            _toString(router.balance)
+                        )
+                    );
+                } else {
+                    // Value-carrying call (legacy xWELLRouter pattern):
+                    // validate the attached value is 4x-10x the quote
+                    uint256 minValue = bridgeCost * MIN_BRIDGE_COST_MULTIPLIER;
+                    uint256 maxValue = bridgeCost * MAX_BRIDGE_COST_MULTIPLIER;
 
-                require(
-                    actionValue >= minValue,
-                    string.concat(
-                        "BridgeValidationHook: bridge value too low. Expected >= ",
-                        _toString(minValue),
-                        ", got ",
-                        _toString(actionValue)
-                    )
-                );
+                    require(
+                        actionValue >= minValue,
+                        string.concat(
+                            "BridgeValidationHook: bridge value too low. Expected >= ",
+                            _toString(minValue),
+                            ", got ",
+                            _toString(actionValue)
+                        )
+                    );
 
-                require(
-                    actionValue <= maxValue,
-                    string.concat(
-                        "BridgeValidationHook: bridge value too high. Expected <= ",
-                        _toString(maxValue),
-                        ", got ",
-                        _toString(actionValue)
-                    )
-                );
+                    require(
+                        actionValue <= maxValue,
+                        string.concat(
+                            "BridgeValidationHook: bridge value too high. Expected <= ",
+                            _toString(maxValue),
+                            ", got ",
+                            _toString(actionValue)
+                        )
+                    );
+                }
             }
         }
     }
