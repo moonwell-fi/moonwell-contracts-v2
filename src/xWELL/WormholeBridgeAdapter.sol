@@ -387,7 +387,11 @@ contract WormholeBridgeAdapter is
         );
         uint16 targetChainId = targetChain.toUint16();
         uint256 cost = bridgeCost(targetChainId);
-        require(msg.value == cost, "WormholeBridge: cost not equal to quote");
+        require(cost != 0, "WormholeBridge: quote unavailable");
+        require(
+            msg.value >= cost,
+            "WormholeBridge: insufficient value for quote"
+        );
         require(
             targetAddress[targetChainId] != address(0),
             "WormholeBridge: invalid target chain"
@@ -426,6 +430,12 @@ contract WormholeBridgeAdapter is
             requestBytes,
             relayInstructions
         );
+
+        uint256 refund = msg.value - cost;
+        if (refund != 0) {
+            (bool success, ) = msg.sender.call{value: refund}("");
+            require(success, "WormholeBridge: refund failed");
+        }
 
         emit TokensSent(targetChainId, to, amount);
     }
