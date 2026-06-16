@@ -28,7 +28,7 @@ contract mipx61 is HybridProposalV2, ChainlinkOracleConfigs {
         "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL";
 
     /// @notice Archive-key suffix for the pre-fix Core wrappers.
-    string internal constant DEPRECATED_SUFFIX = "_DEPRECATED2";
+    string internal constant DEPRECATED_SUFFIX = "_DEPRECATED_V4";
 
     /// @notice Pre-upgrade Morpho wrapper storage state, snapshotted in
     /// beforeSimulationHook() so validate() can prove the logic-only upgrade reset
@@ -59,7 +59,7 @@ contract mipx61 is HybridProposalV2, ChainlinkOracleConfigs {
 
     constructor() {
         _setProposalDescription(
-            bytes(vm.readFile("./proposals/mips/mip-x61/MIP-X61.md"))
+            bytes(vm.readFile("./proposals/mips/mip-x61/x61.md"))
         );
     }
 
@@ -484,10 +484,13 @@ contract mipx61 is HybridProposalV2, ChainlinkOracleConfigs {
     }
 
     /// @notice Assert the redeployed wrapper forwards the same raw feed it did pre-
-    /// execution: latestRoundData() equals the raw-aggregator snapshot exactly, and
-    /// getUnderlyingPrice stays within 2% — one fresh Chainlink round can shift the
-    /// old wrapper's pre-snapshot (it delayed the round; the new wrapper, seeded to
-    /// the latest round at deploy, forwards it).
+    /// execution. latestRoundData() must equal the raw-aggregator pre-snapshot
+    /// EXACTLY: the new wrapper forwards the underlying aggregator and, on a pinned
+    /// fork, no new rounds are mined across the governance warp, so the raw round is
+    /// frozen. getUnderlyingPrice allows 2% because its pre-snapshot was read via the
+    /// OLD wrapper (which applies its round delay and can report an earlier round than
+    /// latest), whereas post reads the new wrapper seeded to the latest round — a gap
+    /// of at most one round, independent of any new round being mined.
     function _assertCorePricePreserved(
         Addresses addresses,
         uint256 chainId,

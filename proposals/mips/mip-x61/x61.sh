@@ -1,0 +1,6 @@
+#!/bin/bash
+export DESCRIPTION_PATH=proposals/mips/mip-x61/x61.md
+export PRIMARY_FORK_ID=3
+
+echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
+echo "PRIMARY_FORK_ID=$PRIMARY_FORK_ID"
