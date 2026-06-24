@@ -1,12 +1,12 @@
 [
-   { 
+    {
         "addr": "0x76e1e2F2E3239A15bAD01f027B5A4bcDE5797f3C",
-        "isContract": true ,
+        "isContract": true,
         "name": "JUMP_RATE_IRM_USDC_MIP_B60"
-   },
-   {
+    },
+    {
         "addr": "0xc6845C053d29396DA966be052CF4F6b08453dbbD",
-        "isContract": true ,
+        "isContract": true,
         "name": "JUMP_RATE_IRM_MAMO_MIP_B60"
     },
     {

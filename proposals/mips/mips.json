@@ -1,11 +1,10 @@
 [
     {
-        "envpath": "proposals/mips/mip-b60/b60.sh",
+        "envpath": "proposals/mips/mip-x61/x61.sh",
         "governor": "MultichainGovernorV2",
         "id": 0,
-        "path": "mip-b60.sol/mipb60.json",
-        "proposalType": "HybridProposalV2",
-        "descriptionUri": "ipfs://bafkreiacbqxlgfxi2s4yzqb6rpgkytfesdpd7x3no7vyf7gemhlt3yi4n4"
+        "path": "mip-x61.sol/mipx61.json",
+        "proposalType": "HybridProposalV2"
     },
     {
         "envpath": "proposals/mips/mip-x60/x60.sh",
