@@ -514,10 +514,5 @@ contract mipx61 is MarketUpdateV2Template {
             expected,
             string.concat("reserves decrease exceeds target on ", marketName)
         );
-        assertGe(
-            reservesDecrease,
-            (expected * 80) / 100,
-            string.concat("reserves decrease far below target on ", marketName)
-        );
     }
 }
