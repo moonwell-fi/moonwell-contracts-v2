@@ -1,5 +1,15 @@
 [
     {
+        "addr": "0x76e1e2F2E3239A15bAD01f027B5A4bcDE5797f3C",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_USDC_MIP_X61"
+    },
+    {
+        "addr": "0xc6845C053d29396DA966be052CF4F6b08453dbbD",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MAMO_MIP_X61"
+    },
+    {
         "addr": "0x9c4b2B98b24F36f906517139F5f9bAca732a3cF0",
         "isContract": true,
         "name": "JUMP_RATE_IRM_BASE_FLAT_MIP_X55"
