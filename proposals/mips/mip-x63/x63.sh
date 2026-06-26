@@ -1,5 +1,5 @@
 #!/bin/bash
-export DESCRIPTION_PATH=proposals/mips/mip-x61/x61.md
+export DESCRIPTION_PATH=proposals/mips/mip-x63/x63.md
 export PRIMARY_FORK_ID=3
 
 echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
