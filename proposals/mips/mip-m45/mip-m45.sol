@@ -30,7 +30,7 @@ contract mipm45 is HybridProposalV2 {
 
     /// @notice wallet receiving the withdrawn reserves
     address public constant RECIPIENT =
-        0xadcC226082E878371a3fc33c1f914dad7FB6a28D;
+        0x9917Ea34179D87F06C8b9D4AfB8BD78248B434ef;
 
     /// @notice minimum live cash required per market, in basis points of the
     ///         amount its _reduceReserves action pulls (1.1x buffer)

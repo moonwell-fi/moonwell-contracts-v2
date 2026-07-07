@@ -6,7 +6,7 @@ As part of the Moonbeam Sunset, this proposal:
 
 1. Withdraws the safe portion of protocol reserves from seven Moonbeam markets
    and transfers the underlying tokens to the Foundation-designated wallet
-   `0xadcC226082E878371a3fc33c1f914dad7FB6a28D`.
+   `0x9917Ea34179D87F06C8b9D4AfB8BD78248B434ef`.
 2. Pauses minting and borrowing on every live Moonbeam market.
 
 ## Reserve Withdrawals
