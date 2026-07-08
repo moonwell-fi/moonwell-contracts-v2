@@ -59,13 +59,15 @@ contract mipm45 is HybridProposalV2 {
     ///         0.01 to stay under the live on-chain margin). xcDOT is capped
     ///         by the market's physical token balance instead: getCash()
     ///         reports ~550k DOT but includes ~513k of badDebt() from the
-    ///         fixer delegate — only ~37,155 xcDOT are actually held, so the
-    ///         withdrawal is sized to 33,700 (1.1x cash buffer).
+    ///         fixer delegate — only ~35,942 xcDOT are actually held and the
+    ///         balance is trending down as suppliers exit, so the withdrawal
+    ///         is sized to 30,000 (1.2x cash buffer at sizing time; re-verify
+    ///         xcDOT.balanceOf(mxcDOT) right before proposing).
     function _withdrawals() internal pure returns (Withdrawal[] memory w) {
         w = new Withdrawal[](7);
         w[0] = Withdrawal("mxcUSDT", 22227.75e6, "22,227.75 xcUSDT");
         w[1] = Withdrawal("mxcUSDC", 15795.89e6, "15,795.89 xcUSDC");
-        w[2] = Withdrawal("mxcDOT", 33700e10, "33,700 xcDOT");
+        w[2] = Withdrawal("mxcDOT", 30000e10, "30,000 xcDOT");
         w[3] = Withdrawal("mUSDCwh", 54800.43e6, "54,800.43 USDC.wh");
         w[4] = Withdrawal("mFRAX", 473.41e18, "473.41 FRAX");
         w[5] = Withdrawal("mETHwh", 8.58e18, "8.58 ETH.wh");

@@ -19,7 +19,7 @@ an additional 0.01 to stay under the live on-chain margin.
 | ------- | ----------------: | ------------: | -----------------: | --------: |
 | xcUSDT  |         32,038.89 |      9,811.14 |          22,227.75 | 22,227.75 |
 | xcUSDC  |         18,458.19 |      2,662.30 |          15,795.89 | 15,795.89 |
-| xcDOT   |         46,897.09 |      3,302.77 |          43,594.32 | 33,700.00 |
+| xcDOT   |         46,897.09 |      3,302.77 |          43,594.32 | 30,000.00 |
 | USDC.wh |         60,701.98 |      5,901.55 |          54,800.43 | 54,800.43 |
 | FRAX    |            536.74 |         63.33 |             473.41 |    473.41 |
 | ETH.wh  |              9.42 |          0.83 |               8.59 |      8.58 |
@@ -31,9 +31,12 @@ paused.
 
 The xcDOT withdrawal is capped below reserves-minus-borrows: the market's
 `getCash()` reports ~550,562 DOT, but ~513,407 of that is `badDebt()` tracked by
-the bad-debt fixer delegate — the market physically holds only ~37,155 xcDOT.
-The withdrawal is sized to 33,700 xcDOT, leaving a ~1.1x cash buffer so the
-proposal cannot revert if market activity moves cash before execution.
+the bad-debt fixer delegate — the market physically holds only ~35,942 xcDOT,
+and that balance is trending down as suppliers exit the sunsetting market. The
+withdrawal is sized to 30,000 xcDOT (~1.2x cash buffer at sizing time) so the
+proposal cannot revert if market activity moves cash before execution. The
+physical balance will be re-verified immediately before the proposal is
+submitted on-chain.
 
 Each withdrawal is executed as `_reduceReserves(amount)` on the market — which
 sends the underlying to the market admin (the Moonbeam Temporal Governor) —
