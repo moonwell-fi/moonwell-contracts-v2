@@ -1,54 +1,104 @@
-# MIP-M45: Moonbeam Sunset — Withdraw Reserves and Pause Markets
+# # MIP-M45: Moonbeam Sunset
 
 ## Summary
 
-As part of the Moonbeam Sunset, this proposal:
+This proposal supports the Moonbeam Sunset by taking two actions on Moonwell’s
+Moonbeam deployment:
 
-1. Withdraws the safe portion of protocol reserves from seven Moonbeam markets
-   and transfers the underlying tokens to the Foundation-designated wallet
-   `0x9917Ea34179D87F06C8b9D4AfB8BD78248B434ef`.
-2. Pauses minting and borrowing on every live Moonbeam market.
+1. Withdraw the safe portion of protocol reserves from selected Moonbeam
+   markets.
+2. Pause new supplying and borrowing across all live Moonbeam markets.
 
-## Reserve Withdrawals
+The withdrawn reserves will be transferred to the Foundation-designated wallet:
 
-The amount safe to withdraw from each market is its total reserves minus its
-total borrows, rounded to 2 decimal places. ETH.wh and BTC.wh are rounded down
-an additional 0.01 to stay under the live on-chain margin.
+`0x9917Ea34179D87F06C8b9D4AfB8BD78248B434ef`
 
-| Market  | Reserves (tokens) | Total Borrows | Reserves − Borrows |  Withdraw |
-| ------- | ----------------: | ------------: | -----------------: | --------: |
-| xcUSDT  |         32,038.89 |      9,811.14 |          22,227.75 | 22,227.75 |
-| xcUSDC  |         18,458.19 |      2,662.30 |          15,795.89 | 15,795.89 |
-| xcDOT   |         46,897.09 |      3,302.77 |          43,594.32 | 30,000.00 |
-| USDC.wh |         60,701.98 |      5,901.55 |          54,800.43 | 54,800.43 |
-| FRAX    |            536.74 |         63.33 |             473.41 |    473.41 |
-| ETH.wh  |              9.42 |          0.83 |               8.59 |      8.58 |
-| BTC.wh  |              0.40 |          0.02 |               0.38 |      0.37 |
+This proposal does not affect Moonwell markets on Base, Optimism, or Ethereum.
+**Importantly, all withdraws made will go toward repaying bad debt in the GLMR
+markets.**
 
-The GLMR market has negative reserves-minus-borrows (5,338,499 GLMR reserves
-against 14,529,316 GLMR borrows) and is excluded from the withdrawal; it is only
-paused.
+## Background
 
-The xcDOT withdrawal is capped below reserves-minus-borrows: the market's
-`getCash()` reports ~550,562 DOT, but ~513,407 of that is `badDebt()` tracked by
-the bad-debt fixer delegate — the market physically holds only ~35,942 xcDOT,
-and that balance is trending down as suppliers exit the sunsetting market. The
-withdrawal is sized to 30,000 xcDOT (~1.2x cash buffer at sizing time) so the
-proposal cannot revert if market activity moves cash before execution. The
-physical balance will be re-verified immediately before the proposal is
-submitted on-chain.
+Moonwell is in the process of sunsetting its Moonbeam deployment. As part of
+this process, governance should reduce ongoing activity on Moonbeam and move
+available protocol-owned reserves out of the Moonbeam markets. This helps
+simplify the sunset process while preserving a margin of safety for existing
+market conditions.
 
-Each withdrawal is executed as `_reduceReserves(amount)` on the market — which
-sends the underlying to the market admin (the Moonbeam Temporal Governor) —
-followed by an ERC20 `transfer(recipient, amount)` to the Foundation-designated
-wallet.
+This proposal only withdraws reserves that are considered safe to withdraw from
+each market. It also pauses new minting and borrowing so that additional market
+activity does not continue growing on the Moonbeam deployment.
 
-## Pause Mint and Borrow
+## Proposal
 
-Minting and borrowing are paused via the Comptroller (`_setMintPaused` /
-`_setBorrowPaused`) on all eight live markets:
+This proposal does two things:
 
-GLMR, xcDOT, xcUSDT, xcUSDC, USDC.wh, FRAX, ETH.wh, and BTC.wh.
+### 1. Withdraw Available Protocol Reserves
 
-Borrowing on FRAX is already paused; the action is included for uniformity and
-is a no-op.
+Moonwell will withdraw available reserves from seven Moonbeam markets and
+transfer those assets to the Foundation-designated wallet.
+
+The proposed reserve withdrawals are:
+
+| Market  | Amount to Withdraw |
+| ------- | -----------------: |
+| xcUSDT  |          22,227.75 |
+| xcUSDC  |          15,795.89 |
+| xcDOT   |          30,000.00 |
+| USDC.wh |          54,800.43 |
+| FRAX    |             473.41 |
+| ETH.wh  |               8.58 |
+| BTC.wh  |               0.37 |
+
+The GLMR market is not included in the reserve withdrawal because its
+outstanding borrows are greater than its reserves. GLMR will only be paused.
+
+The xcDOT withdrawal is intentionally lower than the full reserve amount. This
+creates a safety buffer so the proposal is less likely to fail if users continue
+exiting the market before the proposal is executed.
+
+### 2. Pause New Supplying and Borrowing
+
+This proposal also pauses new supplying and borrowing on all live Moonbeam
+markets:
+
+- GLMR
+- xcDOT
+- xcUSDT
+- xcUSDC
+- USDC.wh
+- FRAX
+- ETH.wh
+- BTC.wh
+
+This means users will no longer be able to open new supply or borrow positions
+on Moonbeam after the proposal is executed.
+
+## Rationale
+
+Pausing new supplying and borrowing helps prevent additional market activity
+from building up on a deployment that is being sunset.
+
+Withdrawing available protocol reserves allows Moonwell governance and the
+Foundation to continue the Moonbeam Sunset process in an orderly way.
+
+The withdrawal amounts are sized conservatively. In particular, the xcDOT
+withdrawal includes a buffer because the live available balance can change as
+users exit the market.
+
+## Voting Options
+
+- Yes: Approve the Moonbeam Sunset reserve withdrawals and pause new supplying
+  and borrowing on all live Moonbeam markets.
+- No: Do not approve these reserve withdrawals or market pauses. Moonbeam
+  markets would continue operating under their current settings.
+- Abstain: Neutral.
+
+## Conclusion
+
+MIP-M45 sunsets Moonbeam. It withdraws available protocol reserves from selected
+Moonbeam markets, transfers them to the Foundation-designated wallet, and pauses
+new supplying and borrowing across all live Moonbeam markets.
+
+These actions help reduce new activity on Moonbeam and support an orderly
+wind-down of Moonwell’s Moonbeam deployment.
