@@ -35,7 +35,7 @@ This proposal does two things:
 
 ### 1. Withdraw Available Protocol Reserves
 
-Moonwell will withdraw available reserves from seven Moonbeam markets and
+Moonwell will withdraw available reserves from five Moonbeam markets and
 transfer those assets to the Foundation-designated wallet.
 
 The proposed reserve withdrawals are:
@@ -44,18 +44,17 @@ The proposed reserve withdrawals are:
 | ------- | -----------------: |
 | xcUSDT  |          22,227.75 |
 | xcUSDC  |          15,795.89 |
-| xcDOT   |          30,000.00 |
 | USDC.wh |          54,800.43 |
-| FRAX    |             473.41 |
 | ETH.wh  |               8.58 |
 | BTC.wh  |               0.37 |
 
 The GLMR market is not included in the reserve withdrawal because its
 outstanding borrows are greater than its reserves. GLMR will only be paused.
 
-The xcDOT withdrawal is intentionally lower than the full reserve amount. This
-creates a safety buffer so the proposal is less likely to fail if users continue
-exiting the market before the proposal is executed.
+The xcDOT and FRAX markets are also not included. Both carry bad debt, and their
+reported protocol reserves are not backed by tokens that can be transferred out
+— in xcDOT's case, users exiting the market have already withdrawn nearly all of
+the xcDOT it physically held. xcDOT and FRAX will only be paused.
 
 ### 2. Pause New Supplying and Borrowing
 
@@ -82,9 +81,8 @@ from building up on a deployment that is being sunset.
 Withdrawing available protocol reserves allows Moonwell governance and the
 Foundation to continue the Moonbeam Sunset process in an orderly way.
 
-The withdrawal amounts are sized conservatively. In particular, the xcDOT
-withdrawal includes a buffer because the live available balance can change as
-users exit the market.
+The withdrawal amounts are sized conservatively, using only the portion of
+reserves that is safe to withdraw from each market.
 
 ## Voting Options
 

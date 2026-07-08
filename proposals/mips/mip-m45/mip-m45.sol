@@ -16,11 +16,14 @@ import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/
 ///         Sunset:
 ///         1. Withdraw the safe portion of protocol reserves
 ///            (reserves - total borrows, rounded down for ETH.wh and BTC.wh)
-///            from seven markets and transfer the underlying tokens to the
+///            from five markets and transfer the underlying tokens to the
 ///            Foundation-designated wallet.
 ///         2. Pause minting and borrowing on every live Moonbeam market.
 ///         The GLMR market has negative reserves-minus-borrows and is only
-///         paused, not withdrawn from.
+///         paused, not withdrawn from. The xcDOT and FRAX markets are also
+///         only paused, not withdrawn from: both are bad-debt fixer delegates
+///         whose reserves are not backed by transferable tokens (xcDOT's
+///         physical balance was drained to ~0.22 by supplier exits).
 contract mipm45 is HybridProposalV2 {
     struct Withdrawal {
         string market;
@@ -56,22 +59,17 @@ contract mipm45 is HybridProposalV2 {
 
     /// @notice safe-to-withdraw amounts = reserves - total borrows, rounded
     ///         to 2 decimal places (ETH.wh and BTC.wh rounded down an extra
-    ///         0.01 to stay under the live on-chain margin). xcDOT is capped
-    ///         by the market's physical token balance instead: getCash()
-    ///         reports ~550k DOT but includes ~513k of badDebt() from the
-    ///         fixer delegate — only ~35,942 xcDOT are actually held and the
-    ///         balance is trending down as suppliers exit, so the withdrawal
-    ///         is sized to 30,000 (1.2x cash buffer at sizing time; re-verify
-    ///         xcDOT.balanceOf(mxcDOT) right before proposing).
+    ///         0.01 to stay under the live on-chain margin). The two bad-debt
+    ///         fixer-delegate markets (xcDOT, FRAX) are excluded and only
+    ///         paused: their getCash() is inflated by badDebt() so accounting
+    ///         reserves overstate what can actually be transferred out.
     function _withdrawals() internal pure returns (Withdrawal[] memory w) {
-        w = new Withdrawal[](7);
+        w = new Withdrawal[](5);
         w[0] = Withdrawal("mxcUSDT", 22227.75e6, "22,227.75 xcUSDT");
         w[1] = Withdrawal("mxcUSDC", 15795.89e6, "15,795.89 xcUSDC");
-        w[2] = Withdrawal("mxcDOT", 30000e10, "30,000 xcDOT");
-        w[3] = Withdrawal("mUSDCwh", 54800.43e6, "54,800.43 USDC.wh");
-        w[4] = Withdrawal("mFRAX", 473.41e18, "473.41 FRAX");
-        w[5] = Withdrawal("mETHwh", 8.58e18, "8.58 ETH.wh");
-        w[6] = Withdrawal("MOONWELL_mWBTC", 0.37e8, "0.37 WBTC.wh");
+        w[2] = Withdrawal("mUSDCwh", 54800.43e6, "54,800.43 USDC.wh");
+        w[3] = Withdrawal("mETHwh", 8.58e18, "8.58 ETH.wh");
+        w[4] = Withdrawal("MOONWELL_mWBTC", 0.37e8, "0.37 WBTC.wh");
     }
 
     /// @notice every live Moonbeam market gets mint and borrow paused
