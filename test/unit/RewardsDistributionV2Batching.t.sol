@@ -5,6 +5,28 @@ import "@forge-std/Test.sol";
 
 import {ActionType, ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {RewardsDistributionV2Template} from "@proposals/templates/RewardsDistributionV2.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+
+/// @notice minimal Addresses stand-in for fork-less tests: the real registry
+/// validates isContract on load, which cannot hold without a fork. Only the
+/// two entrypoints _buildWithdrawWellActions consumes are implemented.
+contract FakeAddresses {
+    mapping(bytes32 => address) private addrs;
+
+    function set(string memory name, address a) external {
+        addrs[keccak256(bytes(name))] = a;
+    }
+
+    function getAddress(string memory name) external view returns (address) {
+        address a = addrs[keccak256(bytes(name))];
+        require(a != address(0), "FakeAddresses: not set");
+        return a;
+    }
+
+    function isAddressSet(string memory name) external view returns (bool) {
+        return addrs[keccak256(bytes(name))] != address(0);
+    }
+}
 
 /// @notice test-only harness exposing the generic action-batching internals of
 /// RewardsDistributionV2Template so the size-driven chunker and propose()
@@ -47,6 +69,23 @@ contract RewardsBatchHarness is RewardsDistributionV2Template {
         uint256 index
     ) external view returns (uint256) {
         return _chunkEncodedSize(chunkActions(at, index));
+    }
+
+    /// @notice real-path entrypoints for the TG-WELL span protection: the
+    /// same _buildWithdrawWellActions / _markTgWellSpan flow a rewards build
+    /// runs, so tests exercise the production span marking rather than a
+    /// synthetic markGroup
+    function buildWithdrawWell(
+        Addresses addresses,
+        uint256 chainId,
+        WithdrawWell[] memory ws,
+        string memory tokenName
+    ) external {
+        _buildWithdrawWellActions(addresses, chainId, ws, tokenName);
+    }
+
+    function markTgSpan(uint256 chainId) external {
+        _markTgWellSpan(chainId);
     }
 
     /// @notice encoded VAA-payload size of a synthetic bundle of `count`
@@ -306,5 +345,64 @@ contract RewardsDistributionV2BatchingUnitTest is Test {
             1,
             "init call with near-budget description fits only one action"
         );
+    }
+
+    /// @notice run the REAL TG-WELL span flow (_buildWithdrawWellActions +
+    /// _markTgWellSpan): pre-span actions, a withdrawWell(to = TG), then
+    /// post-span actions
+    function _buildTgSpanBundle() internal {
+        FakeAddresses fake = new FakeAddresses();
+        fake.set("TEMPORAL_GOVERNOR", address(0xAA01));
+        fake.set("RESERVE_WELL_HOLDING_DEPOSIT", address(0xAA02));
+        fake.set("xWELL_PROXY", address(0xAA03));
+
+        // pre-span region (models transferFrom / reward-speed actions)
+        _pushBase(2, 300);
+
+        RewardsDistributionV2Template.WithdrawWell[]
+            memory ws = new RewardsDistributionV2Template.WithdrawWell[](1);
+        ws[0] = RewardsDistributionV2Template.WithdrawWell({
+            amount: 1e18,
+            to: "TEMPORAL_GOVERNOR"
+        });
+        harness.buildWithdrawWell(
+            Addresses(address(fake)),
+            8453,
+            ws,
+            "xWELL_PROXY"
+        );
+
+        // post-span region (models multiRewarder / merkle actions)
+        _pushBase(3, 300);
+
+        harness.markTgSpan(8453);
+    }
+
+    /// the production span marking keeps everything from the TG-bound
+    /// withdrawal to the end of the bundle inside one chunk
+    function testTgWellSpanMarkedOnRealBuildPath() public {
+        // budget fits the 4-action span but not the whole 6-action bundle,
+        // so the chunker must cut — and may only cut before the span
+        harness.setBudgets(harness.measureEncodedSize(5, 300), 12_000);
+        _buildTgSpanBundle();
+
+        uint256[] memory starts = _chunkStarts(ActionType.Base);
+        assertGt(starts.length, 1, "bundle should split");
+        for (uint256 i = 0; i < starts.length; i++) {
+            assertTrue(starts[i] <= 2, "chunker cut inside the TG-WELL span");
+        }
+    }
+
+    /// a TG-WELL span larger than any chunk fails loudly through the real
+    /// build path instead of shipping an unordered cross-chunk WELL flow
+    function testTgWellSpanOversizedReverts() public {
+        // budget fits two actions; the 4-action span can never fit
+        harness.setBudgets(harness.measureEncodedSize(2, 300), 12_000);
+        _buildTgSpanBundle();
+
+        vm.expectRevert(
+            "RewardsDistribution: atomic action region exceeds maxChunkPayloadBytes"
+        );
+        harness.chunkCount(ActionType.Base);
     }
 }

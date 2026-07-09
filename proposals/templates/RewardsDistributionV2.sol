@@ -1950,19 +1950,25 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
             );
         }
 
-        // withdraw reserves from the Market Reserve ERC20 Holding Deposit contract
-        _buildWithdrawWellActions(
-            addresses,
-            _chainId,
-            spec.withdrawWell,
-            "xWELL_PROXY"
-        );
-
         _buildReserveAutomationActions(
             addresses,
             _chainId,
             spec.transferReserves,
             spec.initSale
+        );
+
+        // withdraw WELL from the Market Reserve ERC20 Holding Deposit
+        // contract. Built AFTER the reserve automation region on purpose:
+        // the TG-WELL atomic span runs from the first withdrawWell(to = TG)
+        // to the end of the bundle, and the reserve region never touches TG
+        // WELL — building it first keeps it out of the span, so the span
+        // only covers the WELL-spending multiRewarder/merkle actions and
+        // stays well under the chunk budget.
+        _buildWithdrawWellActions(
+            addresses,
+            _chainId,
+            spec.withdrawWell,
+            "xWELL_PROXY"
         );
 
         _buildMultiRewarderActions(addresses, _chainId, spec.multiRewarder);
@@ -2063,12 +2069,20 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                     j++
                 ) {
                     if (
-                        !saleBuilt[j] &&
                         addresses.getAddress(
                             initSale.reserveAutomationContracts[j]
-                        ) ==
-                        addresses.getAddress(transferReserves[i].to)
+                        ) == addresses.getAddress(transferReserves[i].to)
                     ) {
+                        // a second transferReserves funding the same
+                        // automation contract would leave the already-built
+                        // initiateSale sized without it (the sale snapshots
+                        // its balance at execution time) — fail loudly. The
+                        // worker emits exactly one transferReserves per
+                        // market; merge the amounts if that ever changes.
+                        require(
+                            !saleBuilt[j],
+                            "RewardsDistribution: multiple transferReserves fund one automation contract"
+                        );
                         saleBuilt[j] = true;
                         _pushInitiateSale(addresses, _chainId, initSale, j);
                     }
@@ -2139,7 +2153,7 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
         uint256 _chainId,
         WithdrawWell[] memory withdrawWells,
         string memory tokenName
-    ) private {
+    ) internal {
         ActionType t = _actionTypeForChain(_chainId);
 
         for (uint256 i = 0; i < withdrawWells.length; i++) {
@@ -2154,6 +2168,10 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                     1;
             }
 
+            // ActionType passed explicitly (instead of the fork-derived
+            // 3-arg _pushAction) so this path also runs in fork-less unit
+            // tests; in production builds the active fork always matches
+            // _chainId, so behaviour is identical
             _pushAction(
                 addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT"),
                 abi.encodeWithSignature(
@@ -2168,7 +2186,8 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                     " WELL ",
                     " from the WELL Reserve Holding Deposit Contract on ",
                     _chainId.chainIdToName()
-                )
+                ),
+                t
             );
         }
     }
@@ -2178,7 +2197,7 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     /// of the chain has been pushed. No-op when the chain has no TG-bound
     /// withdrawal. If the span exceeds maxChunkPayloadBytes() the chunker
     /// fails loudly at simulation/print time (see _computeChunkStarts).
-    function _markTgWellSpan(uint256 _chainId) private {
+    function _markTgWellSpan(uint256 _chainId) internal {
         ActionType t = _actionTypeForChain(_chainId);
         uint256 start = _tgWellSpanStart[uint8(t)];
         if (start == 0) {
