@@ -606,6 +606,10 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     /// whose bundled actions exceed this is split into more chunks. Kept below
     /// maxProposeCallBytes() so any single chunk always fits in one propose()
     /// call. Virtual so a MIP can tune it without reimplementing the chunker.
+    /// @dev this bounds payload BYTES, not execution gas on the destination
+    /// chain: a byte-small chunk of gas-heavy actions can still exceed a
+    /// destination per-tx cap (e.g. Moonbeam's 2^24 gas limit). Override with
+    /// a lower budget when a chain's bundle is gas-dense.
     function maxChunkPayloadBytes() public view virtual returns (uint256) {
         return 11_000;
     }
@@ -619,9 +623,9 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     }
 
     /// @notice fixed per-call abi overhead accounted for when packing propose()
-    /// calls: selector, the five argument heads, three array length words, the
-    /// finalize bool and a short IPFS description URI. Production descriptions
-    /// are pinned to a short URI, so a small constant is sufficient.
+    /// calls: selector, the argument heads, array length words and the
+    /// finalize bool. The init call's description is charged separately from
+    /// its actual size in batchProposeSplits.
     uint256 private constant PROPOSE_CALL_OVERHEAD = 512;
 
     /// @notice number of wormhole publishMessage chunks a chain's bundle is
@@ -683,7 +687,15 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
         uint256[] memory tmp = new uint256[](n);
         uint256 count = 0;
         uint256 budget = maxProposeCallBytes();
-        uint256 acc = PROPOSE_CALL_OVERHEAD;
+
+        // the init call additionally carries the proposal description —
+        // ideally a short pinned IPFS URI, but the raw multi-KB markdown when
+        // the pin has not happened yet — so its budget is charged with the
+        // ACTUAL description size rather than assuming a short URI. Append
+        // calls (propose(uint256,...)) carry no description and reset to the
+        // fixed overhead.
+        uint256 acc = PROPOSE_CALL_OVERHEAD +
+            _roundUp32(bytes(_proposeDescription()).length);
 
         for (uint256 i = 0; i < n; i++) {
             // per governor action in the propose() arrays: target (32) +
@@ -1915,51 +1927,21 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
             );
         }
 
-        _buildTransferReserveActions(
+        // initiateSale sizes each sale from the automation contract's balance
+        // at execution time, so the transferReserves region that funds those
+        // contracts and the initiateSale calls themselves must ride a single
+        // VAA — the nested call threads the region's start index through
+        // without a caller local (this function is at the stack limit)
+        _buildInitSaleActions(
             addresses,
             _chainId,
-            spec.transferReserves
+            spec.initSale,
+            _buildTransferReserveActions(
+                addresses,
+                _chainId,
+                spec.transferReserves
+            )
         );
-
-        // Process initSale if it exists in the JSON and has valid data
-        if (
-            spec.initSale.auctionPeriod != 0 ||
-            spec.initSale.reserveAutomationContracts.length > 0
-        ) {
-            InitSale memory initSale = spec.initSale;
-
-            for (
-                uint256 i = 0;
-                i < initSale.reserveAutomationContracts.length;
-                i++
-            ) {
-                address reserveAutomationContract = addresses.getAddress(
-                    initSale.reserveAutomationContracts[i]
-                );
-
-                _pushAction(
-                    reserveAutomationContract,
-                    abi.encodeWithSignature(
-                        "initiateSale(uint256,uint256,uint256,uint256,uint256)",
-                        initSale.delay,
-                        initSale.auctionPeriod,
-                        initSale.miniAuctionPeriod,
-                        initSale.periodMaxDiscount,
-                        initSale.periodStartingPremium
-                    ),
-                    string.concat(
-                        "Init reserve sale for ",
-                        vm.getLabel(
-                            addresses.getAddress(
-                                initSale.reserveAutomationContracts[i]
-                            )
-                        ),
-                        " on ",
-                        _chainId.chainIdToName()
-                    )
-                );
-            }
-        }
 
         _buildMultiRewarderActions(addresses, _chainId, spec.multiRewarder);
 
@@ -1969,12 +1951,16 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     /// @notice build the reduce -> transfer reserve pairs for a chain. Each
     /// pair is an atomic group (the transfer spends the reduced reserves), so
     /// its interior boundary is marked to keep it inside a single VAA.
+    /// @return regionStart the per-type action index where this region begins,
+    /// consumed by _buildInitSaleActions to extend the atomic region over the
+    /// initiateSale calls that depend on the transferred reserves
     function _buildTransferReserveActions(
         Addresses addresses,
         uint256 _chainId,
         TransferReserves[] memory transferReserves
-    ) private {
+    ) private returns (uint256 regionStart) {
         ActionType t = _actionTypeForChain(_chainId);
+        regionStart = actions.proposalActionTypeCount(t);
 
         for (uint256 i = 0; i < transferReserves.length; i++) {
             uint256 grpStart = actions.proposalActionTypeCount(t);
@@ -2026,6 +2012,65 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
             );
 
             _markAtomicGroup(t, grpStart, 2);
+        }
+    }
+
+    /// @notice build the initiateSale actions for a chain's reserve
+    /// automation contracts. initiateSale computes periodSaleAmount from the
+    /// automation contract's reserveAsset balance AT EXECUTION TIME and
+    /// reverts when it is zero — but chunks execute as independent temporal
+    /// governor proposals with no ordering guarantee on the destination
+    /// chain. A chunk boundary between a market's reserve transfer and its
+    /// initiateSale could therefore initialize a sale against a zero or
+    /// partial balance. The whole [regionStart, end) region — the
+    /// transferReserves pairs plus every initiateSale — is marked atomic so
+    /// the chunker keeps it in one VAA.
+    function _buildInitSaleActions(
+        Addresses addresses,
+        uint256 _chainId,
+        InitSale memory initSale,
+        uint256 regionStart
+    ) private {
+        // Process initSale only if it exists in the JSON and has valid data
+        if (
+            initSale.auctionPeriod == 0 &&
+            initSale.reserveAutomationContracts.length == 0
+        ) {
+            return;
+        }
+
+        for (
+            uint256 i = 0;
+            i < initSale.reserveAutomationContracts.length;
+            i++
+        ) {
+            address reserveAutomationContract = addresses.getAddress(
+                initSale.reserveAutomationContracts[i]
+            );
+
+            _pushAction(
+                reserveAutomationContract,
+                abi.encodeWithSignature(
+                    "initiateSale(uint256,uint256,uint256,uint256,uint256)",
+                    initSale.delay,
+                    initSale.auctionPeriod,
+                    initSale.miniAuctionPeriod,
+                    initSale.periodMaxDiscount,
+                    initSale.periodStartingPremium
+                ),
+                string.concat(
+                    "Init reserve sale for ",
+                    vm.getLabel(reserveAutomationContract),
+                    " on ",
+                    _chainId.chainIdToName()
+                )
+            );
+        }
+
+        ActionType t = _actionTypeForChain(_chainId);
+        uint256 regionEnd = actions.proposalActionTypeCount(t);
+        if (regionEnd > regionStart) {
+            _markAtomicGroup(t, regionStart, regionEnd - regionStart);
         }
     }
 

@@ -53,11 +53,24 @@ contract RewardsBatchHarness is RewardsDistributionV2Template {
 contract RewardsDistributionV2BatchingUnitTest is Test {
     RewardsBatchHarness harness;
 
+    /// @notice short deterministic description used by propose(); mirrors a
+    /// production run where the markdown is pinned to an IPFS URI. The packer
+    /// charges the init call with the ACTUAL description size, so tests pin a
+    /// known-small one.
+    string constant DESCRIPTION_URI = "ipfs://QmTestDescriptionUri";
+
     function setUp() public {
         // the template constructor reads DESCRIPTION_PATH; point it at a real
         // file (its contents are irrelevant to the batching logic)
         vm.setEnv("DESCRIPTION_PATH", "proposals/mips/mip-x59/x59.md");
         harness = new RewardsBatchHarness();
+        harness.setProposalDescriptionUri(DESCRIPTION_URI);
+    }
+
+    /// @notice mirrors the template's init-call overhead: the fixed
+    /// PROPOSE_CALL_OVERHEAD plus the 32-byte-padded description size
+    function _initCallOverhead() internal pure returns (uint256) {
+        return 512 + ((bytes(DESCRIPTION_URI).length + 31) / 32) * 32;
     }
 
     /// @notice push `count` Base actions each carrying `size` bytes of data
@@ -215,14 +228,43 @@ contract RewardsDistributionV2BatchingUnitTest is Test {
         }
 
         uint256 splitCursor = 0;
-        uint256 acc = 512; // PROPOSE_CALL_OVERHEAD
+        // init call carries the description; append calls do not
+        uint256 acc = _initCallOverhead();
         for (uint256 i = 0; i < chunks; i++) {
             if (splitCursor < splits.length && i == splits[splitCursor]) {
-                acc = 512;
+                acc = 512; // PROPOSE_CALL_OVERHEAD
                 splitCursor++;
             }
             acc += 128 + ((lens[i] + 31) / 32) * 32;
             assertLe(acc, callBudget, "a propose() call exceeds the budget");
         }
+    }
+
+    /// the init call is charged with the ACTUAL description size: a large
+    /// unpinned markdown description forces the first split earlier than the
+    /// same actions with a short pinned URI
+    function testInitCallAccountsForDescription() public {
+        uint256 callBudget = 6_000;
+        harness.setBudgets(2_000, callBudget);
+        _pushBase(6, 700);
+
+        // short URI (set in setUp): several chunks fit in the init call
+        uint256[] memory shortSplits = harness.batchProposeSplits();
+
+        // simulate an unpinned raw markdown description close to the budget:
+        // the init call can now fit fewer (here: one) governor actions
+        harness.setProposalDescriptionUri(string(new bytes(4_500)));
+        uint256[] memory longSplits = harness.batchProposeSplits();
+
+        assertGt(
+            longSplits.length,
+            shortSplits.length,
+            "large description must force more propose() calls"
+        );
+        assertEq(
+            longSplits[0],
+            1,
+            "init call with near-budget description fits only one action"
+        );
     }
 }
