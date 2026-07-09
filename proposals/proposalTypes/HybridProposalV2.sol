@@ -637,6 +637,13 @@ abstract contract HybridProposalV2 is
         );
     }
 
+    /// @notice max gas a SINGLE propose() call may consume in simulation.
+    /// Each batched call is its own mainnet transaction, so the binding
+    /// constraint is per-call (it must fit an Ethereum block with headroom),
+    /// not the sum across calls — a large epoch legitimately spends more
+    /// than any single-block budget in total.
+    uint256 public constant MAX_PROPOSE_CALL_GAS = 30_000_000;
+
     /// @notice submit the encoded propose() calls in order. Only the last
     /// call carries value (bridging happens at finalize). Returns the first
     /// call's returndata (the abi-encoded proposal id).
@@ -647,6 +654,8 @@ abstract contract HybridProposalV2 is
         bytes[] memory calls
     ) internal returns (bytes memory data) {
         for (uint256 i = 0; i < calls.length; i++) {
+            uint256 gasBefore = gasleft();
+
             vm.prank(caller);
             (bool success, bytes memory returndata) = governorAddress.call{
                 value: i == calls.length - 1 ? finalValue : 0,
@@ -663,6 +672,15 @@ abstract contract HybridProposalV2 is
                     "batch propose multichain governor v2 failed"
                 );
             }
+
+            require(
+                gasBefore - gasleft() <= MAX_PROPOSE_CALL_GAS,
+                string.concat(
+                    "Proposal propose call ",
+                    vm.toString(i),
+                    " gas limit exceeded"
+                )
+            );
         }
     }
 
@@ -973,7 +991,6 @@ abstract contract HybridProposalV2 is
             uint256 cost = governor.bridgeCostAll();
             vm.deal(caller, cost * 2);
 
-            uint256 gasStart = gasleft();
             uint256[] memory splits = batchProposeSplits();
 
             if (splits.length == 0) {
@@ -985,6 +1002,8 @@ abstract contract HybridProposalV2 is
                     _proposeDescription(),
                     true // finalize = true
                 );
+
+                uint256 gasStart = gasleft();
 
                 // Execute the proposal
                 vm.prank(caller);
@@ -999,7 +1018,18 @@ abstract contract HybridProposalV2 is
                         "propose multichain governor v2 failed"
                     );
                 }
+
+                // single-call submission is one mainnet transaction and must
+                // fit an Ethereum block with headroom
+                require(
+                    gasStart - gasleft() <= MAX_PROPOSE_CALL_GAS,
+                    "Proposal propose gas limit exceeded"
+                );
             } else {
+                // batched submission: each call is checked against
+                // MAX_PROPOSE_CALL_GAS individually inside
+                // _submitGovernorCalls — the per-transaction limit is the
+                // binding constraint, not the sum across transactions
                 data = _submitBatchPropose(
                     governorAddress,
                     caller,
@@ -1010,11 +1040,6 @@ abstract contract HybridProposalV2 is
                     splits
                 );
             }
-
-            require(
-                gasStart - gasleft() <= 60_000_000,
-                "Proposal propose gas limit exceeded"
-            );
         }
 
         uint256 proposalId = abi.decode(data, (uint256));
