@@ -89,3 +89,17 @@
   into TG, a bridge sized only for the net balance will revert on the first
   transfer with `ERC20: transfer amount exceeds balance`. Trace TG
   inflow/outflow step-by-step when rebalancing bridge amounts across split MIPs.
+- `RewardsDistributionV2Template` (Ethereum-hub rewards, the current template)
+  auto-batches a large epoch: `chunkCount`/`chunkActions` split an oversized
+  per-chain wormhole bundle across multiple VAAs, and `batchProposeSplits`
+  submits the proposal in several init+append `propose()` calls, all sized from
+  the encoded calldata. A new rewards MIP does NOT need to hand-tune chunk
+  boundaries the way MIP-X59 did (`BASE_CHUNK_BOUNDARY`, manual `chunkCount`
+  overrides) — inherit the template and it computes a submittable split. Only
+  override the `virtual` budgets `maxChunkPayloadBytes()` (default 11KB, per-VAA
+  gov-action payload) / `maxProposeCallBytes()` (default 12KB, per-`propose()`
+  call — gas-bound, not a protocol cap) if a chain's gas ceiling differs. The
+  chunker never splits a dependent group (reduce→transfer reserve pair,
+  multiRewarder approve→notify, merkle approve→accept→create) across VAAs; new
+  dependent action sequences must call `_markAtomicGroup` in build so the
+  chunker keeps them in one VAA.
