@@ -77,7 +77,12 @@ contract mipx59 is RewardsDistributionV2Template {
         uint256 index
     ) public view override returns (ProposalAction[] memory chunk) {
         if (actionType != ActionType.Base) {
-            return super.chunkActions(actionType, index);
+            // chunkCount(non-Base) is pinned to 1 above, so return the FULL
+            // bundle explicitly. Delegating to super would land on the
+            // template's size-driven slicer, which could partition
+            // differently and silently drop the actions past its first
+            // slice (chunkCount/chunkActions must always agree).
+            return getActionsByType(actionType);
         }
 
         ProposalAction[] memory baseActions = getActionsByType(ActionType.Base);

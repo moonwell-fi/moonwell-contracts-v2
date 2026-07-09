@@ -24,7 +24,7 @@ import {xWELLBridgeFeePayer} from "@protocol/xWELL/xWELLBridgeFeePayer.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
-import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
+import {ActionType, ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -187,6 +187,26 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
 
     /// @notice Track reserve automation contract balances before proposal execution
     mapping(address => uint256) public reserveAutomationBalancesBefore;
+
+    /// @notice per-ActionType map of per-type action indices where a chunk
+    /// boundary is FORBIDDEN because cutting there would split a dependent
+    /// action sequence (a reduce->transfer reserve pair, a multiRewarder
+    /// approve->notify group, or an approve->accept->create merkle triple)
+    /// across two wormhole VAAs. Populated during build by _markAtomicGroup;
+    /// read by the generic chunker in _computeChunkStarts.
+    mapping(uint8 => mapping(uint256 => bool)) private _unsafeCut;
+
+    /// @notice per-ActionType 1-based per-type index of the first
+    /// withdrawWell action whose destination is the TEMPORAL_GOVERNOR
+    /// (0 = none). Later same-chain actions (multiRewarder approvals, merkle
+    /// campaign spends) may rely on that withdrawal replenishing the TG
+    /// balance, and chunks execute as unordered independent VAAs — so the
+    /// whole span from that withdrawal to the end of the chain's bundle is
+    /// marked atomic by _markTgWellSpan at the end of the chain build. If the
+    /// resulting region exceeds maxChunkPayloadBytes() the chunker fails
+    /// loudly: restructure the epoch (e.g. bridge the full TG outflow and
+    /// point withdrawWell elsewhere) or raise the budget.
+    mapping(uint8 => uint256) private _tgWellSpanStart;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -572,6 +592,323 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                 vm.selectFork(networks[i].forkId);
                 _validateExternalChainActions(addresses, chainId);
             }
+        }
+    }
+
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+    /// -------------- Generic action batching --------------
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+    ///
+    /// A full rewards epoch can encode to tens of KB across 100+ actions,
+    /// which is far too large to submit in a single MultichainGovernorV2
+    /// propose() call (propose() SSTOREs every action's calldata, so the
+    /// binding limit is gas, not a protocol constant). The base
+    /// HybridProposalV2 exposes three hooks for splitting the submission —
+    /// chunkCount / chunkActions (split an oversized per-chain wormhole bundle
+    /// across multiple VAAs) and batchProposeSplits (submit the proposal in
+    /// several init + append propose() calls). Prior rewards MIPs (e.g. x59)
+    /// hand-tuned these per JSON. This template computes them automatically
+    /// from the encoded size of the actions, so future rewards MIPs inherit a
+    /// submittable split with no manual boundary tuning.
+
+    /// @notice max encoded byte size of a single chain's per-chunk temporal
+    /// governor payload (one wormhole publishMessage governor action). A chain
+    /// whose bundled actions exceed this is split into more chunks. Kept below
+    /// maxProposeCallBytes() so any single chunk always fits in one propose()
+    /// call. Virtual so a MIP can tune it without reimplementing the chunker.
+    /// @dev this bounds payload BYTES, not execution gas on the destination
+    /// chain: a byte-small chunk of gas-heavy actions can still exceed a
+    /// destination per-tx cap (e.g. Moonbeam's 2^24 gas limit). Override with
+    /// a lower budget when a chain's bundle is gas-dense.
+    function maxChunkPayloadBytes() public view virtual returns (uint256) {
+        return 11_000;
+    }
+
+    /// @notice max total calldata (bytes) of a single propose() submission.
+    /// ~12KB keeps a submission comfortably under the Ethereum block gas limit
+    /// given propose() stores every action's calldata. Virtual so a MIP can
+    /// tune it without reimplementing the packer.
+    function maxProposeCallBytes() public view virtual returns (uint256) {
+        return 12_000;
+    }
+
+    /// @notice fixed per-call abi overhead accounted for when packing propose()
+    /// calls: selector, the argument heads, array length words and the
+    /// finalize bool. The init call's description is charged separately from
+    /// its actual size in batchProposeSplits.
+    uint256 private constant PROPOSE_CALL_OVERHEAD = 512;
+
+    /// @notice number of wormhole publishMessage chunks a chain's bundle is
+    /// split into. Size-driven: a chain whose actions encode within
+    /// maxChunkPayloadBytes() rides a single VAA (return 1). Ethereum actions
+    /// are local governor actions (never wormhole-bundled), so they are never
+    /// chunked.
+    /// @dev chunkCount and chunkActions share one partition computation and
+    /// MUST be overridden together — overriding only one desynchronizes the
+    /// chunk count from the slices and silently drops or duplicates actions.
+    function chunkCount(
+        ActionType actionType
+    ) public view virtual override returns (uint256) {
+        if (actionType == ActionType.Ethereum) {
+            return 1;
+        }
+
+        ProposalAction[] memory a = getActionsByType(actionType);
+        if (a.length == 0) {
+            return 1;
+        }
+
+        return _computeChunkStarts(actionType, a).length;
+    }
+
+    /// @notice the actions belonging to chunk `index` of `actionType`,
+    /// partitioned so each chunk encodes within maxChunkPayloadBytes() and no
+    /// dependent action group straddles two chunks.
+    /// @dev MUST be overridden together with chunkCount — see chunkCount.
+    function chunkActions(
+        ActionType actionType,
+        uint256 index
+    ) public view virtual override returns (ProposalAction[] memory) {
+        if (actionType == ActionType.Ethereum) {
+            return super.chunkActions(actionType, index);
+        }
+
+        ProposalAction[] memory a = getActionsByType(actionType);
+        uint256[] memory starts = _computeChunkStarts(actionType, a);
+        require(index < starts.length, "chunkActions: index out of range");
+
+        uint256 start = starts[index];
+        uint256 end = index + 1 < starts.length ? starts[index + 1] : a.length;
+
+        return _sliceActions(a, start, end);
+    }
+
+    /// @notice governor-action indices at which the proposal is split into
+    /// successive propose() calls, each within maxProposeCallBytes(). Greedily
+    /// packs the ordered governor actions (every Ethereum action, then the
+    /// Moonbeam / Base / Optimism chunks — matching getTargetsPayloadsValues
+    /// order) into as few calls as fit. Empty => a single propose() call.
+    function batchProposeSplits()
+        public
+        view
+        virtual
+        override
+        returns (uint256[] memory)
+    {
+        uint256[] memory lens = _governorActionPayloadSizes();
+        uint256 n = lens.length;
+
+        uint256[] memory tmp = new uint256[](n);
+        uint256 count = 0;
+        uint256 budget = maxProposeCallBytes();
+
+        // the init call additionally carries the proposal description —
+        // ideally a short pinned IPFS URI, but the raw multi-KB markdown when
+        // the pin has not happened yet — so its budget is charged with the
+        // ACTUAL description size rather than assuming a short URI. Append
+        // calls (propose(uint256,...)) carry no description and reset to the
+        // fixed overhead.
+        uint256 acc = PROPOSE_CALL_OVERHEAD +
+            _roundUp32(bytes(_proposeDescription()).length);
+
+        // an unpinned raw-markdown description can alone exceed the call
+        // budget, making the init call unfixably oversized (no split can
+        // shrink it). Warn loudly during simulation/printing so the author
+        // pins the description to IPFS (descriptionUri) before submission.
+        if (acc > budget) {
+            console.log(
+                "WARNING: proposal description alone exceeds maxProposeCallBytes; pin the description to IPFS (descriptionUri) before submission"
+            );
+        }
+
+        for (uint256 i = 0; i < n; i++) {
+            // per governor action in the propose() arrays: target (32) +
+            // value (32) + payload offset (32) + payload length (32) + the
+            // padded payload bytes
+            uint256 contrib = 128 + _roundUp32(lens[i]);
+
+            // a single governor action that cannot fit a propose() call even
+            // alone can never be submitted within budget — fail loudly
+            // instead of emitting an oversized call silently
+            require(
+                PROPOSE_CALL_OVERHEAD + contrib <= budget,
+                "RewardsDistribution: single governor action exceeds maxProposeCallBytes"
+            );
+
+            if (i > 0 && acc + contrib > budget) {
+                tmp[count++] = i;
+                acc = PROPOSE_CALL_OVERHEAD;
+            }
+
+            acc += contrib;
+        }
+
+        uint256[] memory splits = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            splits[i] = tmp[i];
+        }
+
+        return splits;
+    }
+
+    /// @notice governor-action payload byte lengths in getTargetsPayloadsValues
+    /// order: every Ethereum action individually, then one entry per chunk for
+    /// Moonbeam, Base and Optimism (only for chains that have actions).
+    function _governorActionPayloadSizes()
+        private
+        view
+        returns (uint256[] memory lens)
+    {
+        lens = new uint256[](allActionTypesCount());
+        uint256 idx = 0;
+
+        ProposalAction[] memory eth = getActionsByType(ActionType.Ethereum);
+        for (uint256 i = 0; i < eth.length; i++) {
+            lens[idx++] = eth[i].data.length;
+        }
+
+        ActionType[3] memory bundled = [
+            ActionType.Moonbeam,
+            ActionType.Base,
+            ActionType.Optimism
+        ];
+        for (uint256 b = 0; b < bundled.length; b++) {
+            if (getActionsByType(bundled[b]).length == 0) {
+                continue;
+            }
+
+            uint256 chunks = chunkCount(bundled[b]);
+            for (uint256 c = 0; c < chunks; c++) {
+                lens[idx++] = _chunkEncodedSize(chunkActions(bundled[b], c));
+            }
+        }
+    }
+
+    /// @notice minimum chunk start indices (per-type) that partition `a` so
+    /// each chunk encodes within maxChunkPayloadBytes(), cutting only at safe
+    /// boundaries (never inside a dependent action group). starts[0] == 0
+    /// always; chunk k spans [starts[k], starts[k + 1]) with the last chunk
+    /// running to a.length. Deterministic, so chunkCount and chunkActions agree.
+    function _computeChunkStarts(
+        ActionType actionType,
+        ProposalAction[] memory a
+    ) private view returns (uint256[] memory starts) {
+        uint256 len = a.length;
+        uint256[] memory tmp = new uint256[](len == 0 ? 1 : len);
+        uint256 count = 0;
+        tmp[count++] = 0;
+
+        uint256 budget = maxChunkPayloadBytes();
+        uint256 chunkStart = 0;
+        uint256 prevBoundary = 0;
+
+        for (uint256 b = 1; b <= len; b++) {
+            // a cut before index b is allowed unless it splits a group; the
+            // final boundary (b == len) is always allowed
+            bool allowed = b == len || !_unsafeCut[uint8(actionType)][b];
+            if (!allowed) {
+                continue;
+            }
+
+            // if extending the current chunk to include the unit
+            // [prevBoundary, b) overflows the budget, close the chunk at
+            // prevBoundary and start a fresh one with this unit
+            if (
+                prevBoundary > chunkStart &&
+                _chunkEncodedSize(_sliceActions(a, chunkStart, b)) > budget
+            ) {
+                tmp[count++] = prevBoundary;
+                chunkStart = prevBoundary;
+            }
+
+            prevBoundary = b;
+        }
+
+        // an indivisible unit (atomic region or single action) larger than
+        // the budget cannot be partitioned — fail loudly instead of silently
+        // emitting an over-budget chunk that cascades into an over-budget
+        // propose() call. Restructure the epoch (smaller atomic regions,
+        // bridge the full TG outflow instead of relying on withdrawWell) or
+        // raise maxChunkPayloadBytes().
+        for (uint256 k = 0; k < count; k++) {
+            require(
+                _chunkEncodedSize(
+                    _sliceActions(a, tmp[k], k + 1 < count ? tmp[k + 1] : len)
+                ) <= budget,
+                "RewardsDistribution: atomic action region exceeds maxChunkPayloadBytes"
+            );
+        }
+
+        starts = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            starts[i] = tmp[i];
+        }
+    }
+
+    /// @notice abi-encoded byte length of the wormhole publishMessage calldata
+    /// that bundles `a` into one temporal governor VAA (the governor-action
+    /// payload). The temporal governor address does not affect the encoded
+    /// size, so a placeholder keeps this a pure size computation.
+    function _chunkEncodedSize(
+        ProposalAction[] memory a
+    ) internal view returns (uint256) {
+        address[] memory targets = new address[](a.length);
+        uint256[] memory values = new uint256[](a.length);
+        bytes[] memory payloads = new bytes[](a.length);
+
+        for (uint256 i = 0; i < a.length; i++) {
+            targets[i] = a[i].target;
+            values[i] = a[i].value;
+            payloads[i] = a[i].data;
+        }
+
+        return
+            abi
+                .encodeWithSignature(
+                    "publishMessage(uint32,bytes,uint8)",
+                    nonce,
+                    abi.encode(address(1), targets, values, payloads),
+                    consistencyLevel
+                )
+                .length;
+    }
+
+    function _sliceActions(
+        ProposalAction[] memory a,
+        uint256 start,
+        uint256 end
+    ) private pure returns (ProposalAction[] memory out) {
+        out = new ProposalAction[](end - start);
+        for (uint256 i = start; i < end; i++) {
+            out[i - start] = a[i];
+        }
+    }
+
+    function _roundUp32(uint256 x) private pure returns (uint256) {
+        return ((x + 31) / 32) * 32;
+    }
+
+    function _actionTypeForChain(
+        uint256 _chainId
+    ) private pure returns (ActionType) {
+        if (_chainId == MOONBEAM_CHAIN_ID) return ActionType.Moonbeam;
+        if (_chainId == BASE_CHAIN_ID) return ActionType.Base;
+        if (_chainId == OPTIMISM_CHAIN_ID) return ActionType.Optimism;
+        return ActionType.Ethereum;
+    }
+
+    /// @notice mark the interior boundaries of a `groupLen`-action dependent
+    /// sequence (starting at per-type index `start`) as forbidden chunk cut
+    /// points, so the chunker keeps the whole group inside a single VAA.
+    function _markAtomicGroup(
+        ActionType actionType,
+        uint256 start,
+        uint256 groupLen
+    ) internal {
+        for (uint256 k = 1; k < groupLen; k++) {
+            _unsafeCut[uint8(actionType)][start + k] = true;
         }
     }
 
@@ -1366,24 +1703,14 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
         }
 
         // withdraw WELL from the Market Reserve ERC20 Holding Deposit contract
-        for (uint256 i = 0; i < spec.withdrawWell.length; i++) {
-            _pushAction(
-                addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT"),
-                abi.encodeWithSignature(
-                    "withdrawERC20Token(address,address,uint256)",
-                    addresses.getAddress("GOVTOKEN"),
-                    addresses.getAddress(spec.withdrawWell[i].to),
-                    spec.withdrawWell[i].amount
-                ),
-                string.concat(
-                    "Withdraw ",
-                    vm.toString(spec.withdrawWell[i].amount / 1e18),
-                    " WELL ",
-                    " from the WELL Reserve Holding Deposit Contract on Moonbeam"
-                ),
-                ActionType.Moonbeam
-            );
-        }
+        // (the active fork is Moonbeam, so the 3-arg _pushAction inside the
+        // helper resolves to ActionType.Moonbeam)
+        _buildWithdrawWellActions(
+            addresses,
+            MOONBEAM_CHAIN_ID,
+            spec.withdrawWell,
+            "GOVTOKEN"
+        );
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
@@ -1440,6 +1767,10 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                 ActionType.Moonbeam
             );
         }
+
+        // must run after every Moonbeam action has been pushed (see
+        // _tgWellSpanStart)
+        _markTgWellSpan(MOONBEAM_CHAIN_ID);
     }
 
     function _buildExternalChainActions(
@@ -1619,47 +1950,90 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
             );
         }
 
-        // withdraw reserves from the Market Reserve ERC20 Holding Deposit contract
-        for (uint256 i = 0; i < spec.withdrawWell.length; i++) {
-            _pushAction(
-                addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT"),
-                abi.encodeWithSignature(
-                    "withdrawERC20Token(address,address,uint256)",
-                    addresses.getAddress("xWELL_PROXY"),
-                    addresses.getAddress(spec.withdrawWell[i].to),
-                    spec.withdrawWell[i].amount
-                ),
-                string.concat(
-                    "Withdraw ",
-                    vm.toString(spec.withdrawWell[i].amount / 1e18),
-                    " WELL ",
-                    " from the WELL Reserve Holding Deposit Contract on ",
-                    _chainId.chainIdToName()
-                )
-            );
-        }
+        _buildReserveAutomationActions(
+            addresses,
+            _chainId,
+            spec.transferReserves,
+            spec.initSale
+        );
 
-        for (uint256 i = 0; i < spec.transferReserves.length; i++) {
+        // withdraw WELL from the Market Reserve ERC20 Holding Deposit
+        // contract. Built AFTER the reserve automation region on purpose:
+        // the TG-WELL atomic span runs from the first withdrawWell(to = TG)
+        // to the end of the bundle, and the reserve region never touches TG
+        // WELL — building it first keeps it out of the span, so the span
+        // only covers the WELL-spending multiRewarder/merkle actions and
+        // stays well under the chunk budget.
+        _buildWithdrawWellActions(
+            addresses,
+            _chainId,
+            spec.withdrawWell,
+            "xWELL_PROXY"
+        );
+
+        _buildMultiRewarderActions(addresses, _chainId, spec.multiRewarder);
+
+        _buildMerkleCampaignActions(addresses, _chainId, spec.merkleCampaigns);
+
+        // must run after every action of this chain has been pushed: marks
+        // the span from the first withdrawWell(to = TEMPORAL_GOVERNOR) to the
+        // end of the bundle as atomic (see _tgWellSpanStart)
+        _markTgWellSpan(_chainId);
+    }
+
+    /// @notice build the reserve automation actions for a chain laid out PER
+    /// MARKET: each market's reduce -> transfer pair is immediately followed
+    /// by the initiateSale of the automation contract it funds, and the
+    /// 2-or-3-action group is marked atomic. initiateSale computes
+    /// periodSaleAmount from the automation contract's reserveAsset balance
+    /// AT EXECUTION TIME (and reverts when it is zero), while chunks execute
+    /// as independent temporal governor proposals with no ordering guarantee
+    /// — so a market's funding and its sale must ride a single VAA. The
+    /// per-market layout keeps each atomic group small, letting the chunker
+    /// cut BETWEEN markets instead of carrying one indivisible region that
+    /// grows with the market count. initiateSale calls for contracts not
+    /// funded by this epoch's transferReserves (selling a pre-existing
+    /// balance) are appended afterwards as independent single actions.
+    function _buildReserveAutomationActions(
+        Addresses addresses,
+        uint256 _chainId,
+        TransferReserves[] memory transferReserves,
+        InitSale memory initSale
+    ) private {
+        ActionType t = _actionTypeForChain(_chainId);
+
+        // whether this epoch initiates sales at all (same validity condition
+        // the JSON parser uses)
+        bool hasSales = initSale.auctionPeriod != 0 ||
+            initSale.reserveAutomationContracts.length > 0;
+
+        bool[] memory saleBuilt = new bool[](
+            initSale.reserveAutomationContracts.length
+        );
+
+        for (uint256 i = 0; i < transferReserves.length; i++) {
+            uint256 grpStart = actions.proposalActionTypeCount(t);
+
             IERC20 underlying = IERC20(
-                MErc20(addresses.getAddress(spec.transferReserves[i].market))
+                MErc20(addresses.getAddress(transferReserves[i].market))
                     .underlying()
             );
 
             _pushAction(
-                addresses.getAddress(spec.transferReserves[i].market),
+                addresses.getAddress(transferReserves[i].market),
                 abi.encodeWithSignature(
                     "_reduceReserves(uint256)",
-                    spec.transferReserves[i].amount
+                    transferReserves[i].amount
                 ),
                 string.concat(
                     "Withdraw ",
                     vm.toString(
-                        spec.transferReserves[i].amount / underlying.decimals()
+                        transferReserves[i].amount / underlying.decimals()
                     ),
                     " ",
                     underlying.symbol(),
                     " from ",
-                    spec.transferReserves[i].market,
+                    transferReserves[i].market,
                     " on ",
                     _chainId.chainIdToName()
                 )
@@ -1669,66 +2043,185 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                 address(underlying),
                 abi.encodeWithSignature(
                     "transfer(address,uint256)",
-                    addresses.getAddress(spec.transferReserves[i].to),
-                    spec.transferReserves[i].amount
+                    addresses.getAddress(transferReserves[i].to),
+                    transferReserves[i].amount
                 ),
                 string.concat(
                     "Transfer ",
                     vm.toString(
-                        spec.transferReserves[i].amount / underlying.decimals()
+                        transferReserves[i].amount / underlying.decimals()
                     ),
                     " ",
                     underlying.symbol(),
                     " to ",
-                    spec.transferReserves[i].to,
+                    transferReserves[i].to,
                     " on ",
                     _chainId.chainIdToName()
                 )
             );
+
+            // the initiateSale of the automation contract this transfer
+            // funds joins the market's atomic group
+            if (hasSales) {
+                for (
+                    uint256 j = 0;
+                    j < initSale.reserveAutomationContracts.length;
+                    j++
+                ) {
+                    if (
+                        addresses.getAddress(
+                            initSale.reserveAutomationContracts[j]
+                        ) == addresses.getAddress(transferReserves[i].to)
+                    ) {
+                        // a second transferReserves funding the same
+                        // automation contract would leave the already-built
+                        // initiateSale sized without it (the sale snapshots
+                        // its balance at execution time) — fail loudly. The
+                        // worker emits exactly one transferReserves per
+                        // market; merge the amounts if that ever changes.
+                        require(
+                            !saleBuilt[j],
+                            "RewardsDistribution: multiple transferReserves fund one automation contract"
+                        );
+                        saleBuilt[j] = true;
+                        _pushInitiateSale(addresses, _chainId, initSale, j);
+                    }
+                }
+            }
+
+            _markAtomicGroup(
+                t,
+                grpStart,
+                actions.proposalActionTypeCount(t) - grpStart
+            );
         }
 
-        // Process initSale if it exists in the JSON and has valid data
-        if (
-            spec.initSale.auctionPeriod != 0 ||
-            spec.initSale.reserveAutomationContracts.length > 0
-        ) {
-            InitSale memory initSale = spec.initSale;
-
+        // sales of pre-existing balances (no transferReserves funding this
+        // epoch): independent single actions, safe to cut around
+        if (hasSales) {
             for (
-                uint256 i = 0;
-                i < initSale.reserveAutomationContracts.length;
-                i++
+                uint256 j = 0;
+                j < initSale.reserveAutomationContracts.length;
+                j++
             ) {
-                address reserveAutomationContract = addresses.getAddress(
-                    initSale.reserveAutomationContracts[i]
-                );
-
-                _pushAction(
-                    reserveAutomationContract,
-                    abi.encodeWithSignature(
-                        "initiateSale(uint256,uint256,uint256,uint256,uint256)",
-                        initSale.delay,
-                        initSale.auctionPeriod,
-                        initSale.miniAuctionPeriod,
-                        initSale.periodMaxDiscount,
-                        initSale.periodStartingPremium
-                    ),
-                    string.concat(
-                        "Init reserve sale for ",
-                        vm.getLabel(
-                            addresses.getAddress(
-                                initSale.reserveAutomationContracts[i]
-                            )
-                        ),
-                        " on ",
-                        _chainId.chainIdToName()
-                    )
-                );
+                if (!saleBuilt[j]) {
+                    _pushInitiateSale(addresses, _chainId, initSale, j);
+                }
             }
         }
+    }
 
-        for (uint256 i = 0; i < spec.multiRewarder.length; i++) {
-            MultiRewarder memory multiRewarder = spec.multiRewarder[i];
+    /// @notice push a single initiateSale action for the automation contract
+    /// at `index` of initSale.reserveAutomationContracts
+    function _pushInitiateSale(
+        Addresses addresses,
+        uint256 _chainId,
+        InitSale memory initSale,
+        uint256 index
+    ) private {
+        address reserveAutomationContract = addresses.getAddress(
+            initSale.reserveAutomationContracts[index]
+        );
+
+        _pushAction(
+            reserveAutomationContract,
+            abi.encodeWithSignature(
+                "initiateSale(uint256,uint256,uint256,uint256,uint256)",
+                initSale.delay,
+                initSale.auctionPeriod,
+                initSale.miniAuctionPeriod,
+                initSale.periodMaxDiscount,
+                initSale.periodStartingPremium
+            ),
+            string.concat(
+                "Init reserve sale for ",
+                vm.getLabel(reserveAutomationContract),
+                " on ",
+                _chainId.chainIdToName()
+            )
+        );
+    }
+
+    /// @notice build the withdrawWell actions for a chain, recording the
+    /// first withdrawal whose destination is the TEMPORAL_GOVERNOR in
+    /// _tgWellSpanStart so _markTgWellSpan can protect every later action
+    /// that may spend the replenished TG balance (see _tgWellSpanStart).
+    /// @param tokenName the registry key of the withdrawn token: xWELL_PROXY
+    /// on external chains, GOVTOKEN on Moonbeam
+    function _buildWithdrawWellActions(
+        Addresses addresses,
+        uint256 _chainId,
+        WithdrawWell[] memory withdrawWells,
+        string memory tokenName
+    ) internal {
+        ActionType t = _actionTypeForChain(_chainId);
+
+        for (uint256 i = 0; i < withdrawWells.length; i++) {
+            if (
+                _tgWellSpanStart[uint8(t)] == 0 &&
+                addresses.isAddressSet("TEMPORAL_GOVERNOR") &&
+                addresses.getAddress(withdrawWells[i].to) ==
+                addresses.getAddress("TEMPORAL_GOVERNOR")
+            ) {
+                _tgWellSpanStart[uint8(t)] =
+                    actions.proposalActionTypeCount(t) +
+                    1;
+            }
+
+            // ActionType passed explicitly (instead of the fork-derived
+            // 3-arg _pushAction) so this path also runs in fork-less unit
+            // tests; in production builds the active fork always matches
+            // _chainId, so behaviour is identical
+            _pushAction(
+                addresses.getAddress("RESERVE_WELL_HOLDING_DEPOSIT"),
+                abi.encodeWithSignature(
+                    "withdrawERC20Token(address,address,uint256)",
+                    addresses.getAddress(tokenName),
+                    addresses.getAddress(withdrawWells[i].to),
+                    withdrawWells[i].amount
+                ),
+                string.concat(
+                    "Withdraw ",
+                    vm.toString(withdrawWells[i].amount / 1e18),
+                    " WELL ",
+                    " from the WELL Reserve Holding Deposit Contract on ",
+                    _chainId.chainIdToName()
+                ),
+                t
+            );
+        }
+    }
+
+    /// @notice mark the span from the first withdrawWell(to = TG) action to
+    /// the end of the chain's bundle as atomic. Must run after every action
+    /// of the chain has been pushed. No-op when the chain has no TG-bound
+    /// withdrawal. If the span exceeds maxChunkPayloadBytes() the chunker
+    /// fails loudly at simulation/print time (see _computeChunkStarts).
+    function _markTgWellSpan(uint256 _chainId) internal {
+        ActionType t = _actionTypeForChain(_chainId);
+        uint256 start = _tgWellSpanStart[uint8(t)];
+        if (start == 0) {
+            return;
+        }
+
+        uint256 end = actions.proposalActionTypeCount(t);
+        if (end > start - 1) {
+            _markAtomicGroup(t, start - 1, end - (start - 1));
+        }
+    }
+
+    /// @notice build the multiRewarder (optional addReward) -> approve ->
+    /// notifyRewardAmount groups for a chain. notify pulls the approved reward
+    /// tokens, so each group is atomic and kept inside a single VAA.
+    function _buildMultiRewarderActions(
+        Addresses addresses,
+        uint256 _chainId,
+        MultiRewarder[] memory multiRewarders
+    ) private {
+        ActionType t = _actionTypeForChain(_chainId);
+
+        for (uint256 i = 0; i < multiRewarders.length; i++) {
+            MultiRewarder memory multiRewarder = multiRewarders[i];
 
             address distributor = addresses.getAddress(
                 multiRewarder.distributor
@@ -1740,6 +2233,8 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
             address vault = addresses.getAddress(multiRewarder.vault);
 
             uint256 duration = multiRewarder.duration;
+
+            uint256 grpStart = actions.proposalActionTypeCount(t);
 
             if (vm.envOr("FORCE_ADD_REWARD", false)) {
                 _pushAction(
@@ -1826,11 +2321,29 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                     multiRewarder.vault
                 )
             );
-        }
 
-        // Process Merkle campaigns
-        for (uint256 i = 0; i < spec.merkleCampaigns.length; i++) {
-            MekleCampaign memory campaign = spec.merkleCampaigns[i];
+            _markAtomicGroup(
+                t,
+                grpStart,
+                actions.proposalActionTypeCount(t) - grpStart
+            );
+        }
+    }
+
+    /// @notice build the merkle campaign approve -> acceptConditions ->
+    /// createCampaign triples for a chain. The triple is atomic and kept
+    /// inside a single VAA.
+    function _buildMerkleCampaignActions(
+        Addresses addresses,
+        uint256 _chainId,
+        MekleCampaign[] memory merkleCampaigns
+    ) private {
+        ActionType t = _actionTypeForChain(_chainId);
+
+        for (uint256 i = 0; i < merkleCampaigns.length; i++) {
+            MekleCampaign memory campaign = merkleCampaigns[i];
+
+            uint256 grpStart = actions.proposalActionTypeCount(t);
 
             address rewardTokenAddress = addresses.getAddress(
                 campaign.rewardToken
@@ -1889,6 +2402,8 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
                     vm.toString(campaign.amount)
                 )
             );
+
+            _markAtomicGroup(t, grpStart, 3);
         }
     }
 
