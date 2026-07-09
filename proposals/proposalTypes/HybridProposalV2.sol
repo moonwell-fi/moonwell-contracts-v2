@@ -287,6 +287,9 @@ abstract contract HybridProposalV2 is
     /// bundle across multiple governor actions (each chunk becomes its own
     /// publishMessage call / VAA) so the proposal can be submitted in parts
     /// via the governor's init + append propose() batching.
+    /// @dev chunkCount and chunkActions describe one partition and MUST be
+    /// overridden together: a chunkCount that disagrees with the slices
+    /// chunkActions returns silently drops or duplicates actions.
     function chunkCount(ActionType) public view virtual returns (uint256) {
         return 1;
     }
@@ -296,6 +299,7 @@ abstract contract HybridProposalV2 is
     /// splitting dependent action sequences (e.g. reduce -> approve -> repay)
     /// across chunks, since each chunk executes as an independent temporal
     /// governor proposal on the destination chain.
+    /// @dev MUST be overridden together with chunkCount — see chunkCount.
     function chunkActions(
         ActionType actionType,
         uint256 index
@@ -834,19 +838,19 @@ abstract contract HybridProposalV2 is
         if (actions.proposalActionTypeCount(ActionType.Moonbeam) != 0) {
             vm.selectFork(MOONBEAM_FORK_ID);
             vm.warp(blockTimestamp);
-            _runExtChain(addresses, actions.filter(ActionType.Moonbeam));
+            _runExtChainChunks(addresses, ActionType.Moonbeam);
         }
 
         if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
             vm.selectFork(BASE_FORK_ID);
             vm.warp(blockTimestamp);
-            _runExtChain(addresses, actions.filter(ActionType.Base));
+            _runExtChainChunks(addresses, ActionType.Base);
         }
 
         if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
             vm.selectFork(OPTIMISM_FORK_ID);
             vm.warp(blockTimestamp);
-            _runExtChain(addresses, actions.filter(ActionType.Optimism));
+            _runExtChainChunks(addresses, ActionType.Optimism);
         }
 
         blockTimestamp = block.timestamp;
@@ -1128,6 +1132,22 @@ abstract contract HybridProposalV2 is
         _verifyMTokensPostRun();
 
         addresses.removeRestriction();
+    }
+
+    /// @notice run a chain's actions chunk by chunk in REVERSE chunk order.
+    /// Chunks execute on the destination chain as independent temporal
+    /// governor proposals with no ordering guarantee, so any hidden
+    /// cross-chunk dependency (e.g. an earlier chunk funding a balance a
+    /// later chunk spends) must make the simulation FAIL rather than pass by
+    /// silently riding the build order. Single-chunk proposals (the default
+    /// chunkCount of 1) execute exactly as before.
+    function _runExtChainChunks(
+        Addresses addresses,
+        ActionType actionType
+    ) internal {
+        for (uint256 c = chunkCount(actionType); c > 0; c--) {
+            _runExtChain(addresses, chunkActions(actionType, c - 1));
+        }
     }
 
     /// @notice Runs the proposal actions on an external chain (Moonbeam, Base, Optimism)

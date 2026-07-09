@@ -48,6 +48,26 @@ contract RewardsBatchHarness is RewardsDistributionV2Template {
     ) external view returns (uint256) {
         return _chunkEncodedSize(chunkActions(at, index));
     }
+
+    /// @notice encoded VAA-payload size of a synthetic bundle of `count`
+    /// actions carrying `size` data bytes each — lets tests derive exact
+    /// budgets instead of hardcoding byte counts
+    function measureEncodedSize(
+        uint256 count,
+        uint256 size
+    ) external view returns (uint256) {
+        ProposalAction[] memory a = new ProposalAction[](count);
+        for (uint256 i = 0; i < count; i++) {
+            a[i] = ProposalAction({
+                target: address(1),
+                value: 0,
+                data: new bytes(size),
+                description: "",
+                actionType: ActionType.Base
+            });
+        }
+        return _chunkEncodedSize(a);
+    }
 }
 
 contract RewardsDistributionV2BatchingUnitTest is Test {
@@ -60,9 +80,12 @@ contract RewardsDistributionV2BatchingUnitTest is Test {
     string constant DESCRIPTION_URI = "ipfs://QmTestDescriptionUri";
 
     function setUp() public {
-        // the template constructor reads DESCRIPTION_PATH; point it at a real
-        // file (its contents are irrelevant to the batching logic)
-        vm.setEnv("DESCRIPTION_PATH", "proposals/mips/mip-x59/x59.md");
+        // the template constructor reads DESCRIPTION_PATH; point it at a
+        // tiny test-owned fixture (its contents are irrelevant here)
+        vm.setEnv(
+            "DESCRIPTION_PATH",
+            "test/unit/fixtures/rewards-description.md"
+        );
         harness = new RewardsBatchHarness();
         harness.setProposalDescriptionUri(DESCRIPTION_URI);
     }
@@ -135,14 +158,13 @@ contract RewardsDistributionV2BatchingUnitTest is Test {
                 ActionType.Base,
                 c
             );
-            // every chunk fits the budget unless it is a single indivisible unit
-            if (chunk.length > 1) {
-                assertLe(
-                    harness.chunkPayloadSize(ActionType.Base, c),
-                    chunkBudget,
-                    "multi-action chunk exceeds budget"
-                );
-            }
+            // every chunk fits the budget (over-budget indivisible units
+            // revert inside the chunker instead of being emitted)
+            assertLe(
+                harness.chunkPayloadSize(ActionType.Base, c),
+                chunkBudget,
+                "chunk exceeds budget"
+            );
             // chunks are contiguous and ordered
             for (uint256 i = 0; i < chunk.length; i++) {
                 assertEq(
@@ -163,9 +185,9 @@ contract RewardsDistributionV2BatchingUnitTest is Test {
     /// a dependent action group is never split across two chunks even when the
     /// size budget would otherwise cut inside it
     function testAtomicGroupNeverSplit() public {
-        // one action per chunk by budget, so without protection the chunker
-        // would cut at every boundary (including inside the group)
-        harness.setBudgets(1, 12_000);
+        // budget of exactly three actions: the unprotected greedy chunker
+        // would partition [0,1,2][3,4,5], cutting straight through the group
+        harness.setBudgets(harness.measureEncodedSize(3, 200), 12_000);
         _pushBase(6, 200);
 
         // mark actions [2,3] as one atomic group (interior boundary = 3)
@@ -188,6 +210,24 @@ contract RewardsDistributionV2BatchingUnitTest is Test {
             running += len;
         }
         assertTrue(foundPair, "atomic pair split across chunks");
+    }
+
+    /// an atomic region that cannot fit any chunk fails loudly instead of
+    /// being silently emitted as an over-budget chunk
+    function testOversizedAtomicRegionReverts() public {
+        // budget fits one action but not two
+        uint256 single = harness.measureEncodedSize(1, 200);
+        uint256 pair = harness.measureEncodedSize(2, 200);
+        harness.setBudgets((single + pair) / 2, 12_000);
+        _pushBase(4, 200);
+
+        // actions [1,2] are one atomic group larger than the chunk budget
+        harness.markGroup(ActionType.Base, 1, 2);
+
+        vm.expectRevert(
+            "RewardsDistribution: atomic action region exceeds maxChunkPayloadBytes"
+        );
+        harness.chunkCount(ActionType.Base);
     }
 
     /// the proposal is packed into successive propose() calls, each within the
