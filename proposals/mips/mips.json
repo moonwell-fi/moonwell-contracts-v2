@@ -8,6 +8,14 @@
         "descriptionUri": "ipfs://bafkreieawgkmfdn3h7l3dpelzqxqj3bn57o45ovnrmxmhbajdwvwlnwswy"
     },
     {
+        "envpath": "",
+        "governor": "MultichainGovernorV2",
+        "id": 177,
+        "path": "mip-m45.sol/mipm45.json",
+        "proposalType": "HybridProposalV2",
+        "descriptionUri": "ipfs://bafkreibeugudflyvphjxxb6i5zbjzyltppxz4ist3372vq7fxfqq7taqna"
+    },
+    {
         "envpath": "proposals/mips/mip-x61/x61.sh",
         "governor": "MultichainGovernorV2",
         "id": 176,
