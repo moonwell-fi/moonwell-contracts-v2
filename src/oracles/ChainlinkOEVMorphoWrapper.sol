@@ -457,6 +457,13 @@ contract ChainlinkOEVMorphoWrapper is
             "ChainlinkOEVMorphoWrapper: oracle must be the same as the base feed 1"
         );
 
+        EIP20Interface loanToken = EIP20Interface(marketParams.loanToken);
+        IERC20(address(loanToken)).safeTransferFrom(
+            msg.sender,
+            address(this),
+            maxRepayAmount
+        );
+
         // get the latest round data and update cached round id
         int256 collateralAnswer;
         // snapshot so the fresh-round unlock is scoped to this nested liquidation, not persisted globally.
@@ -482,15 +489,6 @@ contract ChainlinkOEVMorphoWrapper is
         uint256 actualSeizedAssets;
         uint256 actualRepaidAssets;
         {
-            EIP20Interface loanToken = EIP20Interface(marketParams.loanToken);
-
-            // Morpho will pull the actual amount needed, and we'll return any excess
-            IERC20(address(loanToken)).safeTransferFrom(
-                msg.sender,
-                address(this),
-                maxRepayAmount
-            );
-
             IERC20(address(loanToken)).forceApprove(
                 address(morphoBlue),
                 maxRepayAmount
@@ -504,8 +502,7 @@ contract ChainlinkOEVMorphoWrapper is
             );
             // restore before the refund below (which yields control to the loan token), so the fresh round is not globally unlocked.
             cachedRoundId = previousCachedRoundId;
-            // HAL-08: zero out the residual allowance so a future caller can't
-            // skip a fresh approval for the leftover (maxRepay - actualRepaid).
+            // zero out the residual allowance so a future caller can't skip a fresh approval for the leftover
             IERC20(address(loanToken)).forceApprove(address(morphoBlue), 0);
 
             require(
@@ -513,9 +510,7 @@ contract ChainlinkOEVMorphoWrapper is
                 "ChainlinkOEVMorphoWrapper: repaid amount exceeds maximum"
             );
 
-            // HAL-03: return excess via safeTransfer so void-return tokens
-            // (e.g. USDT-class) on permissionless Morpho markets don't brick
-            // the refund path.
+            // return excess loan tokens to the caller
             uint256 excessLoanTokens = maxRepayAmount - actualRepaidAssets;
             if (excessLoanTokens > 0) {
                 IERC20(address(loanToken)).safeTransfer(
