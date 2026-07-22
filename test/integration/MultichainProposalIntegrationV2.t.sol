@@ -2262,7 +2262,18 @@ contract MultichainProposalIntegrationV2 is
         assertEq(abstainVotes, 0, "abstainVotes should be 0");
     }
 
-    function testCrossChainVotingOnMoonbeamVoteCollection() public {
+    /// @notice After MIP-X64 (Moonbeam "Before Sunset"), Moonbeam is removed
+    ///         from the Ethereum governor's external chain configs, so a
+    ///         governor proposal is no longer broadcast to the Moonbeam
+    ///         VoteCollection and cross-chain voting from Moonbeam is disabled.
+    ///         This test asserts that disabled state: the Moonbeam collector
+    ///         never registers the proposal, and casting a vote reverts because
+    ///         there is no such proposal on Moonbeam. (Base/Optimism vote
+    ///         collection is covered by testCrossChainVotingOnBaseVoteCollection
+    ///         and testCrossChainVoteRoundTrip.)
+    function testCrossChainVotingOnMoonbeamVoteCollectionDisabledAfterX64()
+        public
+    {
         vm.selectFork(ETHEREUM_FORK_ID);
 
         // Create proposal on Ethereum
@@ -2270,66 +2281,31 @@ contract MultichainProposalIntegrationV2 is
             PROPOSER,
             address(0x1111),
             abi.encodeWithSignature("someFunction()"),
-            "Moonbeam cross-chain voting test"
+            "Moonbeam cross-chain voting disabled test"
         );
 
-        // Switch to Moonbeam and verify proposal was received
+        // Switch to Moonbeam and verify the proposal was NOT received
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        (
-            uint256 voteSnapshotTimestamp,
-            uint256 votingStartTime,
-            ,
-            ,
-            uint256 totalVotes,
-            uint256 forVotes,
-            uint256 againstVotes,
-            uint256 abstainVotes
-        ) = moonbeamVoteCollection.proposalInformation(proposalId);
+        (, uint256 votingStartTime, , , uint256 totalVotes, , , ) = moonbeamVoteCollection
+            .proposalInformation(proposalId);
 
-        // Verify proposal was received
-        assertGt(
+        assertEq(
             votingStartTime,
             0,
-            "Moonbeam VoteCollection should have received the proposal"
+            "Moonbeam VoteCollection should NOT receive proposals after MIP-X64"
         );
         assertEq(totalVotes, 0, "totalVotes should be 0");
 
-        // Mock voting power on Moonbeam for a voter
+        // Casting a vote on Moonbeam must revert. For an unregistered proposal
+        // votingStartTime == 0 passes the "not started" guard, so the guard
+        // that fires is votingEndTime (0) >= block.timestamp — "Voting has
+        // ended". Pinning the reason keeps this from silently passing via the
+        // "voter has no votes" path if the proposal WERE still broadcast here.
         address moonbeamVoter = address(0x8000);
-        uint256 moonbeamVoterVotes = 5_000_000 * 1e18;
-        vm.mockCall(
-            address(moonbeamVotingPower),
-            abi.encodeWithSelector(
-                VotingPowerAggregator.getVotes.selector,
-                moonbeamVoter,
-                voteSnapshotTimestamp
-            ),
-            abi.encode(moonbeamVoterVotes)
-        );
-
-        // Cast vote on Moonbeam
         vm.prank(moonbeamVoter);
+        vm.expectRevert("MultichainVoteCollection: Voting has ended");
         moonbeamVoteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
-
-        // Verify vote was recorded
-        (bool hasVoted, uint8 voteValue, uint256 votes) = moonbeamVoteCollection
-            .getReceipt(proposalId, moonbeamVoter);
-        assertTrue(hasVoted, "voter should have voted");
-        assertEq(voteValue, Constants.VOTE_VALUE_NO, "vote value should be NO");
-        assertEq(votes, moonbeamVoterVotes, "votes should match");
-
-        // Verify proposal vote tallies updated
-        (
-            totalVotes,
-            forVotes,
-            againstVotes,
-            abstainVotes
-        ) = moonbeamVoteCollection.proposalVotes(proposalId);
-        assertEq(totalVotes, moonbeamVoterVotes, "totalVotes should match");
-        assertEq(forVotes, 0, "forVotes should be 0");
-        assertEq(againstVotes, moonbeamVoterVotes, "againstVotes should match");
-        assertEq(abstainVotes, 0, "abstainVotes should be 0");
     }
 
     function testProposalReceiptOnSatelliteChains() public {
@@ -2359,9 +2335,11 @@ contract MultichainProposalIntegrationV2 is
             "Optimism"
         );
 
-        // Verify on Moonbeam
+        // Verify on Moonbeam: after MIP-X64 (Moonbeam "Before Sunset") the
+        // Ethereum governor no longer broadcasts proposals to Moonbeam, so the
+        // Moonbeam VoteCollection must NOT receive this proposal.
         vm.selectFork(MOONBEAM_FORK_ID);
-        _assertMoonbeamProposalReceived(proposalId);
+        _assertMoonbeamProposalNotReceived(proposalId);
     }
 
     /// @notice Helper to verify a proposal was received on a V2 VoteCollection
@@ -2399,23 +2377,21 @@ contract MultichainProposalIntegrationV2 is
         );
     }
 
-    /// @notice Helper to verify proposal received on Moonbeam VoteCollection
-    function _assertMoonbeamProposalReceived(uint256 proposalId) internal view {
-        (
-            uint256 snapshotTs,
-            uint256 startTime,
-            uint256 endTime,
-            uint256 ccEndTs,
-            uint256 totalVotes,
-            ,
-            ,
-
-        ) = moonbeamVoteCollection.proposalInformation(proposalId);
-        assertGt(startTime, 0, "Moonbeam should have proposal");
-        assertLt(snapshotTs, startTime, "Moonbeam: snapshot < start");
-        assertLt(startTime, endTime, "Moonbeam: start < end");
-        assertLt(endTime, ccEndTs, "Moonbeam: end < ccEnd");
-        assertEq(totalVotes, 0, "Moonbeam: totalVotes should be 0");
+    /// @notice Helper to verify a proposal was NOT received on the Moonbeam
+    ///         VoteCollection. After MIP-X64 removed Moonbeam from the Ethereum
+    ///         governor's external chain configs, governor.propose() no longer
+    ///         publishes a Wormhole message to Moonbeam, so the collector never
+    ///         registers the proposal (votingStartTime stays 0).
+    function _assertMoonbeamProposalNotReceived(
+        uint256 proposalId
+    ) internal view {
+        (, uint256 startTime, , , , , , ) = moonbeamVoteCollection
+            .proposalInformation(proposalId);
+        assertEq(
+            startTime,
+            0,
+            "Moonbeam should NOT receive proposals after MIP-X64 sunset"
+        );
     }
 
     /// --------------------------------------------------------- ///
