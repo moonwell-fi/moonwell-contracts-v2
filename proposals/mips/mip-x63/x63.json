@@ -8,8 +8,7 @@
                 "reserveFactor": -1
             }
         ],
-        "irModels": [
-        ]
+        "irModels": []
     },
     "10": {
         "markets": [
@@ -20,7 +19,6 @@
                 "reserveFactor": -1
             }
         ],
-        "irModels": [
-        ]
+        "irModels": []
     }
 }
