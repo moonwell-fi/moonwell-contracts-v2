@@ -1,4 +1,3 @@
-
 #!/bin/bash
 export JSON_PATH=proposals/mips/mip-x63/x63.json
 export DESCRIPTION_PATH=proposals/mips/mip-x63/x63.md
