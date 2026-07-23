@@ -22,8 +22,9 @@ import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/
 ///
 ///         Per market: one _reduceReserves for the total, one approve for the
 ///         total, then one repayBorrowBehalf per borrower. WETH reserves are
-///         reduced through MWETH_OWNER_WRAPPER which forwards the reserves as
-///         WETH to the Temporal Governor.
+///         reduced through MWETH_OWNER_WRAPPER, which wraps the received ETH
+///         and HOLDS it; the separate withdrawToken action then moves the
+///         WETH to the Temporal Governor — do not drop that action.
 ///
 ///         The cbETH rows from the forum plan are EXCLUDED: the Base cbETH
 ///         market currently holds ~0 cash (fully utilized), so
