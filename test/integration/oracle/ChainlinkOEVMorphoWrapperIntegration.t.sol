@@ -388,6 +388,9 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
             address(redeemer)
         );
 
+        // snapshot so we can assert the fresh round is not persisted globally after the liquidation.
+        uint256 cachedRoundIdBefore = wrapper.cachedRoundId();
+
         vm.recordLogs();
         wrapper.updatePriceEarlyAndLiquidate(
             params,
@@ -428,7 +431,16 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
         ) = _parseLiquidationEventFull();
 
         // Assertions
-        assertEq(wrapper.cachedRoundId(), 777);
+        // the fresh round (777) priced this liquidation but must not persist globally.
+        assertTrue(
+            cachedRoundIdBefore != 777,
+            "precondition: fresh round must differ from the cached round"
+        );
+        assertEq(
+            wrapper.cachedRoundId(),
+            cachedRoundIdBefore,
+            "cachedRoundId must not advance globally after liquidation"
+        );
         assertGt(
             liqLoanBefore - IERC20(loanToken).balanceOf(LIQUIDATOR),
             0,

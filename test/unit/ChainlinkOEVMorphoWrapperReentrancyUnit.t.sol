@@ -132,3 +132,236 @@ contract ChainlinkOEVMorphoWrapperReentrancyUnitTest is Test {
         wrapper.updatePriceEarlyAndLiquidate(params, address(0xBEEF), 1, 5e18);
     }
 }
+
+/// @notice Callback-enabled loan token: its `transferFrom` fires a hook that
+///         reads the wrapper's `cachedRoundId()` / `latestRoundData()` at the
+///         instant the loan-token pull runs inside
+///         `updatePriceEarlyAndLiquidate`. Models an ERC777/ERC1363-style
+///         transfer hook that hands control to the liquidator mid-pull.
+contract CallbackLoanToken is MockERC20Decimals {
+    ChainlinkOEVMorphoWrapper public wrapper;
+    bool public armed;
+    bool public captured;
+    uint256 public observedCachedRoundId;
+    uint80 public observedLatestRoundId;
+
+    constructor() MockERC20Decimals("CallbackLoan", "CBL", 18) {}
+
+    function arm(address _wrapper) external {
+        wrapper = ChainlinkOEVMorphoWrapper(_wrapper);
+        armed = true;
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
+        // Capture only the first pull (liquidator -> wrapper), which is the
+        // window HAL-02 is about: if the fresh round were already unlocked
+        // here, the liquidator could re-enter Morpho Blue at the fresh price.
+        if (armed && !captured && address(wrapper) != address(0)) {
+            captured = true;
+            observedCachedRoundId = wrapper.cachedRoundId();
+            (uint80 rid, , , , ) = wrapper.latestRoundData();
+            observedLatestRoundId = rid;
+        }
+        return super.transferFrom(from, to, amount);
+    }
+}
+
+/// @notice Benign Morpho Blue mock: `liquidate()` seizes collateral to the
+///         caller (the wrapper) so the fee-split path can run to completion,
+///         and returns configurable seized/repaid amounts.
+contract BenignMorphoBlue {
+    MockERC20Decimals public collateralToken;
+    uint256 public seizeReturn;
+    uint256 public repaidReturn;
+
+    function config(
+        address _collateralToken,
+        uint256 _seizeReturn,
+        uint256 _repaidReturn
+    ) external {
+        collateralToken = MockERC20Decimals(_collateralToken);
+        seizeReturn = _seizeReturn;
+        repaidReturn = _repaidReturn;
+    }
+
+    function liquidate(
+        MarketParams memory,
+        address,
+        uint256,
+        uint256,
+        bytes memory
+    ) external returns (uint256, uint256) {
+        // Send seized collateral to the wrapper so it can split the fee.
+        collateralToken.transfer(msg.sender, seizeReturn);
+        return (seizeReturn, repaidReturn);
+    }
+}
+
+/// @notice HAL-02 regression: the loan-token pull in
+///         `updatePriceEarlyAndLiquidate` must run BEFORE `cachedRoundId` is
+///         advanced to the fresh round, so a callback-enabled loan token that
+///         receives control during the pull cannot observe (and therefore
+///         cannot exploit via Morpho Blue's native `liquidate()`) a globally
+///         unlocked fresh price.
+contract ChainlinkOEVMorphoWrapperHAL02UnitTest is Test {
+    address internal owner = address(0xA11CE);
+    address internal proxyAdmin = address(0xAD317);
+    address internal feeRecipient = address(0xFEE);
+    address internal chainlinkOracle = address(0xCAFE);
+    address internal morphoOracle = address(0xB00B);
+
+    // Round R0 is the pre-liquidation cached (delayed/locked) round; R1 is the
+    // fresh round that the function unlocks. They must differ for the test to
+    // distinguish the old ordering (observes R1) from the fixed one (R0).
+    uint80 internal constant R0 = 1;
+    uint80 internal constant R1 = 2;
+
+    MockChainlinkOracle internal priceFeed;
+    MockChainlinkOracle internal loanFeed;
+    CallbackLoanToken internal loanToken;
+    MockERC20Decimals internal collateralToken;
+    BenignMorphoBlue internal morpho;
+
+    ChainlinkOEVMorphoWrapper internal wrapper;
+
+    function setUp() public {
+        // Wrapper's own collateral price feed, seeded at round R0. cachedRoundId
+        // is initialized to latestRound() == R0 in initializeV2.
+        priceFeed = new MockChainlinkOracle(1e8, 8);
+        priceFeed.set(R0, 1e8, 1, block.timestamp, R0);
+
+        // Per-market Morpho loan (quote) feed.
+        loanFeed = new MockChainlinkOracle(1e8, 8);
+        loanFeed.set(1, 1e8, 1, block.timestamp, 1);
+
+        loanToken = new CallbackLoanToken();
+        collateralToken = new MockERC20Decimals("Coll", "COLL", 18);
+        morpho = new BenignMorphoBlue();
+
+        ChainlinkOEVMorphoWrapper impl = new ChainlinkOEVMorphoWrapper();
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+            address(impl),
+            proxyAdmin,
+            ""
+        );
+        wrapper = ChainlinkOEVMorphoWrapper(address(proxy));
+        wrapper.initializeV2(
+            address(priceFeed),
+            owner,
+            address(morpho),
+            chainlinkOracle,
+            feeRecipient,
+            500,
+            3600,
+            10
+        );
+
+        // Per-market Morpho oracle: BASE_FEED_1 must equal the wrapper (gate),
+        // QUOTE_FEED_1 is the loan aggregator, and both chained-feed slots are
+        // zero so the split math passes its defensive checks.
+        vm.mockCall(
+            morphoOracle,
+            abi.encodeWithSelector(
+                IMorphoChainlinkOracleV2.BASE_FEED_1.selector
+            ),
+            abi.encode(address(wrapper))
+        );
+        vm.mockCall(
+            morphoOracle,
+            abi.encodeWithSelector(
+                IMorphoChainlinkOracleV2.QUOTE_FEED_1.selector
+            ),
+            abi.encode(address(loanFeed))
+        );
+        vm.mockCall(
+            morphoOracle,
+            abi.encodeWithSelector(
+                IMorphoChainlinkOracleV2.QUOTE_FEED_2.selector
+            ),
+            abi.encode(address(0))
+        );
+        vm.mockCall(
+            morphoOracle,
+            abi.encodeWithSelector(
+                IMorphoChainlinkOracleV2.BASE_FEED_2.selector
+            ),
+            abi.encode(address(0))
+        );
+    }
+
+    function _params() internal view returns (MarketParams memory p) {
+        p = MarketParams({
+            loanToken: address(loanToken),
+            collateralToken: address(collateralToken),
+            oracle: morphoOracle,
+            irm: address(0),
+            lltv: 0.625e18
+        });
+    }
+
+    /// @notice HAL-02: a callback-enabled loan token whose transfer hook fires
+    ///         during the `safeTransferFrom` pull must observe `cachedRoundId`
+    ///         (and `latestRoundData`) STILL at the pre-liquidation, locked
+    ///         round R0 — NOT the fresh round R1. Fails on the pre-fix ordering
+    ///         (pull after the advance) and passes once the pull precedes it.
+    function testHAL02LoanTokenPullOccursBeforeFreshRoundUnlock() public {
+        MarketParams memory params = _params();
+        bytes32 id = keccak256(abi.encode(params));
+
+        vm.prank(owner);
+        wrapper.setApprovedMarket(id, true);
+
+        // Advance the underlying feed to the fresh round R1. cachedRoundId is
+        // still R0 until updatePriceEarlyAndLiquidate advances it internally.
+        priceFeed.set(R1, 1e8, 1, block.timestamp, R1);
+        assertEq(wrapper.cachedRoundId(), R0, "precondition: cached == R0");
+
+        uint256 maxRepayAmount = 5e18;
+        uint256 seizeReturn = 10e18;
+        // No excess (repaid == max) so the refund path is a no-op.
+        morpho.config(address(collateralToken), seizeReturn, maxRepayAmount);
+
+        // Fund the liquidation: loan tokens from the caller, collateral in the
+        // Morpho mock so it can seize to the wrapper.
+        loanToken.mint(address(this), maxRepayAmount);
+        loanToken.approve(address(wrapper), maxRepayAmount);
+        collateralToken.mint(address(morpho), seizeReturn);
+
+        // Arm the loan token so its transferFrom hook records what the fresh
+        // round looks like from an external caller's perspective at pull time.
+        loanToken.arm(address(wrapper));
+
+        wrapper.updatePriceEarlyAndLiquidate(
+            params,
+            address(0xBEEF),
+            seizeReturn,
+            maxRepayAmount
+        );
+
+        assertTrue(loanToken.captured(), "hook never fired during the pull");
+
+        // The crux of HAL-02: at pull time the fresh round is NOT yet unlocked.
+        assertEq(
+            loanToken.observedCachedRoundId(),
+            R0,
+            "loan-token pull saw the FRESH round unlocked (HAL-02 regression)"
+        );
+        assertEq(
+            loanToken.observedLatestRoundId(),
+            R0,
+            "latestRoundData returned the fresh round mid-pull (HAL-02)"
+        );
+
+        // Sanity: the unlock is scoped and restored — cachedRoundId is back to
+        // R0 after the liquidation completes.
+        assertEq(
+            wrapper.cachedRoundId(),
+            R0,
+            "cachedRoundId not restored after liquidation"
+        );
+    }
+}

@@ -438,6 +438,8 @@ contract ChainlinkOEVWrapper is
 
         // get the latest round data and update cached round id
         int256 collateralAnswer;
+        // snapshot so the fresh-round unlock is scoped to this nested liquidation, not persisted globally.
+        uint256 previousCachedRoundId = cachedRoundId;
         {
             (
                 uint80 roundId,
@@ -463,6 +465,9 @@ contract ChainlinkOEVWrapper is
             mTokenLoan,
             underlyingLoan
         );
+
+        // restore so the fresh round is not globally unlocked after this liquidation.
+        cachedRoundId = previousCachedRoundId;
 
         require(
             collateralSeized > 0,
