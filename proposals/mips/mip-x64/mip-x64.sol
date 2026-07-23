@@ -10,7 +10,7 @@ import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.
 import {MultichainGovernorV2} from "@protocol/governance/multichain/MultichainGovernorV2.sol";
 import {HybridProposalV2, ActionType} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, MOONBEAM_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, MOONBEAM_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// @title MIP-X64: Moonbeam sunset — "Before Sunset" phase
 /// @notice First phase of the Moonbeam (Wormhole chain id 16) sunset. This
@@ -50,6 +50,8 @@ export DO_VALIDATE=true
 */
 /// forge script proposals/mips/mip-x64/mip-x64.sol:mipx64 --ffi -vvv
 contract mipx64 is HybridProposalV2 {
+    using ChainIds for uint256;
+
     string public constant override name = "MIP-X64";
 
     /// @notice mocked-user bridge amount used in the `validate()` smoke tests.
@@ -95,6 +97,44 @@ contract mipx64 is HybridProposalV2 {
 
     function primaryForkId() public pure override returns (uint256) {
         return ETHEREUM_FORK_ID;
+    }
+
+    /// @notice mirrors Proposal.run() minus the top-level broadcast wrapper,
+    /// following the other cross-chain proposals (mip-x53, mip-x58): this
+    /// proposal deploys nothing, and afterDeploy()/build()/validate() switch
+    /// forks, which does not compose with an active vm.startBroadcast().
+    /// Keeps the descriptionUri injection so DO_PRINT calldata carries the
+    /// pinned IPFS URI from mips.json.
+    function run() public override {
+        primaryForkId().createForksAndSelect();
+
+        Addresses addresses = new Addresses();
+        vm.makePersistent(address(addresses));
+
+        setProposalDescriptionUri(_resolveProposalDescriptionUri(this.name()));
+
+        initProposal(addresses);
+
+        (, address deployerAddress, ) = vm.readCallers();
+
+        if (DO_DEPLOY) deploy(addresses, deployerAddress);
+        if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
+
+        if (DO_BUILD) build(addresses);
+        if (DO_RUN) simulate(addresses, deployerAddress);
+        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
+        if (DO_VALIDATE) {
+            validate(addresses, deployerAddress);
+            console.log("Validation completed for proposal ", this.name());
+        }
+        if (DO_PRINT) {
+            printProposalActionSteps();
+
+            addresses.removeAllRestrictions();
+            printCalldata(addresses);
+
+            _printAddressesChanges(addresses);
+        }
     }
 
     /// @notice snapshot every route this proposal reads in validate() — both
