@@ -5,8 +5,8 @@
         "id": 0,
         "path": "MarketUpdateV2.sol/MarketUpdateV2Template.json",
         "proposalType": "HybridProposalV2",
-        "descriptionUri": ""
-    }, 
+        "descriptionUri": "ipfs://bafkreiexvyvmh6a7u5y4e5pq6ahku2gjuvl2wb4nmpo2qgybesedwqpwvm"
+    },
     {
         "envpath": "",
         "governor": "MultichainGovernorV2",
