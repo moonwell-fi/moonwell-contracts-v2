@@ -10,6 +10,14 @@
     {
         "envpath": "",
         "governor": "MultichainGovernorV2",
+        "id": 180,
+        "path": "mip-x64.sol/mipx64.json",
+        "proposalType": "HybridProposalV2",
+        "descriptionUri": "ipfs://bafkreifwzpxgbbzuqoed3ywlqfi3unikvzwple22rxgvnm2kzy7qvd4r4y"
+    },
+    {
+        "envpath": "",
+        "governor": "MultichainGovernorV2",
         "id": 177,
         "path": "mip-m45.sol/mipm45.json",
         "proposalType": "HybridProposalV2",
@@ -1049,7 +1057,7 @@
     {
         "envpath": "proposals/mips/mip-x62/x62.sh",
         "governor": "MultichainGovernorV2",
-        "id": 0,
+        "id": 178,
         "path": "mip-x62.sol/mipx62.json",
         "proposalType": "HybridProposalV2",
         "descriptionUri": "ipfs://bafkreieupeaon7mg4sng4ua34g4kwonsxxilfvhajmi4czfwrjleu6qweu"

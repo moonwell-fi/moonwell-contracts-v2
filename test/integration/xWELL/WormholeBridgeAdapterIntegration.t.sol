@@ -47,6 +47,11 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     /// @notice wormhole chain id to use as source in mock VAAs
     uint16 public sourceWormholeChainId;
 
+    /// @notice wormhole chain id of a peer with a live OUTBOUND route, used by
+    /// the bridge()/targetAddress assertions (see setUp for why this is kept
+    /// distinct from sourceWormholeChainId after MIP-X64)
+    uint16 public outboundPeerWormholeChainId;
+
     /// @notice test recipient
     address public recipient = address(0xCAFE);
 
@@ -72,6 +77,24 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             sourceWormholeChainId = BASE_WORMHOLE_CHAIN_ID;
         } else {
             sourceWormholeChainId = MOONBEAM_WORMHOLE_CHAIN_ID;
+        }
+
+        // Outbound bridge peer for the bridge()/targetAddress assertions.
+        // Kept SEPARATE from sourceWormholeChainId (the inbound VAA emitter)
+        // because MIP-X64 (Moonbeam "Before Sunset") zeroes targetAddress[16]
+        // on the Ethereum/Base/Optimism adapters: Moonbeam stays a trusted
+        // *sender* (so the executeVAAv1 receive/replay tests keep using it),
+        // but it is no longer a valid outbound *target*. Pick a peer whose
+        // outbound route survives the sunset:
+        //   - Base / Optimism -> Ethereum (wired in MIP-X55)
+        //   - Ethereum         -> Base     (wired by EnableEthereumXWellBridging)
+        //   - Moonbeam         -> Base     (Moonbeam side untouched by MIP-X64)
+        if (currentWormholeChainId == MOONBEAM_WORMHOLE_CHAIN_ID) {
+            outboundPeerWormholeChainId = BASE_WORMHOLE_CHAIN_ID;
+        } else if (currentWormholeChainId == ETHEREUM_WORMHOLE_CHAIN_ID) {
+            outboundPeerWormholeChainId = BASE_WORMHOLE_CHAIN_ID;
+        } else {
+            outboundPeerWormholeChainId = ETHEREUM_WORMHOLE_CHAIN_ID;
         }
 
         // On Ethereum, MIP-X55's deployer-side wiring is not a proposal — it
@@ -156,10 +179,10 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             "adapter not trusted sender for source chain"
         );
 
-        /// target address for source chain is not zero
+        /// target address for a live outbound peer is not zero
         assertTrue(
-            adapter.targetAddress(sourceWormholeChainId) != address(0),
-            "source chain target address is zero"
+            adapter.targetAddress(outboundPeerWormholeChainId) != address(0),
+            "outbound peer target address is zero"
         );
     }
 
@@ -316,7 +339,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         vm.startPrank(user);
         xwellProxy.approve(address(adapter), bridgeAmount);
         adapter.bridge{value: messageFee + executorFee}(
-            sourceWormholeChainId,
+            outboundPeerWormholeChainId,
             bridgeAmount,
             user,
             hex"deadbeef"
@@ -366,7 +389,11 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         } else {
             vm.expectRevert("WormholeBridge: cost not equal to quote");
         }
-        adapter.bridge{value: 0}(uint256(sourceWormholeChainId), amount, user);
+        adapter.bridge{value: 0}(
+            uint256(outboundPeerWormholeChainId),
+            amount,
+            user
+        );
         vm.stopPrank();
     }
 
@@ -393,7 +420,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         // Force a non-zero quote so the require(msg.value == cost) path runs
         MockExecutorQuoterRouter(routerAddr).setQuote(0.001 ether);
 
-        uint256 cost = adapter.bridgeCost(sourceWormholeChainId);
+        uint256 cost = adapter.bridgeCost(outboundPeerWormholeChainId);
         assertGt(cost, 0, "expected non-zero on-chain quote post-mip-x53");
 
         vm.deal(user, cost);
@@ -404,7 +431,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         vm.startPrank(user);
         xwellProxy.approve(address(adapter), amount);
         adapter.bridge{value: cost}(
-            uint256(sourceWormholeChainId),
+            uint256(outboundPeerWormholeChainId),
             amount,
             user
         );
@@ -517,7 +544,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         vm.startPrank(user);
         xwellProxy.approve(address(adapter), bridgeAmount);
         adapter.bridge{value: messageFee + executorFee}(
-            sourceWormholeChainId,
+            outboundPeerWormholeChainId,
             bridgeAmount,
             user,
             hex"deadbeef"
