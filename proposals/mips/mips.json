@@ -1,5 +1,13 @@
 [
     {
+        "envpath": "proposals/mips/mip-x63/x63.sh",
+        "governor": "MultichainGovernorV2",
+        "id": 0,
+        "path": "mip-x63.sol/mipx63.json",
+        "proposalType": "HybridProposalV2",
+        "descriptionUri": "ipfs://bafkreibxb3kxubt3pdk2srsueesxt6zwtt6cirkmbeyc7kkehisivx2adi"
+    },
+    {
         "envpath": "",
         "governor": "MultichainGovernorV2",
         "id": 177,
