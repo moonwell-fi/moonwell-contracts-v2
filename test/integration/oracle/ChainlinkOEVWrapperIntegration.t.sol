@@ -694,6 +694,20 @@ contract ChainlinkOEVWrapperIntegrationTest is
         borrowAmount =
             ((10_000 * collateralFactorBps * 70) / (10000 * 100)) *
             (10 ** borrowDecimals);
+
+        // A $10k notional position is not fundable in every live market: the
+        // Optimism DAI market runs ~88% utilized, so `borrow` returns
+        // TOKEN_INSUFFICIENT_CASH (14) rather than reverting. Scale the whole
+        // position down to fit available cash, keeping the same LTV so the
+        // position is still liquidatable after the price crash. 80% of cash,
+        // not all of it, because `borrow` accrues interest first and the
+        // liquidator's later repay must also be servable.
+        uint256 maxBorrow = (MToken(mTokenBorrowAddr).getCash() * 80) / 100;
+        if (borrowAmount > maxBorrow) {
+            require(maxBorrow > 0, "borrow market has no cash");
+            collateralAmount = (collateralAmount * maxBorrow) / borrowAmount;
+            borrowAmount = maxBorrow;
+        }
     }
 
     /// @notice Deposit collateral and enter markets
