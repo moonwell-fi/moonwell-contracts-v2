@@ -946,18 +946,26 @@ abstract contract HybridProposalV2 is
             /// remove the restrictions
             addresses.removeRestriction();
 
-            vm.selectFork(MOONBEAM_FORK_ID);
             {
                 ProposalAction[] memory moonbeamActions = actions.filter(
                     ActionType.Moonbeam
                 );
-                address[] memory moonbeamTargets = new address[](
-                    moonbeamActions.length
-                );
-                for (uint256 i = 0; i < moonbeamActions.length; i++) {
-                    moonbeamTargets[i] = moonbeamActions[i].target;
+                // Only touch the Moonbeam fork when there is something to
+                // check. With Moonbeam wound down, fork id 0 may be the
+                // placeholder stood up when its RPC is unreachable (see
+                // ChainIds.createForksAndSelect), and selecting it would fail
+                // checkMoonbeamActions' chain-id guard over an empty list.
+                if (moonbeamActions.length > 0) {
+                    vm.selectFork(MOONBEAM_FORK_ID);
+
+                    address[] memory moonbeamTargets = new address[](
+                        moonbeamActions.length
+                    );
+                    for (uint256 i = 0; i < moonbeamActions.length; i++) {
+                        moonbeamTargets[i] = moonbeamActions[i].target;
+                    }
+                    checkMoonbeamActions(moonbeamTargets);
                 }
-                checkMoonbeamActions(moonbeamTargets);
             }
 
             vm.selectFork(BASE_FORK_ID);
