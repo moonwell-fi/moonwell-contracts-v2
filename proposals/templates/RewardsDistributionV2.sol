@@ -169,6 +169,12 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
 
     JsonSpecMoonbeam moonbeamActions;
 
+    /// @notice whether this epoch's JSON carries a 1284 block. False once the
+    /// reward-automation worker drops Moonbeam entirely (wind-down), in which
+    /// case the Moonbeam fork is never selected — it may be the placeholder
+    /// stood up when the Moonbeam RPC is unreachable.
+    bool internal _hasMoonbeamActions;
+
     /// @notice xWELL bridge-outs executed on Ethereum (the source chain)
     BridgeOut[] public bridgeOuts;
 
@@ -225,20 +231,39 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     }
 
     function initProposal(Addresses addresses) public override {
-        // the etched mock precompiles (xcUSDT/xcUSDC/xcDOT) only exist on
-        // Moonbeam, so the etching must run with the Moonbeam fork active
-        // (the primary fork is now Ethereum)
-        vm.selectFork(MOONBEAM_FORK_ID);
-        etch(vm, addresses);
-
         string memory encodedJson = vm.readFile(
             vm.envString("MIP_REWARDS_PATH")
         );
+
+        // Moonbeam is wound down: once the worker stops emitting a 1284 block
+        // the epoch has no Moonbeam actions, and fork id 0 may be the
+        // placeholder stood up when the Moonbeam RPC is unreachable. Only
+        // touch that fork when this epoch actually has Moonbeam work, and fail
+        // loudly if it does but the fork is not real.
+        _hasMoonbeamActions = vm.keyExistsJson(encodedJson, ".1284");
+
+        if (_hasMoonbeamActions) {
+            ChainIds.requireMoonbeamFork();
+
+            // the etched mock precompiles (xcUSDT/xcUSDC/xcDOT) only exist on
+            // Moonbeam, so the etching must run with the Moonbeam fork active
+            // (the primary fork is now Ethereum)
+            vm.selectFork(MOONBEAM_FORK_ID);
+            etch(vm, addresses);
+        }
 
         _parseTimestamps(encodedJson);
 
         for (uint256 i = 0; i < networks.length; i++) {
             chainId = networks[i].chainId;
+
+            // skip Moonbeam entirely when this epoch has no 1284 block: every
+            // read below (GOVTOKEN, UNITROLLER, ECOSYSTEM_RESERVE_PROXY) needs
+            // real Moonbeam state, which the placeholder fork cannot provide.
+            if (chainId == MOONBEAM_CHAIN_ID && !_hasMoonbeamActions) {
+                continue;
+            }
+
             vm.selectFork(networks[i].forkId);
 
             if (chainId == MOONBEAM_CHAIN_ID) {
@@ -341,7 +366,10 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     }
 
     function build(Addresses addresses) public virtual override {
-        _buildMoonbeamDestinationActions(addresses);
+        // no Moonbeam actions => never select fork 0 (may be the placeholder)
+        if (_hasMoonbeamActions) {
+            _buildMoonbeamDestinationActions(addresses);
+        }
 
         for (uint256 i = 0; i < networks.length; i++) {
             chainId = networks[i].chainId;
@@ -603,7 +631,9 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     }
 
     function validate(Addresses addresses, address) public virtual override {
-        _validateMoonbeamDestination(addresses);
+        if (_hasMoonbeamActions) {
+            _validateMoonbeamDestination(addresses);
+        }
 
         for (uint256 i = 0; i < networks.length; i++) {
             chainId = networks[i].chainId;
