@@ -16,7 +16,7 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
-import {MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract xWellIntegrationTest is Test {
@@ -128,12 +128,20 @@ contract xWellIntegrationTest is Test {
         );
     }
 
+    /// @notice MIP-X64 ("Before Sunset", executed on-chain) zeroed
+    ///         `targetAddress[MOONBEAM]` on the Ethereum, Base and Optimism
+    ///         adapters, severing OUTBOUND xWELL routes to Moonbeam while
+    ///         deliberately leaving the EnumerableSet trusted-sender list
+    ///         intact so holders can still bridge OUT of Moonbeam. This test
+    ///         pins that asymmetry: no outbound route, inbound still trusted.
     function testSetup() public view {
-        address externalChainAddress = wormholeAdapter.targetAddress(
-            MOONBEAM_WORMHOLE_CHAIN_ID
+        assertEq(
+            wormholeAdapter.targetAddress(MOONBEAM_WORMHOLE_CHAIN_ID),
+            address(0),
+            "moonbeam outbound route not severed (MIP-X64)"
         );
         assertEq(
-            externalChainAddress,
+            wormholeAdapter.targetAddress(ETHEREUM_WORMHOLE_CHAIN_ID),
             address(wormholeAdapter),
             "incorrect target address config"
         );
@@ -164,6 +172,9 @@ contract xWellIntegrationTest is Test {
     }
 
     /// @notice Bridge out using the off-chain signed quote path.
+    ///         Destination is Ethereum, not Moonbeam: MIP-X64 zeroed
+    ///         `targetAddress[MOONBEAM]` on this adapter, so a Moonbeam
+    ///         destination now reverts "WormholeBridge: invalid target chain".
     function testBridgeOutSuccess() public {
         uint256 mintAmount = testBridgeInSuccess(startingWellAmount);
 
@@ -171,7 +182,7 @@ contract xWellIntegrationTest is Test {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
+        uint16 dstChainId = uint16(ETHEREUM_WORMHOLE_CHAIN_ID);
 
         /// Etch MockExecutorQuoterRouter onto the real executor address
         address executorAddr = address(wormholeAdapter.executor());
