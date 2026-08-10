@@ -2287,8 +2287,16 @@ contract MultichainProposalIntegrationV2 is
         // Switch to Moonbeam and verify the proposal was NOT received
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        (, uint256 votingStartTime, , , uint256 totalVotes, , , ) = moonbeamVoteCollection
-            .proposalInformation(proposalId);
+        (
+            ,
+            uint256 votingStartTime,
+            ,
+            ,
+            uint256 totalVotes,
+            ,
+            ,
+
+        ) = moonbeamVoteCollection.proposalInformation(proposalId);
 
         assertEq(
             votingStartTime,

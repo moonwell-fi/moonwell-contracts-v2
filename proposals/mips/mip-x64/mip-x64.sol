@@ -208,9 +208,8 @@ contract mipx64 is HybridProposalV2 {
         WormholeBridgeAdapter moonbeamAdapterContract = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
-        preMoonbeamAdapterTargetEthereum = moonbeamAdapterContract.targetAddress(
-            ETHEREUM_WORMHOLE_CHAIN_ID
-        );
+        preMoonbeamAdapterTargetEthereum = moonbeamAdapterContract
+            .targetAddress(ETHEREUM_WORMHOLE_CHAIN_ID);
         preMoonbeamAdapterTargetBase = moonbeamAdapterContract.targetAddress(
             BASE_WORMHOLE_CHAIN_ID
         );
@@ -230,9 +229,7 @@ contract mipx64 is HybridProposalV2 {
         // -------------------- Ethereum hub --------------------
         vm.selectFork(ETHEREUM_FORK_ID);
 
-        address governor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_V2_PROXY"
-        );
+        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY");
         address ethAdapter = addresses.getAddress(
             "WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
@@ -410,9 +407,8 @@ contract mipx64 is HybridProposalV2 {
             "MIP-X64: Moonbeam adapter targetAddress[Base] changed"
         );
         require(
-            moonbeamAdapterContract.targetAddress(
-                OPTIMISM_WORMHOLE_CHAIN_ID
-            ) == preMoonbeamAdapterTargetOptimism,
+            moonbeamAdapterContract.targetAddress(OPTIMISM_WORMHOLE_CHAIN_ID) ==
+                preMoonbeamAdapterTargetOptimism,
             "MIP-X64: Moonbeam adapter targetAddress[Optimism] changed"
         );
         // sanity: the untouched Moonbeam routes must actually be live (non-zero)
@@ -549,7 +545,10 @@ contract mipx64 is HybridProposalV2 {
         assertGt(
             cost,
             0,
-            string.concat(label, ": bridgeCost returned 0 (route unexpectedly severed)")
+            string.concat(
+                label,
+                ": bridgeCost returned 0 (route unexpectedly severed)"
+            )
         );
 
         address user = address(0xBEEF);
