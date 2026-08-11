@@ -35,6 +35,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param newMaxRoundDelay The new maximum round delay
     event NewMaxRoundDelay(uint8 oldMaxRoundDelay, uint8 newMaxRoundDelay);
 
+    /// @notice Emitted when the minimum OEV fee is changed
+    /// @param oldFee The old minimum fee
+    /// @param newFee The new minimum fee
+    event MinOEVFeeChanged(uint256 oldFee, uint256 newFee);
+
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
 
@@ -47,6 +52,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @notice The fee multiplier applied to the original feed's fee
     /// @dev Represented as a percentage
     uint8 public feeMultiplier;
+
+    /// @notice The minimum fee for an early price update, in wei
+    /// @dev Prevents zero-cost OEV capture on low-gas chains. Set by owner.
+    ///      A value of 0 means no minimum (backwards compatible).
+    uint256 public minOEVFee;
 
     /// @notice The maximum number of times to decrement the round before falling back to latest price
     uint8 public maxDecrements;
@@ -201,7 +211,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @dev Requires payment of a fee based on gas price and fee multiplier
     function updatePriceEarly() external payable returns (uint256) {
         require(
-            msg.value >= (tx.gasprice - block.basefee) * uint256(feeMultiplier),
+            msg.value >= (tx.gasprice - block.basefee) * uint256(feeMultiplier) &&
+            msg.value >= minOEVFee,
             "ChainlinkOEVWrapper: Insufficient tax"
         );
 
@@ -254,6 +265,16 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         feeMultiplier = newMultiplier;
 
         emit FeeMultiplierChanged(oldMultiplier, newMultiplier);
+    }
+
+    /// @notice Set the minimum OEV fee for early price updates
+    /// @param _minOEVFee The new minimum fee in wei
+    /// @dev Only callable by the contract owner. Set to 0 to disable minimum.
+    function setMinOEVFee(uint256 _minOEVFee) external onlyOwner {
+        uint256 oldFee = minOEVFee;
+        minOEVFee = _minOEVFee;
+
+        emit MinOEVFeeChanged(oldFee, _minOEVFee);
     }
 
     /// @notice Set the maximum number of decrements before falling back to latest price
