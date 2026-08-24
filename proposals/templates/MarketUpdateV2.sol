@@ -9,6 +9,7 @@ import "@forge-std/StdJson.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
+import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
 import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
@@ -58,6 +59,11 @@ contract MarketUpdateV2Template is
         private _markets;
     mapping(uint256 chainId => EnumerableSet.Bytes32Set models)
         private _irModels;
+
+    /// @notice true when the proposal JSON carries a 1284 block; gates every
+    /// touch of fork id 0, which may be a placeholder when the Moonbeam RPC
+    /// is unreachable
+    bool internal _hasMoonbeamActions;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -112,22 +118,33 @@ contract MarketUpdateV2Template is
     function initProposal(Addresses addresses) public override {
         string memory encodedJson = vm.readFile(vm.envString("JSON_PATH"));
 
-        // Moonbeam is fully deprecated: no new market updates target it, and
-        // fork id 0 may be a placeholder stood up when the Moonbeam RPC is
-        // unreachable, so never touch that fork. Fail loudly if a proposal
-        // JSON still carries a 1284 block instead of silently dropping it.
-        require(
-            !vm.keyExistsJson(
-                encodedJson,
-                string.concat(".", vm.toString(MOONBEAM_CHAIN_ID))
-            ),
-            "MarketUpdateV2: Moonbeam is deprecated"
-        );
+        // Moonbeam is wound down: most proposals no longer carry a 1284
+        // block, and fork id 0 may be the placeholder stood up when the
+        // Moonbeam RPC is unreachable. Only touch that fork when this
+        // proposal actually has Moonbeam updates, and fail loudly (via the
+        // shared ChainIds message) if it does but the fork is not real.
+        // Mirrors RewardsDistributionV2.initProposal.
+        _hasMoonbeamActions = vm.keyExistsJson(encodedJson, ".1284");
 
+        if (_hasMoonbeamActions) {
+            ChainIds.requireMoonbeamFork();
+
+            // the xcUSDT/xcUSDC/xcDOT precompile mocks only exist on
+            // Moonbeam, so the etch must run on that fork (the primary fork
+            // is Ethereum)
+            vm.selectFork(MOONBEAM_FORK_ID);
+            etch(vm, addresses);
+        }
+
+        // the Moonbeam skips below are defense in depth here and in
+        // validate() (_saveChainMarketUpdate/_saveIRModels/_validateChain all
+        // early-return on a missing JSON key before selecting a fork), but
+        // load-bearing in deploy() and build(), whose helpers select the fork
+        // unconditionally.
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
 
-            if (chainId == MOONBEAM_CHAIN_ID) {
+            if (chainId == MOONBEAM_CHAIN_ID && !_hasMoonbeamActions) {
                 continue;
             }
 
@@ -140,7 +157,7 @@ contract MarketUpdateV2Template is
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
 
-            if (chainId == MOONBEAM_CHAIN_ID) {
+            if (chainId == MOONBEAM_CHAIN_ID && !_hasMoonbeamActions) {
                 continue;
             }
 
@@ -152,7 +169,7 @@ contract MarketUpdateV2Template is
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
 
-            if (chainId == MOONBEAM_CHAIN_ID) {
+            if (chainId == MOONBEAM_CHAIN_ID && !_hasMoonbeamActions) {
                 continue;
             }
 
@@ -164,7 +181,7 @@ contract MarketUpdateV2Template is
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
 
-            if (chainId == MOONBEAM_CHAIN_ID) {
+            if (chainId == MOONBEAM_CHAIN_ID && !_hasMoonbeamActions) {
                 continue;
             }
 
