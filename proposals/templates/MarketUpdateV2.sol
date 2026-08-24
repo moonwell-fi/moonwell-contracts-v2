@@ -60,6 +60,11 @@ contract MarketUpdateV2Template is
     mapping(uint256 chainId => EnumerableSet.Bytes32Set models)
         private _irModels;
 
+    /// @notice true when the proposal JSON carries a 1284 block; gates every
+    /// touch of fork id 0, which may be a placeholder when the Moonbeam RPC
+    /// is unreachable
+    bool internal _hasMoonbeamActions;
+
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(vm.envString("DESCRIPTION_PATH"))
@@ -113,13 +118,35 @@ contract MarketUpdateV2Template is
     function initProposal(Addresses addresses) public override {
         string memory encodedJson = vm.readFile(vm.envString("JSON_PATH"));
 
-        // the xcUSDT/xcUSDC/xcDOT precompile mocks only exist on Moonbeam,
-        // so the etch must run on that fork (the primary fork is Ethereum)
-        vm.selectFork(MOONBEAM_FORK_ID);
-        etch(vm, addresses);
+        // Moonbeam is wound down: most proposals no longer carry a 1284
+        // block, and fork id 0 may be the placeholder stood up when the
+        // Moonbeam RPC is unreachable. Only touch that fork when this
+        // proposal actually has Moonbeam updates, and fail loudly (via the
+        // shared ChainIds message) if it does but the fork is not real.
+        // Mirrors RewardsDistributionV2.initProposal.
+        _hasMoonbeamActions = vm.keyExistsJson(encodedJson, ".1284");
 
+        if (_hasMoonbeamActions) {
+            ChainIds.requireMoonbeamFork();
+
+            // the xcUSDT/xcUSDC/xcDOT precompile mocks only exist on
+            // Moonbeam, so the etch must run on that fork (the primary fork
+            // is Ethereum)
+            vm.selectFork(MOONBEAM_FORK_ID);
+            etch(vm, addresses);
+        }
+
+        // the Moonbeam skips below are defense in depth here and in
+        // validate() (_saveChainMarketUpdate/_saveIRModels/_validateChain all
+        // early-return on a missing JSON key before selecting a fork), but
+        // load-bearing in deploy() and build(), whose helpers select the fork
+        // unconditionally.
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
+
+            if (chainId == MOONBEAM_CHAIN_ID && !_hasMoonbeamActions) {
+                continue;
+            }
 
             _saveChainMarketUpdate(addresses, chainId, encodedJson);
             _saveIRModels(chainId, encodedJson);
@@ -129,6 +156,11 @@ contract MarketUpdateV2Template is
     function deploy(Addresses addresses, address deployer) public override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
+
+            if (chainId == MOONBEAM_CHAIN_ID && !_hasMoonbeamActions) {
+                continue;
+            }
+
             _deployIRModels(addresses, deployer, chainId);
         }
     }
@@ -136,6 +168,11 @@ contract MarketUpdateV2Template is
     function build(Addresses addresses) public virtual override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
+
+            if (chainId == MOONBEAM_CHAIN_ID && !_hasMoonbeamActions) {
+                continue;
+            }
+
             _buildChainActions(addresses, chainId);
         }
     }
@@ -143,6 +180,11 @@ contract MarketUpdateV2Template is
     function validate(Addresses addresses, address) public virtual override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
+
+            if (chainId == MOONBEAM_CHAIN_ID && !_hasMoonbeamActions) {
+                continue;
+            }
+
             _validateChain(addresses, chainId);
         }
     }
