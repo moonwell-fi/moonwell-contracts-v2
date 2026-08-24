@@ -9,7 +9,6 @@ import "@forge-std/StdJson.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
-import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
 import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
@@ -113,13 +112,24 @@ contract MarketUpdateV2Template is
     function initProposal(Addresses addresses) public override {
         string memory encodedJson = vm.readFile(vm.envString("JSON_PATH"));
 
-        // the xcUSDT/xcUSDC/xcDOT precompile mocks only exist on Moonbeam,
-        // so the etch must run on that fork (the primary fork is Ethereum)
-        vm.selectFork(MOONBEAM_FORK_ID);
-        etch(vm, addresses);
+        // Moonbeam is fully deprecated: no new market updates target it, and
+        // fork id 0 may be a placeholder stood up when the Moonbeam RPC is
+        // unreachable, so never touch that fork. Fail loudly if a proposal
+        // JSON still carries a 1284 block instead of silently dropping it.
+        require(
+            !vm.keyExistsJson(
+                encodedJson,
+                string.concat(".", vm.toString(MOONBEAM_CHAIN_ID))
+            ),
+            "MarketUpdateV2: Moonbeam is deprecated"
+        );
 
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
+
+            if (chainId == MOONBEAM_CHAIN_ID) {
+                continue;
+            }
 
             _saveChainMarketUpdate(addresses, chainId, encodedJson);
             _saveIRModels(chainId, encodedJson);
@@ -129,6 +139,11 @@ contract MarketUpdateV2Template is
     function deploy(Addresses addresses, address deployer) public override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
+
+            if (chainId == MOONBEAM_CHAIN_ID) {
+                continue;
+            }
+
             _deployIRModels(addresses, deployer, chainId);
         }
     }
@@ -136,6 +151,11 @@ contract MarketUpdateV2Template is
     function build(Addresses addresses) public virtual override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
+
+            if (chainId == MOONBEAM_CHAIN_ID) {
+                continue;
+            }
+
             _buildChainActions(addresses, chainId);
         }
     }
@@ -143,6 +163,11 @@ contract MarketUpdateV2Template is
     function validate(Addresses addresses, address) public virtual override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
+
+            if (chainId == MOONBEAM_CHAIN_ID) {
+                continue;
+            }
+
             _validateChain(addresses, chainId);
         }
     }
