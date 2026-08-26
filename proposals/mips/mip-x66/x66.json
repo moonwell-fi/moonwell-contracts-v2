@@ -1,0 +1,30 @@
+{
+    "8453": {
+        "markets": [
+            {
+                "collateralFactor": 0.44e18,
+                "irm": "",
+                "market": "MOONWELL_wrsETH",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": []
+    },
+    "10": {
+        "markets": [
+            {
+                "collateralFactor": 0.44e18,
+                "irm": "",
+                "market": "MOONWELL_wrsETH",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0,
+                "irm": "",
+                "market": "MOONWELL_cbETH",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": []
+    }
+}
