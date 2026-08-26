@@ -5,8 +5,8 @@
         "id": 0,
         "path": "MarketUpdateV2.sol/MarketUpdateV2Template.json",
         "proposalType": "HybridProposalV2",
-        "descriptionUri": ""
-    }, 
+        "descriptionUri": "ipfs://bafkreifd57xazi2tpad56suucylt4bkmbc4fjnpaa5spynygwpz33nvnay"
+    },
     {
         "envpath": "proposals/mips/mip-x65/x65.sh",
         "governor": "MultichainGovernorV2",
@@ -21,7 +21,7 @@
         "id": 181,
         "path": "MarketUpdateV2.sol/MarketUpdateV2Template.json",
         "proposalType": "HybridProposalV2",
-        "descriptionUri": "ipfs://bafkreicqqam7vtarbbcipuxcg2qn3d7sgng5mwfxkhm6qie4yok6dqkqea"
+        "descriptionUri": "ipfs://bafkreifd57xazi2tpad56suucylt4bkmbc4fjnpaa5spynygwpz33nvnay"
     },
     {
         "envpath": "proposals/mips/mip-x63/x63.sh",
