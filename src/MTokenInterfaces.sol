@@ -90,8 +90,14 @@ contract MTokenStorage {
     /// @notice Implementation address for this contract
     address public implementation;
 
+    /// @notice Tracked cash balance of this market, immune to direct underlying transfers
+    uint256 public internalCash;
+
+    /// @notice Set by the first `_becomeImplementation`, blocking later ones from reseeding `internalCash` and moving the exchange rate
+    bool public internalCashInitialized;
+
     /// @dev Room to add new storage above without caring what any contract below declares
-    uint256[45] private __gap;
+    uint256[43] private __gap;
 }
 
 abstract contract MTokenInterface is MTokenStorage {
@@ -254,6 +260,14 @@ abstract contract MTokenInterface is MTokenStorage {
 }
 
 abstract contract MErc20Interface {
+    /*** Market Events ***/
+
+    /// @notice Emitted when the tracked internal cash balance is resynced with the underlying balance this market actually holds
+    event CashSynced(uint oldInternalCash, uint newInternalCash);
+
+    /// @notice Emitted when surplus underlying, i.e. underlying donated straight to this market, is swept out
+    event UnderlyingSwept(address indexed recipient, uint amount);
+
     /*** User Interface ***/
 
     function mint(uint mintAmount) external virtual returns (uint);

@@ -25,9 +25,8 @@ library LibCompound {
             return mToken.exchangeRateStored();
         }
 
-        uint256 totalCash = MErc20(mToken.underlying()).balanceOf(
-            address(mToken)
-        );
+        /// read the market's own cash accounting so this returns the same rate the market does
+        uint256 totalCash = MToken(address(mToken)).getCash();
         uint256 borrowsPrior = mToken.totalBorrows();
         uint256 reservesPrior = mToken.totalReserves();
 
