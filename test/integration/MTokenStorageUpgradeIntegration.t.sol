@@ -18,8 +18,12 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 ///         `underlying` and `implementation` moved out of `MErc20Storage` and
 ///         `MDelegationStorage` into `MTokenStorage`; if that move shifted a slot, the new
 ///         implementation would read different values through the delegator's storage.
-/// @dev Run against a Base fork: `forge test --match-contract MTokenStorageUpgradeIntegrationTest --fork-url base`
+/// @dev Run against a Base fork: `forge test --match-contract MTokenStorageUpgradeIntegrationTest`
 contract MTokenStorageUpgradeIntegrationTest is Test {
+    /// @dev pinned so the market state, and the implementation these markets run today,
+    ///      stay fixed as Base moves on
+    uint256 private constant FORK_BLOCK = 50_590_315;
+
     Addresses private addresses;
 
     /// @notice Every value the delegator serves out of storage, read through whichever
@@ -51,6 +55,8 @@ contract MTokenStorageUpgradeIntegrationTest is Test {
     }
 
     function setUp() public {
+        vm.createSelectFork(vm.rpcUrl("base"), FORK_BLOCK);
+
         addresses = new Addresses();
     }
 
@@ -68,9 +74,7 @@ contract MTokenStorageUpgradeIntegrationTest is Test {
     function testMWethMarketStorageSurvivesUpgrade() public {
         _assertStorageSurvivesUpgrade(
             addresses.getAddress("MOONWELL_WETH"),
-            address(
-                new MWethDelegate(addresses.getAddress("WETH_UNWRAPPER"))
-            ),
+            address(new MWethDelegate(addresses.getAddress("WETH_UNWRAPPER"))),
             1 ether
         );
     }
@@ -209,9 +213,7 @@ contract MTokenStorageUpgradeIntegrationTest is Test {
 
         /// at least what was borrowed, so accrued interest still passes
         assertGe(
-            MErc20Delegator(payable(market)).borrowBalanceStored(
-                address(this)
-            ),
+            MErc20Delegator(payable(market)).borrowBalanceStored(address(this)),
             borrowAmount,
             "borrow did not register"
         );
