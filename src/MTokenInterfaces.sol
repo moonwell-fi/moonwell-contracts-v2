@@ -79,6 +79,19 @@ contract MTokenStorage {
 
     /// @notice Share of seized collateral that is added to reserves
     uint public protocolSeizeShareMantissa;
+
+    // `underlying` and `implementation` used to sit in `MErc20Storage` and
+    // `MDelegationStorage`. Merged in here so the layout `MErc20Delegator` and its
+    // delegates share lives in one contract, and new state can be appended in one place.
+
+    /// @notice Underlying asset for this MToken
+    address public underlying;
+
+    /// @notice Implementation address for this contract
+    address public implementation;
+
+    /// @dev Room to add new storage above without caring what any contract below declares
+    uint256[45] private __gap;
 }
 
 abstract contract MTokenInterface is MTokenStorage {
@@ -240,12 +253,7 @@ abstract contract MTokenInterface is MTokenStorage {
     ) external virtual returns (uint);
 }
 
-contract MErc20Storage {
-    /// @notice Underlying asset for this MToken
-    address public underlying;
-}
-
-abstract contract MErc20Interface is MErc20Storage {
+abstract contract MErc20Interface {
     /*** User Interface ***/
 
     function mint(uint mintAmount) external virtual returns (uint);
@@ -278,12 +286,7 @@ abstract contract MErc20Interface is MErc20Storage {
     function _addReserves(uint addAmount) external virtual returns (uint);
 }
 
-contract MDelegationStorage {
-    /// @notice Implementation address for this contract
-    address public implementation;
-}
-
-abstract contract MDelegatorInterface is MDelegationStorage {
+abstract contract MDelegatorInterface {
     /// @notice Emitted when implementation is changed
     event NewImplementation(
         address oldImplementation,
@@ -303,7 +306,7 @@ abstract contract MDelegatorInterface is MDelegationStorage {
     ) external virtual;
 }
 
-abstract contract MDelegateInterface is MDelegationStorage {
+abstract contract MDelegateInterface {
     /**
      * @notice Called by the delegator on a delegate to initialize it for duty
      * @dev Should revert if any issues arise which make it unfit for delegation

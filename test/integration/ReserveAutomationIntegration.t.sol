@@ -6,7 +6,6 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
-import {MErc20Storage} from "@protocol/MTokenInterfaces.sol";
 import {AutomationDeploy} from "@protocol/market/AutomationDeploy.sol";
 import {MockERC20Decimals} from "@test/mock/MockERC20Decimals.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
