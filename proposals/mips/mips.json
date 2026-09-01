@@ -1081,7 +1081,7 @@
     {
         "envpath": "proposals/mips/mip-x66/x66.sh",
         "governor": "MultichainGovernorV2",
-        "id": 0,
+        "id": 184,
         "path": "mip-x66.sol/mipx66.json",
         "proposalType": "HybridProposalV2",
         "descriptionUri": "ipfs://bafkreibwnrq2xcxctzhqlk557mtitknlenaedsnfek4rzywkcohrqpr2pi"
