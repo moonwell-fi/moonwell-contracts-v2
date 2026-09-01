@@ -1077,5 +1077,13 @@
         "path": "mip-x62.sol/mipx62.json",
         "proposalType": "HybridProposalV2",
         "descriptionUri": "ipfs://bafkreieupeaon7mg4sng4ua34g4kwonsxxilfvhajmi4czfwrjleu6qweu"
+    },
+    {
+        "envpath": "proposals/mips/mip-x66/x66.sh",
+        "governor": "MultichainGovernorV2",
+        "id": 185,
+        "path": "mip-x66.sol/mipx66.json",
+        "proposalType": "HybridProposalV2",
+        "descriptionUri": "ipfs://bafkreihupjuqofoh2t73wzdkv4nrpat5m2fwfv52qdhfjorj4pawhjhrjq"
     }
 ]

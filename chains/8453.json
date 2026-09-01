@@ -1638,5 +1638,40 @@
         "addr": "0x9d465d56d235674693A158Af40c8d53ddE59B0CE",
         "isContract": true,
         "name": "VOTE_COLLECTION_V2_IMPL"
+    },
+    {
+        "addr": "0xcD6b4B047e55A513b8efc2B61F58B9f7Fa6096FC",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X66"
+    },
+    {
+        "addr": "0xa1a0cD8f2A37689a84B93814Cb4BFAF356620933",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_wstETH_MIP_X66"
+    },
+    {
+        "addr": "0xaa144B847f55efb63C8a8651541fD6af1cb23BB1",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_X66"
+    },
+    {
+        "addr": "0x1fB29b6632Ad7c590Df8Cf1498D4952B95170101",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_EURC_MIP_X66"
+    },
+    {
+        "addr": "0xe214B2BC13DCf0FCf1481f75918C84Eb5Bd7c2Db",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_MAMO_MIP_X66"
+    },
+    {
+        "addr": "0x1e55782FeDC3e09c40A90f5A67DEcFfB55EcD412",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_MORPHO_MIP_X66"
+    },
+    {
+        "addr": "0x3C10e4B6d60d4b2ec88aBb5aa1F613f030872B5a",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDS_MIP_X66"
     }
 ]
