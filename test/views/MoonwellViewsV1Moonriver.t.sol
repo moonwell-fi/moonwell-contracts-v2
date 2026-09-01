@@ -8,7 +8,7 @@ import {DeployMoonwellViewsV1Moonriver} from "@script/DeployMoonwellViewsV1Moonr
 import {MoonwellViewsV1Moonriver} from "@protocol/views/MoonwellViewsV1Moonriver.sol";
 import {BaseMoonwellViews} from "@protocol/views/BaseMoonwellViews.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {MErc20Interface} from "@protocol/MTokenInterfaces.sol";
+import {MTokenInterface} from "@protocol/MTokenInterfaces.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 
 contract MoonwellViewsV1MoonriverTest is Test {
@@ -113,7 +113,7 @@ contract MoonwellViewsV1MoonriverTest is Test {
                 underlying = wmovr;
             } else {
                 underlying = address(
-                    MErc20Interface(markets[i].market).underlying()
+                    MTokenInterface(markets[i].market).underlying()
                 );
             }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import {MErc20Interface} from "./MTokenInterfaces.sol";
+import {MTokenInterface, MErc20Interface} from "./MTokenInterfaces.sol";
 import {EIP20Interface} from "./EIP20Interface.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
@@ -140,7 +140,9 @@ contract OEVProtocolFeeRedeemer is Ownable {
         returns (MErc20Interface mToken, EIP20Interface underlyingToken)
     {
         mToken = MErc20Interface(_mToken);
-        underlyingToken = EIP20Interface(mToken.underlying());
+        underlyingToken = EIP20Interface(
+            MTokenInterface(_mToken).underlying()
+        );
     }
 
     /**

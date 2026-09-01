@@ -31,6 +31,18 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
             msg.sender == admin,
             "only the admin may call _becomeImplementation"
         );
+
+        /// seed from the live balance so the exchange rate does not move at handover
+        /// a roll back and forward leaves this stale, resync with `sweepTokenAndSync(0)`
+        if (!internalCashInitialized) {
+            internalCashInitialized = true;
+
+            uint256 balance = IERC20(underlying).balanceOf(address(this));
+
+            internalCash = balance;
+
+            emit CashSynced(0, balance);
+        }
     }
 
     /**

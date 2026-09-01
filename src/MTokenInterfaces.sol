@@ -79,6 +79,25 @@ contract MTokenStorage {
 
     /// @notice Share of seized collateral that is added to reserves
     uint public protocolSeizeShareMantissa;
+
+    // `underlying` and `implementation` used to sit in `MErc20Storage` and
+    // `MDelegationStorage`. Merged in here so the layout `MErc20Delegator` and its
+    // delegates share lives in one contract, and new state can be appended in one place.
+
+    /// @notice Underlying asset for this MToken
+    address public underlying;
+
+    /// @notice Implementation address for this contract
+    address public implementation;
+
+    /// @notice Tracked cash balance of this market, immune to direct underlying transfers
+    uint256 public internalCash;
+
+    /// @notice Set by the first `_becomeImplementation`, blocking later ones from reseeding `internalCash` and moving the exchange rate
+    bool public internalCashInitialized;
+
+    /// @dev Room to add new storage above without caring what any contract below declares
+    uint256[43] private __gap;
 }
 
 abstract contract MTokenInterface is MTokenStorage {
@@ -240,12 +259,15 @@ abstract contract MTokenInterface is MTokenStorage {
     ) external virtual returns (uint);
 }
 
-contract MErc20Storage {
-    /// @notice Underlying asset for this MToken
-    address public underlying;
-}
+abstract contract MErc20Interface {
+    /*** Market Events ***/
 
-abstract contract MErc20Interface is MErc20Storage {
+    /// @notice Emitted when the tracked internal cash balance is resynced with the underlying balance this market actually holds
+    event CashSynced(uint oldInternalCash, uint newInternalCash);
+
+    /// @notice Emitted when surplus underlying, i.e. underlying donated straight to this market, is swept out
+    event UnderlyingSwept(address indexed recipient, uint amount);
+
     /*** User Interface ***/
 
     function mint(uint mintAmount) external virtual returns (uint);
@@ -278,12 +300,7 @@ abstract contract MErc20Interface is MErc20Storage {
     function _addReserves(uint addAmount) external virtual returns (uint);
 }
 
-contract MDelegationStorage {
-    /// @notice Implementation address for this contract
-    address public implementation;
-}
-
-abstract contract MDelegatorInterface is MDelegationStorage {
+abstract contract MDelegatorInterface {
     /// @notice Emitted when implementation is changed
     event NewImplementation(
         address oldImplementation,
@@ -303,7 +320,7 @@ abstract contract MDelegatorInterface is MDelegationStorage {
     ) external virtual;
 }
 
-abstract contract MDelegateInterface is MDelegationStorage {
+abstract contract MDelegateInterface {
     /**
      * @notice Called by the delegator on a delegate to initialize it for duty
      * @dev Should revert if any issues arise which make it unfit for delegation

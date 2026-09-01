@@ -498,6 +498,19 @@ contract MErc20Delegator is
         );
     }
 
+    /**
+     * @notice Sweep surplus underlying out of this mToken and resync its tracked cash balance. Tokens are sent to admin
+     * @param transferAmount The amount of surplus underlying to sweep, or zero to only resync
+     */
+    function sweepTokenAndSync(uint transferAmount) external {
+        delegateToImplementation(
+            abi.encodeWithSignature(
+                "sweepTokenAndSync(uint256)",
+                transferAmount
+            )
+        );
+    }
+
     /*** Admin Functions ***/
 
     /**
