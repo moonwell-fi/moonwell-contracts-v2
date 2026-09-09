@@ -4,7 +4,8 @@
         "governor": "MultichainGovernorV2",
         "id": 0,
         "path": "RewardsDistributionV2.sol/RewardsDistributionV2Template.json",
-        "proposalType": "HybridProposalV2"
+        "proposalType": "HybridProposalV2",
+        "descriptionUri": "ipfs://bafkreidxenf2ke22p5ziipkptw2we3ymvy4e75q2dbreh4lvd5kf7fiqli"
     },
     {
         "envpath": "proposals/mips/mip-x65/x65.sh",
@@ -12,7 +13,7 @@
         "id": 182,
         "path": "RewardsDistributionV2.sol/RewardsDistributionV2Template.json",
         "proposalType": "HybridProposalV2",
-        "descriptionUri": "ipfs://bafkreihcwwbihfhps37bftxxfvxqmg4v22yjuo3jk6sxzu6k2infkrewiu"
+        "descriptionUri": "ipfs://bafkreidxenf2ke22p5ziipkptw2we3ymvy4e75q2dbreh4lvd5kf7fiqli"
     },
     {
         "envpath": "proposals/mips/mip-e02/e02.sh",
