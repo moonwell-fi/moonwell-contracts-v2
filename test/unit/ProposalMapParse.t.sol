@@ -76,6 +76,31 @@ contract ProposalMapParseTest is Test {
         }
     }
 
+    /// @notice entries sharing an artifact `path` (template-registered MIPs)
+    ///         must each resolve their OWN descriptionUri via envPath; the
+    ///         path-keyed map is last-writer-wins and cannot tell them apart.
+    function test_descriptionUriByEnvPathIsPerEntryForSharedPaths() public {
+        string memory data = vm.readFile(
+            string.concat(vm.projectRoot(), "/proposals/mips/mips.json")
+        );
+        uint256 checked;
+        for (uint256 i = 0; ; i++) {
+            string memory base = string.concat(".[", vm.toString(i), "]");
+            if (!vm.keyExistsJson(data, string.concat(base, ".path"))) break;
+            string memory uriKey = string.concat(base, ".descriptionUri");
+            if (!vm.keyExistsJson(data, uriKey)) continue;
+            (string memory envPath, , , , ) = map.proposals(i);
+            if (bytes(envPath).length == 0) continue;
+            assertEq(
+                map.getProposalDescriptionUriByEnvPath(envPath),
+                stdJson.readString(data, uriKey),
+                string.concat("descriptionUri mismatch for ", envPath)
+            );
+            checked++;
+        }
+        assertGt(checked, 0, "no pinned entries with envPath in mips.json");
+    }
+
     function test_descriptionUriPresentForMipE00() public {
         // MIP-E00 is pinned to IPFS by the pin-proposal-description workflow,
         // so its mips.json entry must carry a non-empty ipfs:// descriptionUri.
