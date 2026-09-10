@@ -61,7 +61,7 @@ id0_entries() {
   while IFS=$'\t' read -r rawpath envpath; do
     local md
     md="$(resolve_md "$rawpath" "$envpath")"
-    [ -n "$md" ] && printf '%s\t%s\n' "$rawpath" "$(norm "$md")"
+    [ -n "$md" ] && printf '%s\t%s\t%s\n' "$rawpath" "$envpath" "$(norm "$md")"
   done
 }
 
@@ -91,14 +91,17 @@ pin_md() {
   printf '%s' "$cid"
 }
 
-# write descriptionUri into the entry identified by its raw path. Writes in
-# place (truncate + rewrite) rather than mv so the file's existing mode is
-# preserved (mips.json is tracked executable; avoid a spurious mode change).
+# write descriptionUri into the id:0 entry identified by (path, envpath).
+# `path` alone is not unique: template-registered MIPs share one artifact
+# path, so keying on it alone overwrote already-submitted entries.
+# Writes in place (truncate + rewrite) rather than mv so the file's existing
+# mode is preserved (mips.json is tracked executable; avoid a spurious mode change).
 write_uri() {
-  local path_key="$1" uri="$2" tmp
+  local path_key="$1" env_key="$2" uri="$3" tmp
   tmp="$(mktemp)"
-  jq --indent 4 --arg p "$path_key" --arg uri "$uri" \
-    'map(if .path == $p then . + {descriptionUri: $uri} else . end)' \
+  jq --indent 4 --arg p "$path_key" --arg e "$env_key" --arg uri "$uri" \
+    'map(if .id == 0 and .path == $p and ((.envpath // .envPath // "") == $e)
+         then . + {descriptionUri: $uri} else . end)' \
     "$MIPS_JSON" >"$tmp"
   cat "$tmp" >"$MIPS_JSON"
   rm -f "$tmp"
@@ -130,9 +133,9 @@ for c in "${CANDIDATES[@]}"; do
   esac
   [ -f "$cn" ] || { log "skip $cn (file not found)"; continue; }
 
-  match=""
-  while IFS=$'\t' read -r rawpath md; do
-    if [ "$md" = "$cn" ]; then match="$rawpath"; break; fi
+  match="" match_env=""
+  while IFS=$'\t' read -r rawpath envpath md; do
+    if [ "$md" = "$cn" ]; then match="$rawpath"; match_env="$envpath"; break; fi
   done < <(id0_entries)
 
   if [ -z "$match" ]; then
@@ -141,7 +144,7 @@ for c in "${CANDIDATES[@]}"; do
   fi
 
   cid="$(pin_md "$cn")" || exit 1
-  write_uri "$match" "ipfs://$cid"
+  write_uri "$match" "$match_env" "ipfs://$cid"
   log "pinned $cn -> ipfs://$cid  (mips.json entry: $match)"
   pinned=$((pinned + 1))
 done

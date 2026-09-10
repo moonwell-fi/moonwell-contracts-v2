@@ -69,6 +69,14 @@ test-unit:
 audit-rewards:
 	@./script/rewards/check-rewards-math.sh $(PROPOSAL)
 
+# Generate ./proposal.sh (gitignored) with every cast send needed to submit a
+# MultichainGovernorV2 proposal, appends pre-encoded against the predicted id
+# (governor proposalCount()+1). Usage:
+#   make proposal-sh MIP=mip-x67
+#   CAST_ACCOUNT=moonwell CAST_RPC=ethereum make proposal-sh MIP=mip-x67
+proposal-sh:
+	@sh=$$(ls proposals/mips/$(MIP)/*.sh | head -n1); ./script/proposals/write-proposal-sh.sh "$$sh"
+
 # Pin in-development proposal descriptions to IPFS (Pinata) and record the
 # ipfs://<cid> in the matching mips.json entry. Requires PINATA_JWT.
 # Usage:
