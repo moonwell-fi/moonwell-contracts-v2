@@ -7,8 +7,3 @@ echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
 
 export PRIMARY_FORK_ID=3
 echo "PRIMARY_FORK_ID=$PRIMARY_FORK_ID"
-
-# on-chain proposal id from the first (init) propose() call; append calls
-# are encoded against it when DO_PRINT regenerates the batch
-export BATCH_PROPOSAL_ID=187
-echo "BATCH_PROPOSAL_ID=$BATCH_PROPOSAL_ID"
