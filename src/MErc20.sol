@@ -10,6 +10,8 @@ import "./MToken.sol";
  * @author Moonwell
  */
 contract MErc20 is MToken, MErc20Interface {
+    using SafeERC20 for IERC20;
+
     /**
      * @notice Initialize the new money market
      * @param underlying_ The address of the underlying asset
@@ -198,13 +200,12 @@ contract MErc20 is MToken, MErc20Interface {
     /*** Safe Token ***/
 
     /**
-     * @notice Gets balance of this contract in terms of the underlying
-     * @dev This excludes the value of the current message, if any
-     * @return The quantity of underlying tokens owned by this contract
+     * @notice Gets the cash balance of this market in the underlying asset
+     * @dev Returns the internally tracked balance, not `underlying.balanceOf(address(this))`
+     * @return The quantity of underlying tokens this market accounts for
      */
     function getCashPrior() internal view virtual override returns (uint) {
-        EIP20Interface token = EIP20Interface(underlying);
-        return token.balanceOf(address(this));
+        return internalCash;
     }
 
     /**
@@ -254,42 +255,80 @@ contract MErc20 is MToken, MErc20Interface {
             address(this)
         );
         require(balanceAfter >= balanceBefore, "TOKEN_TRANSFER_IN_OVERFLOW");
-        return balanceAfter - balanceBefore; // underflow already checked above, just subtract
+
+        // Calculate the amount that was *actually* transferred
+        uint actualAmount = balanceAfter - balanceBefore;
+
+        internalCash += actualAmount;
+
+        return actualAmount;
     }
 
     /**
-     * @dev Similar to EIP20 transfer, except it handles a False success from `transfer` and returns an explanatory
-     *      error code rather than reverting. If caller has not called checked protocol's balance, this may revert due to
-     *      insufficient cash held in this contract. If caller has checked protocol's balance prior to this call, and verified
-     *      it is >= amount, this should not revert in normal conditions.
-     *
-     *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
-     *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
+     * @dev Sends underlying out of this market. Reverts if this market does not hold
+     *      `amount`, so callers should check the market's cash first
      */
     function doTransferOut(
         address payable to,
         uint amount
     ) internal virtual override {
-        EIP20NonStandardInterface token = EIP20NonStandardInterface(underlying);
-        token.transfer(to, amount);
+        /// debit first so an amount above the tracked cash reverts on underflow
+        internalCash -= amount;
 
-        bool success;
-        assembly {
-            switch returndatasize()
-            case 0 {
-                // This is a non-standard ERC-20
-                success := not(0) // set success to true
-            }
-            case 32 {
-                // This is a compliant ERC-20
-                returndatacopy(0, 0, 32)
-                success := mload(0) // Set `success = returndata` of override external call
-            }
-            default {
-                // This is an excessively non-compliant ERC-20, revert.
-                revert(0, 0)
-            }
+        IERC20(underlying).safeTransfer(to, amount);
+    }
+
+    /**
+     * @notice Sweep surplus underlying out of this market and resync `internalCash`
+     * @dev Surplus is `underlying.balanceOf(address(this)) - internalCash`, i.e. underlying
+     *      donated straight to this market. Pass `0` to resync without moving funds. Any
+     *      surplus not swept out is counted into `internalCash`, which raises the exchange
+     *      rate.
+     *
+     *      Reverts on failure rather than returning an error code, unlike the other admin
+     *      entry points here. Pays out the underlying directly, so a WETH market's admin
+     *      receives WETH rather than the raw ETH `MWethDelegate` would unwrap to.
+     * @param transferAmount Amount of surplus underlying to send to the admin
+     */
+    function sweepTokenAndSync(uint256 transferAmount) external nonReentrant {
+        require(
+            msg.sender == admin,
+            "MErc20::sweepTokenAndSync: only admin can sweep tokens"
+        );
+
+        /// book outstanding interest at the current utilization before cash moves
+        require(
+            accrueInterest() == uint(Error.NO_ERROR),
+            "MErc20::sweepTokenAndSync: accrue interest failed"
+        );
+
+        address underlying_ = underlying;
+        uint256 cashPrior = internalCash;
+        uint256 balance = IERC20(underlying_).balanceOf(address(this));
+
+        /// the real balance can fall below the tracked cash for underlyings that are able
+        /// to shrink a holder's balance, in which case there is no surplus to sweep
+        uint256 surplus = balance > cashPrior ? balance - cashPrior : 0;
+
+        require(
+            transferAmount <= surplus,
+            "MErc20::sweepTokenAndSync: amount exceeds surplus"
+        );
+
+        if (transferAmount != 0) {
+            /// the surplus was never counted in `internalCash`, so sending it out must not
+            /// debit it either
+            IERC20(underlying_).safeTransfer(admin, transferAmount);
+
+            emit UnderlyingSwept(admin, transferAmount);
         }
-        require(success, "TOKEN_TRANSFER_OUT_FAILED");
+
+        /// re-read rather than subtract so that an underlying charging a transfer fee
+        /// still leaves the tracked cash equal to what this market actually holds
+        uint256 cashNew = IERC20(underlying_).balanceOf(address(this));
+
+        internalCash = cashNew;
+
+        emit CashSynced(cashPrior, cashNew);
     }
 }

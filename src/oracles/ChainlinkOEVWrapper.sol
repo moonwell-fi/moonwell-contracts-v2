@@ -6,7 +6,7 @@ import {ReentrancyGuard} from "@openzeppelin-contracts/contracts/security/Reentr
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
-import {MErc20Storage, MTokenInterface, MErc20Interface} from "../MTokenInterfaces.sol";
+import {MTokenInterface, MErc20Interface} from "../MTokenInterfaces.sol";
 import {EIP20Interface} from "../EIP20Interface.sol";
 import {IChainlinkOracle} from "../interfaces/IChainlinkOracle.sol";
 import {IOEVWrapperFeed} from "./IOEVWrapperFeed.sol";
@@ -411,12 +411,12 @@ contract ChainlinkOEVWrapper is
 
         // get the loan underlying token (the token being repaid)
         EIP20Interface underlyingLoan = EIP20Interface(
-            MErc20Storage(mTokenLoan).underlying()
+            MTokenInterface(mTokenLoan).underlying()
         );
 
         // get the collateral underlying token (the token being seized)
         EIP20Interface underlyingCollateral = EIP20Interface(
-            MErc20Storage(mTokenCollateral).underlying()
+            MTokenInterface(mTokenCollateral).underlying()
         );
 
         MTokenInterface mTokenCollateralInterface = MTokenInterface(

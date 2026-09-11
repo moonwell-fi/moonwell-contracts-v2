@@ -5,7 +5,7 @@ import {MoonwellViewsV1Simple} from "@protocol/views/MoonwellViewsV1Simple.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {Well} from "@protocol/governance/Well.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {MErc20Interface} from "@protocol/MTokenInterfaces.sol";
+import {MTokenInterface} from "@protocol/MTokenInterfaces.sol";
 import {SafetyModuleInterfaceV1} from "@protocol/views/SafetyModuleInterfaceV1.sol";
 import {UniswapV2PairInterface} from "@protocol/views/UniswapV2PairInterface.sol";
 
@@ -117,7 +117,7 @@ contract MoonwellViewsV1Moonriver is MoonwellViewsV1Simple {
         }
         return
             _getTokenPriceFromDex(
-                MErc20Interface(address(_mToken)).underlying()
+                MTokenInterface(address(_mToken)).underlying()
             );
     }
 

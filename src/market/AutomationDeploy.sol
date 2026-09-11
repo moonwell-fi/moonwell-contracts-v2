@@ -1,6 +1,6 @@
 pragma solidity =0.8.19;
 
-import {MErc20Storage} from "@protocol/MTokenInterfaces.sol";
+import {MTokenInterface} from "@protocol/MTokenInterfaces.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {ERC20HoldingDeposit} from "@protocol/market/ERC20HoldingDeposit.sol";
 
@@ -31,7 +31,7 @@ contract AutomationDeploy {
             "mTokenMarket must be set"
         );
         require(
-            MErc20Storage(params.mTokenMarket).underlying() ==
+            MTokenInterface(params.mTokenMarket).underlying() ==
                 params.reserveAsset,
             "reserveUnderlying must match mToken underlying"
         );
