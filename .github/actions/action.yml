@@ -5,12 +5,12 @@ runs:
   using: "composite"
   steps:
     - name: Checkout the repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: recursive
 
     - name: Cache Foundry toolchain
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.foundry
         key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml') }}
