@@ -3,32 +3,34 @@
         "markets": [
             {
                 "collateralFactor": 0.6e18,
-                "jrm": "",
+                "irm": "",
                 "market": "MOONWELL_VELO",
                 "reserveFactor": -1
             }
-        ]
+        ],
+        "irModels": []
     },
     "8453": {
         "markets": [
             {
                 "collateralFactor": 0.55e18,
-                "jrm": "",
+                "irm": "",
                 "market": "MOONWELL_WELL",
                 "reserveFactor": -1
             },
             {
                 "collateralFactor": 0.6e18,
-                "jrm": "",
+                "irm": "",
                 "market": "MOONWELL_MORPHO",
                 "reserveFactor": -1
             },
             {
                 "collateralFactor": 0.6e18,
-                "jrm": "",
+                "irm": "",
                 "market": "MOONWELL_AERO",
                 "reserveFactor": -1
             }
-        ]
+        ],
+        "irModels": []
     }
 }
