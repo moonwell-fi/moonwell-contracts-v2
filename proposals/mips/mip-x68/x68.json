@@ -1,0 +1,34 @@
+{
+    "10": {
+        "markets": [
+            {
+                "collateralFactor": 0.6e18,
+                "jrm": "",
+                "market": "MOONWELL_VELO",
+                "reserveFactor": -1
+            }
+        ]
+    },
+    "8453": {
+        "markets": [
+            {
+                "collateralFactor": 0.55e18,
+                "jrm": "",
+                "market": "MOONWELL_WELL",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.6e18,
+                "jrm": "",
+                "market": "MOONWELL_MORPHO",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.6e18,
+                "jrm": "",
+                "market": "MOONWELL_AERO",
+                "reserveFactor": -1
+            }
+        ]
+    }
+}
