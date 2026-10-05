@@ -30,6 +30,12 @@
                 "irm": "JUMP_RATE_IRM_BASE_FLAT_MIP_X55",
                 "market": "MOONWELL_cbBTC",
                 "reserveFactor": 0.99e18
+            },
+            {
+                "collateralFactor": 0,
+                "irm": "",
+                "market": "MOONWELL_MAMO",
+                "reserveFactor": -1
             }
         ],
         "irModels": [
