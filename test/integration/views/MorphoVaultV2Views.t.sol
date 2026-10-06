@@ -487,8 +487,8 @@ contract MorphoVaultV2ViewsTest is PostProposalCheck {
                 market.marketId,
                 adaptiveCurveIrm
             );
-            // 1e-12 relative tolerance for the views' intermediate WAD rounding
-            assertApproxEqRel(market.marketSupplyApy, supplyApy, 1e6);
+            // Views floors utilization and two mulWads: < borrowApy / WAD + 2 wei
+            assertApproxEqAbs(market.marketSupplyApy, supplyApy, 10);
             assertEq(market.marketBorrowApy, borrowApy);
             assertLe(market.marketBorrowApy, ADAPTIVE_CURVE_IRM_MAX_BORROW_APR);
 
