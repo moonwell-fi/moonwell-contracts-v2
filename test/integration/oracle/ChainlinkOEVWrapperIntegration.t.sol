@@ -587,6 +587,10 @@ contract ChainlinkOEVWrapperIntegrationTest is
 
             address mTokenCollateralAddr = addresses.getAddress(mTokenKey);
 
+            // A deprecated collateral (CF 0) sizes a zero borrow and can
+            // never go underwater; skip it (see _collateralDisabled)
+            if (_collateralDisabled(mTokenCollateralAddr)) continue;
+
             // Get borrow token based on collateral type
             (
                 string memory borrowMTokenKey,
@@ -646,6 +650,21 @@ contract ChainlinkOEVWrapperIntegrationTest is
         return
             MToken(mTokenBorrowAddr).getCash() <
             10 ** IERC20(MErc20(mTokenBorrowAddr).underlying()).decimals();
+    }
+
+    /// @notice true when a collateral market's CF rounds to 0 bps. Synthetic
+    ///         positions borrow CF * 70% of the collateral value, so a market
+    ///         being wound down to CF 0 (e.g. MIP-X69 OP cbETH/WBTC, Base
+    ///         MAMO) yields a zero borrow that no price crash can make
+    ///         liquidatable. Callers skip it; coverage of the wrapper itself
+    ///         continues through the other markets.
+    function _collateralDisabled(
+        address mTokenCollateralAddr
+    ) internal view returns (bool) {
+        (, uint256 collateralFactorMantissa) = comptroller.markets(
+            mTokenCollateralAddr
+        );
+        return (collateralFactorMantissa * 10000) / 1e18 == 0;
     }
 
     /// @notice Get appropriate borrow token based on collateral type
@@ -1976,6 +1995,7 @@ contract ChainlinkOEVWrapperIntegrationTest is
                 abi.encodePacked("MOONWELL_", oracleConfigs[i].symbol)
             );
             if (!addresses.isAddressSet(mTokenKey)) continue;
+            if (_collateralDisabled(addresses.getAddress(mTokenKey))) continue;
 
             wrapper = ChainlinkOEVWrapper(
                 payable(addresses.getAddress(wrapperKey))
