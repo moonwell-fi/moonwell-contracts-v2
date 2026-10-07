@@ -377,6 +377,10 @@ contract ChainlinkCompositeOEVWrapperIntegrationTest is
 
             address mTokenCollateralAddr = addresses.getAddress(mTokenKey);
 
+            // A deprecated collateral (CF 0) sizes a zero borrow and can
+            // never go underwater; skip it (see _collateralDisabled)
+            if (_collateralDisabled(mTokenCollateralAddr)) continue;
+
             // Use USDC as borrow token
             address mTokenBorrowAddr = addresses.getAddress("MOONWELL_USDC");
 
@@ -411,6 +415,19 @@ contract ChainlinkCompositeOEVWrapperIntegrationTest is
     }
 
     // ==================== Helper Functions ====================
+
+    /// @notice true when a collateral market's CF rounds to 0 bps. Synthetic
+    ///         positions borrow CF * 70% of the collateral value, so a market
+    ///         being wound down to CF 0 yields a zero borrow that no price
+    ///         crash can make liquidatable.
+    function _collateralDisabled(
+        address mTokenCollateralAddr
+    ) internal view returns (bool) {
+        (, uint256 collateralFactorMantissa) = comptroller.markets(
+            mTokenCollateralAddr
+        );
+        return (collateralFactorMantissa * 10000) / 1e18 == 0;
+    }
 
     function _setupSyntheticPosition(
         address mTokenCollateralAddr,
