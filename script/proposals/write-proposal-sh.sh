@@ -58,11 +58,13 @@ grep -q "Script ran successfully" "$LOG" || { cat "$LOG" >&2; echo "ERROR: scrip
 
 # batched section: init (0xf2725649) then appends (0xd5eae5ab); else the
 # single propose() calldata printed under "Proposal Calldata"
-mapfile -t CALLS < <(awk '/Batched Proposal Calldata/{f=1} f && /^[[:space:]]*0x[0-9a-f]{8,}$/{gsub(/[[:space:]]/,""); print}' "$LOG")
+# (while-read, not mapfile: macOS ships bash 3.2)
+CALLS=()
+while IFS= read -r line; do CALLS+=("$line"); done < <(awk '/Batched Proposal Calldata/{f=1} f && /^[[:space:]]*0x[0-9a-f]{8,}$/{gsub(/[[:space:]]/,""); print}' "$LOG")
 BATCHED=1
 if [ "${#CALLS[@]}" -eq 0 ]; then
   BATCHED=0
-  mapfile -t CALLS < <(awk '/Proposal Calldata/{f=1} f && /^[[:space:]]*0x[0-9a-f]{8,}$/{gsub(/[[:space:]]/,""); print; exit}' "$LOG")
+  while IFS= read -r line; do CALLS+=("$line"); done < <(awk '/Proposal Calldata/{f=1} f && /^[[:space:]]*0x[0-9a-f]{8,}$/{gsub(/[[:space:]]/,""); print; exit}' "$LOG")
 fi
 [ "${#CALLS[@]}" -gt 0 ] || { cat "$LOG" >&2; echo "ERROR: no calldata found in output" >&2; exit 1; }
 rm -f "$LOG"
