@@ -4,10 +4,18 @@ pragma solidity 0.8.19;
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MTokenInterface} from "@protocol/MTokenInterfaces.sol";
 import {MErc20Interface} from "@protocol/MTokenInterfaces.sol";
+import {MDelegatorInterface} from "@protocol/MTokenInterfaces.sol";
 import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
 import {ComptrollerInterface} from "@protocol/ComptrollerInterface.sol";
 import "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+
+/// @notice admin hooks added to MErc20Delegate by MIP-X71
+interface IMErc20DelegateInternalCash {
+    function _sweepExcessCash() external;
+
+    function _syncCashDown() external;
+}
 
 /**
  * @title MWethOwnerWrapper
@@ -178,6 +186,40 @@ contract MWethOwnerWrapper is Initializable, OwnableUpgradeable {
             "MWethOwnerWrapper: WETH approval failed"
         );
         return MErc20Interface(address(mToken))._addReserves(addAmount);
+    }
+
+    /**
+     * @notice Point the WETH market at a new implementation
+     * @param implementation_ The new implementation address
+     * @param allowResign Whether to call _resignImplementation on the old implementation
+     * @param becomeImplementationData Data passed to _becomeImplementation
+     */
+    function _setImplementation(
+        address implementation_,
+        bool allowResign,
+        bytes calldata becomeImplementationData
+    ) external onlyOwner {
+        MDelegatorInterface(address(mToken))._setImplementation(
+            implementation_,
+            allowResign,
+            becomeImplementationData
+        );
+    }
+
+    /**
+     * @notice Sweep WETH held by the market above its internalCash to this wrapper
+     * @dev Swept WETH lands here and is extracted with withdrawToken
+     */
+    function _sweepExcessCash() external onlyOwner {
+        IMErc20DelegateInternalCash(address(mToken))._sweepExcessCash();
+    }
+
+    /**
+     * @notice Lower the WETH market's internalCash to its WETH balance after a
+     *         loss outside the market; never raises it
+     */
+    function _syncCashDown() external onlyOwner {
+        IMErc20DelegateInternalCash(address(mToken))._syncCashDown();
     }
 
     // ========================================

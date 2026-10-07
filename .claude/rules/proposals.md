@@ -117,3 +117,8 @@
   finalized proposal rejects appends and the missing chunk is unrecoverable
   without cancel + resubmit (MIP-X67 / proposal 186, 2026-09-10). After call 1
   mines, set the `mips.json` id to the real id and push.
+- mToken markets on the internal-cash implementation (MIP-X71+): every
+  `_setImplementation` must pass `allowResign=true`. The outgoing
+  `_resignImplementation` sweeps donations to admin before the incoming
+  `_becomeImplementation` syncs `internalCash = balanceOf`; with `false` the
+  sweep is skipped and pending donations are absorbed into the exchange rate
