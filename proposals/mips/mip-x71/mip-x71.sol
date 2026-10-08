@@ -63,7 +63,7 @@ forge script proposals/mips/mip-x71/mip-x71.sol:mipx71 --ffi -vvv \
     --broadcast --account <deployer>
 */
 /// then register the deployed addresses from
-/// broadcast/mip-x71.sol/<chainId>/run-latest.json in chains/<chainId>.json.
+/// broadcast/multi/mip-x71.sol-latest/run.json in chains/<chainId>.json.
 contract mipx71 is HybridProposalV2 {
     using ChainIds for uint256;
 
