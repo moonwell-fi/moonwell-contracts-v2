@@ -3,7 +3,9 @@
 - Always set `id: 0` in `proposals/mips/mips.json` when creating new proposals
 - Naming: `mip-b##` (Base), `mip-x##` (Ethereum/cross-chain), `mip-m##`
   (Moonbeam), `mip-o##` (Optimism)
-- Each proposal folder needs: `.sh`, `.json`, `.md` files
+- Each proposal folder needs: `.sh`, `.json`, `.md` files. Exception:
+  `.sol`-driven HybridProposalV2 proposals (e.g. mip-x64, mip-e01, mip-x71) have
+  only `.sol` + `.md`, and their `mips.json` entry uses `envpath: ""`
 - Shell scripts set: `JSON_PATH`, `DESCRIPTION_PATH`, `PRIMARY_FORK_ID`
 - Use templates from `proposals/templates/` when applicable (MarketAdd,
   MarketUpdate, RewardsDistribution)
