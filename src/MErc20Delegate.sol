@@ -87,9 +87,9 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
 
         if (excess != 0) {
             MErc20.doTransferOut(payable(admin), excess);
-        }
 
-        emit ExcessCashSwept(admin, excess);
+            emit ExcessCashSwept(admin, excess);
+        }
     }
 
     /**

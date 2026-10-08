@@ -28,6 +28,8 @@ contract LegacyBalanceOfDelegate is MErc20, MDelegateInterface {
 }
 
 contract MErc20DelegateInternalCashUnitTest is Test {
+    event ExcessCashSwept(address indexed recipient, uint256 amount);
+
     Comptroller comptroller;
     SimplePriceOracle oracle;
     FaucetToken token;
@@ -203,15 +205,19 @@ contract MErc20DelegateInternalCashUnitTest is Test {
         _donate(25e18);
 
         uint256 adminBefore = token.balanceOf(address(this));
+        vm.expectEmit(true, false, false, true, address(mToken));
+        emit ExcessCashSwept(address(this), 25e18);
         MErc20Delegate(address(mToken))._sweepExcessCash();
 
         assertEq(token.balanceOf(address(this)) - adminBefore, 25e18);
         assertEq(token.balanceOf(address(mToken)), 100e18);
         assertEq(_internalCash(), 100e18);
 
-        // nothing left to sweep: no-op
+        // nothing left to sweep: no-op, no event
+        vm.recordLogs();
         MErc20Delegate(address(mToken))._sweepExcessCash();
         assertEq(token.balanceOf(address(this)) - adminBefore, 25e18);
+        assertEq(vm.getRecordedLogs().length, 0, "no-op sweep emitted");
     }
 
     function testLaterUpgradeDoesNotAbsorbDonation() public {
