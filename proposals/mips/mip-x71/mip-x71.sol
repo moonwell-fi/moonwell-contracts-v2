@@ -49,6 +49,21 @@ export DO_TEARDOWN=false
 export DO_VALIDATE=true
 */
 /// forge script proposals/mips/mip-x71/mip-x71.sol:mipx71 --ffi -vvv
+///
+/// how to deploy the implementations (Ethereum: MErc20Delegate, MWethDelegate;
+/// Base: + MWethOwnerWrapper; Optimism: MErc20Delegate, MWethDelegate).
+/// deploy() opens a broadcast window per `new` on each fork; nothing else in
+/// run() broadcasts (simulate/validate only prank and deal on the local
+/// forks). Deployment runs must still use DO_RUN=false DO_VALIDATE=false so a
+/// `--broadcast` run only deploys and never executes the governance flow:
+/*
+DO_DEPLOY=true DO_AFTER_DEPLOY=false DO_BUILD=false DO_RUN=false \
+DO_TEARDOWN=false DO_VALIDATE=false DO_PRINT=false \
+forge script proposals/mips/mip-x71/mip-x71.sol:mipx71 --ffi -vvv \
+    --broadcast --account <deployer>
+*/
+/// then register the deployed addresses from
+/// broadcast/mip-x71.sol/<chainId>/run-latest.json in chains/<chainId>.json.
 contract mipx71 is HybridProposalV2 {
     using ChainIds for uint256;
 
@@ -214,14 +229,20 @@ contract mipx71 is HybridProposalV2 {
     //                         DEPLOY
     // ──────────────────────────────────────────────────────────────
 
+    /// @dev each `new` runs in its own broadcast window on the selected fork,
+    /// so a `--broadcast` run sends exactly the CREATE txs; the `addresses`
+    /// registry writes stay outside the window (they are calls to the
+    /// in-script Addresses contract, not on-chain txs)
     function _deployImplementations(Addresses addresses) internal {
         if (!addresses.isAddressSet(MTOKEN_IMPL_DEPRECATED)) {
+            vm.startBroadcast();
+            MErc20Delegate mTokenLogic = new MErc20Delegate();
+            vm.stopBroadcast();
+
             addresses.addAddress(
                 MTOKEN_IMPL_DEPRECATED,
                 addresses.getAddress(MTOKEN_IMPL)
             );
-
-            MErc20Delegate mTokenLogic = new MErc20Delegate();
             addresses.changeAddress(MTOKEN_IMPL, address(mTokenLogic), true);
         }
 
@@ -235,21 +256,25 @@ contract mipx71 is HybridProposalV2 {
                 "MIP-X71: live mWETH unwrapper != WETH_UNWRAPPER"
             );
 
-            addresses.addAddress(MWETH_IMPL_DEPRECATED, oldMWethLogic);
-
+            vm.startBroadcast();
             MWethDelegate mWethLogic = new MWethDelegate(unwrapper);
+            vm.stopBroadcast();
+
+            addresses.addAddress(MWETH_IMPL_DEPRECATED, oldMWethLogic);
             addresses.changeAddress(MWETH_IMPL, address(mWethLogic), true);
         }
     }
 
     function _deployWrapperImplementation(Addresses addresses) internal {
         if (!addresses.isAddressSet(WRAPPER_IMPL_DEPRECATED)) {
+            vm.startBroadcast();
+            MWethOwnerWrapper wrapperLogic = new MWethOwnerWrapper();
+            vm.stopBroadcast();
+
             addresses.addAddress(
                 WRAPPER_IMPL_DEPRECATED,
                 addresses.getAddress(WRAPPER_IMPL)
             );
-
-            MWethOwnerWrapper wrapperLogic = new MWethOwnerWrapper();
             addresses.changeAddress(WRAPPER_IMPL, address(wrapperLogic), true);
         }
     }
