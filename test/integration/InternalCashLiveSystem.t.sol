@@ -159,6 +159,49 @@ contract InternalCashLiveSystemTest is PostProposalCheck {
         assertEq(weth.balanceOf(recipient), donation);
     }
 
+    /// @notice Base mWETH reserves leave through MWETH_OWNER_WRAPPER as ETH
+    /// (doTransferOut debits internalCash, then WethUnwrapper sends ETH that
+    /// the wrapper's receive() re-wraps to WETH)
+    function testReduceReservesBaseMWethThroughWrapper() public {
+        vm.selectFork(BASE_FORK_ID);
+
+        MToken market = MToken(addresses.getAddress("MOONWELL_WETH"));
+        IERC20 weth = IERC20(addresses.getAddress("WETH"));
+        MWethOwnerWrapper wrapper = MWethOwnerWrapper(
+            payable(addresses.getAddress("MWETH_OWNER_WRAPPER"))
+        );
+        assertEq(market.admin(), address(wrapper), "wrapper not admin");
+
+        /// _reduceReserves returns a fresh-check error code if not accrued
+        market.accrueInterest();
+        uint256 reserves = market.totalReserves();
+        uint256 cash = market.getCash();
+        uint256 amount = (reserves < cash ? reserves : cash) / 2;
+        assertGt(amount, 0, "no reserves to reduce");
+
+        uint256 wrapperBefore = weth.balanceOf(address(wrapper));
+
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        assertEq(wrapper._reduceReserves(amount), 0, "reduce reserves failed");
+
+        assertEq(
+            market.totalReserves(),
+            reserves - amount,
+            "totalReserves not reduced"
+        );
+        assertEq(market.getCash(), cash - amount, "getCash not reduced");
+        assertEq(
+            MErc20Delegate(address(market)).internalCash(),
+            weth.balanceOf(address(market)),
+            "internalCash drifted from WETH balance"
+        );
+        assertEq(
+            weth.balanceOf(address(wrapper)) - wrapperBefore,
+            amount,
+            "wrapper did not receive WETH"
+        );
+    }
+
     /// @notice MWethDelegate overrides doTransferOut (ETH unwrap path) and must
     /// still debit internalCash
     function testMWethRedeemTracksInternalCashBase() public {
