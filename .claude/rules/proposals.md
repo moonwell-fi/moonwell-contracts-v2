@@ -3,7 +3,9 @@
 - Always set `id: 0` in `proposals/mips/mips.json` when creating new proposals
 - Naming: `mip-b##` (Base), `mip-x##` (Ethereum/cross-chain), `mip-m##`
   (Moonbeam), `mip-o##` (Optimism)
-- Each proposal folder needs: `.sh`, `.json`, `.md` files
+- Each proposal folder needs: `.sh`, `.json`, `.md` files. Exception:
+  `.sol`-driven HybridProposalV2 proposals (e.g. mip-x64, mip-e01, mip-x71) have
+  only `.sol` + `.md`, and their `mips.json` entry uses `envpath: ""`
 - Shell scripts set: `JSON_PATH`, `DESCRIPTION_PATH`, `PRIMARY_FORK_ID`
 - Use templates from `proposals/templates/` when applicable (MarketAdd,
   MarketUpdate, RewardsDistribution)
@@ -117,3 +119,8 @@
   finalized proposal rejects appends and the missing chunk is unrecoverable
   without cancel + resubmit (MIP-X67 / proposal 186, 2026-09-10). After call 1
   mines, set the `mips.json` id to the real id and push.
+- mToken markets on the internal-cash implementation (MIP-X71+): every
+  `_setImplementation` must pass `allowResign=true`. The outgoing
+  `_resignImplementation` sweeps donations to admin before the incoming
+  `_becomeImplementation` syncs `internalCash = balanceOf`; with `false` the
+  sweep is skipped and pending donations are absorbed into the exchange rate

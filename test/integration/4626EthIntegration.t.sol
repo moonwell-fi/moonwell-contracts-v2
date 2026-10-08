@@ -141,6 +141,11 @@ contract ERC4626EthDeployIntegrationTest is Test {
     function testWithdrawWithZeroCashFails() public {
         testMaxMintDepositSucceedsMaxMintGtZero();
         deal(address(underlying), addresses.getAddress("MOONWELL_WETH"), 0);
+        vm.store(
+            addresses.getAddress("MOONWELL_WETH"),
+            bytes32(uint256(20)),
+            0
+        ); /// MIP-X71 internalCash
 
         uint256 withdrawAmount = vault.balanceOf(address(this));
 

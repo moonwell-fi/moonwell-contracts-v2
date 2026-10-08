@@ -44,7 +44,8 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
 
         delegate = new MWethDelegate(address(unwrapper));
 
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        /// admin is MWETH_OWNER_WRAPPER since MIP-B54
+        vm.prank(mToken.admin());
         mToken._setImplementation(address(delegate), false, "");
     }
 

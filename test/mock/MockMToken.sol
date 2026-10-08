@@ -19,6 +19,11 @@ contract MockMToken {
     uint256 public lastReduceReservesAmount;
     uint256 public addReservesCallCount;
     uint256 public lastAddReservesAmount;
+    address public implementation;
+    bool public lastAllowResign;
+    bytes public lastBecomeImplementationData;
+    uint256 public sweepExcessCashCallCount;
+    uint256 public syncCashDownCallCount;
 
     event ReservesReduced(uint256 amount);
     event ReservesAdded(uint256 amount);
@@ -100,6 +105,30 @@ contract MockMToken {
 
         emit ReservesAdded(addAmount);
         return 0; // success
+    }
+
+    function _setImplementation(
+        address implementation_,
+        bool allowResign,
+        bytes memory becomeImplementationData
+    ) external {
+        require(msg.sender == admin, "only admin");
+
+        implementation = implementation_;
+        lastAllowResign = allowResign;
+        lastBecomeImplementationData = becomeImplementationData;
+    }
+
+    function _sweepExcessCash() external {
+        require(msg.sender == admin, "only admin");
+
+        sweepExcessCashCallCount++;
+    }
+
+    function _syncCashDown() external {
+        require(msg.sender == admin, "only admin");
+
+        syncCashDownCallCount++;
     }
 
     // Helper function to fund the mock with ETH for testing
