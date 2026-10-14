@@ -31,6 +31,11 @@ contract ProposalMap is Script {
     /// proposal falls back to its raw markdown description.
     mapping(string path => string) private proposalPathToUri;
 
+    /// @notice descriptionUri keyed by env script path. `path` is not unique
+    /// for template-registered entries (several MIPs share one artifact), so
+    /// runProposal prefers this map whenever the entry has an envPath.
+    mapping(string envPath => string) private proposalEnvPathToUri;
+
     constructor() {
         string memory data = vm.readFile(
             string(
@@ -76,9 +81,13 @@ contract ProposalMap is Script {
         // runProposal can look it up directly
         string memory uriKey = string.concat(base, ".descriptionUri");
         if (vm.keyExistsJson(data, uriKey)) {
+            string memory uri = data.readString(uriKey);
             proposalPathToUri[
                 string(abi.encodePacked("artifacts/foundry/", proposal.path))
-            ] = data.readString(uriKey);
+            ] = uri;
+            if (bytes(proposal.envPath).length > 0) {
+                proposalEnvPathToUri[proposal.envPath] = uri;
+            }
         }
     }
 
@@ -146,6 +155,14 @@ contract ProposalMap is Script {
         string memory path
     ) public view returns (string memory) {
         return proposalPathToUri[path];
+    }
+
+    /// @notice descriptionUri for the entry identified by its env script; the
+    /// only unique key for template-registered proposals. Empty when unpinned.
+    function getProposalDescriptionUriByEnvPath(
+        string memory envPath
+    ) public view returns (string memory) {
+        return proposalEnvPathToUri[envPath];
     }
 
     function getAllProposalsInDevelopment()
@@ -269,6 +286,16 @@ contract ProposalMap is Script {
         Addresses addresses,
         string memory proposalPath
     ) public returns (Proposal proposal) {
+        return runProposal(addresses, proposalPath, "");
+    }
+
+    /// @param envPath the entry's env script; when non-empty the URI is looked
+    /// up by it (never by `proposalPath`, which template MIPs share)
+    function runProposal(
+        Addresses addresses,
+        string memory proposalPath,
+        string memory envPath
+    ) public returns (Proposal proposal) {
         // Check if the file exists before trying to deploy it
         require(
             vm.exists(proposalPath),
@@ -280,7 +307,11 @@ contract ProposalMap is Script {
 
         // inject the optional pinned IPFS description URI (no-op / falls back to
         // raw markdown when the entry has no descriptionUri in mips.json)
-        proposal.setProposalDescriptionUri(proposalPathToUri[proposalPath]);
+        proposal.setProposalDescriptionUri(
+            bytes(envPath).length > 0
+                ? proposalEnvPathToUri[envPath]
+                : proposalPathToUri[proposalPath]
+        );
 
         vm.selectFork(proposal.primaryForkId());
 

@@ -793,7 +793,46 @@ abstract contract HybridProposalV2 is
     /// -----------------------------------------------------
 
     /// @notice Print out the proposal action steps and which chains they were run on
-    function printCalldata(Addresses addresses) public view override {
+    /// @notice proposal id the append calls are encoded against: BATCH_PROPOSAL_ID
+    /// when set, else proposalCount()+1 read from the Ethereum governor (we are the
+    /// only proposer, so the next id is predictable), else 0 (no live fork).
+    function predictedProposalId(
+        Addresses addresses
+    ) public returns (uint256 proposalId) {
+        proposalId = vm.envOr("BATCH_PROPOSAL_ID", uint256(0));
+        if (proposalId != 0) return proposalId;
+
+        uint256 fork;
+        try vm.activeFork() returns (uint256 active) {
+            fork = active;
+        } catch {
+            return 0;
+        }
+        try this.readNextProposalId(addresses) returns (uint256 next) {
+            proposalId = next;
+        } catch {
+            proposalId = 0;
+        }
+        vm.selectFork(fork);
+    }
+
+    /// @dev external so a revert (wrong fork, restricted addresses, no code)
+    /// is catchable by predictedProposalId; raw staticcall avoids the
+    /// uncatchable extcodesize revert on a fork where the governor has no code
+    function readNextProposalId(
+        Addresses addresses
+    ) external returns (uint256) {
+        require(msg.sender == address(this), "internal");
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address gov = addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY");
+        (bool ok, bytes memory ret) = gov.staticcall(
+            abi.encodeWithSignature("proposalCount()")
+        );
+        require(ok && ret.length == 32, "proposalCount unavailable");
+        return abi.decode(ret, (uint256)) + 1;
+    }
+
+    function printCalldata(Addresses addresses) public override {
         console.log(
             "\n\n----------------- Proposal Calldata ------------------\n"
         );
@@ -810,9 +849,9 @@ abstract contract HybridProposalV2 is
             );
             console.logBytes(getBatchProposeCalldata(addresses));
 
-            uint256 proposalId = vm.envOr("BATCH_PROPOSAL_ID", uint256(0));
+            uint256 proposalId = predictedProposalId(addresses);
             console.log(
-                "\nappend calls below are encoded for proposal id %s. After call 1 is mined, set BATCH_PROPOSAL_ID to the returned id and re-run DO_PRINT to regenerate.",
+                "\nappend calls below are encoded for proposal id %s (BATCH_PROPOSAL_ID, else governor proposalCount()+1). Verify call 1 mined as this id before sending the appends; otherwise set BATCH_PROPOSAL_ID and re-run DO_PRINT.",
                 proposalId
             );
 
