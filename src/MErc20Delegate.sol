@@ -13,8 +13,9 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
      * @notice Internally tracked balance of underlying held by this market
      * @dev Declared here, after MDelegationStorage.implementation, so it
      *      occupies the next free delegator slot (20) without shifting any
-     *      existing storage. Updated only by doTransferIn / doTransferOut and
-     *      synced to the real balance in _becomeImplementation. Reading this
+     *      existing storage. Updated only by doTransferIn / doTransferOut,
+     *      synced to the real balance in _becomeImplementation and lowered by
+     *      _syncCashDown. Reading this
      *      instead of underlying.balanceOf means direct transfers ("donations")
      *      do not move the exchange rate or count toward supply caps.
      */
@@ -37,7 +38,11 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
      *      swept by the outgoing implementation's _resignImplementation first,
      *      so a swap between internal cash implementations absorbs nothing.
      *      Never sweep here: after a legacy implementation internalCash is
-     *      unset and the whole balance would look like excess.
+     *      unset and the whole balance would look like excess. Interest is
+     *      accrued first at the tracked cash, except while internalCash is
+     *      unset (migration, new market, fully borrowed market), where
+     *      accruing would price utilization at 100%; the next interaction
+     *      accrues at the synced cash instead.
      * @param data The encoded bytes data for any initialization
      */
     function _becomeImplementation(bytes memory data) public virtual override {
@@ -50,6 +55,10 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
         );
 
         uint256 oldInternalCash = internalCash;
+        if (oldInternalCash != 0) {
+            accrueInterest();
+        }
+
         internalCash = EIP20Interface(underlying).balanceOf(address(this));
 
         emit CashSynced(oldInternalCash, internalCash);

@@ -27,6 +27,46 @@ contract LegacyBalanceOfDelegate is MErc20, MDelegateInterface {
     }
 }
 
+/// @notice ERC20 that burns 1% of every transfer, to pin fee-on-transfer credit
+contract FeeOnTransferToken {
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+    uint256 public totalSupply;
+    uint8 public constant decimals = 18;
+
+    function mint(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+        totalSupply += amount;
+    }
+
+    function approve(address spender, uint256 amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        return true;
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        _transfer(msg.sender, to, amount);
+        return true;
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bool) {
+        allowance[from][msg.sender] -= amount;
+        _transfer(from, to, amount);
+        return true;
+    }
+
+    function _transfer(address from, address to, uint256 amount) internal {
+        uint256 fee = amount / 100;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount - fee;
+        totalSupply -= fee;
+    }
+}
+
 contract MErc20DelegateInternalCashUnitTest is Test {
     event ExcessCashSwept(address indexed recipient, uint256 amount);
 
@@ -342,6 +382,106 @@ contract MErc20DelegateInternalCashUnitTest is Test {
         uint256 adminBefore = token.balanceOf(address(this));
         MErc20Delegate(address(mToken))._sweepExcessCash();
         assertEq(token.balanceOf(address(this)), adminBefore);
+    }
+
+    function testNonAdminCannotCallBecomeImplementationDirectly() public {
+        _upgrade();
+        vm.prank(alice);
+        vm.expectRevert("only the admin may call _becomeImplementation");
+        MErc20Delegate(address(mToken))._becomeImplementation("");
+    }
+
+    function testNonAdminCannotCallResignImplementationDirectly() public {
+        _upgrade();
+        vm.prank(alice);
+        vm.expectRevert("only the admin may call _resignImplementation");
+        MErc20Delegate(address(mToken))._resignImplementation();
+    }
+
+    function testFeeOnTransferCreditsAmountReceived() public {
+        FeeOnTransferToken fot = new FeeOnTransferToken();
+        MErc20Delegator fotDelegator = new MErc20Delegator(
+            address(fot),
+            comptroller,
+            new WhitePaperInterestRateModel(0.1e18, 0.45e18),
+            1e18,
+            "Fee mToken",
+            "mFEE",
+            8,
+            payable(address(this)),
+            address(impl),
+            ""
+        );
+        MToken fotMarket = MToken(address(fotDelegator));
+        comptroller._supportMarket(fotMarket);
+        oracle.setUnderlyingPrice(fotMarket, 1e18);
+
+        fot.mint(alice, 100e18);
+        vm.startPrank(alice);
+        fot.approve(address(fotMarket), 100e18);
+        assertEq(MErc20(address(fotMarket)).mint(100e18), 0);
+        vm.stopPrank();
+
+        assertEq(MErc20Delegate(address(fotMarket)).internalCash(), 99e18);
+        assertEq(fot.balanceOf(address(fotMarket)), 99e18);
+    }
+
+    /// @dev mint 150, borrow 20, lose 60 outside the market, one year passes
+    function _lossAfterAYear() internal {
+        _upgrade();
+        _mint(alice, 100e18);
+        _mint(bob, 50e18);
+
+        address[] memory markets = new address[](1);
+        markets[0] = address(mToken);
+        vm.startPrank(bob);
+        comptroller.enterMarkets(markets);
+        assertEq(MErc20(address(mToken)).borrow(20e18), 0);
+        vm.stopPrank();
+
+        vm.prank(address(mToken));
+        token.transfer(address(0xdead), 60e18);
+        vm.warp(block.timestamp + 365 days);
+    }
+
+    function testDirectBecomeAccruesLikeSyncCashDown() public {
+        _lossAfterAYear();
+        uint256 snapshot = vm.snapshot();
+
+        MErc20Delegate(address(mToken))._becomeImplementation("");
+        uint256 borrowsViaBecome = mToken.totalBorrows();
+        assertEq(_internalCash(), 70e18);
+
+        vm.revertTo(snapshot);
+        MErc20Delegate(address(mToken))._syncCashDown();
+        uint256 borrowsViaSyncDown = mToken.totalBorrows();
+        assertEq(_internalCash(), 70e18);
+
+        // both accrue the elapsed year at the pre-loss cash before lowering it
+        assertGt(borrowsViaSyncDown, 20e18);
+        assertEq(borrowsViaBecome, borrowsViaSyncDown);
+    }
+
+    function testMigrationDoesNotAccrue() public {
+        _mint(alice, 100e18);
+        _mint(bob, 50e18);
+
+        address[] memory markets = new address[](1);
+        markets[0] = address(mToken);
+        vm.startPrank(bob);
+        comptroller.enterMarkets(markets);
+        assertEq(MErc20(address(mToken)).borrow(20e18), 0);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 365 days);
+        uint256 borrowsBefore = mToken.totalBorrows();
+        uint256 accrualBefore = mToken.accrualBlockTimestamp();
+
+        _upgrade();
+
+        assertEq(mToken.totalBorrows(), borrowsBefore);
+        assertEq(mToken.accrualBlockTimestamp(), accrualBefore);
+        assertEq(_internalCash(), 130e18);
     }
 
     function testSweepExcessCashOnlyAdmin() public {

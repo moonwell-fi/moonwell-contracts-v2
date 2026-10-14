@@ -128,6 +128,14 @@ contract InternalCashLiveSystemTest is PostProposalCheck {
             cap,
             "supplies exceed cap"
         );
+
+        /// a real mint past the remaining headroom still hits the cap
+        deal(address(underlying), attacker, 2e18);
+        vm.startPrank(attacker);
+        underlying.approve(address(market), 2e18);
+        vm.expectRevert("market supply cap reached");
+        MErc20(address(market)).mint(2e18);
+        vm.stopPrank();
     }
 
     /// @notice Base MOONWELL_WETH is administered by MWETH_OWNER_WRAPPER;

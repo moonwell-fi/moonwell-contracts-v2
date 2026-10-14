@@ -24,8 +24,9 @@ import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, BASE_CHAIN_ID, ChainId
 ///
 ///         The new MErc20Delegate / MWethDelegate track `internalCash`
 ///         (delegator slot 20, verified empty on every live market), updated
-///         only by doTransferIn / doTransferOut and synced to balanceOf inside
-///         _becomeImplementation, so each upgrade is a single atomic
+///         only by doTransferIn / doTransferOut, synced to balanceOf inside
+///         _becomeImplementation and lowered by the admin-only _syncCashDown,
+///         so each upgrade is a single atomic
 ///         `_setImplementation(new, true, "")` per market — the MIP-B02 /
 ///         MIP-E01 pattern.
 ///

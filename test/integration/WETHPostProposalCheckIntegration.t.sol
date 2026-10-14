@@ -46,7 +46,7 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
 
         /// admin is MWETH_OWNER_WRAPPER since MIP-B54
         vm.prank(mToken.admin());
-        mToken._setImplementation(address(delegate), false, "");
+        mToken._setImplementation(address(delegate), true, "");
     }
 
     function testSetup() public view {

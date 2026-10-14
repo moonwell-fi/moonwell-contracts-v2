@@ -123,4 +123,7 @@
   `_setImplementation` must pass `allowResign=true`. The outgoing
   `_resignImplementation` sweeps donations to admin before the incoming
   `_becomeImplementation` syncs `internalCash = balanceOf`; with `false` the
-  sweep is skipped and pending donations are absorbed into the exchange rate
+  sweep is skipped and pending donations are absorbed into the exchange rate.
+  The resign sweep transfers underlying to the market admin, so if the token
+  blocks that transfer (pause/blocklist) while excess is non-zero the upgrade
+  reverts; sweep or resolve the block first rather than falling back to `false`
