@@ -354,6 +354,61 @@ contract MWethOwnerWrapperUnitTest is Test {
     // Token Withdrawal Tests
     // ============================================
 
+    function testSetImplementation() public {
+        mToken._setPendingAdmin(payable(address(wrapper)));
+        vm.prank(address(wrapper));
+        mToken._acceptAdmin();
+
+        address newImplementation = address(0xBEEF);
+
+        vm.prank(owner);
+        wrapper._setImplementation(newImplementation, true, hex"1234");
+
+        assertEq(mToken.implementation(), newImplementation);
+        assertTrue(mToken.lastAllowResign());
+        assertEq(mToken.lastBecomeImplementationData(), hex"1234");
+    }
+
+    function testSetImplementationOnlyOwner() public {
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper._setImplementation(address(0xBEEF), true, "");
+    }
+
+    function testSweepExcessCash() public {
+        mToken._setPendingAdmin(payable(address(wrapper)));
+        vm.prank(address(wrapper));
+        mToken._acceptAdmin();
+
+        vm.prank(owner);
+        wrapper._sweepExcessCash();
+
+        assertEq(mToken.sweepExcessCashCallCount(), 1);
+    }
+
+    function testSweepExcessCashOnlyOwner() public {
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper._sweepExcessCash();
+    }
+
+    function testSyncCashDown() public {
+        mToken._setPendingAdmin(payable(address(wrapper)));
+        vm.prank(address(wrapper));
+        mToken._acceptAdmin();
+
+        vm.prank(owner);
+        wrapper._syncCashDown();
+
+        assertEq(mToken.syncCashDownCallCount(), 1);
+    }
+
+    function testSyncCashDownOnlyOwner() public {
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper._syncCashDown();
+    }
+
     function testWithdrawToken() public {
         uint256 amount = 10 ether;
         address recipient = address(0xabc);

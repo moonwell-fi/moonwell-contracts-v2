@@ -481,7 +481,7 @@ abstract contract MToken is MTokenInterface, Exponential, TokenErrorReporter {
 
     /**
      * @notice Get cash balance of this mToken in the underlying asset
-     * @return The quantity of underlying asset owned by this contract
+     * @return The quantity of underlying asset accounted to this contract
      */
     function getCash() external view override returns (uint) {
         return getCashPrior();

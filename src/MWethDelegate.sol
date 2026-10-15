@@ -28,7 +28,7 @@ contract MWethDelegate is MErc20Delegate {
     /// first unwrap the WETH into raw ETH, then transfer
     /// @param to the recipient address
     /// @param amount the amount of ETH to transfer
-    function doTransferOut(
+    function _transferUnderlyingOut(
         address payable to,
         uint256 amount
     ) internal virtual override {
