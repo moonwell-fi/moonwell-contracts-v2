@@ -165,11 +165,17 @@ library ChainIds {
 
         if (isMainnet) {
             vmInternal.selectFork(MOONBEAM_FORK_ID);
+            // fork id 0 is either the real Moonbeam fork or the placeholder
+            // stood up when the Moonbeam RPC is unreachable (see
+            // createForksAndSelect). Anything else means the fork ordering
+            // itself is wrong, which would silently point every id at the
+            // wrong chain.
             require(
-                block.chainid == MOONBEAM_CHAIN_ID,
+                block.chainid == MOONBEAM_CHAIN_ID ||
+                    block.chainid == ETHEREUM_CHAIN_ID,
                 string(
                     abi.encodePacked(
-                        "ChainIds: moonbeam fork has wrong chain id, expected 1284, got ",
+                        "ChainIds: moonbeam fork has wrong chain id, expected 1284 (or the placeholder), got ",
                         vmInternal.toString(block.chainid)
                     )
                 )
@@ -257,8 +263,24 @@ library ChainIds {
         );
 
         if (!success || !successSwitchFork) {
+            // Moonbeam is wound down and its RPC is no longer guaranteed to be
+            // reachable, but fork ids are POSITIONAL: every PRIMARY_FORK_ID in
+            // proposals/mips/**/*.sh and in the CI workflows, plus the
+            // BASE/OPTIMISM/ETHEREUM_FORK_ID constants, assume Moonbeam
+            // occupies id 0. So when the Moonbeam endpoint is unavailable,
+            // stand a placeholder fork up in its slot rather than shifting
+            // every other id by one. Runs that never touch Moonbeam then
+            // proceed; runs that do are stopped by requireMoonbeamFork().
             console.log("Creating fork: moonbeam (fork id 0)...");
-            vmInternal.createFork("moonbeam");
+            (bool moonbeamCreated, ) = address(vmInternal).call(
+                abi.encodeWithSignature("createFork(string)", "moonbeam")
+            );
+            if (!moonbeamCreated) {
+                console.log(
+                    "WARNING: moonbeam RPC unavailable; fork id 0 is a placeholder. Proposals with Moonbeam actions will revert."
+                );
+                vmInternal.createFork("ethereum");
+            }
             console.log("Creating fork: base (fork id 1)...");
             vmInternal.createFork("base");
             console.log("Creating fork: optimism (fork id 2)...");
@@ -271,6 +293,29 @@ library ChainIds {
         vmInternal.selectFork(selectFork);
 
         checkForks(selectFork);
+    }
+
+    /// @notice true when fork id 0 is the real Moonbeam fork rather than the
+    /// placeholder created when the Moonbeam RPC is unreachable. Selects fork 0
+    /// to check, then restores the caller's fork.
+    function moonbeamForkAvailable() internal returns (bool available) {
+        uint256 current = vmInternal.activeFork();
+        vmInternal.selectFork(MOONBEAM_FORK_ID);
+        available =
+            block.chainid == MOONBEAM_CHAIN_ID ||
+            block.chainid == MOONBASE_CHAIN_ID;
+        vmInternal.selectFork(current);
+    }
+
+    /// @notice stop with a clear message when a proposal needs Moonbeam state
+    /// but fork id 0 is the placeholder. Without this the proposal would run
+    /// against the placeholder's chain and resolve the WRONG addresses, which
+    /// is far worse than failing.
+    function requireMoonbeamFork() internal {
+        require(
+            moonbeamForkAvailable(),
+            "ChainIds: this proposal has Moonbeam actions but the Moonbeam fork is unavailable (RPC unreachable). Set a working MOONBEAM_RPC_URL."
+        );
     }
 
     function toWormholeChainId(uint256 chainId) internal pure returns (uint16) {

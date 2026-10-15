@@ -76,7 +76,8 @@ contract PostProposalCheck is LiveProposalCheck {
             proposalMap.setEnv(devProposals[i - 1].envPath);
             Proposal proposal = proposalMap.runProposal(
                 addresses,
-                devProposals[i - 1].path
+                devProposals[i - 1].path,
+                devProposals[i - 1].envPath
             );
             vm.makePersistent(address(proposal));
 
@@ -171,7 +172,8 @@ contract PostProposalCheck is LiveProposalCheck {
             proposalMap.setEnv(v2Proposals[i].envPath);
             Proposal proposal = proposalMap.runProposal(
                 addresses,
-                v2Proposals[i].path
+                v2Proposals[i].path,
+                v2Proposals[i].envPath
             );
             vm.makePersistent(address(proposal));
 

@@ -103,3 +103,17 @@
   multiRewarder approve→notify, merkle approve→accept→create) across VAAs; new
   dependent action sequences must call `_markAtomicGroup` in build so the
   chunker keeps them in one VAA.
+- **Submitting a MultichainGovernorV2 proposal (batched or not): generate
+  `proposal.sh` once, run it once.** `make proposal-sh MIP=mip-xNN` runs the
+  proposal with `DO_PRINT` and writes the gitignored `./proposal.sh` containing
+  every `cast send` in order (`--account moonwell --rpc-url ethereum`; override
+  with `CAST_ACCOUNT` / `CAST_RPC`). Append calls are pre-encoded against the
+  predicted id = governor `proposalCount()+1` on Ethereum (we are the only
+  proposer), so there is NO "submit call 1, read the id, set
+  `BATCH_PROPOSAL_ID`, regenerate" loop. `proposal.sh` re-reads
+  `proposalCount()` after call 1 and stops before appending if it differs. Only
+  export `BATCH_PROPOSAL_ID` when the init call already landed under another id.
+  Never send the finalizing call (last one) before the earlier appends: a
+  finalized proposal rejects appends and the missing chunk is unrecoverable
+  without cancel + resubmit (MIP-X67 / proposal 186, 2026-09-10). After call 1
+  mines, set the `mips.json` id to the real id and push.

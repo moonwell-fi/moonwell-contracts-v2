@@ -268,7 +268,92 @@ abstract contract Proposal is Script, Test {
             }
             i++;
         }
+
+        // No artifact-stem match. That is the normal case for a proposal
+        // registered against a SHARED template artifact (e.g.
+        // "RewardsDistributionV2.sol/RewardsDistributionV2Template.json"),
+        // where name() is the template's generic name and so cannot identify
+        // which entry is running. Fall back to the env script, which is
+        // per-proposal.
+        return _resolveDescriptionUriByEnvPath(data);
+    }
+
+    /// @notice resolve descriptionUri by matching the directory of each entry's
+    /// env script against the directory of this run's DESCRIPTION_PATH — e.g.
+    /// entry "proposals/mips/mip-x65/x65.sh" matches DESCRIPTION_PATH
+    /// "proposals/mips/mip-x65/x65.md". This is what lets template-registered
+    /// proposals resolve their pinned URI on the forge-script path; ProposalMap
+    /// keys off the entry `path` directly and never needed it. Returns "" when
+    /// DESCRIPTION_PATH is unset or no entry shares its directory.
+    function _resolveDescriptionUriByEnvPath(
+        string memory data
+    ) private view returns (string memory) {
+        string memory descriptionPath = vm.envOr(
+            "DESCRIPTION_PATH",
+            string("")
+        );
+        if (bytes(descriptionPath).length == 0) {
+            return "";
+        }
+
+        bytes32 targetDir = keccak256(_dirName(bytes(descriptionPath)));
+
+        uint256 i = 0;
+        while (
+            vm.keyExistsJson(
+                data,
+                string.concat(".[", vm.toString(i), "].path")
+            )
+        ) {
+            // mips.json carries both `envpath` and `envPath` historically
+            string memory envPath = "";
+            string memory lowerKey = string.concat(
+                ".[",
+                vm.toString(i),
+                "].envpath"
+            );
+            string memory upperKey = string.concat(
+                ".[",
+                vm.toString(i),
+                "].envPath"
+            );
+            if (vm.keyExistsJson(data, lowerKey)) {
+                envPath = data.readString(lowerKey);
+            } else if (vm.keyExistsJson(data, upperKey)) {
+                envPath = data.readString(upperKey);
+            }
+
+            if (
+                bytes(envPath).length > 0 &&
+                keccak256(_dirName(bytes(envPath))) == targetDir
+            ) {
+                string memory uriKey = string.concat(
+                    ".[",
+                    vm.toString(i),
+                    "].descriptionUri"
+                );
+                if (vm.keyExistsJson(data, uriKey)) {
+                    return data.readString(uriKey);
+                }
+                return "";
+            }
+            i++;
+        }
         return "";
+    }
+
+    /// @notice "proposals/mips/mip-x65/x65.sh" -> "proposals/mips/mip-x65";
+    /// returns an empty string when the path contains no '/'
+    function _dirName(bytes memory path) private pure returns (bytes memory) {
+        uint256 end = 0;
+        for (uint256 i = 0; i < path.length; i++) {
+            if (path[i] == 0x2F) end = i; // '/'
+        }
+        bytes memory dir = new bytes(end);
+        for (uint256 i = 0; i < end; i++) {
+            dir[i] = path[i];
+        }
+        return dir;
     }
 
     /// @notice "MIP-E00" -> "mipe00": strip '-' and lowercase ASCII A-Z

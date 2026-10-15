@@ -405,4 +405,24 @@ contract RewardsDistributionV2BatchingUnitTest is Test {
         );
         harness.chunkCount(ActionType.Base);
     }
+
+    /// @notice BATCH_PROPOSAL_ID overrides the on-chain derivation, and with no
+    /// live fork the prediction degrades to 0 instead of reverting
+    function testPredictedProposalIdEnvOverrideAndNoForkFallback() public {
+        FakeAddresses fake = new FakeAddresses();
+
+        vm.setEnv("BATCH_PROPOSAL_ID", "187");
+        assertEq(
+            harness.predictedProposalId(Addresses(address(fake))),
+            187,
+            "env override"
+        );
+
+        vm.setEnv("BATCH_PROPOSAL_ID", "0");
+        assertEq(
+            harness.predictedProposalId(Addresses(address(fake))),
+            0,
+            "no fork -> 0"
+        );
+    }
 }

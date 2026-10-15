@@ -637,6 +637,13 @@ abstract contract HybridProposalV2 is
         );
     }
 
+    /// @notice max gas a SINGLE propose() call may consume in simulation.
+    /// Each batched call is its own mainnet transaction, so the binding
+    /// constraint is per-call (it must fit an Ethereum block with headroom),
+    /// not the sum across calls — a large epoch legitimately spends more
+    /// than any single-block budget in total.
+    uint256 public constant MAX_PROPOSE_CALL_GAS = 30_000_000;
+
     /// @notice submit the encoded propose() calls in order. Only the last
     /// call carries value (bridging happens at finalize). Returns the first
     /// call's returndata (the abi-encoded proposal id).
@@ -647,6 +654,8 @@ abstract contract HybridProposalV2 is
         bytes[] memory calls
     ) internal returns (bytes memory data) {
         for (uint256 i = 0; i < calls.length; i++) {
+            uint256 gasBefore = gasleft();
+
             vm.prank(caller);
             (bool success, bytes memory returndata) = governorAddress.call{
                 value: i == calls.length - 1 ? finalValue : 0,
@@ -663,6 +672,15 @@ abstract contract HybridProposalV2 is
                     "batch propose multichain governor v2 failed"
                 );
             }
+
+            require(
+                gasBefore - gasleft() <= MAX_PROPOSE_CALL_GAS,
+                string.concat(
+                    "Proposal propose call ",
+                    vm.toString(i),
+                    " gas limit exceeded"
+                )
+            );
         }
     }
 
@@ -775,7 +793,46 @@ abstract contract HybridProposalV2 is
     /// -----------------------------------------------------
 
     /// @notice Print out the proposal action steps and which chains they were run on
-    function printCalldata(Addresses addresses) public view override {
+    /// @notice proposal id the append calls are encoded against: BATCH_PROPOSAL_ID
+    /// when set, else proposalCount()+1 read from the Ethereum governor (we are the
+    /// only proposer, so the next id is predictable), else 0 (no live fork).
+    function predictedProposalId(
+        Addresses addresses
+    ) public returns (uint256 proposalId) {
+        proposalId = vm.envOr("BATCH_PROPOSAL_ID", uint256(0));
+        if (proposalId != 0) return proposalId;
+
+        uint256 fork;
+        try vm.activeFork() returns (uint256 active) {
+            fork = active;
+        } catch {
+            return 0;
+        }
+        try this.readNextProposalId(addresses) returns (uint256 next) {
+            proposalId = next;
+        } catch {
+            proposalId = 0;
+        }
+        vm.selectFork(fork);
+    }
+
+    /// @dev external so a revert (wrong fork, restricted addresses, no code)
+    /// is catchable by predictedProposalId; raw staticcall avoids the
+    /// uncatchable extcodesize revert on a fork where the governor has no code
+    function readNextProposalId(
+        Addresses addresses
+    ) external returns (uint256) {
+        require(msg.sender == address(this), "internal");
+        vm.selectFork(ETHEREUM_FORK_ID);
+        address gov = addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY");
+        (bool ok, bytes memory ret) = gov.staticcall(
+            abi.encodeWithSignature("proposalCount()")
+        );
+        require(ok && ret.length == 32, "proposalCount unavailable");
+        return abi.decode(ret, (uint256)) + 1;
+    }
+
+    function printCalldata(Addresses addresses) public override {
         console.log(
             "\n\n----------------- Proposal Calldata ------------------\n"
         );
@@ -792,9 +849,9 @@ abstract contract HybridProposalV2 is
             );
             console.logBytes(getBatchProposeCalldata(addresses));
 
-            uint256 proposalId = vm.envOr("BATCH_PROPOSAL_ID", uint256(0));
+            uint256 proposalId = predictedProposalId(addresses);
             console.log(
-                "\nappend calls below are encoded for proposal id %s. After call 1 is mined, set BATCH_PROPOSAL_ID to the returned id and re-run DO_PRINT to regenerate.",
+                "\nappend calls below are encoded for proposal id %s (BATCH_PROPOSAL_ID, else governor proposalCount()+1). Verify call 1 mined as this id before sending the appends; otherwise set BATCH_PROPOSAL_ID and re-run DO_PRINT.",
                 proposalId
             );
 
@@ -928,18 +985,26 @@ abstract contract HybridProposalV2 is
             /// remove the restrictions
             addresses.removeRestriction();
 
-            vm.selectFork(MOONBEAM_FORK_ID);
             {
                 ProposalAction[] memory moonbeamActions = actions.filter(
                     ActionType.Moonbeam
                 );
-                address[] memory moonbeamTargets = new address[](
-                    moonbeamActions.length
-                );
-                for (uint256 i = 0; i < moonbeamActions.length; i++) {
-                    moonbeamTargets[i] = moonbeamActions[i].target;
+                // Only touch the Moonbeam fork when there is something to
+                // check. With Moonbeam wound down, fork id 0 may be the
+                // placeholder stood up when its RPC is unreachable (see
+                // ChainIds.createForksAndSelect), and selecting it would fail
+                // checkMoonbeamActions' chain-id guard over an empty list.
+                if (moonbeamActions.length > 0) {
+                    vm.selectFork(MOONBEAM_FORK_ID);
+
+                    address[] memory moonbeamTargets = new address[](
+                        moonbeamActions.length
+                    );
+                    for (uint256 i = 0; i < moonbeamActions.length; i++) {
+                        moonbeamTargets[i] = moonbeamActions[i].target;
+                    }
+                    checkMoonbeamActions(moonbeamTargets);
                 }
-                checkMoonbeamActions(moonbeamTargets);
             }
 
             vm.selectFork(BASE_FORK_ID);
@@ -973,7 +1038,6 @@ abstract contract HybridProposalV2 is
             uint256 cost = governor.bridgeCostAll();
             vm.deal(caller, cost * 2);
 
-            uint256 gasStart = gasleft();
             uint256[] memory splits = batchProposeSplits();
 
             if (splits.length == 0) {
@@ -985,6 +1049,8 @@ abstract contract HybridProposalV2 is
                     _proposeDescription(),
                     true // finalize = true
                 );
+
+                uint256 gasStart = gasleft();
 
                 // Execute the proposal
                 vm.prank(caller);
@@ -999,7 +1065,18 @@ abstract contract HybridProposalV2 is
                         "propose multichain governor v2 failed"
                     );
                 }
+
+                // single-call submission is one mainnet transaction and must
+                // fit an Ethereum block with headroom
+                require(
+                    gasStart - gasleft() <= MAX_PROPOSE_CALL_GAS,
+                    "Proposal propose gas limit exceeded"
+                );
             } else {
+                // batched submission: each call is checked against
+                // MAX_PROPOSE_CALL_GAS individually inside
+                // _submitGovernorCalls — the per-transaction limit is the
+                // binding constraint, not the sum across transactions
                 data = _submitBatchPropose(
                     governorAddress,
                     caller,
@@ -1010,11 +1087,6 @@ abstract contract HybridProposalV2 is
                     splits
                 );
             }
-
-            require(
-                gasStart - gasleft() <= 60_000_000,
-                "Proposal propose gas limit exceeded"
-            );
         }
 
         uint256 proposalId = abi.decode(data, (uint256));

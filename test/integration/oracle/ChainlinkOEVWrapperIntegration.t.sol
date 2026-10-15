@@ -310,7 +310,7 @@ contract ChainlinkOEVWrapperIntegrationTest is
         // Get the oracle from the comptroller
         ChainlinkOracle oracle = ChainlinkOracle(address(comptroller.oracle()));
 
-        for (uint i = 0; i < allMarkets.length; i++) {
+        for (uint256 i = 0; i < allMarkets.length; i++) {
             // Skip LBTC market if configured in addresses (external Redstone requirements on some forks)
             if (addresses.isAddressSet("MOONWELL_LBTC")) {
                 if (
@@ -326,7 +326,7 @@ contract ChainlinkOEVWrapperIntegrationTest is
             string memory symbol = IERC20(underlying).symbol();
 
             // Try to get price - this will revert if oracle is not set
-            uint price = oracle.getUnderlyingPrice(MToken(allMarkets[i]));
+            uint256 price = oracle.getUnderlyingPrice(MToken(allMarkets[i]));
 
             // Price should not be 0
             assertTrue(
@@ -565,7 +565,9 @@ contract ChainlinkOEVWrapperIntegrationTest is
         }
     }
 
-    /** updatePriceEarlyAndLiquidate */
+    /**
+     * updatePriceEarlyAndLiquidate
+     */
 
     function testUpdatePriceEarlyAndLiquidate_Succeeds() public {
         OracleConfig[] memory oracleConfigs = getOracleConfigurations(
@@ -585,6 +587,10 @@ contract ChainlinkOEVWrapperIntegrationTest is
 
             address mTokenCollateralAddr = addresses.getAddress(mTokenKey);
 
+            // A deprecated collateral (CF 0) sizes a zero borrow and can
+            // never go underwater; skip it (see _collateralDisabled)
+            if (_collateralDisabled(mTokenCollateralAddr)) continue;
+
             // Get borrow token based on collateral type
             (
                 string memory borrowMTokenKey,
@@ -592,6 +598,10 @@ contract ChainlinkOEVWrapperIntegrationTest is
             ) = _getBorrowTokenForCollateral(oracleConfigs[i].symbol);
 
             address mTokenBorrowAddr = addresses.getAddress(borrowMTokenKey);
+
+            // A drained borrow market cannot fund the synthetic position;
+            // skip this wrapper rather than fail (see _borrowMarketDrained)
+            if (_borrowMarketDrained(mTokenBorrowAddr)) continue;
 
             // Set up synthetic position
             address borrower = _borrower(wrapper);
@@ -624,6 +634,37 @@ contract ChainlinkOEVWrapperIntegrationTest is
 
             _testRealLiquidation(liquidation);
         }
+    }
+
+    /// @notice true when a live borrow market cannot fund even a one-token
+    ///         borrow. These tests exercise OEV wrapper mechanics, which are
+    ///         orthogonal to market liquidity, but they fund their synthetic
+    ///         positions from live cash — and a fully-utilized market (Base
+    ///         USDC ran to ~0 cash after the August 2026 bad-debt drain)
+    ///         fails every borrow with TOKEN_INSUFFICIENT_CASH. Callers skip
+    ///         or continue instead of failing; coverage resumes automatically
+    ///         once the market holds cash again.
+    function _borrowMarketDrained(
+        address mTokenBorrowAddr
+    ) internal view returns (bool) {
+        return
+            MToken(mTokenBorrowAddr).getCash() <
+            10 ** IERC20(MErc20(mTokenBorrowAddr).underlying()).decimals();
+    }
+
+    /// @notice true when a collateral market's CF rounds to 0 bps. Synthetic
+    ///         positions borrow CF * 70% of the collateral value, so a market
+    ///         being wound down to CF 0 (e.g. MIP-X69 OP cbETH/WBTC, Base
+    ///         MAMO) yields a zero borrow that no price crash can make
+    ///         liquidatable. Callers skip it; coverage of the wrapper itself
+    ///         continues through the other markets.
+    function _collateralDisabled(
+        address mTokenCollateralAddr
+    ) internal view returns (bool) {
+        (, uint256 collateralFactorMantissa) = comptroller.markets(
+            mTokenCollateralAddr
+        );
+        return (collateralFactorMantissa * 10000) / 1e18 == 0;
     }
 
     /// @notice Get appropriate borrow token based on collateral type
@@ -694,6 +735,20 @@ contract ChainlinkOEVWrapperIntegrationTest is
         borrowAmount =
             ((10_000 * collateralFactorBps * 70) / (10000 * 100)) *
             (10 ** borrowDecimals);
+
+        // A $10k notional position is not fundable in every live market: the
+        // Optimism DAI market runs ~88% utilized, so `borrow` returns
+        // TOKEN_INSUFFICIENT_CASH (14) rather than reverting. Scale the whole
+        // position down to fit available cash, keeping the same LTV so the
+        // position is still liquidatable after the price crash. 80% of cash,
+        // not all of it, because `borrow` accrues interest first and the
+        // liquidator's later repay must also be servable.
+        uint256 maxBorrow = (MToken(mTokenBorrowAddr).getCash() * 80) / 100;
+        if (borrowAmount > maxBorrow) {
+            require(maxBorrow > 0, "borrow market has no cash");
+            collateralAmount = (collateralAmount * maxBorrow) / borrowAmount;
+            borrowAmount = maxBorrow;
+        }
     }
 
     /// @notice Deposit collateral and enter markets
@@ -1051,6 +1106,7 @@ contract ChainlinkOEVWrapperIntegrationTest is
         );
         MToken mTokenCollateral = MToken(addresses.getAddress("MOONWELL_WETH"));
         MToken mTokenBorrow = MToken(addresses.getAddress("MOONWELL_USDC"));
+        vm.skip(_borrowMarketDrained(address(mTokenBorrow)));
         address borrower = _borrower(wrapper);
         uint256 borrowAmount;
 
@@ -1939,6 +1995,7 @@ contract ChainlinkOEVWrapperIntegrationTest is
                 abi.encodePacked("MOONWELL_", oracleConfigs[i].symbol)
             );
             if (!addresses.isAddressSet(mTokenKey)) continue;
+            if (_collateralDisabled(addresses.getAddress(mTokenKey))) continue;
 
             wrapper = ChainlinkOEVWrapper(
                 payable(addresses.getAddress(wrapperKey))
@@ -1956,6 +2013,7 @@ contract ChainlinkOEVWrapperIntegrationTest is
         );
 
         address mTokenBorrowAddr = addresses.getAddress("MOONWELL_USDC");
+        vm.skip(_borrowMarketDrained(mTokenBorrowAddr));
         address borrower = _borrower(wrapper);
         address liquidator = _liquidator(wrapper);
 

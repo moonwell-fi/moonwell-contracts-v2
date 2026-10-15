@@ -2,13 +2,27 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MorphoVaultV2Views, IMorphoVaultV2} from "@protocol/views/MorphoVaultV2Views.sol";
+import {IVaultV2Adapter, IMetaMorphoV2, IMorphoBlueV2, IIrmV2, MorphoMarketParams, MorphoMarket} from "@protocol/morpho/IMorphoVaultV2.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import "@utils/ChainIds.sol";
 
+/// @notice Vault V2 interest accrual state (not exposed by IMorphoVaultV2)
+interface IVaultV2Accrual {
+    function _totalAssets() external view returns (uint128);
+    function lastUpdate() external view returns (uint64);
+    function maxRate() external view returns (uint64);
+}
+
 contract MorphoVaultV2ViewsTest is PostProposalCheck {
     using ChainIds for uint256;
+
+    /// @notice AdaptiveCurveIrm borrow rate ceiling as an APR:
+    /// CURVE_STEEPNESS (4) * MAX_RATE_AT_TARGET (200% / 365 days)
+    uint256 public constant ADAPTIVE_CURVE_IRM_MAX_BORROW_APR =
+        4 * (2e18 / uint256(365 days)) * 365 days;
 
     MorphoVaultV2Views public viewsContract;
     MorphoVaultV2Views public implementation;
@@ -100,10 +114,22 @@ contract MorphoVaultV2ViewsTest is PostProposalCheck {
             vaultV2meUSDC
         );
 
-        // With only 1 adapter, allocation should be ~100% (1e18)
-        // Allow some small variance for rounding
+        uint256 realAssets = IVaultV2Adapter(info.adapters[0].adapter)
+            .realAssets();
+        assertEq(
+            info.adapters[0].allocationPercentage,
+            (realAssets * 1e18) / IMorphoVaultV2(vaultV2meUSDC).totalAssets()
+        );
+
+        // With only 1 adapter, allocation should be ~100% (1e18). It can only
+        // exceed 100% while the vault's maxRate cap holds totalAssets below
+        // the adapter's real assets.
+        (, uint256 maxTotalAssets) = _vaultV2Accrual();
+        uint256 maxAllocation = realAssets > maxTotalAssets
+            ? (realAssets * 1e18) / maxTotalAssets
+            : 1e18;
         assertGt(info.adapters[0].allocationPercentage, 0.99e18);
-        assertLe(info.adapters[0].allocationPercentage, 1e18);
+        assertLe(info.adapters[0].allocationPercentage, maxAllocation);
     }
 
     /// @notice Test asset metadata is populated
@@ -240,10 +266,22 @@ contract MorphoVaultV2ViewsTest is PostProposalCheck {
             totalAdapterAssets += info.adapters[i].realAssets;
         }
 
-        // Allow 0.1% variance for rounding
+        (uint256 realAssets, uint256 maxTotalAssets) = _vaultV2Accrual();
+        assertEq(
+            info.totalAssets,
+            realAssets < maxTotalAssets ? realAssets : maxTotalAssets,
+            "totalAssets should be min(realAssets, maxRate cap)"
+        );
+
+        // Allow 0.1% of idle assets held by the vault itself
         uint256 variance = info.totalAssets / 1000;
         assertGe(totalAdapterAssets, info.totalAssets - variance);
-        assertLe(totalAdapterAssets, info.totalAssets + variance);
+
+        // Adapters can only exceed totalAssets by the maxRate lag
+        uint256 lag = realAssets > maxTotalAssets
+            ? realAssets - maxTotalAssets
+            : 0;
+        assertLe(totalAdapterAssets, info.totalAssets + lag);
     }
 
     /// @notice Test that convertToAssets works correctly for shares
@@ -424,6 +462,13 @@ contract MorphoVaultV2ViewsTest is PostProposalCheck {
             vaultV2meUSDC
         );
 
+        IMorphoBlueV2 morpho = IMorphoBlueV2(
+            IMetaMorphoV2(metaMorphomeUSDC).MORPHO()
+        );
+        address adaptiveCurveIrm = addresses.getAddress(
+            "MORPHO_ADAPTIVE_CURVE_IRM"
+        );
+
         // Calculate weighted APY like V1
         uint256 weightedApySum = 0;
         uint256 totalVaultSupplied = 0;
@@ -436,6 +481,17 @@ contract MorphoVaultV2ViewsTest is PostProposalCheck {
             MorphoVaultV2Views.UnderlyingMarketInfo memory market = info
                 .adapters[0]
                 .underlyingMarkets[i];
+
+            (uint256 supplyApy, uint256 borrowApy) = _expectedApys(
+                morpho,
+                market.marketId,
+                adaptiveCurveIrm
+            );
+            // Views floors utilization and two mulWads: < borrowApy / WAD + 2 wei
+            assertApproxEqAbs(market.marketSupplyApy, supplyApy, 10);
+            assertEq(market.marketBorrowApy, borrowApy);
+            assertLe(market.marketBorrowApy, ADAPTIVE_CURVE_IRM_MAX_BORROW_APR);
+
             weightedApySum += market.marketSupplyApy * market.vaultSupplied;
             totalVaultSupplied += market.vaultSupplied;
         }
@@ -447,8 +503,60 @@ contract MorphoVaultV2ViewsTest is PostProposalCheck {
             uint256 fee = info.adapters[0].underlyingVaultFee;
             uint256 baseApy = (weightedApy * (1e18 - fee)) / 1e18;
 
-            // Base APY should be reasonable (less than 100%)
-            assertLt(baseApy, 1e18, "Base APY should be < 100%");
+            // A weighted average of supply APYs cannot exceed the IRM ceiling
+            assertLe(baseApy, ADAPTIVE_CURVE_IRM_MAX_BORROW_APR);
         }
+    }
+
+    // ==================== HELPERS ====================
+
+    /// @dev Mirrors VaultV2.accrueInterestView: totalAssets is realAssets
+    /// capped at maxRate growth since lastUpdate (firstTotalAssets is
+    /// transient and zero outside an accruing transaction)
+    function _vaultV2Accrual()
+        internal
+        view
+        returns (uint256 realAssets, uint256 maxTotalAssets)
+    {
+        IMorphoVaultV2 vault = IMorphoVaultV2(vaultV2meUSDC);
+        realAssets = IERC20(vault.asset()).balanceOf(vaultV2meUSDC);
+        for (uint256 i = 0; i < vault.adaptersLength(); i++) {
+            realAssets += IVaultV2Adapter(vault.adapters(i)).realAssets();
+        }
+
+        IVaultV2Accrual accrual = IVaultV2Accrual(vaultV2meUSDC);
+        uint256 storedTotalAssets = accrual._totalAssets();
+        maxTotalAssets =
+            storedTotalAssets +
+            (storedTotalAssets *
+                (block.timestamp - accrual.lastUpdate()) *
+                accrual.maxRate()) /
+            1e18;
+    }
+
+    /// @dev Supply/borrow APR computed directly from Morpho Blue market state
+    /// and its IRM: borrow = rate * 365 days, supply = borrow * util * (1 - fee)
+    function _expectedApys(
+        IMorphoBlueV2 morpho,
+        bytes32 marketId,
+        address adaptiveCurveIrm
+    ) internal view returns (uint256 supplyApy, uint256 borrowApy) {
+        MorphoMarketParams memory params = morpho.idToMarketParams(marketId);
+        MorphoMarket memory market = morpho.market(marketId);
+
+        // Idle market
+        if (params.irm == address(0) || market.totalSupplyAssets == 0) {
+            return (0, 0);
+        }
+        assertEq(params.irm, adaptiveCurveIrm);
+
+        borrowApy =
+            IIrmV2(params.irm).borrowRateView(params, market) *
+            365 days;
+        supplyApy =
+            (borrowApy *
+                uint256(market.totalBorrowAssets) *
+                (1e18 - uint256(market.fee))) /
+            (uint256(market.totalSupplyAssets) * 1e18);
     }
 }

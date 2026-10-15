@@ -1,653 +1,607 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+//SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {console} from "forge-std/console.sol";
-import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import {MToken} from "@protocol/MToken.sol";
+import "@forge-std/Test.sol";
 
-import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
-import {ChainlinkOracleConfigs} from "@proposals/ChainlinkOracleConfigs.sol";
+import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
-import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
-import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
-import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, ETHEREUM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MarketUpdateV2Template} from "@proposals/templates/MarketUpdateV2.sol";
+import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-/// @notice MIP-X63: ship the C4 #289 fix by redeploying the non-upgradeable Core
-/// ChainlinkOEVWrapper (mirroring live params, repointing feeds via setFeed) and
-/// upgrading the Base Morpho wrapper proxies in place, across Ethereum/Base/Optimism.
-contract mipx63 is HybridProposalV2, ChainlinkOracleConfigs {
-    using ChainIds for uint256;
-
-    string public constant override name = "MIP-X63";
-
-    /// @notice Registry key for the fixed Morpho wrapper implementation.
-    string public constant MORPHO_IMPLEMENTATION_NAME =
-        "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL";
-
-    /// @notice Archive-key suffix for the pre-fix Core wrappers.
-    string internal constant DEPRECATED_SUFFIX = "_DEPRECATED_V4";
-
-    /// @notice Pre-upgrade Morpho wrapper storage state, snapshotted in
-    /// beforeSimulationHook() so validate() can prove the logic-only upgrade reset
-    /// nothing.
-    struct MorphoSnapshot {
-        address priceFeed;
-        address morphoBlue;
-        address chainlinkOracle;
-        address feeRecipient;
-        uint16 liquidatorFeeBps;
-        uint256 maxRoundDelay;
-        uint256 maxDecrements;
-        uint256 cachedRoundId;
-        address owner;
-        bool taken;
+/// @title MIP-X63: Anthias Labs Monthly Risk Parameters + Reserve
+///        Recommendations August 2026
+/// @notice In addition to the market updates configured in x63.json (wrsETH
+///         collateral factor on Base and Optimism), this proposal executes the
+///         August 2026 reserve recommendations: repay bad debt on behalf of
+///         insolvent accounts (supplying < $1 of collateral), funded from
+///         same-market protocol reserves
+///         (reduce reserves -> approve -> repayBorrowBehalf, following
+///         MIP-X61 / MIP-X60).
+///
+///         Per market: one _reduceReserves for the total, one approve for the
+///         total, then one repayBorrowBehalf per borrower. WETH reserves are
+///         reduced through MWETH_OWNER_WRAPPER, which wraps the received ETH
+///         and HOLDS it; the separate withdrawToken action then moves the
+///         WETH to the Temporal Governor — do not drop that action.
+///
+///         The cbETH rows from the forum plan are EXCLUDED: the Base cbETH
+///         market currently holds ~0 cash (fully utilized), so
+///         _reduceReserves cannot execute and would make the whole proposal
+///         unexecutable (precedent: MIP-M45 excluded the GLMR native market).
+contract mipx63 is MarketUpdateV2Template {
+    struct Repayment {
+        address borrower;
+        uint256 amount;
+        string label;
     }
 
-    mapping(string => MorphoSnapshot) internal _morphoSnap;
+    struct Plan {
+        string market;
+        uint256 totalReduce;
+        Repayment[] repays;
+    }
 
-    /// @notice Pre-execution price snapshots for redeployed Core wrappers, keyed by
-    /// chain id then oracleName (raw aggregator latestRoundData) and by mTokenKey
-    /// (full ChainlinkOracle.getUnderlyingPrice path). The redeploy reseeds the new
-    /// wrapper's cachedRoundId to the latest round, so it forwards the raw feed
-    /// unchanged — validate() asserts the new wrapper's output against the raw feed.
-    mapping(uint256 => mapping(string => int256)) internal _rawAnswerPre;
-    mapping(uint256 => mapping(string => uint256)) internal _rawUpdatedAtPre;
-    mapping(uint256 => mapping(string => uint256)) internal _underlyingPricePre;
+    /// @notice minimum live cash required per market, in basis points of the
+    ///         total amount its _reduceReserves action pulls (1.1x buffer)
+    uint256 public constant CASH_HEADROOM_BPS = 11_000;
 
-    constructor() {
-        _setProposalDescription(
-            bytes(vm.readFile("./proposals/mips/mip-x63/x63.md"))
+    mapping(address market => uint256 reserves) internal reservesBefore;
+    mapping(address market => uint256 index) internal borrowIndexBefore;
+    mapping(bytes32 pair => uint256 borrowBalance) internal borrowBefore;
+
+    function name() external pure override returns (string memory) {
+        return "MIP-X63";
+    }
+
+    function _basePlans() internal pure returns (Plan[] memory p) {
+        p = new Plan[](12);
+
+        p[0].market = "MOONWELL_AERO";
+        p[0].totalReduce = 6314.3566e18;
+        p[0].repays = new Repayment[](1);
+        p[0].repays[0] = Repayment(
+            0x42Ecd332D47C91CbC83B39bD7f53CEbe5E9734bB,
+            6314.3566e18,
+            "6,314.3566 AERO"
+        );
+
+        p[1].market = "MOONWELL_cbBTC";
+        p[1].totalReduce = 0.03990043e8;
+        p[1].repays = new Repayment[](3);
+        p[1].repays[0] = Repayment(
+            0x2a2621a41011a22B5ADdA2593F4F81151C2AA4c7,
+            0.01460137e8,
+            "0.01460137 cbBTC"
+        );
+        p[1].repays[1] = Repayment(
+            0x45854310c3302c5dAb9C0c745E8058d485a4ae8A,
+            0.00975022e8,
+            "0.00975022 cbBTC"
+        );
+        p[1].repays[2] = Repayment(
+            0xA36C71930F378875F09D6358073324Ed015F2762,
+            0.01554884e8,
+            "0.01554884 cbBTC"
+        );
+
+        p[2].market = "MOONWELL_cbXRP";
+        p[2].totalReduce = 2910.2308e6;
+        p[2].repays = new Repayment[](1);
+        p[2].repays[0] = Repayment(
+            0x42Ecd332D47C91CbC83B39bD7f53CEbe5E9734bB,
+            2910.2308e6,
+            "2,910.2308 cbXRP"
+        );
+
+        p[3].market = "MOONWELL_DAI";
+        p[3].totalReduce = 1550.7035003e18;
+        p[3].repays = new Repayment[](1);
+        p[3].repays[0] = Repayment(
+            0x0441455e280D3a47e8Ab2b4C82f68274dFC8D8A7,
+            1550.7035003e18,
+            "1,550.7035003 DAI"
+        );
+
+        p[4].market = "MOONWELL_EURC";
+        p[4].totalReduce = 747.0118e6;
+        p[4].repays = new Repayment[](1);
+        p[4].repays[0] = Repayment(
+            0x42Ecd332D47C91CbC83B39bD7f53CEbe5E9734bB,
+            747.0118e6,
+            "747.0118 EURC"
+        );
+
+        p[5].market = "MOONWELL_MORPHO";
+        p[5].totalReduce = 112.9525e18;
+        p[5].repays = new Repayment[](1);
+        p[5].repays[0] = Repayment(
+            0xA98E339f5a0F135792286d481B4e23d91A667d3f,
+            112.9525e18,
+            "112.9525 MORPHO"
+        );
+
+        p[6].market = "MOONWELL_TBTC";
+        p[6].totalReduce = 0.01212566e18;
+        p[6].repays = new Repayment[](1);
+        p[6].repays[0] = Repayment(
+            0x42Ecd332D47C91CbC83B39bD7f53CEbe5E9734bB,
+            0.01212566e18,
+            "0.01212566 tBTC"
+        );
+
+        p[7].market = "MOONWELL_USDC";
+        p[7].totalReduce = 11807.44739e6;
+        p[7].repays = new Repayment[](22);
+        p[7].repays[0] = Repayment(
+            0x030B277dbfFD53ebBaFFcA6aDD3865c6CBd028A0,
+            662.242661e6,
+            "662.242661 USDC"
+        );
+        p[7].repays[1] = Repayment(
+            0x0cCb58BDbE1113AfA9D13757558b98856D485F21,
+            149.499694e6,
+            "149.499694 USDC"
+        );
+        p[7].repays[2] = Repayment(
+            0x185542374ce5Fc8bF8F215F5Fc681370704fD124,
+            2260.789977e6,
+            "2,260.789977 USDC"
+        );
+        p[7].repays[3] = Repayment(
+            0x22732C901C0C46128b418AE30b7b53FB95D18B38,
+            234.224819e6,
+            "234.224819 USDC"
+        );
+        p[7].repays[4] = Repayment(
+            0x2Ac5E20ed9773a751d972DEb832c8F7f490Bd752,
+            145.454499e6,
+            "145.454499 USDC"
+        );
+        p[7].repays[5] = Repayment(
+            0x2ad6EdEa3EcD174Be69E47BDC37ffFE5AdAc6807,
+            216.839002e6,
+            "216.839002 USDC"
+        );
+        p[7].repays[6] = Repayment(
+            0x3e2178CF851A0e5cbF84c0ff53f820ad7EAD703b,
+            912.154603e6,
+            "912.154603 USDC"
+        );
+        p[7].repays[7] = Repayment(
+            0x45854310c3302c5dAb9C0c745E8058d485a4ae8A,
+            136.067406e6,
+            "136.067406 USDC"
+        );
+        p[7].repays[8] = Repayment(
+            0x45b4F0B3216038632Da1aEbBbf52202F1D315307,
+            587.799643e6,
+            "587.799643 USDC"
+        );
+        p[7].repays[9] = Repayment(
+            0x76e5db63BF8F1F22886EBe88fB4ed6859b36B6cD,
+            884.176559e6,
+            "884.176559 USDC"
+        );
+        p[7].repays[10] = Repayment(
+            0x88E57C01BeBA95b51006dF6dE835FDec38D370af,
+            159.774541e6,
+            "159.774541 USDC"
+        );
+        p[7].repays[11] = Repayment(
+            0x8c40a7D8C37B30C8A4B228CA0885E65444A676a0,
+            812.523101e6,
+            "812.523101 USDC"
+        );
+        p[7].repays[12] = Repayment(
+            0x91E66db5904fbac6c877e8696BB4ED50841AE442,
+            119.186237e6,
+            "119.186237 USDC"
+        );
+        p[7].repays[13] = Repayment(
+            0x9CDE2b9D159036D49a9cb98D0560eFc928c139D0,
+            409.147974e6,
+            "409.147974 USDC"
+        );
+        p[7].repays[14] = Repayment(
+            0xa4CaA152822A67Bd8c8a689afC317b7b780F8210,
+            112.900876e6,
+            "112.900876 USDC"
+        );
+        p[7].repays[15] = Repayment(
+            0xAb2a43335A25566cD4Cb446Ea03b873aA26D0528,
+            200.673394e6,
+            "200.673394 USDC"
+        );
+        p[7].repays[16] = Repayment(
+            0xb506428de44980901fd2EDa619d23342FB8F2ed4,
+            363.07585e6,
+            "363.075850 USDC"
+        );
+        p[7].repays[17] = Repayment(
+            0xc362B9936F973fC7D8729180a11cEFCaF1fe8e40,
+            181.807736e6,
+            "181.807736 USDC"
+        );
+        p[7].repays[18] = Repayment(
+            0xDdF093745B0a723c68a8f040AB03e72eee2B8F60,
+            326.17474e6,
+            "326.174740 USDC"
+        );
+        p[7].repays[19] = Repayment(
+            0xE54724b107bb90dD24260CEf0C52b4106f57B2A2,
+            133.012572e6,
+            "133.012572 USDC"
+        );
+        p[7].repays[20] = Repayment(
+            0xe811980cD6A377796c4cC35f6D3A2362cbEFe697,
+            804.212711e6,
+            "804.212711 USDC"
+        );
+        p[7].repays[21] = Repayment(
+            0xF61D6742Eea5E1f29cb4B96Cf7108F32424d562c,
+            1995.708795e6,
+            "1,995.708795 USDC"
+        );
+
+        p[8].market = "MOONWELL_USDS";
+        p[8].totalReduce = 189.9855e18;
+        p[8].repays = new Repayment[](1);
+        p[8].repays[0] = Repayment(
+            0xCe7b587609586Df23fD704eDf067D3616D62514B,
+            189.9855e18,
+            "189.9855 USDS"
+        );
+
+        p[9].market = "MOONWELL_VIRTUAL";
+        p[9].totalReduce = 18964.3568e18;
+        p[9].repays = new Repayment[](1);
+        p[9].repays[0] = Repayment(
+            0xA98E339f5a0F135792286d481B4e23d91A667d3f,
+            18964.3568e18,
+            "18,964.3568 VIRTUAL"
+        );
+
+        p[10].market = "MOONWELL_WETH";
+        p[10].totalReduce = 1.5952e18;
+        p[10].repays = new Repayment[](4);
+        p[10].repays[0] = Repayment(
+            0x3B87f7D473550ef9e53e46Baae856608f8b8A0C4,
+            0.34091611e18,
+            "0.34091611 WETH"
+        );
+        p[10].repays[1] = Repayment(
+            0x42d3617495205563f85f85671cD8F9BcC9bca7E4,
+            0.75892153e18,
+            "0.75892153 WETH"
+        );
+        p[10].repays[2] = Repayment(
+            0xEe3a8FAeF6C61C97E4039B3f569276605E61c5C3,
+            0.3183427e18,
+            "0.3183427 WETH"
+        );
+        p[10].repays[3] = Repayment(
+            0xf0f2f08A6327c0A824E71eE1897634184cE1225C,
+            0.17701966e18,
+            "0.17701966 WETH"
+        );
+
+        p[11].market = "MOONWELL_wstETH";
+        p[11].totalReduce = 0.6678e18;
+        p[11].repays = new Repayment[](1);
+        p[11].repays[0] = Repayment(
+            0x42Ecd332D47C91CbC83B39bD7f53CEbe5E9734bB,
+            0.6678e18,
+            "0.6678 wstETH"
         );
     }
 
-    function primaryForkId() public pure override returns (uint256) {
-        return ETHEREUM_FORK_ID;
-    }
+    function _optimismPlans() internal pure returns (Plan[] memory p) {
+        p = new Plan[](2);
 
-    /// @notice Override the base run() so deploy() is NOT wrapped in a single
-    /// vm.startBroadcast. This proposal deploys across the Base, Optimism, and
-    /// Ethereum forks, and vm.selectFork is illegal while a broadcast is active.
-    /// Each per-chain deploy helper opens its own broadcast after selecting its
-    /// fork (see _deployCoreWrappers / _deployMorphoImplementation); every fork
-    /// switch below happens outside any broadcast. Otherwise mirrors the base
-    /// Proposal.run() (including the IPFS descriptionUri injection).
-    function run() public override {
-        primaryForkId().createForksAndSelect();
-
-        Addresses addresses = new Addresses();
-        vm.makePersistent(address(addresses));
-
-        vm.selectFork(primaryForkId());
-
-        setProposalDescriptionUri(_resolveProposalDescriptionUri(this.name()));
-
-        initProposal(addresses);
-
-        (, address deployerAddress, ) = vm.readCallers();
-
-        if (DO_DEPLOY) deploy(addresses, deployerAddress);
-        if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
-
-        if (DO_BUILD) build(addresses);
-        if (DO_RUN) simulate(addresses, deployerAddress);
-        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
-        if (DO_VALIDATE) {
-            validate(addresses, deployerAddress);
-        }
-        if (DO_PRINT) {
-            printProposalActionSteps();
-
-            addresses.removeAllRestrictions();
-            printCalldata(addresses);
-
-            _printAddressesChanges(addresses);
-        }
-    }
-
-    function deploy(Addresses addresses, address) public override {
-        vm.selectFork(BASE_FORK_ID);
-        _deployCoreWrappers(addresses);
-        _deployMorphoImplementation(addresses);
-
-        vm.selectFork(OPTIMISM_FORK_ID);
-        _deployCoreWrappers(addresses);
-
-        vm.selectFork(ETHEREUM_FORK_ID);
-        _deployCoreWrappers(addresses);
-
-        vm.selectFork(primaryForkId());
-    }
-
-    /// @notice Redeploy each Core OEV wrapper for the active chain, mirroring live
-    /// params via getters, archiving the old wrapper and repointing the canonical name.
-    function _deployCoreWrappers(Addresses addresses) internal {
-        OracleConfig[] memory oracleConfigs = getOracleConfigurations(
-            block.chainid
+        p[0].market = "MOONWELL_rETH";
+        p[0].totalReduce = 0.2806e18;
+        p[0].repays = new Repayment[](1);
+        p[0].repays[0] = Repayment(
+            0xA98E339f5a0F135792286d481B4e23d91A667d3f,
+            0.2806e18,
+            "0.2806 rETH"
         );
 
-        // Broadcast is opened here (after deploy() selected this chain's fork)
-        // rather than around the whole deploy(), so the cross-fork vm.selectFork
-        // calls in deploy() happen outside any active broadcast.
-        vm.startBroadcast();
-        for (uint256 i = 0; i < oracleConfigs.length; i++) {
-            string memory wrapperName = string(
-                abi.encodePacked(oracleConfigs[i].oracleName, "_OEV_WRAPPER")
-            );
-            if (!addresses.isAddressSet(wrapperName)) {
-                continue;
-            }
-
-            string memory deprecatedName = string(
-                abi.encodePacked(wrapperName, DEPRECATED_SUFFIX)
-            );
-
-            // Skip wrappers already redeployed this run (USDC/USDBC, USDT/USDT0 share one wrapper).
-            if (addresses.isAddressSet(deprecatedName)) {
-                continue;
-            }
-
-            address oldWrapper = addresses.getAddress(wrapperName);
-            ChainlinkOEVWrapper old = ChainlinkOEVWrapper(payable(oldWrapper));
-
-            ChainlinkOEVWrapper wrapper = new ChainlinkOEVWrapper(
-                address(old.priceFeed()),
-                old.owner(),
-                address(old.chainlinkOracle()),
-                old.feeRecipient(),
-                old.liquidatorFeeBps(),
-                old.maxRoundDelay(),
-                old.maxDecrements()
-            );
-
-            addresses.addAddress(deprecatedName, oldWrapper);
-            addresses.changeAddress(wrapperName, address(wrapper), true);
-        }
-        vm.stopBroadcast();
-    }
-
-    /// @notice Deploy the fixed Morpho wrapper implementation on Base, archiving the previous one.
-    function _deployMorphoImplementation(Addresses addresses) internal {
-        vm.startBroadcast();
-        ChainlinkOEVMorphoWrapper impl = new ChainlinkOEVMorphoWrapper();
-
-        if (addresses.isAddressSet(MORPHO_IMPLEMENTATION_NAME)) {
-            addresses.addAddress(
-                string(
-                    abi.encodePacked(
-                        MORPHO_IMPLEMENTATION_NAME,
-                        DEPRECATED_SUFFIX
-                    )
-                ),
-                addresses.getAddress(MORPHO_IMPLEMENTATION_NAME)
-            );
-            addresses.changeAddress(
-                MORPHO_IMPLEMENTATION_NAME,
-                address(impl),
-                true
-            );
-        } else {
-            addresses.addAddress(MORPHO_IMPLEMENTATION_NAME, address(impl));
-        }
-        vm.stopBroadcast();
-    }
-
-    /// @notice Snapshot pre-execution oracle prices + Morpho state on every chain so
-    /// validate() can prove the redeploy/upgrade is price-neutral. Runs after build()
-    /// queues the actions but before simulate() executes them — so feeds still point
-    /// at the OLD wrappers and the Morpho proxies still run the OLD implementation.
-    function beforeSimulationHook(Addresses addresses) public override {
-        _snapshotCoreChain(addresses, BASE_FORK_ID, BASE_CHAIN_ID);
-        _snapshotCoreChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
-        _snapshotCoreChain(addresses, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID);
-        _snapshotMorphoState(addresses);
-        vm.selectFork(primaryForkId());
-    }
-
-    /// @notice Snapshot the raw feed answer and full getUnderlyingPrice path for
-    /// every redeployed Core wrapper on a chain.
-    function _snapshotCoreChain(
-        Addresses addresses,
-        uint256 forkId,
-        uint256 chainId
-    ) internal {
-        vm.selectFork(forkId);
-
-        OracleConfig[] memory oracleConfigs = getOracleConfigurations(chainId);
-        ChainlinkOracle oracle = ChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
+        p[1].market = "MOONWELL_wstETH";
+        p[1].totalReduce = 1.3979252e18;
+        p[1].repays = new Repayment[](1);
+        p[1].repays[0] = Repayment(
+            0xA98E339f5a0F135792286d481B4e23d91A667d3f,
+            1.3979252e18,
+            "1.3979252 wstETH"
         );
-
-        for (uint256 i = 0; i < oracleConfigs.length; i++) {
-            string memory oracleName = oracleConfigs[i].oracleName;
-            string memory deprecatedName = string(
-                abi.encodePacked(oracleName, "_OEV_WRAPPER", DEPRECATED_SUFFIX)
-            );
-            // Only wrappers redeployed by this proposal (archive set in deploy()).
-            if (!addresses.isAddressSet(deprecatedName)) {
-                continue;
-            }
-
-            // Raw aggregator output, once per oracleName.
-            if (_rawUpdatedAtPre[chainId][oracleName] == 0) {
-                (, int256 rawAns, , uint256 rawUp, ) = AggregatorV3Interface(
-                    addresses.getAddress(oracleName)
-                ).latestRoundData();
-                _rawAnswerPre[chainId][oracleName] = rawAns;
-                _rawUpdatedAtPre[chainId][oracleName] = rawUp;
-            }
-
-            // Full getUnderlyingPrice path per mTokenKey (still routed via the old wrapper).
-            string memory mTokenKey = oracleConfigs[i].mTokenKey;
-            if (
-                bytes(mTokenKey).length > 0 && addresses.isAddressSet(mTokenKey)
-            ) {
-                _underlyingPricePre[chainId][mTokenKey] = oracle
-                    .getUnderlyingPrice(
-                        MToken(addresses.getAddress(mTokenKey))
-                    );
-            }
-        }
-    }
-
-    /// @notice Snapshot each Base Morpho wrapper's pre-upgrade storage state.
-    function _snapshotMorphoState(Addresses addresses) internal {
-        vm.selectFork(BASE_FORK_ID);
-
-        MorphoOracleConfig[]
-            memory morphoConfigs = getMorphoOracleConfigurations(BASE_CHAIN_ID);
-
-        for (uint256 i = 0; i < morphoConfigs.length; i++) {
-            string memory wrapperName = string(
-                abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
-            );
-            if (!addresses.isAddressSet(wrapperName)) {
-                continue;
-            }
-
-            ChainlinkOEVMorphoWrapper w = ChainlinkOEVMorphoWrapper(
-                addresses.getAddress(wrapperName)
-            );
-
-            _morphoSnap[wrapperName] = MorphoSnapshot({
-                priceFeed: address(w.priceFeed()),
-                morphoBlue: address(w.morphoBlue()),
-                chainlinkOracle: address(w.chainlinkOracle()),
-                feeRecipient: w.feeRecipient(),
-                liquidatorFeeBps: w.liquidatorFeeBps(),
-                maxRoundDelay: w.maxRoundDelay(),
-                maxDecrements: w.maxDecrements(),
-                cachedRoundId: w.cachedRoundId(),
-                owner: w.owner(),
-                taken: true
-            });
-        }
     }
 
     function build(Addresses addresses) public override {
+        super.build(addresses);
+
         vm.selectFork(BASE_FORK_ID);
-        _wireCoreFeeds(addresses, BASE_CHAIN_ID);
-        _upgradeMorphoWrappers(addresses, BASE_CHAIN_ID);
+        Plan[] memory basePlans = _basePlans();
+        for (uint256 i = 0; i < basePlans.length; i++) {
+            _pushPlan(addresses, basePlans[i], ActionType.Base, "Base");
+        }
 
         vm.selectFork(OPTIMISM_FORK_ID);
-        _wireCoreFeeds(addresses, OPTIMISM_CHAIN_ID);
-
-        vm.selectFork(ETHEREUM_FORK_ID);
-        _wireCoreFeeds(addresses, ETHEREUM_CHAIN_ID);
-
-        vm.selectFork(primaryForkId());
-    }
-
-    /// @notice Repoint each market's ChainlinkOracle feed at its redeployed wrapper (auto-tagged to the active fork).
-    function _wireCoreFeeds(Addresses addresses, uint256 chainId) internal {
-        OracleConfig[] memory oracleConfigs = getOracleConfigurations(chainId);
-        address chainlinkOracle = addresses.getAddress("CHAINLINK_ORACLE");
-
-        // No dedup here (unlike _deployCoreWrappers): shared-wrapper symbols (USDC/USDBC, USDT/USDT0) each need their own setFeed.
-        for (uint256 i = 0; i < oracleConfigs.length; i++) {
-            string memory wrapperName = string(
-                abi.encodePacked(oracleConfigs[i].oracleName, "_OEV_WRAPPER")
-            );
-            if (!addresses.isAddressSet(wrapperName)) {
-                continue;
-            }
-
-            string memory symbol = ERC20(
-                addresses.getAddress(oracleConfigs[i].symbol)
-            ).symbol();
-
-            _pushAction(
-                chainlinkOracle,
-                abi.encodeWithSignature(
-                    "setFeed(string,address)",
-                    symbol,
-                    addresses.getAddress(wrapperName)
-                ),
-                string.concat(
-                    "Repoint ",
-                    symbol,
-                    " feed at redeployed OEV wrapper (C4 #289)"
-                )
-            );
+        Plan[] memory opPlans = _optimismPlans();
+        for (uint256 i = 0; i < opPlans.length; i++) {
+            _pushPlan(addresses, opPlans[i], ActionType.Optimism, "Optimism");
         }
     }
 
-    /// @notice Upgrade each Morpho wrapper proxy in place; plain upgrade since the fix is logic-only (no re-init).
-    function _upgradeMorphoWrappers(
+    function beforeSimulationHook(Addresses addresses) public override {
+        super.beforeSimulationHook(addresses);
+
+        vm.selectFork(BASE_FORK_ID);
+        _snapshotPlans(addresses, _basePlans());
+
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _snapshotPlans(addresses, _optimismPlans());
+    }
+
+    function validate(Addresses addresses, address deployer) public override {
+        super.validate(addresses, deployer);
+
+        vm.selectFork(BASE_FORK_ID);
+        _validatePlans(addresses, _basePlans());
+
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _validatePlans(addresses, _optimismPlans());
+    }
+
+    /// @notice push reduce -> (withdraw) -> approve -> repay actions for one
+    ///         market's repayment plan. Assumes the plan's chain fork is
+    ///         selected so underlying() reads resolve.
+    function _pushPlan(
         Addresses addresses,
-        uint256 chainId
+        Plan memory plan,
+        ActionType actionType,
+        string memory chainLabel
     ) internal {
-        MorphoOracleConfig[]
-            memory morphoConfigs = getMorphoOracleConfigurations(chainId);
-        if (morphoConfigs.length == 0) {
-            return;
+        uint256 repaySum;
+        for (uint256 i = 0; i < plan.repays.length; i++) {
+            repaySum += plan.repays[i].amount;
         }
-
-        address proxyAdmin = addresses.getAddress(
-            "CHAINLINK_ORACLE_PROXY_ADMIN"
-        );
-        address newImpl = addresses.getAddress(MORPHO_IMPLEMENTATION_NAME);
-
-        for (uint256 i = 0; i < morphoConfigs.length; i++) {
-            string memory wrapperName = string(
-                abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
-            );
-            require(
-                addresses.isAddressSet(wrapperName),
-                "MIP-X63: Morpho wrapper proxy not registered"
-            );
-
-            _pushAction(
-                proxyAdmin,
-                abi.encodeWithSignature(
-                    "upgrade(address,address)",
-                    addresses.getAddress(wrapperName),
-                    newImpl
-                ),
-                string.concat(
-                    "Upgrade Morpho OEV wrapper to C4 #289 fix for ",
-                    morphoConfigs[i].proxyName
-                )
-            );
-        }
-    }
-
-    function validate(Addresses addresses, address) public override {
-        vm.selectFork(BASE_FORK_ID);
-        _validateCoreWrappers(addresses, BASE_CHAIN_ID);
-        _validateMorphoWrappers(addresses, BASE_CHAIN_ID);
-
-        vm.selectFork(OPTIMISM_FORK_ID);
-        _validateCoreWrappers(addresses, OPTIMISM_CHAIN_ID);
-
-        vm.selectFork(ETHEREUM_FORK_ID);
-        _validateCoreWrappers(addresses, ETHEREUM_CHAIN_ID);
-
-        vm.selectFork(primaryForkId());
-
-        console.log("Validation completed for proposal ", this.name());
-    }
-
-    /// @notice Assert each redeployed Core wrapper: feed repointed, fresh address, and all params mirror the archived wrapper.
-    function _validateCoreWrappers(
-        Addresses addresses,
-        uint256 chainId
-    ) internal view {
-        OracleConfig[] memory oracleConfigs = getOracleConfigurations(chainId);
-        ChainlinkOracle oracle = ChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
-        );
-
-        for (uint256 i = 0; i < oracleConfigs.length; i++) {
-            string memory wrapperName = string(
-                abi.encodePacked(oracleConfigs[i].oracleName, "_OEV_WRAPPER")
-            );
-            string memory deprecatedName = string(
-                abi.encodePacked(wrapperName, DEPRECATED_SUFFIX)
-            );
-
-            // Only redeployed wrappers have an archive entry.
-            if (!addresses.isAddressSet(deprecatedName)) {
-                continue;
-            }
-
-            ChainlinkOEVWrapper newWrapper = ChainlinkOEVWrapper(
-                payable(addresses.getAddress(wrapperName))
-            );
-            ChainlinkOEVWrapper oldWrapper = ChainlinkOEVWrapper(
-                payable(addresses.getAddress(deprecatedName))
-            );
-
-            string memory symbol = ERC20(
-                addresses.getAddress(oracleConfigs[i].symbol)
-            ).symbol();
-            assertEq(
-                address(oracle.getFeed(symbol)),
-                address(newWrapper),
-                string.concat("X63: feed not repointed for ", symbol)
-            );
-            assertTrue(
-                address(newWrapper) != address(oldWrapper),
-                string.concat("X63: wrapper not redeployed for ", wrapperName)
-            );
-            assertEq(
-                address(newWrapper.priceFeed()),
-                address(oldWrapper.priceFeed()),
-                string.concat("X63: priceFeed drift for ", wrapperName)
-            );
-            assertEq(
-                newWrapper.owner(),
-                oldWrapper.owner(),
-                string.concat("X63: owner drift for ", wrapperName)
-            );
-            assertEq(
-                address(newWrapper.chainlinkOracle()),
-                address(oldWrapper.chainlinkOracle()),
-                string.concat("X63: chainlinkOracle drift for ", wrapperName)
-            );
-            assertEq(
-                newWrapper.feeRecipient(),
-                oldWrapper.feeRecipient(),
-                string.concat("X63: feeRecipient drift for ", wrapperName)
-            );
-            assertEq(
-                newWrapper.liquidatorFeeBps(),
-                oldWrapper.liquidatorFeeBps(),
-                string.concat("X63: liquidatorFeeBps drift for ", wrapperName)
-            );
-            assertEq(
-                newWrapper.maxRoundDelay(),
-                oldWrapper.maxRoundDelay(),
-                string.concat("X63: maxRoundDelay drift for ", wrapperName)
-            );
-            assertEq(
-                newWrapper.maxDecrements(),
-                oldWrapper.maxDecrements(),
-                string.concat("X63: maxDecrements drift for ", wrapperName)
-            );
-            assertGt(
-                newWrapper.cachedRoundId(),
-                0,
-                string.concat("X63: cachedRoundId unseeded for ", wrapperName)
-            );
-
-            _assertCorePricePreserved(
-                addresses,
-                chainId,
-                oracleConfigs[i],
-                newWrapper,
-                wrapperName
-            );
-        }
-    }
-
-    /// @notice Assert the redeployed wrapper forwards the same raw feed it did pre-
-    /// execution. latestRoundData() must equal the raw-aggregator pre-snapshot
-    /// EXACTLY: the new wrapper forwards the underlying aggregator and, on a pinned
-    /// fork, no new rounds are mined across the governance warp, so the raw round is
-    /// frozen. getUnderlyingPrice allows 2% because its pre-snapshot was read via the
-    /// OLD wrapper (which applies its round delay and can report an earlier round than
-    /// latest), whereas post reads the new wrapper seeded to the latest round — a gap
-    /// of at most one round, independent of any new round being mined.
-    function _assertCorePricePreserved(
-        Addresses addresses,
-        uint256 chainId,
-        OracleConfig memory config,
-        ChainlinkOEVWrapper newWrapper,
-        string memory wrapperName
-    ) internal view {
-        (, int256 ans, , uint256 up, ) = newWrapper.latestRoundData();
-        assertEq(
-            ans,
-            _rawAnswerPre[chainId][config.oracleName],
-            string.concat("X63: answer != raw pre-snapshot for ", wrapperName)
-        );
-        assertEq(
-            up,
-            _rawUpdatedAtPre[chainId][config.oracleName],
+        require(
+            repaySum == plan.totalReduce,
             string.concat(
-                "X63: updatedAt != raw pre-snapshot for ",
-                wrapperName
+                "repayments do not sum to reduce total on ",
+                plan.market
             )
         );
 
-        if (
-            bytes(config.mTokenKey).length > 0 &&
-            addresses.isAddressSet(config.mTokenKey)
-        ) {
-            uint256 pre = _underlyingPricePre[chainId][config.mTokenKey];
-            if (pre != 0) {
-                uint256 post = ChainlinkOracle(
-                    addresses.getAddress("CHAINLINK_ORACLE")
-                ).getUnderlyingPrice(
-                        MToken(addresses.getAddress(config.mTokenKey))
-                    );
-                assertApproxEqRel(
-                    post,
-                    pre,
-                    0.02e18,
-                    string.concat(
-                        "X63: getUnderlyingPrice drifted >2% for ",
-                        config.mTokenKey
-                    )
-                );
-            }
+        address market = addresses.getAddress(plan.market);
+        address underlying = MErc20(market).underlying();
+
+        bool isBaseWeth = actionType == ActionType.Base &&
+            keccak256(abi.encodePacked(plan.market)) ==
+            keccak256(abi.encodePacked("MOONWELL_WETH"));
+
+        address reduceTarget = isBaseWeth
+            ? addresses.getAddress("MWETH_OWNER_WRAPPER")
+            : market;
+
+        _pushAction(
+            reduceTarget,
+            abi.encodeWithSignature(
+                "_reduceReserves(uint256)",
+                plan.totalReduce
+            ),
+            string.concat(
+                "Reduce reserves of ",
+                plan.market,
+                " on ",
+                chainLabel
+            ),
+            actionType
+        );
+
+        if (isBaseWeth) {
+            _pushAction(
+                reduceTarget,
+                abi.encodeWithSignature(
+                    "withdrawToken(address,address,uint256)",
+                    underlying,
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    plan.totalReduce
+                ),
+                "Withdraw WETH from MWETH_OWNER_WRAPPER to the Temporal Governor",
+                actionType
+            );
+        }
+
+        _pushAction(
+            underlying,
+            abi.encodeWithSignature(
+                "approve(address,uint256)",
+                market,
+                plan.totalReduce
+            ),
+            string.concat("Approve ", plan.market, " to pull repaid reserves"),
+            actionType
+        );
+
+        for (uint256 i = 0; i < plan.repays.length; i++) {
+            _pushAction(
+                market,
+                abi.encodeWithSignature(
+                    "repayBorrowBehalf(address,uint256)",
+                    plan.repays[i].borrower,
+                    plan.repays[i].amount
+                ),
+                string.concat(
+                    "Repay ",
+                    plan.repays[i].label,
+                    " on behalf of ",
+                    vm.toString(plan.repays[i].borrower),
+                    " on ",
+                    plan.market
+                ),
+                actionType
+            );
         }
     }
 
-    /// @notice Assert each Base Morpho proxy points at the fixed impl and the logic-only upgrade preserved all state.
-    function _validateMorphoWrappers(
-        Addresses addresses,
-        uint256 chainId
-    ) internal view {
-        MorphoOracleConfig[]
-            memory morphoConfigs = getMorphoOracleConfigurations(chainId);
-        if (morphoConfigs.length == 0) {
-            return;
-        }
+    /// @notice snapshot pre-execution state and assert the plan is executable
+    ///         at fork state: borrowers still owe at least the repay amount,
+    ///         reserves cover the reduction, and live cash has 1.1x headroom.
+    function _snapshotPlans(Addresses addresses, Plan[] memory plans) internal {
+        for (uint256 i = 0; i < plans.length; i++) {
+            MErc20 market = MErc20(addresses.getAddress(plans[i].market));
 
-        address newImpl = addresses.getAddress(MORPHO_IMPLEMENTATION_NAME);
-        address proxyAdmin = addresses.getAddress(
-            "CHAINLINK_ORACLE_PROXY_ADMIN"
+            for (uint256 j = 0; j < plans[i].repays.length; j++) {
+                Repayment memory rec = plans[i].repays[j];
+
+                uint256 borrowBalance = market.borrowBalanceStored(
+                    rec.borrower
+                );
+
+                assertGe(
+                    borrowBalance,
+                    rec.amount,
+                    string.concat(
+                        "borrow balance below repay amount for ",
+                        vm.toString(rec.borrower),
+                        " on ",
+                        plans[i].market
+                    )
+                );
+
+                borrowBefore[
+                    keccak256(abi.encodePacked(address(market), rec.borrower))
+                ] = borrowBalance;
+            }
+
+            reservesBefore[address(market)] = market.totalReserves();
+            borrowIndexBefore[address(market)] = market.borrowIndex();
+
+            assertGe(
+                market.totalReserves(),
+                plans[i].totalReduce,
+                string.concat(
+                    "insufficient reserves to execute _reduceReserves on ",
+                    plans[i].market
+                )
+            );
+
+            assertGe(
+                market.getCash(),
+                (plans[i].totalReduce * CASH_HEADROOM_BPS) / 10_000,
+                string.concat("cash headroom below 1.1x on ", plans[i].market)
+            );
+        }
+    }
+
+    function _validatePlans(
+        Addresses addresses,
+        Plan[] memory plans
+    ) internal view {
+        address tempGov = addresses.getAddress("TEMPORAL_GOVERNOR");
+
+        for (uint256 i = 0; i < plans.length; i++) {
+            MErc20 market = MErc20(addresses.getAddress(plans[i].market));
+
+            for (uint256 j = 0; j < plans[i].repays.length; j++) {
+                _assertRepayEffects(
+                    market,
+                    plans[i].market,
+                    plans[i].repays[j]
+                );
+            }
+
+            _assertReservesDown(market, plans[i].market, plans[i].totalReduce);
+
+            assertEq(
+                IERC20(market.underlying()).allowance(tempGov, address(market)),
+                0,
+                string.concat(
+                    "allowance not fully consumed on ",
+                    plans[i].market
+                )
+            );
+        }
+    }
+
+    /// @notice the harness warps days of interest accrual between the
+    ///         beforeSimulationHook snapshot and validate, so raw
+    ///         before/after borrow comparisons are meaningless for accounts
+    ///         whose accrued interest can outpace the repaid amount. Compare
+    ///         against the no-repay counterfactual instead: scale the
+    ///         snapshot by borrowIndex growth, then require the shortfall vs
+    ///         that counterfactual to equal the repaid amount (the repaid
+    ///         principal itself keeps accruing after execution, so the
+    ///         shortfall lands in [amount, amount * indexGrowth]). 1 bps
+    ///         tolerance on each side absorbs borrowBalanceStored rounding.
+    function _assertRepayEffects(
+        MErc20 market,
+        string memory marketName,
+        Repayment memory rec
+    ) internal view {
+        uint256 borrowBalanceBefore = borrowBefore[
+            keccak256(abi.encodePacked(address(market), rec.borrower))
+        ];
+        uint256 borrowBalanceAfter = market.borrowBalanceStored(rec.borrower);
+
+        uint256 indexBefore = borrowIndexBefore[address(market)];
+        uint256 counterfactual = (borrowBalanceBefore * market.borrowIndex()) /
+            indexBefore;
+
+        assertLt(
+            borrowBalanceAfter,
+            counterfactual,
+            string.concat(
+                "borrow balance did not decrease vs accrual counterfactual for ",
+                vm.toString(rec.borrower),
+                " on ",
+                marketName
+            )
         );
 
-        for (uint256 i = 0; i < morphoConfigs.length; i++) {
-            string memory wrapperName = string(
-                abi.encodePacked(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
-            );
+        uint256 borrowDecrease = counterfactual - borrowBalanceAfter;
+        assertGe(
+            borrowDecrease,
+            (rec.amount * 9_999) / 10_000,
+            string.concat(
+                "borrow decrease below repaid amount for ",
+                vm.toString(rec.borrower),
+                " on ",
+                marketName
+            )
+        );
+        assertLe(
+            borrowDecrease,
+            (((rec.amount * market.borrowIndex()) / indexBefore) * 10_001) /
+                10_000,
+            string.concat(
+                "borrow decrease exceeds repaid amount plus accrual for ",
+                vm.toString(rec.borrower),
+                " on ",
+                marketName
+            )
+        );
+    }
 
-            validateProxy(
-                vm,
-                addresses.getAddress(wrapperName),
-                newImpl,
-                proxyAdmin,
-                string.concat("X63 morpho upgrade: ", wrapperName)
-            );
-
-            MorphoSnapshot memory snap = _morphoSnap[wrapperName];
-            require(snap.taken, "MIP-X63: missing Morpho snapshot");
-
-            ChainlinkOEVMorphoWrapper w = ChainlinkOEVMorphoWrapper(
-                addresses.getAddress(wrapperName)
-            );
-
-            assertEq(
-                address(w.priceFeed()),
-                snap.priceFeed,
-                string.concat("X63: morpho priceFeed reset for ", wrapperName)
-            );
-            assertEq(
-                address(w.morphoBlue()),
-                snap.morphoBlue,
-                string.concat("X63: morpho morphoBlue reset for ", wrapperName)
-            );
-            assertEq(
-                address(w.chainlinkOracle()),
-                snap.chainlinkOracle,
-                string.concat(
-                    "X63: morpho chainlinkOracle reset for ",
-                    wrapperName
-                )
-            );
-            assertEq(
-                w.feeRecipient(),
-                snap.feeRecipient,
-                string.concat(
-                    "X63: morpho feeRecipient reset for ",
-                    wrapperName
-                )
-            );
-            assertEq(
-                w.liquidatorFeeBps(),
-                snap.liquidatorFeeBps,
-                string.concat(
-                    "X63: morpho liquidatorFeeBps reset for ",
-                    wrapperName
-                )
-            );
-            assertEq(
-                w.maxRoundDelay(),
-                snap.maxRoundDelay,
-                string.concat(
-                    "X63: morpho maxRoundDelay reset for ",
-                    wrapperName
-                )
-            );
-            assertEq(
-                w.maxDecrements(),
-                snap.maxDecrements,
-                string.concat(
-                    "X63: morpho maxDecrements reset for ",
-                    wrapperName
-                )
-            );
-            assertEq(
-                w.cachedRoundId(),
-                snap.cachedRoundId,
-                string.concat(
-                    "X63: morpho cachedRoundId reset for ",
-                    wrapperName
-                )
-            );
-            assertEq(
-                w.owner(),
-                snap.owner,
-                string.concat("X63: morpho owner reset for ", wrapperName)
-            );
-
-            // Liveness: the upgraded impl still serves a valid price. Storage is
-            // asserted unchanged above and latestRoundData() logic is untouched by
-            // the fix, so the consumer-facing output is preserved by construction;
-            // a strict pre/post output equality would be fragile because a fresh
-            // round can flip the delay state across the simulate() time warp.
-            (, int256 ans, , , ) = w.latestRoundData();
-            assertGt(
-                ans,
-                0,
-                string.concat("X63: morpho price invalid for ", wrapperName)
-            );
-        }
+    /// @notice reserves accrue interest during the harness's governance
+    ///         warps, so totalReserves can net-INCREASE across execution when
+    ///         accrual outpaces the reduction (observed on USDC). Only bound
+    ///         the net decrease: it must never exceed the reduced amount.
+    ///         Execution of the reduce itself is proven by the repayments
+    ///         (funded solely by it) and the fully-consumed allowance.
+    function _assertReservesDown(
+        MErc20 market,
+        string memory marketName,
+        uint256 expected
+    ) internal view {
+        assertGe(
+            market.totalReserves() + expected,
+            reservesBefore[address(market)],
+            string.concat("reserves decrease exceeds target on ", marketName)
+        );
     }
 }

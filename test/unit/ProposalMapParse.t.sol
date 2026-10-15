@@ -25,24 +25,80 @@ contract ProposalMapParseTest is Test {
         assertEq(envPath, "proposals/mips/mip-x57/x57.sh", "mip-x57 envPath");
     }
 
-    function test_inDevelopmentIncludesMipE00() public {
+    /// @notice `id: 0` is the in-development sentinel. Which MIP currently
+    ///         holds it changes every release — mip-e00 held it until it
+    ///         executed as proposal 169 — so this pins the filter's contract
+    ///         instead of any one proposal: the returned set is exactly the
+    ///         `id == 0` entries of mips.json, fully populated.
+    function test_inDevelopmentReturnsExactlyTheSentinelEntries() public {
         ProposalMap.ProposalFields[] memory dev = map
             .getAllProposalsInDevelopment();
 
-        bool sawE00;
         for (uint256 i = 0; i < dev.length; i++) {
-            if (
-                keccak256(bytes(dev[i].path)) ==
-                keccak256(bytes("artifacts/foundry/mip-e00.sol/mipe00.json"))
+            assertEq(dev[i].id, 0, "non-sentinel entry in development set");
+            assertGt(bytes(dev[i].path).length, 0, "development entry path");
+            assertGt(
+                bytes(dev[i].governor).length,
+                0,
+                "development entry governor"
+            );
+            assertGt(
+                bytes(dev[i].proposalType).length,
+                0,
+                "development entry proposalType"
+            );
+        }
+
+        assertEq(
+            dev.length,
+            _countSentinelEntries(),
+            "development set size != count of id:0 entries in mips.json"
+        );
+    }
+
+    /// @notice count `id: 0` entries by walking the registry through the
+    ///         public by-index getter, independent of the filter under test.
+    function _countSentinelEntries() internal view returns (uint256 count) {
+        for (uint256 i = 0; ; i++) {
+            try map.proposals(i) returns (
+                string memory,
+                string memory,
+                uint256 id,
+                string memory,
+                string memory
             ) {
-                sawE00 = true;
-                assertEq(dev[i].id, 0, "mip-e00 id");
-                assertEq(dev[i].governor, "MultichainGovernorV2", "governor");
-                assertEq(dev[i].proposalType, "HybridProposalV2", "ptype");
-                assertEq(bytes(dev[i].envPath).length, 0, "mip-e00 envPath");
+                if (id == 0) {
+                    count++;
+                }
+            } catch {
+                return count;
             }
         }
-        assertTrue(sawE00, "mip-e00 should be in development");
+    }
+
+    /// @notice entries sharing an artifact `path` (template-registered MIPs)
+    ///         must each resolve their OWN descriptionUri via envPath; the
+    ///         path-keyed map is last-writer-wins and cannot tell them apart.
+    function test_descriptionUriByEnvPathIsPerEntryForSharedPaths() public {
+        string memory data = vm.readFile(
+            string.concat(vm.projectRoot(), "/proposals/mips/mips.json")
+        );
+        uint256 checked;
+        for (uint256 i = 0; ; i++) {
+            string memory base = string.concat(".[", vm.toString(i), "]");
+            if (!vm.keyExistsJson(data, string.concat(base, ".path"))) break;
+            string memory uriKey = string.concat(base, ".descriptionUri");
+            if (!vm.keyExistsJson(data, uriKey)) continue;
+            (string memory envPath, , , , ) = map.proposals(i);
+            if (bytes(envPath).length == 0) continue;
+            assertEq(
+                map.getProposalDescriptionUriByEnvPath(envPath),
+                stdJson.readString(data, uriKey),
+                string.concat("descriptionUri mismatch for ", envPath)
+            );
+            checked++;
+        }
+        assertGt(checked, 0, "no pinned entries with envPath in mips.json");
     }
 
     function test_descriptionUriPresentForMipE00() public {

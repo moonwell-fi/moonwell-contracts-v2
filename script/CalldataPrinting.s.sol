@@ -79,7 +79,8 @@ contract CalldataPrinting is Script {
 
                     Proposal proposal = proposalMap.runProposal(
                         addresses,
-                        devProposal
+                        devProposal,
+                        shellScript
                     );
                     proposal.printProposalActionSteps();
                     proposal.printCalldata(addresses);
