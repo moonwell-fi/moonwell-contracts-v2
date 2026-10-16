@@ -483,14 +483,59 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
         }
     }
 
-    /// @notice Assert the redeployed wrapper forwards the same raw feed it did pre-
-    /// execution. latestRoundData() must equal the raw-aggregator pre-snapshot
-    /// EXACTLY: the new wrapper forwards the underlying aggregator and, on a pinned
-    /// fork, no new rounds are mined across the governance warp, so the raw round is
-    /// frozen. getUnderlyingPrice allows 2% because its pre-snapshot was read via the
-    /// OLD wrapper (which applies its round delay and can report an earlier round than
-    /// latest), whereas post reads the new wrapper seeded to the latest round — a gap
-    /// of at most one round, independent of any new round being mined.
+    /// @notice Pass-through check: the wrapper must report the aggregator's own data
+    /// for the round it selected, read at the same instant. Covers both branches of
+    /// the round-delay logic (latest round, or an earlier one while latest is fresh).
+    function _assertForwardsRawRound(
+        address rawFeed,
+        ChainlinkOEVWrapper newWrapper,
+        string memory wrapperName
+    ) internal view {
+        (uint80 roundId, int256 ans, , uint256 up, ) = newWrapper
+            .latestRoundData();
+        (, int256 rawAns, , uint256 rawUp, ) = AggregatorV3Interface(rawFeed)
+            .getRoundData(roundId);
+        assertEq(
+            ans,
+            rawAns,
+            string.concat("X72: answer != raw round for ", wrapperName)
+        );
+        assertEq(
+            up,
+            rawUp,
+            string.concat("X72: updatedAt != raw round for ", wrapperName)
+        );
+    }
+
+    /// @notice Price neutrality: bounded, not exact. The integration forks are
+    /// unpinned, so the aggregator publishes rounds while the simulation runs.
+    function _assertRawAnswerNearPre(
+        uint256 chainId,
+        string memory oracleName,
+        ChainlinkOEVWrapper newWrapper,
+        string memory wrapperName
+    ) internal view {
+        int256 pre = _rawAnswerPre[chainId][oracleName];
+        if (pre <= 0) {
+            return;
+        }
+        (, int256 ans, , , ) = newWrapper.latestRoundData();
+        assertGt(
+            ans,
+            0,
+            string.concat("X72: non-positive answer for ", wrapperName)
+        );
+        assertApproxEqRel(
+            uint256(ans),
+            uint256(pre),
+            0.02e18,
+            string.concat("X72: answer drifted >2% for ", wrapperName)
+        );
+    }
+
+    /// @notice Assert the redeployed wrapper is price-neutral: exact pass-through of
+    /// the raw aggregator, plus a bounded drift check against the pre-execution
+    /// snapshot. getUnderlyingPrice allows 2% for the same reason.
     function _assertCorePricePreserved(
         Addresses addresses,
         uint256 chainId,
@@ -498,19 +543,16 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
         ChainlinkOEVWrapper newWrapper,
         string memory wrapperName
     ) internal view {
-        (, int256 ans, , uint256 up, ) = newWrapper.latestRoundData();
-        assertEq(
-            ans,
-            _rawAnswerPre[chainId][config.oracleName],
-            string.concat("X72: answer != raw pre-snapshot for ", wrapperName)
+        _assertForwardsRawRound(
+            addresses.getAddress(config.oracleName),
+            newWrapper,
+            wrapperName
         );
-        assertEq(
-            up,
-            _rawUpdatedAtPre[chainId][config.oracleName],
-            string.concat(
-                "X72: updatedAt != raw pre-snapshot for ",
-                wrapperName
-            )
+        _assertRawAnswerNearPre(
+            chainId,
+            config.oracleName,
+            newWrapper,
+            wrapperName
         );
 
         if (
