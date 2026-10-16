@@ -501,6 +501,8 @@ contract ChainlinkOEVMorphoWrapper is
                 ""
             );
             // restore before the refund below (which yields control to the loan token), so the fresh round is not globally unlocked.
+            // The unlock is per-wrapper and per-call: a shortfall that also needs a second
+            // OEV-wrapped feed to be fresh waits out that feed's maxRoundDelay.
             cachedRoundId = previousCachedRoundId;
             // zero out the residual allowance so a future caller can't skip a fresh approval for the leftover
             IERC20(address(loanToken)).forceApprove(address(morphoBlue), 0);

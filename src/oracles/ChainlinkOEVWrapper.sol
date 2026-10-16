@@ -467,6 +467,8 @@ contract ChainlinkOEVWrapper is
         );
 
         // restore so the fresh round is not globally unlocked after this liquidation.
+        // The unlock is per-wrapper and per-call: a shortfall that also needs a second OEV-wrapped
+        // feed to be fresh cannot be liquidated early here and waits out that feed's maxRoundDelay.
         cachedRoundId = previousCachedRoundId;
 
         require(
