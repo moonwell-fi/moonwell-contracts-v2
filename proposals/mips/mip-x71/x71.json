@@ -1,0 +1,68 @@
+{
+    "8453": {
+        "markets": [
+            {
+                "collateralFactor": 0.35e18,
+                "irm": "",
+                "market": "MOONWELL_WELL",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_BASE_FLAT_MIP_X55",
+                "market": "MOONWELL_MORPHO",
+                "reserveFactor": 0.99e18
+            },
+            {
+                "collateralFactor": 0.35e18,
+                "irm": "",
+                "market": "MOONWELL_wrsETH",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.5e18,
+                "irm": "",
+                "market": "MOONWELL_VIRTUAL",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.58e18,
+                "irm": "",
+                "market": "MOONWELL_AERO",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": [
+            {
+                "baseRatePerYear": 0.01e18,
+                "jumpMultiplierPerYear": 0,
+                "kink": 0,
+                "multiplierPerYear": 0,
+                "name": "JUMP_RATE_IRM_BASE_FLAT_MIP_X55"
+            }
+        ]
+    },
+    "10": {
+        "markets": [
+            {
+                "collateralFactor": 0.5e18,
+                "irm": "",
+                "market": "MOONWELL_VELO",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.55e18,
+                "irm": "",
+                "market": "MOONWELL_OP",
+                "reserveFactor": -1
+            },
+            {
+                "collateralFactor": 0.2e18,
+                "irm": "",
+                "market": "MOONWELL_wrsETH",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": []
+    }
+}
