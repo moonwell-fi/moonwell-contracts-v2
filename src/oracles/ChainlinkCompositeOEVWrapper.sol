@@ -22,6 +22,9 @@ import {IChainlinkOracle} from "../interfaces/IChainlinkOracle.sol";
  *      1. If base feed round == cached round -> return fresh composite price (no new information)
  *      2. If base feed has new round AND within maxRoundDelay -> return cached composite price (delayed)
  *      3. If base feed has new round AND beyond maxRoundDelay -> return fresh composite price (timeout)
+ *
+ *      The cache only advances via the constructor and `syncCache()`. `updatePriceEarlyAndLiquidate`
+ *      advances it for the duration of its own nested liquidation only, then restores it.
  */
 contract ChainlinkCompositeOEVWrapper is
     Ownable,
@@ -86,6 +89,13 @@ contract ChainlinkCompositeOEVWrapper is
         address mTokenLoan,
         uint256 protocolFee,
         uint256 liquidatorFee
+    );
+
+    /// @notice Emitted when the cache is advanced to an already public composite price
+    event CacheSynced(
+        uint256 baseRoundId,
+        int256 compositePrice,
+        uint256 timestamp
     );
 
     /// @notice Emitted when tokens are recovered from the contract
@@ -356,7 +366,48 @@ contract ChainlinkCompositeOEVWrapper is
     receive() external payable {}
 
     /**
+     * @notice Advances the cache to the current composite price once the latest base round is public
+     * @dev Permissionless. Only succeeds when the latest base feed round is already past `maxRoundDelay`,
+     *      i.e. when `latestRoundData()` already returns the fresh composite price to every consumer, so
+     *      writing it to the cache leaks no OEV. Composite oracles have no round history, so without this
+     *      the delayed branch of `latestRoundData()` would keep returning the deploy-time price after
+     *      every new base round; syncing makes it return the last publicly visible price instead.
+     *      `nonReentrant` keeps it from running inside a nested OEV liquidation.
+     */
+    function syncCache() external nonReentrant {
+        (uint80 baseRoundId, , , uint256 baseUpdatedAt, ) = baseFeed
+            .latestRoundData();
+
+        require(
+            block.timestamp >= baseUpdatedAt + maxRoundDelay,
+            "ChainlinkCompositeOEVWrapper: base round still within max round delay"
+        );
+
+        (
+            ,
+            int256 compositePrice,
+            ,
+            uint256 compositeUpdatedAt,
+
+        ) = compositeOracle.latestRoundData();
+        require(
+            compositePrice > 0,
+            "Chainlink price cannot be lower or equal to 0"
+        );
+
+        cachedCompositePrice = compositePrice;
+        cachedTimestamp = compositeUpdatedAt;
+        cachedBaseRoundId = uint256(baseRoundId);
+
+        emit CacheSynced(baseRoundId, compositePrice, compositeUpdatedAt);
+    }
+
+    /**
      * @notice Updates the cached composite price and base round, then executes a liquidation
+     * @dev The fresh-price unlock is scoped to this one nested liquidation: all three cache fields are
+     *      restored right after it, so ordinary `latestRoundData()` consumers keep seeing the delayed
+     *      price for the rest of the `maxRoundDelay` window. The unlock is per-wrapper: a shortfall that
+     *      also needs a second OEV-wrapped feed to be fresh waits out `maxRoundDelay`.
      * @param borrower The address of the borrower to liquidate
      * @param repayAmount The amount to repay on behalf of the borrower
      * @param mTokenCollateral The mToken market for the collateral token
@@ -414,39 +465,51 @@ contract ChainlinkCompositeOEVWrapper is
 
         // Get fresh composite price and update cache
         int256 collateralAnswer;
+        uint256 collateralSeized;
         {
-            (
-                ,
-                int256 freshCompositePrice,
-                ,
-                uint256 freshUpdatedAt,
+            // snapshot so the fresh-round unlock is scoped to this nested liquidation, not persisted globally.
+            int256 previousCachedCompositePrice = cachedCompositePrice;
+            uint256 previousCachedTimestamp = cachedTimestamp;
+            uint256 previousCachedBaseRoundId = cachedBaseRoundId;
+            {
+                (
+                    ,
+                    int256 freshCompositePrice,
+                    ,
+                    uint256 freshUpdatedAt,
 
-            ) = compositeOracle.latestRoundData();
+                ) = compositeOracle.latestRoundData();
 
-            require(
-                freshCompositePrice > 0,
-                "Chainlink price cannot be lower or equal to 0"
+                require(
+                    freshCompositePrice > 0,
+                    "Chainlink price cannot be lower or equal to 0"
+                );
+
+                // Get base feed round atomically via latestRoundData
+                (uint80 baseRoundId, , , , ) = baseFeed.latestRoundData();
+
+                // Update cache with fresh composite price and current base round
+                cachedCompositePrice = freshCompositePrice;
+                cachedTimestamp = freshUpdatedAt;
+                cachedBaseRoundId = uint256(baseRoundId);
+
+                collateralAnswer = freshCompositePrice;
+            }
+
+            // execute liquidation
+            collateralSeized = _executeLiquidation(
+                borrower,
+                repayAmount,
+                mTokenCollateralInterface,
+                mTokenLoan,
+                underlyingLoan
             );
 
-            // Get base feed round atomically via latestRoundData
-            (uint80 baseRoundId, , , , ) = baseFeed.latestRoundData();
-
-            // Update cache with fresh composite price and current base round
-            cachedCompositePrice = freshCompositePrice;
-            cachedTimestamp = freshUpdatedAt;
-            cachedBaseRoundId = uint256(baseRoundId);
-
-            collateralAnswer = freshCompositePrice;
+            // restore so the fresh round is not globally unlocked after this liquidation.
+            cachedCompositePrice = previousCachedCompositePrice;
+            cachedTimestamp = previousCachedTimestamp;
+            cachedBaseRoundId = previousCachedBaseRoundId;
         }
-
-        // execute liquidation
-        uint256 collateralSeized = _executeLiquidation(
-            borrower,
-            repayAmount,
-            mTokenCollateralInterface,
-            mTokenLoan,
-            underlyingLoan
-        );
 
         require(
             collateralSeized > 0,

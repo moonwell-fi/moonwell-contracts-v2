@@ -388,6 +388,9 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
             address(redeemer)
         );
 
+        // snapshot so we can assert the fresh round is not persisted globally after the liquidation.
+        uint256 cachedRoundIdBefore = wrapper.cachedRoundId();
+
         vm.recordLogs();
         wrapper.updatePriceEarlyAndLiquidate(
             params,
@@ -428,7 +431,16 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
         ) = _parseLiquidationEventFull();
 
         // Assertions
-        assertEq(wrapper.cachedRoundId(), 777);
+        // the fresh round (777) priced this liquidation but must not persist globally.
+        assertTrue(
+            cachedRoundIdBefore != 777,
+            "precondition: fresh round must differ from the cached round"
+        );
+        assertEq(
+            wrapper.cachedRoundId(),
+            cachedRoundIdBefore,
+            "cachedRoundId must not advance globally after liquidation"
+        );
         assertGt(
             liqLoanBefore - IERC20(loanToken).balanceOf(LIQUIDATOR),
             0,
@@ -605,6 +617,18 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
         );
     }
 
+    /// @notice Fund this contract with `amount` loan tokens and approve the wrapper.
+    ///         The wrapper pulls `maxRepayAmount` before validating the round, so a
+    ///         revert-path test must clear the pull to reach `_validateRoundData`.
+    function _fundAndApproveLoanToken(
+        ChainlinkOEVMorphoWrapper wrapper,
+        MarketParams memory params,
+        uint256 amount
+    ) internal {
+        deal(params.loanToken, address(this), amount);
+        IERC20(params.loanToken).approve(address(wrapper), amount);
+    }
+
     function testUpdatePriceEarlyAndLiquidate_RevertArgsZero() public {
         MarketParams memory params;
         address mUSDC = addresses.getAddress("MOONWELL_USDC");
@@ -639,7 +663,11 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                     uint80(1)
                 )
             );
-            // Tight assertion: must revert at _validateRoundData, not earlier.
+            // An invalid round must block the liquidation. Note the revert string
+            // alone does not pin WHICH guard fired: Morpho reads the same wrapper
+            // through the market oracle, so removing the check in
+            // updatePriceEarlyAndLiquidate still reverts here with this string.
+            _fundAndApproveLoanToken(wrapper, params, 1);
             vm.expectRevert("Chainlink price cannot be lower or equal to 0");
             wrapper.updatePriceEarlyAndLiquidate(params, address(0xBEEF), 1, 1);
         }
@@ -662,6 +690,8 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                     uint80(1)
                 )
             );
+            // Clear the loan-token pull that precedes _validateRoundData.
+            _fundAndApproveLoanToken(wrapper, params, 1);
             vm.expectRevert("Round is in incompleted state");
             wrapper.updatePriceEarlyAndLiquidate(params, address(0xBEEF), 1, 1);
         }
@@ -684,6 +714,8 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                     uint80(1)
                 )
             );
+            // Clear the loan-token pull that precedes _validateRoundData.
+            _fundAndApproveLoanToken(wrapper, params, 1);
             vm.expectRevert("Stale price");
             wrapper.updatePriceEarlyAndLiquidate(params, address(0xBEEF), 1, 1);
         }
