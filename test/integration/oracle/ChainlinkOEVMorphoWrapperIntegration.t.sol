@@ -38,6 +38,15 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
     MarketParams[] internal approvedParams;
     OEVProtocolFeeRedeemer public redeemer;
 
+    /// @notice Round the wrapper must serve to ordinary `latestRoundData()`
+    ///         readers during `_testLiquidation` (the real, pre-mock latest
+    ///         round of the underlying feed), its answer, and the fresh
+    ///         (mocked) round that only the nested liquidation may see.
+    ///         Kept in storage to stay clear of stack-too-deep.
+    uint80 internal delayedRoundId;
+    int256 internal delayedAnswer;
+    uint80 internal freshRoundId;
+
     // Test actors
     address internal constant BORROWER =
         address(uint160(uint256(keccak256(abi.encodePacked("BORROWER")))));
@@ -316,18 +325,8 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
             collateralAmount
         );
 
-        // Mock price crash
-        vm.mockCall(
-            address(wrapper.priceFeed()),
-            abi.encodeWithSelector(bytes4(keccak256("latestRoundData()"))),
-            abi.encode(
-                uint80(777),
-                int256(1),
-                uint256(0),
-                block.timestamp,
-                uint80(777)
-            )
-        );
+        // Mock price crash as the NEXT real round of the underlying feed
+        _mockFreshCrashRound(wrapper);
 
         // Execute liquidation
         _executeLiquidation(
@@ -338,6 +337,72 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
             seized,
             collToken
         );
+    }
+
+    /// @notice Install a fresh, liquidation-triggering round on the wrapper's
+    ///         underlying feed while keeping the wrapper's delayed path live.
+    /// @dev Live feeds use phase-encoded round ids (~3.69e19). A small
+    ///      synthetic id (e.g. 777) makes every `getRoundData(id - k)` revert,
+    ///      so the wrapper's walk-back falls through after `maxDecrements` and
+    ///      `latestRoundData()` returns the fresh mock regardless of
+    ///      `cachedRoundId` — the delayed branch would never be exercised.
+    ///      Instead the fresh round is `realLatest + 1`, so the walk-back's
+    ///      first step, `getRoundData(realLatest)`, hits the real aggregator
+    ///      and returns the real latest round. That round is NOT mocked: the
+    ///      walk-back result only passes through `_validateRoundData`, which
+    ///      is pure (answer > 0, updatedAt != 0, answeredInRound >= roundId)
+    ///      and applies no age check, and Morpho's oracle applies none either,
+    ///      so a real latest round that is hours old still validates.
+    function _mockFreshCrashRound(ChainlinkOEVMorphoWrapper wrapper) internal {
+        AggregatorV3Interface feed = wrapper.priceFeed();
+        (uint80 realRoundId, int256 realAnswer, , , ) = feed.latestRoundData();
+        delayedRoundId = realRoundId;
+        delayedAnswer = realAnswer;
+        freshRoundId = realRoundId + 1;
+
+        vm.mockCall(
+            address(feed),
+            abi.encodeWithSelector(feed.latestRoundData.selector),
+            abi.encode(
+                freshRoundId,
+                int256(1),
+                block.timestamp,
+                block.timestamp,
+                freshRoundId
+            )
+        );
+    }
+
+    /// @notice Assert an ordinary `latestRoundData()` read is served the
+    ///         delayed (real latest) round, not the fresh mocked one.
+    function _assertDelayedRead(
+        ChainlinkOEVMorphoWrapper wrapper,
+        string memory when
+    ) internal view {
+        (uint80 roundId, int256 answer, , , ) = wrapper.latestRoundData();
+        assertEq(
+            roundId,
+            delayedRoundId,
+            string.concat("delayed round not served ", when)
+        );
+        assertEq(
+            answer,
+            delayedAnswer,
+            string.concat("delayed answer not served ", when)
+        );
+    }
+
+    /// @notice Assert Morpho Blue's native `liquidate()` rejects the
+    ///         position while the wrapper serves the delayed round.
+    function _assertNativeLiquidationRejected(
+        ChainlinkOEVMorphoWrapper wrapper,
+        MarketParams memory params,
+        uint256 seized
+    ) internal {
+        // resolve before expectRevert so the getter isn't the "next call"
+        IMorphoBlue morpho = IMorphoBlue(address(wrapper.morphoBlue()));
+        vm.expectRevert(bytes("position is healthy"));
+        morpho.liquidate(params, BORROWER, seized, 0, "");
     }
 
     function _supplyLiquidityAndBorrow(
@@ -390,6 +455,17 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
 
         // snapshot so we can assert the fresh round is not persisted globally after the liquidation.
         uint256 cachedRoundIdBefore = wrapper.cachedRoundId();
+        assertTrue(
+            cachedRoundIdBefore != freshRoundId,
+            "precondition: fresh round must differ from the cached round"
+        );
+
+        // Ordinary readers (incl. Morpho's market oracle) see the delayed
+        // round, at which the position is healthy: a native Morpho
+        // liquidation must be rejected. So if the wrapper call below
+        // succeeds, its nested liquidation was priced at the fresh round.
+        _assertDelayedRead(wrapper, "before the OEV call");
+        _assertNativeLiquidationRejected(wrapper, params, seized);
 
         vm.recordLogs();
         wrapper.updatePriceEarlyAndLiquidate(
@@ -431,16 +507,15 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
         ) = _parseLiquidationEventFull();
 
         // Assertions
-        // the fresh round (777) priced this liquidation but must not persist globally.
-        assertTrue(
-            cachedRoundIdBefore != 777,
-            "precondition: fresh round must differ from the cached round"
-        );
+        // the fresh round (realLatest + 1) priced the nested liquidation (the
+        // position was healthy at the delayed round, see above) but must not
+        // persist globally: ordinary readers are back on the delayed round.
         assertEq(
             wrapper.cachedRoundId(),
             cachedRoundIdBefore,
             "cachedRoundId must not advance globally after liquidation"
         );
+        _assertDelayedRead(wrapper, "after the OEV call");
         assertGt(
             liqLoanBefore - IERC20(loanToken).balanceOf(LIQUIDATOR),
             0,
@@ -629,6 +704,21 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
         IERC20(params.loanToken).approve(address(wrapper), amount);
     }
 
+    /// @notice Make `morphoBlue.liquidate` a no-op returning (0, 0) so a
+    ///         revert-path test cannot be satisfied by Morpho's own oracle
+    ///         read of this wrapper: if the wrapper's `_validateRoundData`
+    ///         guard were removed, the call would proceed (and not revert with
+    ///         the expected string) instead of reverting inside Morpho.
+    function _mockMorphoLiquidateNoop(
+        ChainlinkOEVMorphoWrapper wrapper
+    ) internal {
+        vm.mockCall(
+            address(wrapper.morphoBlue()),
+            abi.encodeWithSelector(IMorphoBlue.liquidate.selector),
+            abi.encode(uint256(0), uint256(0))
+        );
+    }
+
     function testUpdatePriceEarlyAndLiquidate_RevertArgsZero() public {
         MarketParams memory params;
         address mUSDC = addresses.getAddress("MOONWELL_USDC");
@@ -663,10 +753,11 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                     uint80(1)
                 )
             );
-            // An invalid round must block the liquidation. Note the revert string
-            // alone does not pin WHICH guard fired: Morpho reads the same wrapper
-            // through the market oracle, so removing the check in
-            // updatePriceEarlyAndLiquidate still reverts here with this string.
+            // An invalid round must block the liquidation. Morpho reads the same
+            // wrapper through the market oracle and would revert with the same
+            // string, so stub out the nested liquidation: only the wrapper's own
+            // _validateRoundData can produce this revert.
+            _mockMorphoLiquidateNoop(wrapper);
             _fundAndApproveLoanToken(wrapper, params, 1);
             vm.expectRevert("Chainlink price cannot be lower or equal to 0");
             wrapper.updatePriceEarlyAndLiquidate(params, address(0xBEEF), 1, 1);
@@ -690,6 +781,9 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                     uint80(1)
                 )
             );
+            // Stub out the nested liquidation so the revert is attributed to the
+            // wrapper's own _validateRoundData, not Morpho's oracle read.
+            _mockMorphoLiquidateNoop(wrapper);
             // Clear the loan-token pull that precedes _validateRoundData.
             _fundAndApproveLoanToken(wrapper, params, 1);
             vm.expectRevert("Round is in incompleted state");
@@ -714,6 +808,9 @@ contract ChainlinkOEVMorphoWrapperIntegrationTest is
                     uint80(1)
                 )
             );
+            // Stub out the nested liquidation so the revert is attributed to the
+            // wrapper's own _validateRoundData, not Morpho's oracle read.
+            _mockMorphoLiquidateNoop(wrapper);
             // Clear the loan-token pull that precedes _validateRoundData.
             _fundAndApproveLoanToken(wrapper, params, 1);
             vm.expectRevert("Stale price");

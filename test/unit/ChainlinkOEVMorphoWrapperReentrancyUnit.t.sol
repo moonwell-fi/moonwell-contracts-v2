@@ -168,6 +168,43 @@ contract CallbackLoanToken is MockERC20Decimals {
         }
         return super.transferFrom(from, to, amount);
     }
+
+    // Refund-leg hook state, kept separate from the HAL-02 pull hook above.
+    address public refundRecipient;
+    bool public refundArmed;
+    bool public refundCaptured;
+    uint256 public refundObservedCachedRoundId;
+    uint80 public refundObservedLatestRoundId;
+
+    /// @notice Arm the `transfer` hook for the excess-loan-token refund leg
+    ///         (wrapper -> `_recipient`) of `updatePriceEarlyAndLiquidate`.
+    function armRefund(address _wrapper, address _recipient) external {
+        wrapper = ChainlinkOEVMorphoWrapper(_wrapper);
+        refundRecipient = _recipient;
+        refundArmed = true;
+    }
+
+    function transfer(
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
+        // Fire only on the refund leg: the wrapper returning excess loan
+        // tokens to the liquidator. This is the first point after the nested
+        // liquidation where control leaves the wrapper, so `cachedRoundId`
+        // must already be restored to the pre-call (delayed) round here.
+        if (
+            refundArmed &&
+            !refundCaptured &&
+            msg.sender == address(wrapper) &&
+            to == refundRecipient
+        ) {
+            refundCaptured = true;
+            refundObservedCachedRoundId = wrapper.cachedRoundId();
+            (uint80 rid, , , , ) = wrapper.latestRoundData();
+            refundObservedLatestRoundId = rid;
+        }
+        return super.transfer(to, amount);
+    }
 }
 
 /// @notice Benign Morpho Blue mock: `liquidate()` seizes collateral to the
@@ -361,6 +398,77 @@ contract ChainlinkOEVMorphoWrapperHAL02UnitTest is Test {
         assertEq(
             wrapper.cachedRoundId(),
             R0,
+            "cachedRoundId not restored after liquidation"
+        );
+    }
+
+    /// @notice C4 #289: `cachedRoundId` must be restored to the pre-call round
+    ///         BEFORE the excess-loan-token refund `safeTransfer`, which hands
+    ///         control to the loan token (and, through a transfer hook, to the
+    ///         liquidator). If the restore ran after the refund, the hook would
+    ///         observe the fresh round unlocked for every `latestRoundData()`
+    ///         consumer and could liquidate through Morpho Blue's native
+    ///         `liquidate()` at the fresh price without paying the OEV fee.
+    function testRestoreHappensBeforeExcessRefund() public {
+        MarketParams memory params = _params();
+        bytes32 id = keccak256(abi.encode(params));
+
+        vm.prank(owner);
+        wrapper.setApprovedMarket(id, true);
+
+        // Advance the underlying feed to the fresh round R1; cachedRoundId is
+        // still R0, so ordinary reads are delayed to R0.
+        priceFeed.set(R1, 1e8, 1, block.timestamp, R1);
+        uint256 cachedBefore = wrapper.cachedRoundId();
+        assertEq(cachedBefore, R0, "precondition: cached == R0");
+        (uint80 latestBefore, , , , ) = wrapper.latestRoundData();
+        assertEq(latestBefore, R0, "precondition: delayed read == R0");
+
+        uint256 maxRepayAmount = 5e18;
+        uint256 repaidReturn = 3e18;
+        uint256 seizeReturn = 10e18;
+        // repaid < max so the wrapper refunds the 2e18 excess via safeTransfer.
+        morpho.config(address(collateralToken), seizeReturn, repaidReturn);
+
+        loanToken.mint(address(this), maxRepayAmount);
+        loanToken.approve(address(wrapper), maxRepayAmount);
+        collateralToken.mint(address(morpho), seizeReturn);
+
+        // Hook only the refund leg (wrapper -> this liquidator).
+        loanToken.armRefund(address(wrapper), address(this));
+
+        wrapper.updatePriceEarlyAndLiquidate(
+            params,
+            address(0xBEEF),
+            seizeReturn,
+            maxRepayAmount
+        );
+
+        assertTrue(
+            loanToken.refundCaptured(),
+            "hook never fired on the excess refund"
+        );
+        assertEq(
+            loanToken.balanceOf(address(this)),
+            maxRepayAmount - repaidReturn,
+            "excess loan tokens not refunded to the liquidator"
+        );
+
+        // The crux: at refund time the fresh round is already re-locked.
+        assertEq(
+            loanToken.refundObservedCachedRoundId(),
+            cachedBefore,
+            "refund leg saw the FRESH round still unlocked (restore after refund)"
+        );
+        assertEq(
+            loanToken.refundObservedLatestRoundId(),
+            R0,
+            "latestRoundData returned the fresh round during the refund"
+        );
+
+        assertEq(
+            wrapper.cachedRoundId(),
+            cachedBefore,
             "cachedRoundId not restored after liquidation"
         );
     }
