@@ -12,7 +12,7 @@ import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
-import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {validateProxy, _IMPLEMENTATION_SLOT} from "@proposals/utils/ProxyUtils.sol";
 import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, ETHEREUM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// @notice MIP-X72: ship the C4 #289 fix by redeploying the non-upgradeable Core
@@ -26,6 +26,11 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
     /// @notice Registry key for the fixed Morpho wrapper implementation.
     string public constant MORPHO_IMPLEMENTATION_NAME =
         "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL";
+
+    /// @notice Registry key for the implementation the Base Morpho proxies run
+    /// before this proposal (registered by MIP-X56).
+    string public constant MORPHO_LIVE_IMPLEMENTATION_NAME =
+        "CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2";
 
     /// @notice Archive-key suffix for the pre-fix Core wrappers.
     string internal constant DEPRECATED_SUFFIX = "_DEPRECATED_V4";
@@ -43,6 +48,7 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
         uint256 maxDecrements;
         uint256 cachedRoundId;
         address owner;
+        address implementation;
         bool taken;
     }
 
@@ -168,21 +174,23 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
         vm.stopBroadcast();
     }
 
-    /// @notice Deploy the fixed Morpho wrapper implementation on Base, archiving the previous one.
+    /// @notice Deploy the fixed Morpho wrapper implementation on Base, archiving the
+    /// implementation the proxies actually run (read from the ERC1967 slot).
     function _deployMorphoImplementation(Addresses addresses) internal {
+        address liveImpl = _liveMorphoImplementation(addresses);
+
         vm.startBroadcast();
         ChainlinkOEVMorphoWrapper impl = new ChainlinkOEVMorphoWrapper();
 
+        // Archive the impl behind the proxies (== _IMPL_V2), not the unsuffixed
+        // key's current value: that is the pre-MIP-X56 impl, behind no proxy, and
+        // is deliberately dropped from the canonical key without an archive.
+        addresses.addAddress(
+            string.concat(MORPHO_IMPLEMENTATION_NAME, DEPRECATED_SUFFIX),
+            liveImpl
+        );
+
         if (addresses.isAddressSet(MORPHO_IMPLEMENTATION_NAME)) {
-            addresses.addAddress(
-                string(
-                    abi.encodePacked(
-                        MORPHO_IMPLEMENTATION_NAME,
-                        DEPRECATED_SUFFIX
-                    )
-                ),
-                addresses.getAddress(MORPHO_IMPLEMENTATION_NAME)
-            );
             addresses.changeAddress(
                 MORPHO_IMPLEMENTATION_NAME,
                 address(impl),
@@ -192,6 +200,42 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
             addresses.addAddress(MORPHO_IMPLEMENTATION_NAME, address(impl));
         }
         vm.stopBroadcast();
+    }
+
+    /// @notice Read the ERC1967 implementation slot of every Base Morpho wrapper
+    /// proxy; all must share one impl and it must be the registered _IMPL_V2.
+    function _liveMorphoImplementation(
+        Addresses addresses
+    ) internal view returns (address liveImpl) {
+        MorphoOracleConfig[]
+            memory morphoConfigs = getMorphoOracleConfigurations(block.chainid);
+        require(morphoConfigs.length > 0, "MIP-X72: no Morpho wrappers");
+
+        for (uint256 i = 0; i < morphoConfigs.length; i++) {
+            address impl = _implementationOf(
+                addresses.getAddress(
+                    string.concat(morphoConfigs[i].proxyName, "_ORACLE_PROXY")
+                )
+            );
+            if (i == 0) {
+                liveImpl = impl;
+            } else {
+                require(
+                    impl == liveImpl,
+                    "MIP-X72: Morpho wrapper proxies run different implementations"
+                );
+            }
+        }
+
+        require(
+            liveImpl == addresses.getAddress(MORPHO_LIVE_IMPLEMENTATION_NAME),
+            "MIP-X72: live Morpho wrapper implementation is not CHAINLINK_OEV_MORPHO_WRAPPER_IMPL_V2"
+        );
+    }
+
+    /// @notice ERC1967 implementation address of a proxy.
+    function _implementationOf(address proxy) internal view returns (address) {
+        return address(uint160(uint256(vm.load(proxy, _IMPLEMENTATION_SLOT))));
     }
 
     /// @notice Snapshot pre-execution oracle prices + Morpho state on every chain so
@@ -281,6 +325,7 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
                 maxDecrements: w.maxDecrements(),
                 cachedRoundId: w.cachedRoundId(),
                 owner: w.owner(),
+                implementation: _implementationOf(address(w)),
                 taken: true
             });
         }
@@ -594,6 +639,12 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
         address proxyAdmin = addresses.getAddress(
             "CHAINLINK_ORACLE_PROXY_ADMIN"
         );
+        address archivedImpl = addresses.getAddress(
+            string.concat(MORPHO_IMPLEMENTATION_NAME, DEPRECATED_SUFFIX)
+        );
+        address liveImplV2 = addresses.getAddress(
+            MORPHO_LIVE_IMPLEMENTATION_NAME
+        );
 
         for (uint256 i = 0; i < morphoConfigs.length; i++) {
             string memory wrapperName = string(
@@ -610,6 +661,25 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
 
             MorphoSnapshot memory snap = _morphoSnap[wrapperName];
             require(snap.taken, "MIP-X72: missing Morpho snapshot");
+
+            // The archive key records the impl the proxy ran pre-upgrade, which
+            // is MIP-X56's _IMPL_V2; validateProxy above proves the slot moved.
+            assertEq(
+                archivedImpl,
+                snap.implementation,
+                string.concat(
+                    "X72: archived morpho impl != pre-upgrade impl for ",
+                    wrapperName
+                )
+            );
+            assertEq(
+                snap.implementation,
+                liveImplV2,
+                string.concat(
+                    "X72: pre-upgrade morpho impl != IMPL_V2 for ",
+                    wrapperName
+                )
+            );
 
             ChainlinkOEVMorphoWrapper w = ChainlinkOEVMorphoWrapper(
                 addresses.getAddress(wrapperName)
