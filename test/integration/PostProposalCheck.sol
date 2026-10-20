@@ -8,6 +8,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
+import {MarketPriceGuard} from "@test/utils/MarketPriceGuard.sol";
 import {LiveProposalCheck} from "@test/utils/LiveProposalCheck.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichainGovernorV2.sol";
@@ -29,6 +30,10 @@ contract PostProposalCheck is LiveProposalCheck {
     /// @notice store the proposal start time so that tests can go back in time
     /// to this point if needed. Used in ReserveAutomationDeploy Integration Test
     uint256 public proposalStartTime;
+
+    /// @notice snapshots every market's oracle price before the pending
+    /// proposals run and fails setUp if any price moved afterwards
+    MarketPriceGuard public priceGuard;
 
     function setUp() public virtual override {
         uint256 primaryForkBefore = vm.envOr("PRIMARY_FORK_ID", uint256(0));
@@ -66,6 +71,8 @@ contract PostProposalCheck is LiveProposalCheck {
 
         // execute proposals that are queued in the temporal governor but not executed yet
         executeTemporalGovernorQueuedProposals(addresses, governor);
+
+        _snapshotMarketPrices();
 
         // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
@@ -115,6 +122,8 @@ contract PostProposalCheck is LiveProposalCheck {
             proposalStartTime = maxTime;
         }
 
+        _assertMarketPricesPreserved();
+
         vm.selectFork(MOONBEAM_FORK_ID);
 
         addresses.removeAllRestrictions();
@@ -123,6 +132,89 @@ contract PostProposalCheck is LiveProposalCheck {
 
         // set proposalStartTime on the active (Moonbeam) fork
         vm.warp(proposalStartTime);
+    }
+
+    /// @notice record every listed market's price on every fork before any
+    /// pending proposal is simulated
+    function _snapshotMarketPrices() internal {
+        uint256 activeFork = vm.activeFork();
+
+        priceGuard = new MarketPriceGuard();
+        vm.makePersistent(address(priceGuard));
+
+        for (uint256 i = MOONBEAM_FORK_ID; i <= ETHEREUM_FORK_ID; i++) {
+            priceGuard.snapshot(addresses, i);
+        }
+
+        vm.selectFork(activeFork);
+    }
+
+    /// @notice fail setUp when a simulated proposal moved a market price it
+    /// did not declare in expectedPriceChanges()
+    function _assertMarketPricesPreserved() internal {
+        uint256 activeFork = vm.activeFork();
+
+        address[] memory allowlist = _expectedPriceChanges();
+        uint256 total;
+        string memory firstSummary;
+
+        for (uint256 i = MOONBEAM_FORK_ID; i <= ETHEREUM_FORK_ID; i++) {
+            MarketPriceGuard.Violation[] memory violations = priceGuard.check(
+                addresses,
+                i,
+                allowlist
+            );
+            if (violations.length > 0) {
+                string memory summary = priceGuard.describe(violations);
+                if (total == 0) {
+                    firstSummary = summary;
+                }
+                total += violations.length;
+            }
+        }
+
+        vm.selectFork(activeFork);
+
+        require(total == 0, firstSummary);
+    }
+
+    /// @notice union of every simulated proposal's declared price changes
+    function _expectedPriceChanges()
+        internal
+        view
+        returns (address[] memory allowlist)
+    {
+        uint256 total;
+        for (uint256 i = 0; i < proposals.length; i++) {
+            total += _declaredPriceChanges(proposals[i]).length;
+        }
+
+        allowlist = new address[](total);
+        uint256 cursor;
+        for (uint256 i = 0; i < proposals.length; i++) {
+            address[] memory declared = _declaredPriceChanges(proposals[i]);
+            for (uint256 j = 0; j < declared.length; j++) {
+                allowlist[cursor++] = declared[j];
+            }
+        }
+    }
+
+    /// @notice raw staticcall: a MIP artifact compiled before the hook existed
+    /// (stale artifacts/foundry) lacks the selector and reverts with no data.
+    /// Fail closed: no declaration means no price may move.
+    function _declaredPriceChanges(
+        Proposal proposal
+    ) internal view returns (address[] memory declared) {
+        (bool ok, bytes memory ret) = address(proposal).staticcall(
+            abi.encodeWithSelector(
+                Proposal.expectedPriceChanges.selector,
+                addresses
+            )
+        );
+        if (!ok || ret.length == 0) {
+            return declared;
+        }
+        declared = abi.decode(ret, (address[]));
     }
 
     /// @notice Run the full deploy -> build -> simulate -> validate lifecycle
