@@ -26,8 +26,14 @@ interface IMErc20DelegateInternalCash {
  *
  * @dev This contract:
  * - Automatically wraps any received ETH into WETH
- * - Delegates all admin functions to the underlying WETH market
- * - Is owned by TEMPORAL_GOVERNOR for governance control
+ * - Forwards these admin functions to the WETH market: _reduceReserves,
+ *   _setPendingAdmin, _acceptAdmin, _setComptroller, _setReserveFactor,
+ *   _setInterestRateModel, _setProtocolSeizeShare, _addReserves,
+ *   _setImplementation, _sweepExcessCash and _syncCashDown. Other admin-only
+ *   market functions (e.g. MErc20.sweepToken) have no passthrough and need
+ *   the market admin moved via _setPendingAdmin or a wrapper upgrade
+ * - Is owned by TEMPORAL_GOVERNOR for governance control, with a two-step
+ *   ownership transfer and no renounce
  * - Allows extracting tokens (primarily WETH) after reserve reductions
  */
 contract MWethOwnerWrapper is Initializable, OwnableUpgradeable {
@@ -37,6 +43,10 @@ contract MWethOwnerWrapper is Initializable, OwnableUpgradeable {
     /// @notice The WETH token contract
     WETH9 public weth;
 
+    /// @notice Address proposed by the owner to take over ownership
+    /// @dev Appended after mToken and weth so the proxy's storage is unshifted
+    address public pendingOwner;
+
     /// @notice Emitted when ETH is received and wrapped to WETH
     event EthWrapped(uint256 amount);
 
@@ -45,6 +55,12 @@ contract MWethOwnerWrapper is Initializable, OwnableUpgradeable {
         address indexed token,
         address indexed to,
         uint256 amount
+    );
+
+    /// @notice Emitted when the owner proposes a new owner
+    event OwnershipTransferStarted(
+        address indexed previousOwner,
+        address indexed newOwner
     );
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -92,6 +108,41 @@ contract MWethOwnerWrapper is Initializable, OwnableUpgradeable {
             weth.deposit{value: msg.value}();
             emit EthWrapped(msg.value);
         }
+    }
+
+    // ========================================
+    // Ownership
+    // ========================================
+
+    /**
+     * @notice Propose a new owner, who must call acceptOwnership
+     * @dev Overwrites any previous proposal; address(0) cancels it
+     * @param newOwner The proposed owner
+     */
+    function transferOwnership(address newOwner) public override onlyOwner {
+        pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner(), newOwner);
+    }
+
+    /// @notice Accept ownership proposed by the current owner
+    function acceptOwnership() external {
+        require(
+            msg.sender == pendingOwner,
+            "MWethOwnerWrapper: caller is not the pending owner"
+        );
+        _transferOwnership(msg.sender);
+    }
+
+    /// @notice Disabled: the wrapper must always have an owner
+    function renounceOwnership() public pure override {
+        revert("MWethOwnerWrapper: cannot renounce ownership");
+    }
+
+    /// @dev Clears any pending proposal on every ownership change, so a
+    ///      stale pending owner can never accept later
+    function _transferOwnership(address newOwner) internal override {
+        delete pendingOwner;
+        super._transferOwnership(newOwner);
     }
 
     // ========================================
@@ -190,6 +241,9 @@ contract MWethOwnerWrapper is Initializable, OwnableUpgradeable {
 
     /**
      * @notice Point the WETH market at a new implementation
+     * @dev WETH held by the market above its internalCash is swept to this
+     *      wrapper only when allowResign = true; with allowResign = false it
+     *      is absorbed into the exchange rate and can no longer be swept
      * @param implementation_ The new implementation address
      * @param allowResign Whether to call _resignImplementation on the old implementation
      * @param becomeImplementationData Data passed to _becomeImplementation

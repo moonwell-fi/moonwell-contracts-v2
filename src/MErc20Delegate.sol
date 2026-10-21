@@ -15,9 +15,17 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
      *      occupies the next free delegator slot (20) without shifting any
      *      existing storage. Updated only by doTransferIn / doTransferOut,
      *      synced to the real balance in _becomeImplementation and lowered by
-     *      _syncCashDown. Reading this
-     *      instead of underlying.balanceOf means direct transfers ("donations")
-     *      do not move the exchange rate or count toward supply caps.
+     *      _syncCashDown. Cash is min(internalCash, underlying balance):
+     *      - direct transfers ("donations") above internalCash do not move
+     *        the exchange rate or count toward supply caps;
+     *      - a loss outside the market (issuer seizure or burn, or a token
+     *        that takes more than `amount` on transfer out) is priced at
+     *        once and shared pro rata, and redeem / borrow cash checks fail
+     *        cleanly against the real balance instead of reverting inside
+     *        the token transfer;
+     *      - if lost tokens come back, cash recovers up to internalCash with
+     *        no governance action, so any tokens sent while the balance is
+     *        below internalCash raise the exchange rate up to internalCash.
      */
     uint256 public internalCash;
 
@@ -34,15 +42,26 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
 
     /**
      * @notice Called by the delegator on a delegate to initialize it for duty
-     * @dev Always syncs internalCash to the underlying balance. Donations are
-     *      swept by the outgoing implementation's _resignImplementation first,
-     *      so a swap between internal cash implementations absorbs nothing.
-     *      Never sweep here: after a legacy implementation internalCash is
-     *      unset and the whole balance would look like excess. Interest is
-     *      accrued first at the tracked cash, except while internalCash is
-     *      unset (migration, new market, fully borrowed market), where
-     *      accruing would price utilization at 100%; the next interaction
-     *      accrues at the synced cash instead.
+     * @dev Always syncs internalCash to the underlying balance, so, like
+     *      _syncCashDown, it makes any unsynced loss permanent: schedule
+     *      upgrades only once a loss is known to be permanent. Tokens above
+     *      internalCash are swept to admin by the outgoing implementation's
+     *      _resignImplementation only when _setImplementation is called with
+     *      allowResign = true; with allowResign = false they are absorbed
+     *      into the exchange rate here and can no longer be swept.
+     *      Never sweep here: on the first migration from a balance-based
+     *      implementation internalCash is unset and the whole balance would
+     *      look like excess. Interest is accrued first at the current cash,
+     *      except while internalCash is zero (first migration, new market,
+     *      fully borrowed market), where accruing would price utilization at
+     *      100%; the next interaction accrues at the synced cash instead.
+     *      A rollback to a balance-based implementation (e.g. the archived
+     *      *_IMPLEMENTATION_DEPRECATED_V1) never writes or clears this slot,
+     *      so it stays stale and non-zero. Any re-upgrade from such an
+     *      implementation must call accrueInterest() on the market in the same
+     *      transaction before _setImplementation, so the accrual here has no
+     *      elapsed period to price at a stale internalCash (getCashPrior caps
+     *      a stale value above the balance, but not one below it).
      * @param data The encoded bytes data for any initialization
      */
     function _becomeImplementation(bytes memory data) public virtual override {
@@ -104,6 +123,21 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
     /**
      * @notice Lower internalCash to the underlying balance after a loss
      *         outside the market (e.g. issuer seizure); never raises it
+     * @dev The loss is already priced through getCashPrior; this only makes
+     *      it permanent, so tokens returned afterwards are excess (sweepable)
+     *      instead of restoring cash. Call it only once a loss is known to be
+     *      permanent. A loss that wipes all or nearly all supplier equity
+     *      (reserves >= cash + borrows, or utilization pushing the borrow
+     *      rate above the max) freezes the market; with borrows outstanding
+     *      accrueInterest, and so this function, reverts. Unsynced, the
+     *      market recovers by itself once the tokens return; synced, it
+     *      stays frozen. Recovery after the tokens return: with no borrows
+     *      outstanding, admin calls _becomeImplementation directly (Base WETH:
+     *      MWethOwnerWrapper._setImplementation(sameImpl, false, "")); with
+     *      borrows outstanding, switch with allowResign = false to a
+     *      balance-based implementation (MTOKEN_IMPLEMENTATION_DEPRECATED_V1 /
+     *      MWETH_IMPLEMENTATION_DEPRECATED_V1), accrue, and switch back in
+     *      the same block.
      */
     function _syncCashDown() external {
         require(msg.sender == admin, "only the admin may sync cash");
@@ -119,12 +153,16 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
     /*** Safe Token ***/
 
     /**
-     * @notice Gets the internally tracked balance of underlying
-     * @dev Immune to direct transfers of underlying to this contract
+     * @notice Gets the lower of internalCash and the underlying balance
+     * @dev Immune to direct transfers of underlying to this contract, while a
+     *      loss outside the market is priced immediately. View only: a loss
+     *      is made permanent only by _syncCashDown or by an implementation
+     *      upgrade (_becomeImplementation re-syncs to the balance).
      * @return The quantity of underlying tokens accounted to this market
      */
     function getCashPrior() internal view virtual override returns (uint) {
-        return internalCash;
+        uint balance = EIP20Interface(underlying).balanceOf(address(this));
+        return balance < internalCash ? balance : internalCash;
     }
 
     /**

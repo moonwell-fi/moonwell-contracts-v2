@@ -15,6 +15,7 @@ import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
 import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
 import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {TokenErrorReporter} from "@protocol/TokenErrorReporter.sol";
 
 /// @notice mirrors the pre-upgrade MErc20Delegate: cash = underlying.balanceOf
 contract LegacyBalanceOfDelegate is MErc20, MDelegateInterface {
@@ -148,6 +149,30 @@ contract MErc20DelegateInternalCashUnitTest is Test {
 
     function _internalCash() internal view returns (uint256) {
         return MErc20Delegate(address(mToken)).internalCash();
+    }
+
+    /// @dev underlying leaves the market outside the protocol (seizure / burn)
+    function _lose(uint256 amount) internal {
+        vm.prank(address(mToken));
+        token.transfer(address(0xdead), amount);
+    }
+
+    /// @dev alice supplies 100, bob supplies 20 and borrows 10, then 65 is
+    ///      lost: internalCash 110, balance 45, borrows 10, supply 120
+    function _lossWithBorrows() internal {
+        _upgrade();
+        _mint(alice, 100e18);
+        _mint(bob, 20e18);
+
+        address[] memory markets = new address[](1);
+        markets[0] = address(mToken);
+        vm.startPrank(bob);
+        comptroller.enterMarkets(markets);
+        assertEq(MErc20(address(mToken)).borrow(10e18), 0);
+        vm.stopPrank();
+
+        assertEq(mToken.exchangeRateStored(), 1e18);
+        _lose(65e18);
     }
 
     function testUpgradeSyncsInternalCashAndKeepsExchangeRate() public {
@@ -446,6 +471,15 @@ contract MErc20DelegateInternalCashUnitTest is Test {
 
     function testDirectBecomeAccruesLikeSyncCashDown() public {
         _lossAfterAYear();
+
+        // the elapsed year is priced at the post-loss cash (70), not 130
+        uint256 rate = mToken.interestRateModel().getBorrowRate(
+            70e18,
+            20e18,
+            0
+        );
+        uint256 expectedBorrows = 20e18 + (rate * 365 days * 20e18) / 1e18;
+
         uint256 snapshot = vm.snapshot();
 
         MErc20Delegate(address(mToken))._becomeImplementation("");
@@ -457,9 +491,98 @@ contract MErc20DelegateInternalCashUnitTest is Test {
         uint256 borrowsViaSyncDown = mToken.totalBorrows();
         assertEq(_internalCash(), 70e18);
 
-        // both accrue the elapsed year at the pre-loss cash before lowering it
+        // both accrue the elapsed year at the post-loss cash before syncing
         assertGt(borrowsViaSyncDown, 20e18);
         assertEq(borrowsViaBecome, borrowsViaSyncDown);
+        assertEq(borrowsViaSyncDown, expectedBorrows);
+    }
+
+    function testLossIsPricedImmediately() public {
+        _lossWithBorrows();
+
+        // no governance action: cash is the real balance, internalCash kept
+        assertEq(mToken.getCash(), 45e18);
+        assertEq(_internalCash(), 110e18);
+
+        // all suppliers share the loss pro rata: (45 + 10) / 120
+        uint256 expectedRate = (uint256(55e18) * 1e18) / 120e18;
+        assertEq(mToken.exchangeRateStored(), expectedRate);
+        assertEq(mToken.exchangeRateCurrent(), expectedRate);
+
+        // redeeming alice's whole position (worth 100 pre-loss, ~45.83 now)
+        // exceeds the 45 left and fails cleanly with the cash error instead
+        // of reverting inside the token transfer
+        vm.prank(alice);
+        assertEq(
+            MErc20(address(mToken)).redeem(100e18),
+            uint256(TokenErrorReporter.Error.TOKEN_INSUFFICIENT_CASH)
+        );
+        assertEq(mToken.balanceOf(alice), 100e18);
+        assertEq(token.balanceOf(address(mToken)), 45e18);
+
+        // what is actually there can still be paid out
+        vm.prank(alice);
+        assertEq(MErc20(address(mToken)).redeemUnderlying(45e18), 0);
+        assertEq(_internalCash(), 65e18);
+        assertEq(mToken.getCash(), 0);
+    }
+
+    function testReturnedTokensRestoreCashWithoutGovernance() public {
+        _lossWithBorrows();
+        uint256 lossRate = mToken.exchangeRateStored();
+
+        // half comes back: cash and exchange rate rise by exactly that much
+        token.allocateTo(address(mToken), 30e18);
+        assertEq(mToken.getCash(), 75e18);
+        assertEq(mToken.exchangeRateStored(), (uint256(85e18) * 1e18) / 120e18);
+        assertGt(mToken.exchangeRateStored(), lossRate);
+
+        // the rest comes back: fully restored to internalCash
+        token.allocateTo(address(mToken), 35e18);
+        assertEq(mToken.getCash(), 110e18);
+        assertEq(mToken.exchangeRateStored(), 1e18);
+
+        // anything beyond internalCash is a donation again: ignored
+        _donate(5e18);
+        assertEq(mToken.getCash(), 110e18);
+        assertEq(mToken.exchangeRateStored(), 1e18);
+        assertEq(_internalCash(), 110e18);
+    }
+
+    function testReturnedTokensAfterSyncCashDownAreExcess() public {
+        _lossWithBorrows();
+        MErc20Delegate(address(mToken))._syncCashDown();
+        assertEq(_internalCash(), 45e18);
+        uint256 syncedRate = mToken.exchangeRateStored();
+
+        // the loss is permanent: returned tokens do not raise cash
+        token.allocateTo(address(mToken), 65e18);
+        assertEq(mToken.getCash(), 45e18);
+        assertEq(mToken.exchangeRateStored(), syncedRate);
+
+        // and are sweepable as excess
+        uint256 adminBefore = token.balanceOf(address(this));
+        MErc20Delegate(address(mToken))._sweepExcessCash();
+        assertEq(token.balanceOf(address(this)) - adminBefore, 65e18);
+        assertEq(mToken.getCash(), 45e18);
+    }
+
+    function testDonationIgnoredWithMinCash() public {
+        _upgrade();
+        _mint(alice, 100e18);
+        _donate(50e18);
+
+        assertEq(token.balanceOf(address(mToken)), 150e18);
+        assertEq(mToken.getCash(), 100e18);
+
+        // a loss smaller than the donation is absorbed by the donation
+        _lose(30e18);
+        assertEq(mToken.getCash(), 100e18);
+        assertEq(mToken.exchangeRateStored(), 1e18);
+
+        // only the part below internalCash is priced
+        _lose(30e18);
+        assertEq(mToken.getCash(), 90e18);
     }
 
     function testMigrationDoesNotAccrue() public {
@@ -497,6 +620,21 @@ contract MErc20DelegateInternalCashUnitTest is Test {
             "MErc20Delegator::_setImplementation: Caller must be admin"
         );
         delegator._setImplementation(address(impl), true, "");
+    }
+
+    function testFuzzLossPricedProRata(uint96 supply, uint96 loss) public {
+        supply = uint96(bound(supply, 1e6, type(uint96).max));
+        loss = uint96(bound(loss, 0, supply - 1));
+        _upgrade();
+        _mint(alice, supply);
+        _lose(loss);
+
+        assertEq(mToken.getCash(), uint256(supply) - loss);
+        assertEq(
+            mToken.exchangeRateStored(),
+            ((uint256(supply) - loss) * 1e18) / mToken.totalSupply()
+        );
+        assertEq(_internalCash(), supply);
     }
 
     function testFuzzDonationNeverChangesExchangeRate(
