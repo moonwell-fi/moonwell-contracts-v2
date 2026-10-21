@@ -103,32 +103,32 @@ contract ERC4626LiveIntegrationTest is Test {
     }
 
     function test_RevertIf_DepositWithNotEnoughApproval() public {
-        deal(address(underlying), address(this), 0.5e18);
-        underlying.approve(address(vault), 0.5e18);
-        assertEq(underlying.allowance(address(this), address(vault)), 0.5e18);
+        deal(address(underlying), address(this), 500e6);
+        underlying.approve(address(vault), 500e6);
+        assertEq(underlying.allowance(address(this), address(vault)), 500e6);
 
         vm.expectRevert();
-        vault.deposit(1e18, address(this));
+        vault.deposit(1_000e6, address(this));
     }
 
     function test_RevertIf_WithdrawWithNotEnoughUnderlyingAmount() public {
-        deal(address(underlying), address(this), 0.5e18);
-        underlying.approve(address(vault), 0.5e18);
+        deal(address(underlying), address(this), 500e6);
+        underlying.approve(address(vault), 500e6);
 
-        vault.deposit(0.5e18, address(this));
+        vault.deposit(500e6, address(this));
 
         vm.expectRevert();
-        vault.withdraw(1e18, address(this), address(this));
+        vault.withdraw(1_000e6, address(this), address(this));
     }
 
     function test_RevertIf_RedeemWithNotEnoughShareAmount() public {
-        deal(address(underlying), address(this), 0.5e18);
-        underlying.approve(address(vault), 0.5e18);
+        deal(address(underlying), address(this), 500e6);
+        underlying.approve(address(vault), 500e6);
 
-        vault.deposit(0.5e18, address(this));
+        vault.deposit(500e6, address(this));
 
         vm.expectRevert();
-        vault.redeem(1e18, address(this), address(this));
+        vault.redeem(1_000e6, address(this), address(this));
     }
 
     function testSucceedRedeemWithCorrectShareAmount() public {
