@@ -13,7 +13,7 @@ import {MWethOwnerWrapper} from "@protocol/MWethOwnerWrapper.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID} from "@utils/ChainIds.sol";
 
-/// @notice MIP-X71 regression: after the internal cash upgrade, direct
+/// @notice MIP-X73 regression: after the internal cash upgrade, direct
 /// transfers ("donations") to a market move neither cash, exchange rate,
 /// supply-cap headroom, nor any account's borrowing power.
 contract InternalCashLiveSystemTest is PostProposalCheck {
@@ -75,7 +75,7 @@ contract InternalCashLiveSystemTest is PostProposalCheck {
     }
 
     /// @notice the Venus THE pattern: fill a capped market, then donate to grow
-    /// collateral past the cap. Must be a no-op after MIP-X71.
+    /// collateral past the cap. Must be a no-op after MIP-X73.
     function testDonationCannotBypassSupplyCap() public {
         vm.selectFork(BASE_FORK_ID);
 
@@ -139,7 +139,7 @@ contract InternalCashLiveSystemTest is PostProposalCheck {
     }
 
     /// @notice Base MOONWELL_WETH is administered by MWETH_OWNER_WRAPPER;
-    /// MIP-X71 upgrades the wrapper so governance can sweep through it
+    /// MIP-X73 upgrades the wrapper so governance can sweep through it
     function testSweepBaseMWethThroughWrapper() public {
         vm.selectFork(BASE_FORK_ID);
 

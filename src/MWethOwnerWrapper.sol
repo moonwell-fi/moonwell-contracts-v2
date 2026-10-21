@@ -10,7 +10,7 @@ import {ComptrollerInterface} from "@protocol/ComptrollerInterface.sol";
 import "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
-/// @notice admin hooks added to MErc20Delegate by MIP-X71
+/// @notice admin hooks added to MErc20Delegate by MIP-X73
 interface IMErc20DelegateInternalCash {
     function _sweepExcessCash() external;
 

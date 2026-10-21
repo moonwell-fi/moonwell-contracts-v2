@@ -148,7 +148,7 @@ contract ERC4626EthDeployIntegrationTest is Test {
             addresses.getAddress("MOONWELL_WETH"),
             bytes32(uint256(20)),
             0
-        ); /// MIP-X71 internalCash
+        ); /// MIP-X73 internalCash
 
         uint256 withdrawAmount = vault.balanceOf(address(this));
 

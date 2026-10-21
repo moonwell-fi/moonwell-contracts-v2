@@ -15,7 +15,7 @@ import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, BASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
-/// @title MIP-X71: internal cash accounting for the mToken markets on
+/// @title MIP-X73: internal cash accounting for the mToken markets on
 ///        Ethereum, Base and OP Mainnet
 /// @notice Ports the fix from Venus PR #664 (THE market donation attack,
 ///         2026-03-15). MErc20.getCashPrior() read underlying.balanceOf, so a
@@ -57,7 +57,7 @@ export DO_RUN=true
 export DO_TEARDOWN=false
 export DO_VALIDATE=true
 */
-/// forge script proposals/mips/mip-x71/mip-x71.sol:mipx71 --ffi -vvv
+/// forge script proposals/mips/mip-x73/mip-x73.sol:mipx73 --ffi -vvv
 ///
 /// how to deploy the implementations (Ethereum: MErc20Delegate, MWethDelegate;
 /// Base: + MWethOwnerWrapper; Optimism: MErc20Delegate, MWethDelegate).
@@ -68,18 +68,18 @@ export DO_VALIDATE=true
 /*
 DO_DEPLOY=true DO_AFTER_DEPLOY=false DO_BUILD=false DO_RUN=false \
 DO_TEARDOWN=false DO_VALIDATE=false DO_PRINT=false \
-forge script proposals/mips/mip-x71/mip-x71.sol:mipx71 --ffi -vvv \
+forge script proposals/mips/mip-x73/mip-x73.sol:mipx73 --ffi -vvv \
     --broadcast --account <deployer>
 */
 /// then register the deployed addresses from
-/// broadcast/multi/mip-x71.sol-latest/run.json in chains/<chainId>.json as
+/// broadcast/multi/mip-x73.sol-latest/run.json in chains/<chainId>.json as
 /// soon as the broadcast lands, before propose(), so a market listed while
-/// MIP-X71 is pending deploys on the new implementation (MarketAdd templates
+/// MIP-X73 is pending deploys on the new implementation (MarketAdd templates
 /// read MTOKEN_IMPLEMENTATION) and is skipped on rebuild.
-contract mipx71 is HybridProposalV2 {
+contract mipx73 is HybridProposalV2 {
     using ChainIds for uint256;
 
-    string public constant override name = "MIP-X71";
+    string public constant override name = "MIP-X73";
 
     string internal constant MTOKEN_IMPL = "MTOKEN_IMPLEMENTATION";
     string internal constant MWETH_IMPL = "MWETH_IMPLEMENTATION";
@@ -130,7 +130,7 @@ contract mipx71 is HybridProposalV2 {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-x71/x71.md")
+            vm.readFile("./proposals/mips/mip-x73/x73.md")
         );
         _setProposalDescription(proposalDescription);
     }
@@ -272,7 +272,7 @@ contract mipx71 is HybridProposalV2 {
             /// new delegate must reuse the live unwrapper
             require(
                 MWethDelegate(oldMWethLogic).wethUnwrapper() == unwrapper,
-                "MIP-X71: live mWETH unwrapper != WETH_UNWRAPPER"
+                "MIP-X73: live mWETH unwrapper != WETH_UNWRAPPER"
             );
 
             vm.startBroadcast();
@@ -357,7 +357,7 @@ contract mipx71 is HybridProposalV2 {
                 require(
                     current == oldMTokenLogic,
                     string.concat(
-                        "MIP-X71: unexpected implementation on ",
+                        "MIP-X73: unexpected implementation on ",
                         market.symbol()
                     )
                 );
@@ -391,7 +391,7 @@ contract mipx71 is HybridProposalV2 {
         if (swap) {
             require(
                 current == addresses.getAddress(MWETH_IMPL_DEPRECATED),
-                "MIP-X71: MOONWELL_WETH on unexpected implementation"
+                "MIP-X73: MOONWELL_WETH on unexpected implementation"
             );
         } else {
             _skipMarket(mWeth);
@@ -414,7 +414,7 @@ contract mipx71 is HybridProposalV2 {
         address wrapper = addresses.getAddress("MWETH_OWNER_WRAPPER");
         require(
             mWeth.admin() == wrapper,
-            "MIP-X71: Base MOONWELL_WETH admin is not MWETH_OWNER_WRAPPER"
+            "MIP-X73: Base MOONWELL_WETH admin is not MWETH_OWNER_WRAPPER"
         );
 
         address wrapperLogic = address(
@@ -423,7 +423,7 @@ contract mipx71 is HybridProposalV2 {
         if (wrapperLogic != addresses.getAddress(WRAPPER_IMPL)) {
             require(
                 wrapperLogic == addresses.getAddress(WRAPPER_IMPL_DEPRECATED),
-                "MIP-X71: MWETH_OWNER_WRAPPER on unexpected implementation"
+                "MIP-X73: MWETH_OWNER_WRAPPER on unexpected implementation"
             );
             _pushAction(
                 addresses.getAddress("MRD_PROXY_ADMIN"),
@@ -451,7 +451,7 @@ contract mipx71 is HybridProposalV2 {
     function _skipMarket(MErc20Delegator market) internal {
         skippedMarkets[block.chainid][address(market)] = true;
         console.log(
-            "MIP-X71: skipping market already on new implementation",
+            "MIP-X73: skipping market already on new implementation",
             market.symbol()
         );
     }
