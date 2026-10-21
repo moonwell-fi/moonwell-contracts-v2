@@ -8,6 +8,7 @@ import {MToken} from "@protocol/MToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 
 /// @notice Snapshots every listed market's oracle price before proposal
 /// simulation and reports the markets whose price moved afterwards.
@@ -135,6 +136,29 @@ contract MarketPriceGuard {
         for (uint256 i = 0; i < count; i++) {
             violations[i] = buffer[i];
         }
+    }
+
+    /// @notice a proposal's expectedPriceChanges(), resolved on its own primary
+    /// fork. Raw staticcall: a MIP artifact compiled before the hook existed
+    /// reverts with no data; fail closed (no declaration, no price may move).
+    function declaredChanges(
+        Addresses addresses,
+        Proposal proposal
+    ) external returns (address[] memory declared) {
+        uint256 activeFork = vm.activeFork();
+        vm.selectFork(proposal.primaryForkId());
+
+        (bool ok, bytes memory ret) = address(proposal).staticcall(
+            abi.encodeWithSelector(
+                Proposal.expectedPriceChanges.selector,
+                addresses
+            )
+        );
+        if (ok && ret.length > 0) {
+            declared = abi.decode(ret, (address[]));
+        }
+
+        vm.selectFork(activeFork);
     }
 
     /// @notice log every violation and return a one-line summary for require().

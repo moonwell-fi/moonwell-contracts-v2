@@ -11,11 +11,37 @@ import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {MarketPriceGuard} from "@test/utils/MarketPriceGuard.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 
 /// @notice a feed whose every call reverts, standing in for a bricked oracle
 contract RevertingFeed {
     fallback() external {
         revert("RevertingFeed");
+    }
+}
+
+/// @notice stands in for a Base MIP declaring cbETH by name only
+contract DeclaringProposal {
+    uint256 public immutable primaryForkId;
+
+    constructor(uint256 forkId) {
+        primaryForkId = forkId;
+    }
+
+    function expectedPriceChanges(
+        Addresses addresses
+    ) external view returns (address[] memory declared) {
+        declared = new address[](1);
+        declared[0] = addresses.getAddress("MOONWELL_cbETH");
+    }
+}
+
+/// @notice a MIP artifact compiled before expectedPriceChanges existed
+contract StaleProposal {
+    uint256 public immutable primaryForkId;
+
+    constructor(uint256 forkId) {
+        primaryForkId = forkId;
     }
 }
 
@@ -187,5 +213,41 @@ contract MarketPriceGuardIntegrationTest is Test {
         );
 
         assertEq(_check().length, 0, "round switch reported as a price change");
+    }
+
+    /// @notice PostProposalCheck resolves declarations with another fork
+    /// active (Ethereum last); getAddress(name) must still hit the MIP's chain
+    function testDeclarationResolvesOnProposalPrimaryFork() public {
+        address proposal = address(new DeclaringProposal(forkId));
+        vm.makePersistent(address(guard), address(addresses), proposal);
+
+        // hoisted: a call in argument position would consume the prank
+        address ratioFeed = addresses.getAddress("cbETHETH_ORACLE");
+        vm.prank(oracle.admin());
+        oracle.setFeed("cbETH", ratioFeed);
+
+        uint256 ethFork = vm.createSelectFork("ethereum");
+        address[] memory declared = guard.declaredChanges(
+            addresses,
+            Proposal(proposal)
+        );
+        assertEq(vm.activeFork(), ethFork, "active fork not restored");
+        assertEq(declared.length, 1, "declaration not resolved");
+        assertEq(declared[0], mCbEth, "resolved on the wrong chain");
+
+        assertEq(
+            guard.check(addresses, forkId, declared).length,
+            0,
+            "declared change still reported"
+        );
+    }
+
+    function testStaleArtifactDeclaresNothing() public {
+        address proposal = address(new StaleProposal(forkId));
+        assertEq(
+            guard.declaredChanges(addresses, Proposal(proposal)).length,
+            0,
+            "stale artifact should fail closed"
+        );
     }
 }

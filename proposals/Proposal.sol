@@ -105,7 +105,8 @@ abstract contract Proposal is Script, Test {
 
     /// @notice mTokens whose oracle price this proposal changes on purpose.
     /// PostProposalCheck fails when any other listed market's price moves
-    /// across the simulation (MIP-X43 cbETH mispricing guard).
+    /// (MIP-X43 guard). Called with primaryForkId() selected, so
+    /// getAddress(name) resolves there; use getAddress(name, chainId) otherwise.
     function expectedPriceChanges(
         Addresses
     ) public view virtual returns (address[] memory) {}

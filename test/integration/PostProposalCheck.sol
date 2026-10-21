@@ -27,6 +27,9 @@ contract PostProposalCheck is LiveProposalCheck {
     /// @notice array of proposals in development
     Proposal[] public proposals;
 
+    /// @notice union of simulated proposals' expectedPriceChanges()
+    address[] internal _priceChangeAllowlist;
+
     /// @notice store the proposal start time so that tests can go back in time
     /// to this point if needed. Used in ReserveAutomationDeploy Integration Test
     uint256 public proposalStartTime;
@@ -89,6 +92,7 @@ contract PostProposalCheck is LiveProposalCheck {
             vm.makePersistent(address(proposal));
 
             proposals.push(proposal);
+            _recordExpectedPriceChanges(proposal);
         }
 
         // Simulate MultichainGovernorV2 proposals that already carry an
@@ -154,7 +158,7 @@ contract PostProposalCheck is LiveProposalCheck {
     function _assertMarketPricesPreserved() internal {
         uint256 activeFork = vm.activeFork();
 
-        address[] memory allowlist = _expectedPriceChanges();
+        address[] memory allowlist = _priceChangeAllowlist;
         uint256 total;
         string memory firstSummary;
 
@@ -178,43 +182,16 @@ contract PostProposalCheck is LiveProposalCheck {
         require(total == 0, firstSummary);
     }
 
-    /// @notice union of every simulated proposal's declared price changes
-    function _expectedPriceChanges()
-        internal
-        view
-        returns (address[] memory allowlist)
-    {
-        uint256 total;
-        for (uint256 i = 0; i < proposals.length; i++) {
-            total += _declaredPriceChanges(proposals[i]).length;
-        }
-
-        allowlist = new address[](total);
-        uint256 cursor;
-        for (uint256 i = 0; i < proposals.length; i++) {
-            address[] memory declared = _declaredPriceChanges(proposals[i]);
-            for (uint256 j = 0; j < declared.length; j++) {
-                allowlist[cursor++] = declared[j];
-            }
-        }
-    }
-
-    /// @notice raw staticcall: a MIP artifact compiled before the hook existed
-    /// (stale artifacts/foundry) lacks the selector and reverts with no data.
-    /// Fail closed: no declaration means no price may move.
-    function _declaredPriceChanges(
-        Proposal proposal
-    ) internal view returns (address[] memory declared) {
-        (bool ok, bytes memory ret) = address(proposal).staticcall(
-            abi.encodeWithSelector(
-                Proposal.expectedPriceChanges.selector,
-                addresses
-            )
+    /// @notice resolve the declaration right after the proposal ran, while its
+    /// PRIMARY_FORK_ID env is still set (ProtocolDeployment reads it)
+    function _recordExpectedPriceChanges(Proposal proposal) internal {
+        address[] memory declared = priceGuard.declaredChanges(
+            addresses,
+            proposal
         );
-        if (!ok || ret.length == 0) {
-            return declared;
+        for (uint256 i = 0; i < declared.length; i++) {
+            _priceChangeAllowlist.push(declared[i]);
         }
-        declared = abi.decode(ret, (address[]));
     }
 
     /// @notice Run the full deploy -> build -> simulate -> validate lifecycle
@@ -270,6 +247,7 @@ contract PostProposalCheck is LiveProposalCheck {
             vm.makePersistent(address(proposal));
 
             proposals.push(proposal);
+            _recordExpectedPriceChanges(proposal);
         }
     }
 }
