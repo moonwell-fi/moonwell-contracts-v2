@@ -545,7 +545,7 @@
         "isContract": true
     },
     {
-        "addr": "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70",
+        "addr": "0x50015f8b17fb2C290Dde41fDc246ed0dcEE93a8b",
         "name": "CHAINLINK_ETH_USD",
         "isContract": true
     },
@@ -820,7 +820,7 @@
         "name": "cbBTC"
     },
     {
-        "addr": "0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F",
+        "addr": "0xC01502b887D09B0f329981764268fC32a94cB453",
         "isContract": true,
         "name": "CHAINLINK_BTC_USD"
     },
@@ -1200,7 +1200,7 @@
         "name": "cbXRP"
     },
     {
-        "addr": "0x9f0C1dD78C4CBdF5b9cf923a549A201EdC676D34",
+        "addr": "0x281F1D237Fa1382d96f7A4fd190500D182042e3b",
         "isContract": true,
         "name": "CHAINLINK_cbXRP_USD"
     },
@@ -1673,5 +1673,20 @@
         "addr": "0x3C10e4B6d60d4b2ec88aBb5aa1F613f030872B5a",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_USDS_MIP_X66"
+    },
+    {
+        "addr": "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70",
+        "isContract": true,
+        "name": "CHAINLINK_ETH_USD_SVR"
+    },
+    {
+        "addr": "0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F",
+        "isContract": true,
+        "name": "CHAINLINK_BTC_USD_SVR"
+    },
+    {
+        "addr": "0x9f0C1dD78C4CBdF5b9cf923a549A201EdC676D34",
+        "isContract": true,
+        "name": "CHAINLINK_cbXRP_USD_SVR"
     }
 ]

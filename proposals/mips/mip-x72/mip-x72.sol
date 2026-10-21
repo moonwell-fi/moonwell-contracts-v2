@@ -11,9 +11,15 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {ChainlinkOEVMorphoWrapper} from "@protocol/oracles/ChainlinkOEVMorphoWrapper.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {validateProxy, _IMPLEMENTATION_SLOT} from "@proposals/utils/ProxyUtils.sol";
 import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, ETHEREUM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+
+/// @notice Chainlink EACAggregatorProxy surface used to prove two proxies share one aggregator.
+interface IChainlinkAggregatorProxy {
+    function aggregator() external view returns (address);
+}
 
 /// @notice MIP-X72: ship the C4 #289 fix by redeploying the non-upgradeable Core
 /// ChainlinkOEVWrapper (mirroring live params, repointing feeds via setFeed) and
@@ -34,6 +40,12 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
 
     /// @notice Archive-key suffix for the pre-fix Core wrappers.
     string internal constant DEPRECATED_SUFFIX = "_DEPRECATED_V4";
+
+    /// @notice Registry suffix of a Chainlink SVR proxy replaced by its standard proxy.
+    string internal constant SVR_SUFFIX = "_SVR";
+
+    /// @notice Archive-key suffix for composite oracles rebuilt off an SVR base feed.
+    string internal constant COMPOSITE_DEPRECATED_SUFFIX = "_DEPRECATED_SVR";
 
     /// @notice Pre-upgrade Morpho wrapper storage state, snapshotted in
     /// beforeSimulationHook() so validate() can prove the logic-only upgrade reset
@@ -62,6 +74,9 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
     mapping(uint256 => mapping(string => int256)) internal _rawAnswerPre;
     mapping(uint256 => mapping(string => uint256)) internal _rawUpdatedAtPre;
     mapping(uint256 => mapping(string => uint256)) internal _underlyingPricePre;
+
+    /// @notice Pre-execution getUnderlyingPrice for markets priced by a rebuilt composite.
+    mapping(string => uint256) internal _compositePricePre;
 
     constructor() {
         _setProposalDescription(
@@ -116,6 +131,7 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
     function deploy(Addresses addresses, address) public override {
         vm.selectFork(BASE_FORK_ID);
         _deployCoreWrappers(addresses);
+        _deployCompositeOracles(addresses);
         _deployMorphoImplementation(addresses);
 
         vm.selectFork(OPTIMISM_FORK_ID);
@@ -158,8 +174,14 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
             address oldWrapper = addresses.getAddress(wrapperName);
             ChainlinkOEVWrapper old = ChainlinkOEVWrapper(payable(oldWrapper));
 
+            address feed = _standardFeed(
+                addresses,
+                oracleConfigs[i].oracleName,
+                address(old.priceFeed())
+            );
+
             ChainlinkOEVWrapper wrapper = new ChainlinkOEVWrapper(
-                address(old.priceFeed()),
+                feed,
                 old.owner(),
                 address(old.chainlinkOracle()),
                 old.feeRecipient(),
@@ -170,6 +192,65 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
 
             addresses.addAddress(deprecatedName, oldWrapper);
             addresses.changeAddress(wrapperName, address(wrapper), true);
+        }
+        vm.stopBroadcast();
+    }
+
+    /// @notice Canonical (standard) feed for `feedName`. A live feed that differs
+    /// must be the registered `<feedName>_SVR` proxy, which this proposal replaces.
+    function _standardFeed(
+        Addresses addresses,
+        string memory feedName,
+        address liveFeed
+    ) internal view returns (address feed) {
+        feed = addresses.getAddress(feedName);
+        if (feed != liveFeed) {
+            require(
+                liveFeed ==
+                    addresses.getAddress(string.concat(feedName, SVR_SUFFIX)),
+                string.concat("MIP-X72: unexpected live feed for ", feedName)
+            );
+        }
+    }
+
+    /// @notice Redeploy each Base composite oracle whose base feed is an SVR proxy,
+    /// swapping in the standard proxy and mirroring both multipliers.
+    function _deployCompositeOracles(Addresses addresses) internal {
+        CompositeOracleConfig[]
+            memory configs = getCompositeOracleConfigurations(block.chainid);
+
+        vm.startBroadcast();
+        for (uint256 i = 0; i < configs.length; i++) {
+            ChainlinkCompositeOracle old = ChainlinkCompositeOracle(
+                addresses.getAddress(configs[i].compositeOracleName)
+            );
+            address base = _standardFeed(
+                addresses,
+                configs[i].baseFeedName,
+                old.base()
+            );
+            if (base == old.base()) {
+                continue;
+            }
+
+            ChainlinkCompositeOracle composite = new ChainlinkCompositeOracle(
+                base,
+                old.multiplier(),
+                old.secondMultiplier()
+            );
+
+            addresses.addAddress(
+                string.concat(
+                    configs[i].compositeOracleName,
+                    COMPOSITE_DEPRECATED_SUFFIX
+                ),
+                address(old)
+            );
+            addresses.changeAddress(
+                configs[i].compositeOracleName,
+                address(composite),
+                true
+            );
         }
         vm.stopBroadcast();
     }
@@ -247,7 +328,42 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
         _snapshotCoreChain(addresses, OPTIMISM_FORK_ID, OPTIMISM_CHAIN_ID);
         _snapshotCoreChain(addresses, ETHEREUM_FORK_ID, ETHEREUM_CHAIN_ID);
         _snapshotMorphoState(addresses);
+        _snapshotComposites(addresses);
         vm.selectFork(primaryForkId());
+    }
+
+    /// @notice Snapshot getUnderlyingPrice for every market whose composite is rebuilt.
+    function _snapshotComposites(Addresses addresses) internal {
+        vm.selectFork(BASE_FORK_ID);
+
+        CompositeOracleConfig[]
+            memory configs = getCompositeOracleConfigurations(BASE_CHAIN_ID);
+        ChainlinkOracle oracle = ChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+
+        for (uint256 i = 0; i < configs.length; i++) {
+            if (!_compositeRebuilt(addresses, configs[i])) {
+                continue;
+            }
+            _compositePricePre[configs[i].mTokenKey] = oracle
+                .getUnderlyingPrice(
+                    MToken(addresses.getAddress(configs[i].mTokenKey))
+                );
+        }
+    }
+
+    function _compositeRebuilt(
+        Addresses addresses,
+        CompositeOracleConfig memory config
+    ) internal view returns (bool) {
+        return
+            addresses.isAddressSet(
+                string.concat(
+                    config.compositeOracleName,
+                    COMPOSITE_DEPRECATED_SUFFIX
+                )
+            );
     }
 
     /// @notice Snapshot the raw feed answer and full getUnderlyingPrice path for
@@ -334,6 +450,7 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
     function build(Addresses addresses) public override {
         vm.selectFork(BASE_FORK_ID);
         _wireCoreFeeds(addresses, BASE_CHAIN_ID);
+        _wireCompositeFeeds(addresses, BASE_CHAIN_ID);
         _upgradeMorphoWrappers(addresses, BASE_CHAIN_ID);
 
         vm.selectFork(OPTIMISM_FORK_ID);
@@ -374,6 +491,40 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
                     "Repoint ",
                     symbol,
                     " feed at redeployed OEV wrapper (C4 #289)"
+                )
+            );
+        }
+    }
+
+    /// @notice Repoint each market priced by a rebuilt composite at the new composite.
+    function _wireCompositeFeeds(
+        Addresses addresses,
+        uint256 chainId
+    ) internal {
+        CompositeOracleConfig[]
+            memory configs = getCompositeOracleConfigurations(chainId);
+        address chainlinkOracle = addresses.getAddress("CHAINLINK_ORACLE");
+
+        for (uint256 i = 0; i < configs.length; i++) {
+            if (!_compositeRebuilt(addresses, configs[i])) {
+                continue;
+            }
+
+            string memory symbol = ERC20(
+                addresses.getAddress(configs[i].symbol)
+            ).symbol();
+
+            _pushAction(
+                chainlinkOracle,
+                abi.encodeWithSignature(
+                    "setFeed(string,address)",
+                    symbol,
+                    addresses.getAddress(configs[i].compositeOracleName)
+                ),
+                string.concat(
+                    "Repoint ",
+                    symbol,
+                    " feed at composite oracle using the standard Chainlink proxy"
                 )
             );
         }
@@ -422,6 +573,7 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
     function validate(Addresses addresses, address) public override {
         vm.selectFork(BASE_FORK_ID);
         _validateCoreWrappers(addresses, BASE_CHAIN_ID);
+        _validateCompositeOracles(addresses, BASE_CHAIN_ID);
         _validateMorphoWrappers(addresses, BASE_CHAIN_ID);
 
         vm.selectFork(OPTIMISM_FORK_ID);
@@ -477,10 +629,12 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
                 address(newWrapper) != address(oldWrapper),
                 string.concat("X72: wrapper not redeployed for ", wrapperName)
             );
-            assertEq(
+            _assertStandardFeed(
+                addresses,
+                oracleConfigs[i].oracleName,
                 address(newWrapper.priceFeed()),
                 address(oldWrapper.priceFeed()),
-                string.concat("X72: priceFeed drift for ", wrapperName)
+                wrapperName
             );
             assertEq(
                 newWrapper.owner(),
@@ -524,6 +678,121 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
                 oracleConfigs[i],
                 newWrapper,
                 wrapperName
+            );
+        }
+    }
+
+    /// @notice New feed is the canonical one; it differs from the old feed only when
+    /// the old feed was the registered SVR proxy of the same aggregator.
+    function _assertStandardFeed(
+        Addresses addresses,
+        string memory feedName,
+        address newFeed,
+        address oldFeed,
+        string memory label
+    ) internal view {
+        assertEq(
+            newFeed,
+            addresses.getAddress(feedName),
+            string.concat("X72: feed is not the standard proxy for ", label)
+        );
+        if (newFeed != oldFeed) {
+            assertEq(
+                oldFeed,
+                addresses.getAddress(string.concat(feedName, SVR_SUFFIX)),
+                string.concat(
+                    "X72: replaced feed is not the SVR proxy for ",
+                    label
+                )
+            );
+            assertEq(
+                IChainlinkAggregatorProxy(newFeed).aggregator(),
+                IChainlinkAggregatorProxy(oldFeed).aggregator(),
+                string.concat(
+                    "X72: standard and SVR proxies differ in aggregator for ",
+                    label
+                )
+            );
+        }
+    }
+
+    /// @notice Assert each rebuilt composite: feed repointed, standard base, multipliers
+    /// mirrored, and the market price within 2% of the pre-execution snapshot.
+    function _validateCompositeOracles(
+        Addresses addresses,
+        uint256 chainId
+    ) internal view {
+        CompositeOracleConfig[]
+            memory configs = getCompositeOracleConfigurations(chainId);
+        ChainlinkOracle oracle = ChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+
+        for (uint256 i = 0; i < configs.length; i++) {
+            string memory name_ = configs[i].compositeOracleName;
+            ChainlinkCompositeOracle composite = ChainlinkCompositeOracle(
+                addresses.getAddress(name_)
+            );
+
+            // Every composite must end on the standard base, rebuilt or not.
+            assertEq(
+                composite.base(),
+                addresses.getAddress(configs[i].baseFeedName),
+                string.concat("X72: composite base is not standard for ", name_)
+            );
+
+            if (!_compositeRebuilt(addresses, configs[i])) {
+                continue;
+            }
+
+            ChainlinkCompositeOracle old = ChainlinkCompositeOracle(
+                addresses.getAddress(
+                    string.concat(name_, COMPOSITE_DEPRECATED_SUFFIX)
+                )
+            );
+            string memory symbol = ERC20(
+                addresses.getAddress(configs[i].symbol)
+            ).symbol();
+
+            assertEq(
+                address(oracle.getFeed(symbol)),
+                address(composite),
+                string.concat("X72: feed not repointed for ", symbol)
+            );
+            _assertStandardFeed(
+                addresses,
+                configs[i].baseFeedName,
+                composite.base(),
+                old.base(),
+                name_
+            );
+            assertEq(
+                composite.multiplier(),
+                old.multiplier(),
+                string.concat("X72: multiplier drift for ", name_)
+            );
+            assertEq(
+                composite.secondMultiplier(),
+                old.secondMultiplier(),
+                string.concat("X72: secondMultiplier drift for ", name_)
+            );
+
+            uint256 pre = _compositePricePre[configs[i].mTokenKey];
+            assertGt(
+                pre,
+                0,
+                string.concat("X72: no price snapshot for ", name_)
+            );
+            assertApproxEqRel(
+                oracle.getUnderlyingPrice(
+                    MToken(addresses.getAddress(configs[i].mTokenKey))
+                ),
+                pre,
+                0.02e18,
+                string.concat(
+                    "X72: getUnderlyingPrice drifted >2% for ",
+                    configs[i].mTokenKey
+                )
             );
         }
     }
