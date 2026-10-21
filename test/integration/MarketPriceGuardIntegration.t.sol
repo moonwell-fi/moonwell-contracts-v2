@@ -250,4 +250,82 @@ contract MarketPriceGuardIntegrationTest is Test {
             "stale artifact should fail closed"
         );
     }
+
+    /// @notice snapshot on a fresh guard with `excluded` hidden from
+    /// getAllMarkets, so it reads as listed by the simulated proposal
+    function _guardWithout(
+        address excluded
+    ) internal returns (MarketPriceGuard fresh) {
+        MToken[] memory all = comptroller.getAllMarkets();
+        MToken[] memory rest = new MToken[](all.length - 1);
+        uint256 j;
+        for (uint256 i = 0; i < all.length; i++) {
+            if (address(all[i]) != excluded) {
+                rest[j++] = all[i];
+            }
+        }
+        vm.mockCall(
+            address(comptroller),
+            abi.encodeWithSelector(comptroller.getAllMarkets.selector),
+            abi.encode(rest)
+        );
+        fresh = new MarketPriceGuard();
+        fresh.snapshot(addresses, forkId);
+        vm.clearMockedCalls();
+    }
+
+    /// @notice MIP-X43 on a new listing: no baseline, the ratio feed is the tell
+    function testNewListingWithRatioFeedIsReported() public {
+        MarketPriceGuard fresh = _guardWithout(mCbEth);
+
+        // hoisted: a call in argument position would consume the prank
+        address ratioFeed = addresses.getAddress("cbETHETH_ORACLE");
+        vm.prank(oracle.admin());
+        oracle.setFeed("cbETH", ratioFeed);
+
+        MarketPriceGuard.Violation[] memory violations = fresh.check(
+            addresses,
+            forkId,
+            new address[](0)
+        );
+        assertEq(violations.length, 1, "new ratio-fed listing not reported");
+        assertEq(violations[0].mToken, mCbEth, "wrong market reported");
+        assertEq(violations[0].priceBefore, 0, "new listing has a baseline");
+        assertTrue(
+            vm.indexOf(violations[0].reason, "not USD-quoted") !=
+                type(uint256).max,
+            "wrong reason"
+        );
+    }
+
+    function testNewListingWithUsdFeedIsNotReported() public {
+        MarketPriceGuard fresh = _guardWithout(
+            addresses.getAddress("MOONWELL_WETH")
+        );
+        assertEq(
+            fresh.check(addresses, forkId, new address[](0)).length,
+            0,
+            "USD-fed listing reported"
+        );
+    }
+
+    function testNewListingUnpricedIsReported() public {
+        MarketPriceGuard fresh = _guardWithout(mCbEth);
+
+        address bricked = address(new RevertingFeed());
+        vm.prank(oracle.admin());
+        oracle.setFeed("cbETH", bricked);
+
+        MarketPriceGuard.Violation[] memory violations = fresh.check(
+            addresses,
+            forkId,
+            new address[](0)
+        );
+        assertEq(violations.length, 1, "unpriced listing not reported");
+        assertEq(
+            violations[0].reason,
+            "new market is unpriced",
+            "wrong reason"
+        );
+    }
 }

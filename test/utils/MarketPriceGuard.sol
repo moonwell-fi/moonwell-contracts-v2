@@ -5,6 +5,8 @@ import {Vm} from "@forge-std/Vm.sol";
 import {console} from "@forge-std/console.sol";
 
 import {MToken} from "@protocol/MToken.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -24,6 +26,7 @@ contract MarketPriceGuard {
         string symbol;
         uint256 priceBefore;
         uint256 priceAfter;
+        string reason;
     }
 
     /// @notice max relative move allowed between snapshot and check, 1e18 = 100%.
@@ -33,6 +36,7 @@ contract MarketPriceGuard {
 
     mapping(uint256 => address[]) internal _markets;
     mapping(uint256 => mapping(address => uint256)) internal _priceBefore;
+    mapping(uint256 => mapping(address => bool)) internal _listedAtSnapshot;
     mapping(uint256 => uint256) internal _snapshotTimestamp;
     mapping(uint256 => bool) public snapshotTaken;
 
@@ -65,6 +69,7 @@ contract MarketPriceGuard {
         _snapshotTimestamp[forkId] = block.timestamp;
 
         for (uint256 i = 0; i < markets.length; i++) {
+            _listedAtSnapshot[forkId][address(markets[i])] = true;
             uint256 price = _readPrice(oracle, markets[i]);
             // unpriced markets (deprecated, external oracle unavailable on fork) are not guarded
             if (price == 0) {
@@ -77,7 +82,8 @@ contract MarketPriceGuard {
         snapshotTaken[forkId] = true;
     }
 
-    /// @notice compare every snapshotted market against its current price.
+    /// @notice compare every snapshotted market against its current price, and
+    /// sanity-check markets listed after the snapshot (no baseline to compare).
     /// @param allowlist mTokens whose price is expected to change; never reported.
     function check(
         Addresses addresses,
@@ -94,7 +100,11 @@ contract MarketPriceGuard {
             .oracle();
 
         address[] memory markets = _markets[forkId];
-        Violation[] memory buffer = new Violation[](markets.length);
+        MToken[] memory listed = Comptroller(addresses.getAddress("UNITROLLER"))
+            .getAllMarkets();
+        Violation[] memory buffer = new Violation[](
+            markets.length + listed.length
+        );
         uint256 count;
 
         for (uint256 i = 0; i < markets.length; i++) {
@@ -127,7 +137,29 @@ contract MarketPriceGuard {
                     mToken: markets[i],
                     symbol: MToken(markets[i]).symbol(),
                     priceBefore: before,
-                    priceAfter: after_
+                    priceAfter: after_,
+                    reason: "price moved"
+                });
+            }
+        }
+
+        for (uint256 i = 0; i < listed.length; i++) {
+            address m = address(listed[i]);
+            if (_listedAtSnapshot[forkId][m] || _contains(allowlist, m)) {
+                continue;
+            }
+            (uint256 price, string memory problem) = _newMarketProblem(
+                oracle,
+                listed[i]
+            );
+            if (bytes(problem).length > 0) {
+                buffer[count++] = Violation({
+                    chainId: block.chainid,
+                    mToken: m,
+                    symbol: listed[i].symbol(),
+                    priceBefore: 0,
+                    priceAfter: price,
+                    reason: problem
                 });
             }
         }
@@ -146,7 +178,11 @@ contract MarketPriceGuard {
         Proposal proposal
     ) external returns (address[] memory declared) {
         uint256 activeFork = vm.activeFork();
-        vm.selectFork(proposal.primaryForkId());
+        try proposal.primaryForkId() returns (uint256 primaryFork) {
+            vm.selectFork(primaryFork);
+        } catch {
+            return declared;
+        }
 
         (bool ok, bytes memory ret) = address(proposal).staticcall(
             abi.encodeWithSelector(
@@ -167,9 +203,10 @@ contract MarketPriceGuard {
     ) external view returns (string memory summary) {
         for (uint256 i = 0; i < violations.length; i++) {
             console.log(
-                "MarketPriceGuard: %s on chain %s moved",
+                "MarketPriceGuard: %s on chain %s: %s",
                 violations[i].symbol,
-                violations[i].chainId
+                violations[i].chainId,
+                violations[i].reason
             );
             console.log(
                 "  before %s after %s",
@@ -190,6 +227,63 @@ contract MarketPriceGuard {
                 vm.toString(violations[0].chainId),
                 ". Declare intentional changes via Proposal.expectedPriceChanges()"
             );
+    }
+
+    /// @notice a new listing must be priced, and a Chainlink feed that names
+    /// its pair must quote USD (MIP-X43 wired the cbETH / ETH ratio feed)
+    function _newMarketProblem(
+        PriceOracle oracle,
+        MToken mToken
+    ) internal view returns (uint256 price, string memory problem) {
+        price = _readPrice(oracle, mToken);
+        if (price == 0) {
+            return (price, "new market is unpriced");
+        }
+
+        address underlying;
+        try MErc20(address(mToken)).underlying() returns (address u) {
+            underlying = u;
+        } catch {
+            return (price, "");
+        }
+
+        // a direct price override bypasses the feed
+        (bool ok, bytes memory ret) = address(oracle).staticcall(
+            abi.encodeWithSignature("assetPrices(address)", underlying)
+        );
+        if (ok && ret.length == 32 && abi.decode(ret, (uint256)) != 0) {
+            return (price, "");
+        }
+
+        (ok, ret) = address(oracle).staticcall(
+            abi.encodeWithSignature(
+                "getFeed(string)",
+                EIP20Interface(underlying).symbol()
+            )
+        );
+        if (!ok || ret.length != 32) {
+            return (price, "");
+        }
+        address feed = abi.decode(ret, (address));
+        if (feed.code.length == 0) {
+            return (price, "");
+        }
+
+        // composite oracles carry no pair in their description; unchecked
+        (ok, ret) = feed.staticcall(abi.encodeWithSignature("description()"));
+        if (!ok || ret.length == 0) {
+            return (price, "");
+        }
+        string memory pair = abi.decode(ret, (string));
+        if (
+            bytes(pair).length > 0 &&
+            vm.indexOf(pair, "/ USD") == type(uint256).max
+        ) {
+            problem = string.concat(
+                "new market feed is not USD-quoted: ",
+                pair
+            );
+        }
     }
 
     function _readPrice(

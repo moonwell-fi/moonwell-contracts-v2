@@ -58,6 +58,9 @@ contract PostProposalCheck is LiveProposalCheck {
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
 
+        // baseline before any not-yet-executed proposal, on-chain or in dev
+        _snapshotMarketPrices();
+
         // execute proposals that are succeeded but not executed yet
         executeSucceededProposals(addresses, governor);
 
@@ -74,8 +77,6 @@ contract PostProposalCheck is LiveProposalCheck {
 
         // execute proposals that are queued in the temporal governor but not executed yet
         executeTemporalGovernorQueuedProposals(addresses, governor);
-
-        _snapshotMarketPrices();
 
         // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
@@ -182,8 +183,12 @@ contract PostProposalCheck is LiveProposalCheck {
         require(total == 0, firstSummary);
     }
 
-    /// @notice resolve the declaration right after the proposal ran, while its
-    /// PRIMARY_FORK_ID env is still set (ProtocolDeployment reads it)
+    function _onOnChainProposal(Proposal proposal) internal override {
+        _recordExpectedPriceChanges(proposal);
+    }
+
+    /// @notice resolve the declaration while the proposal's PRIMARY_FORK_ID
+    /// env is still set (ProtocolDeployment reads it)
     function _recordExpectedPriceChanges(Proposal proposal) internal {
         address[] memory declared = priceGuard.declaredChanges(
             addresses,
