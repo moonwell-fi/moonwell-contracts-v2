@@ -263,6 +263,15 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
     /// @notice Deploy the fixed Morpho wrapper implementation on Base, archiving the
     /// implementation the proxies actually run (read from the ERC1967 slot).
     function _deployMorphoImplementation(Addresses addresses) internal {
+        // Already deployed and registered, like the wrapper/composite skips.
+        if (
+            addresses.isAddressSet(
+                string.concat(MORPHO_IMPLEMENTATION_NAME, DEPRECATED_SUFFIX)
+            )
+        ) {
+            return;
+        }
+
         address liveImpl = _liveMorphoImplementation(addresses);
 
         vm.startBroadcast();
