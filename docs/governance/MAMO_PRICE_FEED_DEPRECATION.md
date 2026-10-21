@@ -67,16 +67,16 @@ down.
 
 ## 4. Plan
 
-### Phase 0: confirm the trigger (owner: risk / BD, ~1 day)
+### Phase 0: trigger (resolved)
 
-- [ ] Who is requesting the shutdown, and when? Chainlink's directory shows no
-      shutdown date, so this is either a Moonwell sponsorship decision or a
-      notice not yet published. Get the date in writing. Every step below must
-      land **before** it.
+- [x] Chainlink is deprecating the feed. Phase 2 ships on chain as soon as
+      possible, without waiting for Phase 1.
+- [ ] Get the exact shutdown date from Chainlink. Phase 2 must execute before it
+      (about 7 days of governance).
 - [ ] Ask Chainlink whether, after deprecation, the proxy keeps the last answer
       (failure mode 1) or reverts (failure mode 2).
 
-### Phase 1: reduce the live exposure (owner: risk, 1–3 weeks, no code)
+### Phase 1: reduce the live exposure (owner: risk, in parallel with Phase 2, no code)
 
 - [ ] Ask `0x81f6…1b3f` to repay 1.39M MAMO (about $10.2k). It is the only debt
       that a frozen price could make worse, and it is healthy, so liquidation is
@@ -134,11 +134,24 @@ Choosing `P` is a **decision** (see section 5).
 
 ## 5. Open decisions
 
-| #   | Decision                                    | Options                                                                                                                                                                   | Recommendation                                                                                                                                 |
-| --- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Value of `P`                                | (a) spot at the time of writing; (b) a conservative multiple (for example 2–3× spot), which raises the collateral that `0x81f6` must keep; (c) a TWAP oracle on Aerodrome | (a) if `0x81f6` has repaid by Phase 2; otherwise (b). (c) needs a new contract and a manipulation review, which is overkill for a $25k market. |
-| D2  | Order between Phase 1 and the shutdown date | Wait for the repay, or ship Phase 2 regardless                                                                                                                            | Ship Phase 2 regardless. A revert at shutdown freezes accounts; a frozen price only risks one bounded position.                                |
-| D3  | Who sponsors and requests the shutdown      | n/a                                                                                                                                                                       | Confirm in Phase 0.                                                                                                                            |
+**D1, value of `P` (OPEN).**
+
+- (a) Spot when the MIP is written (`7332760000000000` today, $0.00733).
+  Neutral, but if MAMO rallies, `0x81f6…1b3f` can redeem mUSDC down to the
+  frozen requirement.
+- (b) A conservative multiple, for example 2–3× spot. It raises the collateral
+  that `0x81f6` must keep. It also pushes the shortfall accounts deeper into
+  shortfall, which has no practical effect because they have no collateral left.
+- (c) A TWAP oracle on Aerodrome. It needs a new contract and a manipulation
+  review, which is disproportionate for a $25k market.
+
+Engineering view: (a) if `0x81f6` repays before the MIP is submitted, otherwise
+(b).
+
+**Resolved:**
+
+- D2: Phase 2 ships without waiting for Phase 1.
+- D3: Chainlink is the one requesting the shutdown.
 
 ## 6. Reproducing the measurements
 
