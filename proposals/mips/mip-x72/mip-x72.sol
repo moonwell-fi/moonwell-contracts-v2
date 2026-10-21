@@ -78,6 +78,11 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
     /// @notice Pre-execution getUnderlyingPrice for markets priced by a rebuilt composite.
     mapping(string => uint256) internal _compositePricePre;
 
+    /// @notice Pre-execution answers of the old Core wrappers and the Morpho proxies,
+    /// only for the before/after price log in validate().
+    mapping(uint256 => mapping(string => int256)) internal _wrapperAnswerPre;
+    mapping(string => int256) internal _morphoAnswerPre;
+
     constructor() {
         _setProposalDescription(
             bytes(vm.readFile("./proposals/mips/mip-x72/x72.md"))
@@ -401,6 +406,11 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
                 ).latestRoundData();
                 _rawAnswerPre[chainId][oracleName] = rawAns;
                 _rawUpdatedAtPre[chainId][oracleName] = rawUp;
+
+                (, int256 wrapperAns, , , ) = ChainlinkOEVWrapper(
+                    payable(addresses.getAddress(deprecatedName))
+                ).latestRoundData();
+                _wrapperAnswerPre[chainId][oracleName] = wrapperAns;
             }
 
             // Full getUnderlyingPrice path per mTokenKey (still routed via the old wrapper).
@@ -448,6 +458,9 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
                 implementation: _implementationOf(address(w)),
                 taken: true
             });
+
+            (, int256 ans, , , ) = w.latestRoundData();
+            _morphoAnswerPre[wrapperName] = ans;
         }
     }
 
@@ -746,6 +759,15 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
             );
 
             if (!_compositeRebuilt(addresses, configs[i])) {
+                console.log(
+                    string.concat(
+                        "[",
+                        _chainLabel(chainId),
+                        "] ",
+                        name_,
+                        ": not rebuilt"
+                    )
+                );
                 continue;
             }
 
@@ -785,6 +807,15 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
             // multipliers; the live read is a best-effort cross-check.
             uint256 pre = _compositePricePre[configs[i].mTokenKey];
             if (pre == 0) {
+                console.log(
+                    string.concat(
+                        "[",
+                        _chainLabel(chainId),
+                        "] ",
+                        configs[i].mTokenKey,
+                        " getUnderlyingPrice: no pre-execution snapshot"
+                    )
+                );
                 continue;
             }
             try
@@ -792,6 +823,12 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
                     MToken(addresses.getAddress(configs[i].mTokenKey))
                 )
             returns (uint256 post) {
+                _logPrice(
+                    chainId,
+                    string.concat(configs[i].mTokenKey, " getUnderlyingPrice"),
+                    int256(pre),
+                    int256(post)
+                );
                 assertApproxEqRel(
                     post,
                     pre,
@@ -801,7 +838,19 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
                         configs[i].mTokenKey
                     )
                 );
-            } catch {}
+            } catch {
+                console.log(
+                    string.concat(
+                        "[",
+                        _chainLabel(chainId),
+                        "] ",
+                        configs[i].mTokenKey,
+                        " getUnderlyingPrice | pre: ",
+                        vm.toString(pre),
+                        " | post: reverted"
+                    )
+                );
+            }
         }
     }
 
@@ -877,6 +926,14 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
             wrapperName
         );
 
+        (, int256 wrapperAns, , , ) = newWrapper.latestRoundData();
+        _logPrice(
+            chainId,
+            string.concat(wrapperName, " latestRoundData"),
+            _wrapperAnswerPre[chainId][config.oracleName],
+            wrapperAns
+        );
+
         if (
             bytes(config.mTokenKey).length > 0 &&
             addresses.isAddressSet(config.mTokenKey)
@@ -888,6 +945,12 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
                 ).getUnderlyingPrice(
                         MToken(addresses.getAddress(config.mTokenKey))
                     );
+                _logPrice(
+                    chainId,
+                    string.concat(config.mTokenKey, " getUnderlyingPrice"),
+                    int256(pre),
+                    int256(post)
+                );
                 assertApproxEqRel(
                     post,
                     pre,
@@ -1032,11 +1095,52 @@ contract mipx72 is HybridProposalV2, ChainlinkOracleConfigs {
             // a strict pre/post output equality would be fragile because a fresh
             // round can flip the delay state across the simulate() time warp.
             (, int256 ans, , , ) = w.latestRoundData();
+            _logPrice(
+                chainId,
+                string.concat(wrapperName, " latestRoundData"),
+                _morphoAnswerPre[wrapperName],
+                ans
+            );
             assertGt(
                 ans,
                 0,
                 string.concat("X72: morpho price invalid for ", wrapperName)
             );
         }
+    }
+
+    /// @notice One line per feed: pre/post price and the delta in bps.
+    function _logPrice(
+        uint256 chainId,
+        string memory label,
+        int256 pre,
+        int256 post
+    ) internal view {
+        string memory delta = pre == 0
+            ? "n/a"
+            : string.concat(vm.toString(((post - pre) * 10_000) / pre), " bps");
+        console.log(
+            string.concat(
+                "[",
+                _chainLabel(chainId),
+                "] ",
+                label,
+                " | pre: ",
+                vm.toString(pre),
+                " | post: ",
+                vm.toString(post),
+                " | delta: ",
+                delta
+            )
+        );
+    }
+
+    function _chainLabel(
+        uint256 chainId
+    ) internal pure returns (string memory) {
+        if (chainId == BASE_CHAIN_ID) return "Base";
+        if (chainId == OPTIMISM_CHAIN_ID) return "Optimism";
+        if (chainId == ETHEREUM_CHAIN_ID) return "Ethereum";
+        return "unknown";
     }
 }
