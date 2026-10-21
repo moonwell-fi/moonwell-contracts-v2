@@ -103,6 +103,14 @@ abstract contract Proposal is Script, Test {
 
     function afterSimulationHook(Addresses) public virtual {}
 
+    /// @notice mTokens whose oracle price this proposal changes on purpose.
+    /// PostProposalCheck fails when any other listed market's price moves
+    /// (MIP-X43 guard). Called with primaryForkId() selected, so
+    /// getAddress(name) resolves there; use getAddress(name, chainId) otherwise.
+    function expectedPriceChanges(
+        Addresses
+    ) public view virtual returns (address[] memory) {}
+
     /// @notice initialize the proposal after the proposal is created and the
     /// live fork is selected
     function initProposal(Addresses) public virtual {}
