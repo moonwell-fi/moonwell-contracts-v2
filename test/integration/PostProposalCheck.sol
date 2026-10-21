@@ -8,6 +8,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
+import {MarketPriceGuard} from "@test/utils/MarketPriceGuard.sol";
 import {LiveProposalCheck} from "@test/utils/LiveProposalCheck.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichainGovernorV2.sol";
@@ -26,9 +27,16 @@ contract PostProposalCheck is LiveProposalCheck {
     /// @notice array of proposals in development
     Proposal[] public proposals;
 
+    /// @notice union of simulated proposals' expectedPriceChanges()
+    address[] internal _priceChangeAllowlist;
+
     /// @notice store the proposal start time so that tests can go back in time
     /// to this point if needed. Used in ReserveAutomationDeploy Integration Test
     uint256 public proposalStartTime;
+
+    /// @notice snapshots every market's oracle price before the pending
+    /// proposals run and fails setUp if any price moved afterwards
+    MarketPriceGuard public priceGuard;
 
     function setUp() public virtual override {
         uint256 primaryForkBefore = vm.envOr("PRIMARY_FORK_ID", uint256(0));
@@ -49,6 +57,9 @@ contract PostProposalCheck is LiveProposalCheck {
         governor = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
+
+        // baseline before any not-yet-executed proposal, on-chain or in dev
+        _snapshotMarketPrices();
 
         // execute proposals that are succeeded but not executed yet
         executeSucceededProposals(addresses, governor);
@@ -82,6 +93,7 @@ contract PostProposalCheck is LiveProposalCheck {
             vm.makePersistent(address(proposal));
 
             proposals.push(proposal);
+            _recordExpectedPriceChanges(proposal);
         }
 
         // Simulate MultichainGovernorV2 proposals that already carry an
@@ -115,6 +127,8 @@ contract PostProposalCheck is LiveProposalCheck {
             proposalStartTime = maxTime;
         }
 
+        _assertMarketPricesPreserved();
+
         vm.selectFork(MOONBEAM_FORK_ID);
 
         addresses.removeAllRestrictions();
@@ -123,6 +137,66 @@ contract PostProposalCheck is LiveProposalCheck {
 
         // set proposalStartTime on the active (Moonbeam) fork
         vm.warp(proposalStartTime);
+    }
+
+    /// @notice record every listed market's price on every fork before any
+    /// pending proposal is simulated
+    function _snapshotMarketPrices() internal {
+        uint256 activeFork = vm.activeFork();
+
+        priceGuard = new MarketPriceGuard();
+        vm.makePersistent(address(priceGuard));
+
+        for (uint256 i = MOONBEAM_FORK_ID; i <= ETHEREUM_FORK_ID; i++) {
+            priceGuard.snapshot(addresses, i);
+        }
+
+        vm.selectFork(activeFork);
+    }
+
+    /// @notice fail setUp when a simulated proposal moved a market price it
+    /// did not declare in expectedPriceChanges()
+    function _assertMarketPricesPreserved() internal {
+        uint256 activeFork = vm.activeFork();
+
+        address[] memory allowlist = _priceChangeAllowlist;
+        uint256 total;
+        string memory firstSummary;
+
+        for (uint256 i = MOONBEAM_FORK_ID; i <= ETHEREUM_FORK_ID; i++) {
+            MarketPriceGuard.Violation[] memory violations = priceGuard.check(
+                addresses,
+                i,
+                allowlist
+            );
+            if (violations.length > 0) {
+                string memory summary = priceGuard.describe(violations);
+                if (total == 0) {
+                    firstSummary = summary;
+                }
+                total += violations.length;
+            }
+        }
+
+        vm.selectFork(activeFork);
+
+        require(total == 0, firstSummary);
+    }
+
+    function _onOnChainProposal(Proposal proposal) internal override {
+        _recordExpectedPriceChanges(proposal);
+    }
+
+    /// @notice resolve the declaration while the proposal's PRIMARY_FORK_ID
+    /// env is still set (ProtocolDeployment reads it)
+    function _recordExpectedPriceChanges(Proposal proposal) internal {
+        address[] memory declared = priceGuard.declaredChanges(
+            addresses,
+            proposal
+        );
+        for (uint256 i = 0; i < declared.length; i++) {
+            _priceChangeAllowlist.push(declared[i]);
+        }
     }
 
     /// @notice Run the full deploy -> build -> simulate -> validate lifecycle
@@ -183,6 +257,7 @@ contract PostProposalCheck is LiveProposalCheck {
             vm.makePersistent(address(proposal));
 
             proposals.push(proposal);
+            _recordExpectedPriceChanges(proposal);
         }
     }
 }

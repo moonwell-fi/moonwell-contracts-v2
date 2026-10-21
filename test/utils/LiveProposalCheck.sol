@@ -50,6 +50,10 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         vm.makePersistent(address(proposalMap));
     }
 
+    /// @notice called for every on-chain proposal that has a mips.json entry,
+    /// before its actions execute on the fork
+    function _onOnChainProposal(Proposal proposal) internal virtual {}
+
     function executeSucceededProposals(
         Addresses addresses,
         MultichainGovernor governor
@@ -145,6 +149,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                     );
                     vm.label(address(proposal), proposalPath);
                     vm.makePersistent(address(proposal));
+                    _onOnChainProposal(Proposal(address(proposal)));
 
                     vm.selectFork(proposal.primaryForkId());
 
@@ -337,6 +342,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         Proposal proposal = Proposal(deployCode(proposalPath));
         vm.label(address(proposal), proposalPath);
         vm.makePersistent(address(proposal));
+        _onOnChainProposal(proposal);
 
         proposal.beforeSimulationHook(addresses);
 
