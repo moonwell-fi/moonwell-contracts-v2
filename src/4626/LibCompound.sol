@@ -25,9 +25,7 @@ library LibCompound {
             return mToken.exchangeRateStored();
         }
 
-        uint256 totalCash = MErc20(mToken.underlying()).balanceOf(
-            address(mToken)
-        );
+        uint256 totalCash = mToken.getCash();
         uint256 borrowsPrior = mToken.totalBorrows();
         uint256 reservesPrior = mToken.totalReserves();
 
