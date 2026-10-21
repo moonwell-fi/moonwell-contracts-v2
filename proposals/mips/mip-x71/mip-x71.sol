@@ -5,6 +5,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
 import {MarketUpdateV2Template} from "@proposals/templates/MarketUpdateV2.sol";
 import {BASE_FORK_ID, ETHEREUM_FORK_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
+import {IMetaMorpho, IMetaMorphoStaticTyping} from "@protocol/morpho/IMetaMorpho.sol";
 
 interface IPauseGuardianHolder {
     function pauseGuardian() external view returns (address);
@@ -14,7 +15,8 @@ interface IPauseGuardianHolder {
 
 /// @title MIP-X71: Anthias risk parameters + pause guardian migration
 /// @notice market updates come from x71.json via the template; this adds the
-/// Comptroller + MRD pause guardian move to F-ETH-SEC on Base and OP Mainnet.
+/// Comptroller + MRD pause guardian move to F-ETH-SEC on Base and OP Mainnet,
+/// and submits F-ETH-SEC as guardian of the Moonwell MetaMorpho vaults there.
 /// Ethereum already uses F-ETH-SEC; Moonbeam is halted and has no such Safe.
 /// forge script proposals/mips/mip-x71/mip-x71.sol:mipx71 --ffi -vvv
 contract mipx71 is MarketUpdateV2Template {
@@ -34,6 +36,20 @@ contract mipx71 is MarketUpdateV2Template {
         vm.selectFork(primaryForkId());
     }
 
+    /// @notice MetaMorpho vaults whose guardian is the deprecated multisig
+    function vaults(uint256 forkId) public pure returns (string[] memory v) {
+        if (forkId == BASE_FORK_ID) {
+            v = new string[](4);
+            v[0] = "cbBTC_METAMORPHO_VAULT";
+            v[1] = "WETH_METAMORPHO_VAULT";
+            v[2] = "USDC_METAMORPHO_VAULT";
+            v[3] = "EURC_METAMORPHO_VAULT";
+        } else if (forkId == OPTIMISM_FORK_ID) {
+            v = new string[](1);
+            v[0] = "USDC_METAMORPHO_VAULT";
+        }
+    }
+
     function build(Addresses addresses) public override {
         super.build(addresses);
 
@@ -49,6 +65,9 @@ contract mipx71 is MarketUpdateV2Template {
         _validatePauseGuardian(addresses, BASE_FORK_ID);
         _validatePauseGuardian(addresses, OPTIMISM_FORK_ID);
         _validatePauseGuardian(addresses, ETHEREUM_FORK_ID);
+
+        _validateVaultGuardian(addresses, BASE_FORK_ID);
+        _validateVaultGuardian(addresses, OPTIMISM_FORK_ID);
 
         vm.selectFork(primaryForkId());
     }
@@ -76,6 +95,26 @@ contract mipx71 is MarketUpdateV2Template {
             oldGuardian,
             "MIP-X71: MRD pause guardian drifted"
         );
+
+        string[] memory v = vaults(forkId);
+        for (uint256 i = 0; i < v.length; i++) {
+            address vault = addresses.getAddress(v[i]);
+            (, uint64 validAt) = IMetaMorphoStaticTyping(vault)
+                .pendingGuardian();
+
+            assertEq(
+                IMetaMorpho(vault).owner(),
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                "MIP-X71: vault owner is not the Temporal Governor"
+            );
+            assertEq(
+                IMetaMorpho(vault).guardian(),
+                oldGuardian,
+                "MIP-X71: vault guardian drifted"
+            );
+            // submitGuardian reverts AlreadyPending otherwise
+            assertEq(validAt, 0, "MIP-X71: vault guardian already pending");
+        }
     }
 
     function _buildPauseGuardian(
@@ -99,6 +138,16 @@ contract mipx71 is MarketUpdateV2Template {
             "Set the MultiRewardDistributor pause guardian to F-ETH-SEC",
             actionType
         );
+
+        string[] memory v = vaults(forkId);
+        for (uint256 i = 0; i < v.length; i++) {
+            _pushAction(
+                addresses.getAddress(v[i]),
+                abi.encodeWithSignature("submitGuardian(address)", newGuardian),
+                string.concat("Submit F-ETH-SEC as guardian of ", v[i]),
+                actionType
+            );
+        }
     }
 
     /// @notice Comptroller._setPauseGuardian returns an error code instead of
@@ -123,5 +172,46 @@ contract mipx71 is MarketUpdateV2Template {
             newGuardian,
             "MIP-X71: MRD pause guardian not updated"
         );
+    }
+
+    /// @notice submitGuardian only queues the change behind the vault
+    /// timelock; prove the queued value and that acceptGuardian lands after it
+    function _validateVaultGuardian(
+        Addresses addresses,
+        uint256 forkId
+    ) internal {
+        vm.selectFork(forkId);
+
+        address newGuardian = addresses.getAddress(NEW_PAUSE_GUARDIAN_KEY);
+        string[] memory v = vaults(forkId);
+
+        for (uint256 i = 0; i < v.length; i++) {
+            address vault = addresses.getAddress(v[i]);
+            (address pending, uint64 validAt) = IMetaMorphoStaticTyping(vault)
+                .pendingGuardian();
+
+            assertEq(
+                pending,
+                newGuardian,
+                "MIP-X71: vault guardian not pending"
+            );
+            // PostProposalCheck may warp after execution, so bound, not equate
+            assertLe(
+                validAt,
+                vm.getBlockTimestamp() + IMetaMorpho(vault).timelock(),
+                "MIP-X71: vault guardian validAt past execution + timelock"
+            );
+            assertGt(validAt, 0, "MIP-X71: vault guardian validAt unset");
+
+            uint256 snapshot = vm.snapshot();
+            if (vm.getBlockTimestamp() < validAt) vm.warp(validAt);
+            IMetaMorpho(vault).acceptGuardian();
+            assertEq(
+                IMetaMorpho(vault).guardian(),
+                newGuardian,
+                "MIP-X71: vault guardian not accepted after timelock"
+            );
+            vm.revertTo(snapshot);
+        }
     }
 }
