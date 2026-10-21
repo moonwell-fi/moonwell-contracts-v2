@@ -103,13 +103,21 @@ contract MarketPriceGuard {
 
             uint256 before = _priceBefore[forkId][markets[i]];
             uint256 after_ = _readPrice(oracle, MToken(markets[i]));
-            if (after_ == 0) {
-                // oracles with a staleness bound revert after the governance
-                // warp; re-read at the snapshot time to tell stale from broken
+            if (!_withinDrift(before, after_)) {
+                // round selection is time-dependent (OEV wrappers return the
+                // delayed round while the latest is under maxRoundDelay old,
+                // staleness bounds revert after the governance warp); re-read
+                // at the snapshot time so only a real feed change is reported
                 uint256 now_ = block.timestamp;
                 vm.warp(_snapshotTimestamp[forkId]);
-                after_ = _readPrice(oracle, MToken(markets[i]));
+                uint256 atSnapshot = _readPrice(oracle, MToken(markets[i]));
                 vm.warp(now_);
+                if (_withinDrift(before, atSnapshot)) {
+                    continue;
+                }
+                if (after_ == 0) {
+                    after_ = atSnapshot;
+                }
             }
 
             if (!_withinDrift(before, after_)) {

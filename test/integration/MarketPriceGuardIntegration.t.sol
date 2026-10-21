@@ -7,6 +7,8 @@ import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {MarketPriceGuard} from "@test/utils/MarketPriceGuard.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
@@ -146,5 +148,44 @@ contract MarketPriceGuardIntegrationTest is Test {
                 vm.indexOf(summary, "mcbETH") != type(uint256).max,
             "summary does not name the cbETH market"
         );
+    }
+
+    /// @notice the MultichainProposalTest shape: snapshot while the OEV wrapper
+    /// still serves the delayed round, check after it serves the fresh one
+    function testOevRoundSwitchAcrossWarpIsNotReported() public {
+        address mCbXrp = addresses.getAddress("MOONWELL_cbXRP");
+        ChainlinkOEVWrapper wrapper = ChainlinkOEVWrapper(
+            payable(address(oracle.getFeed("cbXRP")))
+        );
+        AggregatorV3Interface agg = wrapper.priceFeed();
+        (uint80 r0, int256 answer, , , ) = agg.latestRoundData();
+
+        uint256 t = block.timestamp;
+        uint80 fresh = r0 + 1;
+        // fresh round lands now, 5% above the previous one
+        vm.mockCall(
+            address(agg),
+            abi.encodeWithSelector(agg.latestRoundData.selector),
+            abi.encode(fresh, (answer * 105) / 100, t, t, fresh)
+        );
+        vm.mockCall(
+            address(agg),
+            abi.encodeWithSelector(agg.getRoundData.selector, r0),
+            abi.encode(r0, answer, t - 100, t - 100, r0)
+        );
+
+        // within maxRoundDelay: wrapper serves the delayed round
+        guard.snapshot(addresses, forkId);
+        uint256 before = oracle.getUnderlyingPrice(MToken(mCbXrp));
+
+        vm.warp(t + 1 days);
+        uint256 after_ = oracle.getUnderlyingPrice(MToken(mCbXrp));
+        assertGt(
+            after_ * 100,
+            before * 104,
+            "fresh round not served after warp"
+        );
+
+        assertEq(_check().length, 0, "round switch reported as a price change");
     }
 }
