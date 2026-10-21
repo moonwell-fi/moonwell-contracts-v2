@@ -102,30 +102,33 @@ contract ERC4626LiveIntegrationTest is Test {
         );
     }
 
-    function testFailDepositWithNotEnoughApproval() public {
-        deal(address(underlying), address(this), 0.5e18);
-        underlying.approve(address(vault), 0.5e18);
-        assertEq(underlying.allowance(address(this), address(vault)), 0.5e18);
+    function test_RevertIf_DepositWithNotEnoughApproval() public {
+        deal(address(underlying), address(this), 500e6);
+        underlying.approve(address(vault), 500e6);
+        assertEq(underlying.allowance(address(this), address(vault)), 500e6);
 
-        vault.deposit(1e18, address(this));
+        vm.expectRevert();
+        vault.deposit(1_000e6, address(this));
     }
 
-    function testFailWithdrawWithNotEnoughUnderlyingAmount() public {
-        deal(address(underlying), address(this), 0.5e18);
-        underlying.approve(address(vault), 0.5e18);
+    function test_RevertIf_WithdrawWithNotEnoughUnderlyingAmount() public {
+        deal(address(underlying), address(this), 500e6);
+        underlying.approve(address(vault), 500e6);
 
-        vault.deposit(0.5e18, address(this));
+        vault.deposit(500e6, address(this));
 
-        vault.withdraw(1e18, address(this), address(this));
+        vm.expectRevert();
+        vault.withdraw(1_000e6, address(this), address(this));
     }
 
-    function testFailRedeemWithNotEnoughShareAmount() public {
-        deal(address(underlying), address(this), 0.5e18);
-        underlying.approve(address(vault), 0.5e18);
+    function test_RevertIf_RedeemWithNotEnoughShareAmount() public {
+        deal(address(underlying), address(this), 500e6);
+        underlying.approve(address(vault), 500e6);
 
-        vault.deposit(0.5e18, address(this));
+        vault.deposit(500e6, address(this));
 
-        vault.redeem(1e18, address(this), address(this));
+        vm.expectRevert();
+        vault.redeem(1_000e6, address(this), address(this));
     }
 
     function testSucceedRedeemWithCorrectShareAmount() public {
@@ -280,23 +283,28 @@ contract ERC4626LiveIntegrationTest is Test {
         assertEq(maxRedeem, vault.balanceOf(address(this)));
     }
 
-    function testFailWithdrawWithNoUnderlyingAmount() public {
+    function test_RevertIf_WithdrawWithNoUnderlyingAmount() public {
+        vm.expectRevert();
         vault.withdraw(1e18, address(this), address(this));
     }
 
-    function testFailRedeemWithNoShareAmount() public {
+    function test_RevertIf_RedeemWithNoShareAmount() public {
+        vm.expectRevert();
         vault.redeem(1e18, address(this), address(this));
     }
 
-    function testFailDepositWithNoApproval() public {
+    function test_RevertIf_DepositWithNoApproval() public {
+        vm.expectRevert();
         vault.deposit(1e18, address(this));
     }
 
-    function testFailMintWithNoApproval() public {
+    function test_RevertIf_MintWithNoApproval() public {
+        vm.expectRevert();
         vault.mint(1e18, address(this));
     }
 
-    function testFailDepositZero() public {
+    function test_RevertIf_DepositZero() public {
+        vm.expectRevert();
         vault.deposit(0, address(this));
     }
 
@@ -319,7 +327,8 @@ contract ERC4626LiveIntegrationTest is Test {
         );
     }
 
-    function testFailRedeemZero() public {
+    function test_RevertIf_RedeemZero() public {
+        vm.expectRevert();
         vault.redeem(0, address(this), address(this));
     }
 

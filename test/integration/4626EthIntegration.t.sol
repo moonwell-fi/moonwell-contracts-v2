@@ -77,29 +77,32 @@ contract ERC4626EthDeployIntegrationTest is Test {
         );
     }
 
-    function testFailDepositWithNotEnoughApproval() public {
+    function test_RevertIf_DepositWithNotEnoughApproval() public {
         deal(address(underlying), address(this), 0.5e18);
         underlying.approve(address(vault), 0.5e18);
         assertEq(underlying.allowance(address(this), address(vault)), 0.5e18);
 
+        vm.expectRevert();
         vault.deposit(1e18, address(this));
     }
 
-    function testFailWithdrawWithNotEnoughUnderlyingAmount() public {
+    function test_RevertIf_WithdrawWithNotEnoughUnderlyingAmount() public {
         deal(address(underlying), address(this), 0.5e18);
         underlying.approve(address(vault), 0.5e18);
 
         vault.deposit(0.5e18, address(this));
 
+        vm.expectRevert();
         vault.withdraw(1e18, address(this), address(this));
     }
 
-    function testFailRedeemWithNotEnoughShareAmount() public {
+    function test_RevertIf_RedeemWithNotEnoughShareAmount() public {
         deal(address(underlying), address(this), 0.5e18);
         underlying.approve(address(vault), 0.5e18);
 
         vault.deposit(0.5e18, address(this));
 
+        vm.expectRevert();
         vault.redeem(1e18, address(this), address(this));
     }
 
@@ -256,23 +259,28 @@ contract ERC4626EthDeployIntegrationTest is Test {
         assertEq(maxRedeem, vault.balanceOf(address(this)));
     }
 
-    function testFailWithdrawWithNoUnderlyingAmount() public {
+    function test_RevertIf_WithdrawWithNoUnderlyingAmount() public {
+        vm.expectRevert();
         vault.withdraw(1e18, address(this), address(this));
     }
 
-    function testFailRedeemWithNoShareAmount() public {
+    function test_RevertIf_RedeemWithNoShareAmount() public {
+        vm.expectRevert();
         vault.redeem(1e18, address(this), address(this));
     }
 
-    function testFailDepositWithNoApproval() public {
+    function test_RevertIf_DepositWithNoApproval() public {
+        vm.expectRevert();
         vault.deposit(1e18, address(this));
     }
 
-    function testFailMintWithNoApproval() public {
+    function test_RevertIf_MintWithNoApproval() public {
+        vm.expectRevert();
         vault.mint(1e18, address(this));
     }
 
-    function testFailDepositZero() public {
+    function test_RevertIf_DepositZero() public {
+        vm.expectRevert();
         vault.deposit(0, address(this));
     }
 
@@ -295,7 +303,8 @@ contract ERC4626EthDeployIntegrationTest is Test {
         );
     }
 
-    function testFailRedeemZero() public {
+    function test_RevertIf_RedeemZero() public {
+        vm.expectRevert();
         vault.redeem(0, address(this), address(this));
     }
 

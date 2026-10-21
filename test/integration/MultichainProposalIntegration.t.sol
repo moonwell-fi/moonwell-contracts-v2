@@ -129,7 +129,11 @@ contract MultichainProposalTest is PostProposalCheck {
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY", BASE_CHAIN_ID)
         );
+        // persist from the Base fork: makePersistent copies the active fork's
+        // account state, and this address has no code on Moonbeam
+        vm.selectFork(BASE_FORK_ID);
         vm.makePersistent(address(voteCollection));
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         addresses.addRestriction(block.chainid.toMoonbeamChainId());
         wormhole = IWormhole(

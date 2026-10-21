@@ -140,28 +140,6 @@ contract BridgeValidationHookIntegrationTest is Test {
 
     /// ============ FAILURE TESTS ============
 
-    function testFailInvalidBridgeTooLow() public {
-        InvalidBridgeTooLowProposal proposal = new InvalidBridgeTooLowProposal(
-            actualBridgeCost
-        );
-
-        // Calculate expected values for error message
-        uint256 minValue = actualBridgeCost * 4;
-        uint256 actualValue = actualBridgeCost * 3;
-
-        // Build expected error message
-        string memory expectedError = string.concat(
-            "BridgeValidationHook: bridge value too low. Expected >= ",
-            vm.toString(minValue),
-            ", got ",
-            vm.toString(actualValue)
-        );
-
-        // This should fail validation with specific message
-        vm.expectRevert(bytes(expectedError));
-        proposal.build(addresses);
-    }
-
     function testInvalidBridgeTooLowRevertMessage() public {
         /// Range validation is meaningless when bridgeCost is 0 (all multiples are 0)
         vm.skip(actualBridgeCost == 0);
@@ -210,28 +188,6 @@ contract BridgeValidationHookIntegrationTest is Test {
 
         // This will trigger the hook validation
         proposal.testVerifyBridgeActions(actions);
-    }
-
-    function testFailInvalidBridgeTooHigh() public {
-        InvalidBridgeTooHighProposal proposal = new InvalidBridgeTooHighProposal(
-                actualBridgeCost
-            );
-
-        // Calculate expected values for error message
-        uint256 maxValue = actualBridgeCost * 10;
-        uint256 actualValue = actualBridgeCost * 11;
-
-        // Build expected error message
-        string memory expectedError = string.concat(
-            "BridgeValidationHook: bridge value too high. Expected <= ",
-            vm.toString(maxValue),
-            ", got ",
-            vm.toString(actualValue)
-        );
-
-        // Build and expect revert during validation with specific message
-        vm.expectRevert(bytes(expectedError));
-        proposal.build(addresses);
     }
 
     function testInvalidBridgeTooHighRevertMessage() public {
