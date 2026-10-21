@@ -222,14 +222,19 @@ contract PostProposalCheck is LiveProposalCheck {
                 addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY")
             );
 
-            // A proposal whose id exists but whose state is anything other than
-            // Executed still needs its effects applied to the fork. If state()
-            // reverts the id was never created on-chain — also treat as pending.
+            // A proposal whose id exists but has not executed yet still needs
+            // its effects applied to the fork. Defeated and Canceled proposals
+            // never will, so simulating them would apply state that never
+            // lands on-chain. If state() reverts the id was never created
+            // on-chain — treat as pending.
             bool pending;
             try governorV2.state(v2Proposals[i].id) returns (
                 IMultichainGovernorV2.ProposalState state
             ) {
-                pending = state != IMultichainGovernorV2.ProposalState.Executed;
+                pending =
+                    state != IMultichainGovernorV2.ProposalState.Executed &&
+                    state != IMultichainGovernorV2.ProposalState.Defeated &&
+                    state != IMultichainGovernorV2.ProposalState.Canceled;
             } catch {
                 pending = true;
             }
