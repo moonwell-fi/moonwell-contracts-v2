@@ -15,7 +15,8 @@ import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, BASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
-/// @title MIP-X71: internal cash accounting for all mToken markets
+/// @title MIP-X71: internal cash accounting for the mToken markets on
+///        Ethereum, Base and OP Mainnet
 /// @notice Ports the fix from Venus PR #664 (THE market donation attack,
 ///         2026-03-15). MErc20.getCashPrior() read underlying.balanceOf, so a
 ///         direct transfer ("donation") raised the exchange rate without going
@@ -23,17 +24,24 @@ import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, BASE_CHAIN_ID, ChainId
 ///         cap, including on markets frozen with a cap of 1.
 ///
 ///         The new MErc20Delegate / MWethDelegate track `internalCash`
-///         (delegator slot 20, verified empty on every live market), updated
-///         only by doTransferIn / doTransferOut, synced to balanceOf inside
-///         _becomeImplementation and lowered by the admin-only _syncCashDown,
-///         so each upgrade is a single atomic
-///         `_setImplementation(new, true, "")` per market — the MIP-B02 /
-///         MIP-E01 pattern.
+///         (delegator slot 20, verified empty on every live Ethereum, Base
+///         and OP Mainnet market), updated only by doTransferIn /
+///         doTransferOut, synced to balanceOf inside _becomeImplementation and
+///         lowered by the admin-only _syncCashDown, so each upgrade is a
+///         single atomic `_setImplementation(new, true, "")` per market — the
+///         MIP-B02 / MIP-E01 pattern. getCashPrior() returns
+///         min(internalCash, balanceOf), so a loss outside the market is
+///         priced immediately and pro rata; governance calls _syncCashDown
+///         only once such a loss is known to be permanent.
 ///
-///         Markets come from Comptroller.getAllMarkets() at fork state, and
-///         each one's current implementation must equal the archived
-///         MTOKEN_IMPLEMENTATION / MWETH_IMPLEMENTATION, so an unexpected
-///         implementation fails build instead of being silently swapped.
+///         Markets come from Comptroller.getAllMarkets() at fork state. A
+///         market already on the new MTOKEN_IMPLEMENTATION /
+///         MWETH_IMPLEMENTATION (e.g. listed after deploy() promoted them) is
+///         skipped; every other market's current implementation must equal the
+///         archived MTOKEN_IMPLEMENTATION_DEPRECATED_V1 /
+///         MWETH_IMPLEMENTATION_DEPRECATED_V1, so an unexpected implementation
+///         fails build instead of being silently swapped. The proposal can
+///         therefore be rebuilt after a market is listed on the new code.
 ///
 ///         Base MOONWELL_WETH is administered by MWETH_OWNER_WRAPPER (MIP-B54),
 ///         which had no _setImplementation passthrough. The wrapper proxy is
@@ -64,7 +72,10 @@ forge script proposals/mips/mip-x71/mip-x71.sol:mipx71 --ffi -vvv \
     --broadcast --account <deployer>
 */
 /// then register the deployed addresses from
-/// broadcast/multi/mip-x71.sol-latest/run.json in chains/<chainId>.json.
+/// broadcast/multi/mip-x71.sol-latest/run.json in chains/<chainId>.json as
+/// soon as the broadcast lands, before propose(), so a market listed while
+/// MIP-X71 is pending deploys on the new implementation (MarketAdd templates
+/// read MTOKEN_IMPLEMENTATION) and is skipped on rebuild.
 contract mipx71 is HybridProposalV2 {
     using ChainIds for uint256;
 
@@ -109,6 +120,13 @@ contract mipx71 is HybridProposalV2 {
     /// @notice keyed by chain id first: Base and Optimism mweETH share an address
     mapping(uint256 chainId => mapping(address market => MarketSnapshot))
         internal snapshots;
+
+    /// @notice markets build() found already on the new implementation and
+    /// left out of the batch, keyed by chain id like `snapshots`. Default
+    /// false keeps validate() strict (internalCash == balance) for any market
+    /// build() did not mark.
+    mapping(uint256 chainId => mapping(address market => bool))
+        internal skippedMarkets;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -316,7 +334,7 @@ contract mipx71 is HybridProposalV2 {
 
     function _buildUpgrades(Addresses addresses) internal {
         address oldMTokenLogic = addresses.getAddress(MTOKEN_IMPL_DEPRECATED);
-        address oldMWethLogic = addresses.getAddress(MWETH_IMPL_DEPRECATED);
+        address newMTokenLogic = addresses.getAddress(MTOKEN_IMPL);
         address mWeth = addresses.getAddress("MOONWELL_WETH");
 
         MToken[] memory markets = Comptroller(
@@ -330,11 +348,11 @@ contract mipx71 is HybridProposalV2 {
             address current = market.implementation();
 
             if (address(market) == mWeth) {
-                require(
-                    current == oldMWethLogic,
-                    "MIP-X71: MOONWELL_WETH on unexpected implementation"
-                );
-                _pushMWethUpgrade(addresses, market);
+                _pushMWethUpgrade(addresses, market, current);
+            } else if (current == newMTokenLogic) {
+                /// already on the new code (listed after deploy() promoted
+                /// MTOKEN_IMPLEMENTATION): nothing to swap
+                _skipMarket(market);
             } else {
                 require(
                     current == oldMTokenLogic,
@@ -345,9 +363,7 @@ contract mipx71 is HybridProposalV2 {
                 );
                 _pushAction(
                     address(market),
-                    _setImplementationCalldata(
-                        addresses.getAddress(MTOKEN_IMPL)
-                    ),
+                    _setImplementationCalldata(newMTokenLogic),
                     string.concat(
                         "Upgrade ",
                         market.symbol(),
@@ -358,18 +374,37 @@ contract mipx71 is HybridProposalV2 {
         }
     }
 
+    /// @dev the market swap and, on Base, the wrapper upgrade are decided
+    /// independently: the wrapper upgrade also carries the passthroughs
+    /// governance needs to manage an internal cash market (_sweepExcessCash,
+    /// _syncCashDown) and two-step ownership, so it is kept even when
+    /// MOONWELL_WETH is already on the new implementation, and skipped only
+    /// once the wrapper itself is on the new implementation
     function _pushMWethUpgrade(
         Addresses addresses,
-        MErc20Delegator mWeth
+        MErc20Delegator mWeth,
+        address current
     ) internal {
         address newLogic = addresses.getAddress(MWETH_IMPL);
+        bool swap = current != newLogic;
+
+        if (swap) {
+            require(
+                current == addresses.getAddress(MWETH_IMPL_DEPRECATED),
+                "MIP-X71: MOONWELL_WETH on unexpected implementation"
+            );
+        } else {
+            _skipMarket(mWeth);
+        }
 
         if (block.chainid != BASE_CHAIN_ID) {
-            _pushAction(
-                address(mWeth),
-                _setImplementationCalldata(newLogic),
-                "Upgrade MOONWELL_WETH to internal cash MWethDelegate"
-            );
+            if (swap) {
+                _pushAction(
+                    address(mWeth),
+                    _setImplementationCalldata(newLogic),
+                    "Upgrade MOONWELL_WETH to internal cash MWethDelegate"
+                );
+            }
             return;
         }
 
@@ -381,25 +416,43 @@ contract mipx71 is HybridProposalV2 {
             mWeth.admin() == wrapper,
             "MIP-X71: Base MOONWELL_WETH admin is not MWETH_OWNER_WRAPPER"
         );
-        require(
-            address(uint160(uint256(vm.load(wrapper, IMPLEMENTATION_SLOT)))) ==
-                addresses.getAddress(WRAPPER_IMPL_DEPRECATED),
-            "MIP-X71: MWETH_OWNER_WRAPPER on unexpected implementation"
-        );
 
-        _pushAction(
-            addresses.getAddress("MRD_PROXY_ADMIN"),
-            abi.encodeWithSignature(
-                "upgrade(address,address)",
-                wrapper,
-                addresses.getAddress(WRAPPER_IMPL)
-            ),
-            "Upgrade MWETH_OWNER_WRAPPER to add _setImplementation and _sweepExcessCash"
+        address wrapperLogic = address(
+            uint160(uint256(vm.load(wrapper, IMPLEMENTATION_SLOT)))
         );
-        _pushAction(
-            wrapper,
-            _setImplementationCalldata(newLogic),
-            "MWETH_OWNER_WRAPPER upgrades MOONWELL_WETH to internal cash MWethDelegate"
+        if (wrapperLogic != addresses.getAddress(WRAPPER_IMPL)) {
+            require(
+                wrapperLogic == addresses.getAddress(WRAPPER_IMPL_DEPRECATED),
+                "MIP-X71: MWETH_OWNER_WRAPPER on unexpected implementation"
+            );
+            _pushAction(
+                addresses.getAddress("MRD_PROXY_ADMIN"),
+                abi.encodeWithSignature(
+                    "upgrade(address,address)",
+                    wrapper,
+                    addresses.getAddress(WRAPPER_IMPL)
+                ),
+                "Upgrade MWETH_OWNER_WRAPPER to add _setImplementation and _sweepExcessCash"
+            );
+        }
+
+        if (swap) {
+            _pushAction(
+                wrapper,
+                _setImplementationCalldata(newLogic),
+                "MWETH_OWNER_WRAPPER upgrades MOONWELL_WETH to internal cash MWethDelegate"
+            );
+        }
+    }
+
+    /// @dev record a market already on the new implementation so validate()
+    /// applies internalCash <= balance instead of strict equality: its
+    /// internalCash was synced when it was listed, not by this batch
+    function _skipMarket(MErc20Delegator market) internal {
+        skippedMarkets[block.chainid][address(market)] = true;
+        console.log(
+            "MIP-X71: skipping market already on new implementation",
+            market.symbol()
         );
     }
 
@@ -485,12 +538,30 @@ contract mipx71 is HybridProposalV2 {
                 string.concat(symbol, ": implementation not upgraded")
             );
 
-            /// internal cash synced to the real balance at upgrade
-            assertEq(
-                MErc20Delegate(address(market)).internalCash(),
-                IERC20(market.underlying()).balanceOf(address(market)),
-                string.concat(symbol, ": internalCash != underlying balance")
+            uint256 internalCash = MErc20Delegate(address(market))
+                .internalCash();
+            uint256 balance = IERC20(market.underlying()).balanceOf(
+                address(market)
             );
+            if (skippedMarkets[block.chainid][address(market)]) {
+                /// not touched by this batch: accounted cash never exceeds
+                /// the tokens held
+                assertLe(
+                    internalCash,
+                    balance,
+                    string.concat(symbol, ": internalCash > underlying balance")
+                );
+            } else {
+                /// internal cash synced to the real balance at upgrade
+                assertEq(
+                    internalCash,
+                    balance,
+                    string.concat(
+                        symbol,
+                        ": internalCash != underlying balance"
+                    )
+                );
+            }
 
             /// upgrade leaves every storage-backed value untouched
             assertEq(

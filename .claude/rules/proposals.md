@@ -126,4 +126,26 @@
   sweep is skipped and pending donations are absorbed into the exchange rate.
   The resign sweep transfers underlying to the market admin, so if the token
   blocks that transfer (pause/blocklist) while excess is non-zero the upgrade
-  reverts; sweep or resolve the block first rather than falling back to `false`
+  reverts; sweep or resolve the block first rather than falling back to `false`.
+  `getCashPrior` is `min(internalCash, balanceOf)`: an external loss (issuer
+  seizure/burn) is priced at once and pro rata, returned tokens restore cash up
+  to `internalCash`. `_syncCashDown` makes a loss permanent; call it only once
+  the loss is known to be permanent. If a synced loss wipes supplier equity and
+  freezes the market (`accrueInterest` reverts / exchange rate errors), recover
+  once tokens are back: no borrows → admin calls `_becomeImplementation("")`
+  directly on the market (Base WETH: the wrapper has no such passthrough, use
+  `MWethOwnerWrapper._setImplementation(currentImpl, false, "")`); with borrows
+  (Base WETH via the wrapper) →
+  `_setImplementation(MTOKEN_IMPLEMENTATION_DEPRECATED_V1 / MWETH_IMPLEMENTATION_DEPRECATED_V1, false, "")`
+  (`false` so the resign sweep does not take the returned tokens),
+  `accrueInterest()`, then switch back with `true`, all in the same block. These
+  two recovery switches are the only sanctioned `allowResign=false` uses. Any
+  upgrade to an internal-cash implementation while `internalCash` is non-zero
+  (e.g. re-upgrade after a rollback to a balance-based impl, whose slot is
+  stale) must call `accrueInterest()` on the market in the same batch before
+  `_setImplementation`, so `_becomeImplementation` has no elapsed period to
+  price at the stale value. Register new implementation addresses in
+  `chains/*.json` as soon as the deploy broadcast lands, before `propose()`, so
+  a market listed during voting deploys on the new code (MarketAdd templates
+  read `MTOKEN_IMPLEMENTATION`); the upgrade MIP must skip markets already on it
+  (MIP-X71 `_buildUpgrades`).
