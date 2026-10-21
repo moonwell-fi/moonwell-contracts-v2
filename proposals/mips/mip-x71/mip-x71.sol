@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ActionType} from "@proposals/proposalTypes/IProposal.sol";
 import {MarketUpdateV2Template} from "@proposals/templates/MarketUpdateV2.sol";
-import {BASE_FORK_ID, ETHEREUM_FORK_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {IMetaMorpho, IMetaMorphoStaticTyping} from "@protocol/morpho/IMetaMorpho.sol";
 
 interface IPauseGuardianHolder {
@@ -64,7 +64,6 @@ contract mipx71 is MarketUpdateV2Template {
 
         _validatePauseGuardian(addresses, BASE_FORK_ID);
         _validatePauseGuardian(addresses, OPTIMISM_FORK_ID);
-        _validatePauseGuardian(addresses, ETHEREUM_FORK_ID);
 
         _validateVaultGuardian(addresses, BASE_FORK_ID);
         _validateVaultGuardian(addresses, OPTIMISM_FORK_ID);
