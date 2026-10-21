@@ -193,6 +193,28 @@ contract mipb60 is HybridProposalV2 {
             "MIP-B60: stkWELL total supply snapshot is zero (afterDeploy ran against the wrong fork?)"
         );
 
+        // pre-state checks live here, not in build(): integration tests call
+        // build() again after the proposal was simulated on the same fork
+        assertEq(
+            stkWell.COOLDOWN_SECONDS(),
+            CURRENT_COOLDOWN_SECONDS,
+            "MIP-B60: stkWELL cooldown drifted from the expected 7 days"
+        );
+
+        address oldGuardian = addresses.getAddress(CURRENT_PAUSE_GUARDIAN_KEY);
+        assertEq(
+            IPauseGuardianHolder(addresses.getAddress("UNITROLLER"))
+                .pauseGuardian(),
+            oldGuardian,
+            "MIP-B60: Comptroller pause guardian is not the deprecated multisig"
+        );
+        assertEq(
+            IPauseGuardianHolder(addresses.getAddress("MRD_PROXY"))
+                .pauseGuardian(),
+            oldGuardian,
+            "MIP-B60: MRD pause guardian is not the deprecated multisig"
+        );
+
         vm.selectFork(primaryForkId());
     }
 
@@ -207,12 +229,6 @@ contract mipb60 is HybridProposalV2 {
             IStakedWellCooldown(stkWell).EMISSION_MANAGER(),
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             "MIP-B60: stkWELL emission manager must be the Base Temporal Governor"
-        );
-
-        assertEq(
-            IStakedWellCooldown(stkWell).COOLDOWN_SECONDS(),
-            CURRENT_COOLDOWN_SECONDS,
-            "MIP-B60: stkWELL cooldown drifted from the expected 7 days"
         );
 
         assertEq(
@@ -245,18 +261,6 @@ contract mipb60 is HybridProposalV2 {
             IComptrollerAdmin(unitroller).admin(),
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             "MIP-B60: Comptroller admin must be the Base Temporal Governor"
-        );
-
-        assertEq(
-            IPauseGuardianHolder(unitroller).pauseGuardian(),
-            oldGuardian,
-            "MIP-B60: Comptroller pause guardian is not the deprecated multisig"
-        );
-
-        assertEq(
-            IPauseGuardianHolder(mrd).pauseGuardian(),
-            oldGuardian,
-            "MIP-B60: MRD pause guardian is not the deprecated multisig"
         );
 
         assertTrue(
