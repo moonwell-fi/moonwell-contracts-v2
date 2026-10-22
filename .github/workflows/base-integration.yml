@@ -196,6 +196,30 @@ jobs:
            max_attempts: 3
            command: time forge test --mc "ChainlinkOEVWrapperIntegration" -vvv --ffi
 
+  lst-composite-oev-lockstep:
+    name: LST Composite OEV Lockstep Test
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Setup MIPs Permissions
+        uses: ./.github/actions/setup-mips-permissions
+
+      - name: Run Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 20
+           max_attempts: 3
+           command: time forge test --mc "LSTCompositeOEVLockstepIntegrationTest" -vvv --ffi
+
   chainlink-oev-morpho-wrapper:
     name: Chainlink OEV Morpho Wrapper Test
     runs-on: blacksmith-4vcpu-ubuntu-2404

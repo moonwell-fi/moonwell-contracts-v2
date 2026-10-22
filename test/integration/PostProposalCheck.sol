@@ -78,6 +78,14 @@ contract PostProposalCheck is LiveProposalCheck {
         // execute proposals that are queued in the temporal governor but not executed yet
         executeTemporalGovernorQueuedProposals(addresses, governor);
 
+        // Simulate MultichainGovernorV2 proposals that already carry an
+        // on-chain id but have not been executed yet (e.g. MIP-E00). The legacy
+        // executeSucceededProposals / executeLiveProposals paths only drive the
+        // original Moonbeam MultichainGovernor, so a pending V2 proposal would
+        // otherwise never apply its effects to the fork. Runs before the dev
+        // loop: a submitted proposal executes before any unsubmitted one.
+        simulatePendingGovernorV2Proposals();
+
         // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
             .getAllProposalsInDevelopment();
@@ -95,13 +103,6 @@ contract PostProposalCheck is LiveProposalCheck {
             proposals.push(proposal);
             _recordExpectedPriceChanges(proposal);
         }
-
-        // Simulate MultichainGovernorV2 proposals that already carry an
-        // on-chain id but have not been executed yet (e.g. MIP-E00). The legacy
-        // executeSucceededProposals / executeLiveProposals paths only drive the
-        // original Moonbeam MultichainGovernor, so a pending V2 proposal would
-        // otherwise never apply its effects to the fork.
-        simulatePendingGovernorV2Proposals();
 
         // Sync all fork timestamps to the maximum observed across all forks.
         // Proposal execution may warp some forks forward (e.g. Base during
