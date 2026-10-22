@@ -52,7 +52,8 @@ fi
 
 echo "running $TEMPLATE (DO_PRINT) ..." >&2
 LOG="$(mktemp)"
-DO_BUILD=true DO_RUN=false DO_VALIDATE=false DO_PRINT=true \
+# Submission runs against deployed contracts; deploy() would re-register them.
+DO_DEPLOY="${DO_DEPLOY:-false}" DO_BUILD=true DO_RUN=false DO_VALIDATE=false DO_PRINT=true \
   forge script "$TEMPLATE" -vv >"$LOG" 2>&1 || { cat "$LOG" >&2; echo "ERROR: forge script failed" >&2; exit 1; }
 grep -q "Script ran successfully" "$LOG" || { cat "$LOG" >&2; echo "ERROR: script did not finish" >&2; exit 1; }
 
