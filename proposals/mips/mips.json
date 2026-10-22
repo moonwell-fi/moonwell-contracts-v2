@@ -4,7 +4,8 @@
         "governor": "MultichainGovernorV2",
         "id": 0,
         "path": "mip-b61.sol/mipb61.json",
-        "proposalType": "HybridProposalV2"
+        "proposalType": "HybridProposalV2",
+        "descriptionUri": "ipfs://bafkreid3h7zfvmneqzwbsauxrbxn2w7cxiek5ku53giljv5mamzu3wfkye"
     },
     {
         "envpath": "proposals/mips/mip-x72/x72.sh",
