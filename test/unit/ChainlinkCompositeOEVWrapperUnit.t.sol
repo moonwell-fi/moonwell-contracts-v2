@@ -7,6 +7,7 @@ import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {MockERC20Decimals} from "@test/mock/MockERC20Decimals.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract ChainlinkCompositeOEVWrapperUnitTest is Test {
     address public owner = address(0x1);
@@ -40,6 +41,11 @@ contract ChainlinkCompositeOEVWrapperUnitTest is Test {
         uint256 newMaxRoundDelay
     );
     event FeeRecipientChanged(address oldFeeRecipient, address newFeeRecipient);
+    event CacheSynced(
+        uint256 baseRoundId,
+        int256 compositePrice,
+        uint256 timestamp
+    );
 
     function setUp() public {
         token6 = new MockERC20Decimals("Token6", "T6", 6);
@@ -1131,6 +1137,353 @@ contract ChainlinkCompositeOEVWrapperUnitTest is Test {
             mockMTokenLoan
         );
     }
+
+    // ==================== C4 #289: scoped fresh-price unlock ====================
+
+    /// @notice Deploys a wrapper at t=1_000 with base round 1 and composite price 3500e18, wired to `oracleAddr`.
+    function _deployCachedAt1000(
+        address oracleAddr
+    ) internal returns (ChainlinkCompositeOEVWrapper wrapper) {
+        vm.warp(1_000);
+        baseFeed.set(1, 3000e8, 900, 900, 1);
+        compositeOracle.setPrice(3500e18);
+
+        wrapper = new ChainlinkCompositeOEVWrapper(
+            address(compositeOracle),
+            address(baseFeed),
+            owner,
+            oracleAddr,
+            feeRecipient,
+            defaultFeeBps,
+            defaultMaxRoundDelay
+        );
+
+        assertEq(wrapper.cachedBaseRoundId(), 1, "constructor caches round 1");
+        assertEq(
+            wrapper.cachedCompositePrice(),
+            3500e18,
+            "constructor caches 3500e18"
+        );
+        assertEq(wrapper.cachedTimestamp(), 1_000, "constructor caches t");
+    }
+
+    /// @notice C4 #289 regression: a dust liquidation prices at the fresh composite only during its own nested liquidation, then re-locks — never globally unlocking it for follow-on callers.
+    function testDustLiquidationDoesNotGloballyUnlockFreshRound() public {
+        address mockOracleAddr = address(0x1111);
+        ChainlinkCompositeOEVWrapper wrapper = _deployCachedAt1000(
+            mockOracleAddr
+        );
+
+        // A fresh base round arrives inside maxRoundDelay and moves the composite.
+        vm.warp(1_100);
+        baseFeed.set(2, 2400e8, block.timestamp, block.timestamp, 2);
+        compositeOracle.setPrice(2800e18);
+
+        // Before any OEV liquidation, the wrapper hides the fresh composite.
+        (, int256 delayedBefore, , uint256 updatedAtBefore, ) = wrapper
+            .latestRoundData();
+        assertEq(
+            delayedBefore,
+            3500e18,
+            "fresh composite must be hidden pre-liquidation"
+        );
+        assertEq(updatedAtBefore, 1_000, "cached timestamp pre-liquidation");
+
+        int256 priceBefore = wrapper.cachedCompositePrice();
+        uint256 timestampBefore = wrapper.cachedTimestamp();
+        uint256 roundBefore = wrapper.cachedBaseRoundId();
+
+        // Underlying tokens + mock markets.
+        MockERC20Decimals underlyingCollateral = new MockERC20Decimals(
+            "Collateral",
+            "COLL",
+            18
+        );
+        MockERC20Decimals underlyingLoan = new MockERC20Decimals(
+            "Loan",
+            "LOAN",
+            18
+        );
+        MockLiquidationMToken collateralMarket = new MockLiquidationMToken(
+            address(underlyingCollateral),
+            1e18
+        );
+        MockLiquidationMToken mTokenLoan = new MockLiquidationMToken(
+            address(underlyingLoan),
+            1e18
+        );
+        mTokenLoan.setCollateralToSeize(address(collateralMarket), 2e6);
+        // Record the price the wrapper exposes DURING its own liquidation.
+        mTokenLoan.setPriceObserver(address(wrapper));
+
+        // Loan feed: $1, stable (roundId 42 == answeredInRound 42).
+        MockChainlinkOracle loanFeed = new MockChainlinkOracle(1e8, 8);
+
+        vm.mockCall(
+            mockOracleAddr,
+            abi.encodeWithSignature("getFeed(string)", "COLL"),
+            abi.encode(address(wrapper))
+        );
+        vm.mockCall(
+            mockOracleAddr,
+            abi.encodeWithSignature("getFeed(string)", "LOAN"),
+            abi.encode(address(loanFeed))
+        );
+
+        address attacker = address(0xA11CE);
+        underlyingLoan.mint(attacker, 1e6);
+        vm.startPrank(attacker);
+        underlyingLoan.approve(address(wrapper), 1e6);
+        wrapper.updatePriceEarlyAndLiquidate(
+            address(0xB0B),
+            1e6,
+            address(collateralMarket),
+            address(mTokenLoan)
+        );
+        vm.stopPrank();
+
+        // The legitimate liquidation executed at the FRESH composite...
+        assertEq(
+            mTokenLoan.observedPrice(),
+            2800e18,
+            "nested liquidation must see the fresh composite"
+        );
+        assertGt(
+            collateralMarket.balanceOf(attacker),
+            0,
+            "liquidator received its share"
+        );
+        assertGt(
+            collateralMarket.balanceOf(feeRecipient),
+            0,
+            "protocol received the OEV split"
+        );
+
+        // ...but THE FIX: the unlock did not persist globally.
+        assertEq(
+            wrapper.cachedCompositePrice(),
+            priceBefore,
+            "cachedCompositePrice must NOT advance globally"
+        );
+        assertEq(
+            wrapper.cachedTimestamp(),
+            timestampBefore,
+            "cachedTimestamp must NOT advance globally"
+        );
+        assertEq(
+            wrapper.cachedBaseRoundId(),
+            roundBefore,
+            "cachedBaseRoundId must NOT advance globally"
+        );
+        (, int256 delayedAfter, , uint256 updatedAtAfter, ) = wrapper
+            .latestRoundData();
+        assertEq(
+            delayedAfter,
+            3500e18,
+            "fresh composite must be re-locked for ordinary consumers"
+        );
+        assertEq(updatedAtAfter, 1_000, "cached timestamp re-locked");
+    }
+
+    /// @notice Documents why syncCache exists: with no history to walk back, an unsynced cache serves the deploy-time price in every later delay window.
+    function testWithoutSyncDelayedBranchReturnsDeployTimePrice() public {
+        ChainlinkCompositeOEVWrapper wrapper = _deployCachedAt1000(
+            chainlinkOracle
+        );
+
+        // Round 2 lands and its delay window expires: fresh price is public.
+        vm.warp(1_100);
+        baseFeed.set(2, 3100e8, block.timestamp, block.timestamp, 2);
+        compositeOracle.setPrice(3200e18);
+        vm.warp(1_100 + defaultMaxRoundDelay);
+        (, int256 publicPrice, , , ) = wrapper.latestRoundData();
+        assertEq(publicPrice, 3200e18, "timeout branch returns fresh");
+
+        // Round 3 lands: the delayed branch still serves the deploy-time price.
+        baseFeed.set(3, 2900e8, block.timestamp, block.timestamp, 3);
+        compositeOracle.setPrice(2900e18);
+        (, int256 delayed, , , ) = wrapper.latestRoundData();
+        assertEq(delayed, 3500e18, "unsynced cache serves deploy-time price");
+    }
+
+    function testSyncCacheRevertsWithinDelayWindow() public {
+        ChainlinkCompositeOEVWrapper wrapper = _deployCachedAt1000(
+            chainlinkOracle
+        );
+
+        vm.warp(1_100);
+        baseFeed.set(2, 3100e8, block.timestamp, block.timestamp, 2);
+        compositeOracle.setPrice(3200e18);
+
+        vm.expectRevert(
+            bytes(
+                "ChainlinkCompositeOEVWrapper: base round still within max round delay"
+            )
+        );
+        wrapper.syncCache();
+
+        // One second before the window closes still reverts.
+        vm.warp(1_100 + defaultMaxRoundDelay - 1);
+        vm.expectRevert(
+            bytes(
+                "ChainlinkCompositeOEVWrapper: base round still within max round delay"
+            )
+        );
+        wrapper.syncCache();
+
+        assertEq(wrapper.cachedBaseRoundId(), 1, "round unchanged");
+        assertEq(wrapper.cachedCompositePrice(), 3500e18, "price unchanged");
+        assertEq(wrapper.cachedTimestamp(), 1_000, "timestamp unchanged");
+    }
+
+    function testSyncCacheAdvancesCachePastDelayWindow() public {
+        ChainlinkCompositeOEVWrapper wrapper = _deployCachedAt1000(
+            chainlinkOracle
+        );
+
+        vm.warp(1_100);
+        baseFeed.set(2, 3100e8, block.timestamp, block.timestamp, 2);
+        compositeOracle.setPrice(3200e18);
+
+        // Exactly at the window boundary latestRoundData() is already fresh.
+        uint256 syncTime = 1_100 + defaultMaxRoundDelay;
+        vm.warp(syncTime);
+        (, int256 publicPrice, , , ) = wrapper.latestRoundData();
+        assertEq(publicPrice, 3200e18, "price already public");
+
+        vm.expectEmit(true, true, true, true, address(wrapper));
+        emit CacheSynced(2, 3200e18, syncTime);
+        wrapper.syncCache();
+
+        assertEq(wrapper.cachedBaseRoundId(), 2, "round advanced");
+        assertEq(wrapper.cachedCompositePrice(), 3200e18, "price advanced");
+        assertEq(wrapper.cachedTimestamp(), syncTime, "timestamp advanced");
+    }
+
+    function testSyncedPriceServedInNextDelayWindow() public {
+        ChainlinkCompositeOEVWrapper wrapper = _deployCachedAt1000(
+            chainlinkOracle
+        );
+
+        vm.warp(1_100);
+        baseFeed.set(2, 3100e8, block.timestamp, block.timestamp, 2);
+        compositeOracle.setPrice(3200e18);
+
+        uint256 syncTime = 1_100 + defaultMaxRoundDelay;
+        vm.warp(syncTime);
+        wrapper.syncCache();
+
+        // Same base round as cached -> live composite.
+        compositeOracle.setPrice(3300e18);
+        (, int256 live, , , ) = wrapper.latestRoundData();
+        assertEq(live, 3300e18, "cached round returns live composite");
+
+        // Round 3 lands inside its window: synced price, not deploy-time.
+        vm.warp(syncTime + 10);
+        baseFeed.set(3, 2900e8, block.timestamp, block.timestamp, 3);
+        compositeOracle.setPrice(2900e18);
+        (, int256 delayed, , uint256 delayedUpdatedAt, ) = wrapper
+            .latestRoundData();
+        assertEq(delayed, 3200e18, "delayed branch serves synced price");
+        assertEq(delayedUpdatedAt, syncTime, "delayed branch synced timestamp");
+    }
+
+    function testSyncCacheIsPermissionless() public {
+        ChainlinkCompositeOEVWrapper wrapper = _deployCachedAt1000(
+            chainlinkOracle
+        );
+
+        vm.warp(1_100);
+        baseFeed.set(2, 3100e8, block.timestamp, block.timestamp, 2);
+        compositeOracle.setPrice(3200e18);
+        vm.warp(1_100 + defaultMaxRoundDelay);
+
+        // a non-owner syncs the round 2 price
+        address firstCaller = address(0xBAD);
+        assertTrue(firstCaller != wrapper.owner(), "caller is not owner");
+        vm.prank(firstCaller);
+        wrapper.syncCache();
+
+        assertEq(wrapper.cachedBaseRoundId(), 2, "non-owner can sync");
+        assertEq(wrapper.cachedCompositePrice(), 3200e18, "price synced");
+
+        // a different non-owner syncs the next public round
+        vm.warp(block.timestamp + 10);
+        baseFeed.set(3, 3150e8, block.timestamp, block.timestamp, 3);
+        compositeOracle.setPrice(3250e18);
+        vm.warp(block.timestamp + defaultMaxRoundDelay);
+
+        address secondCaller = address(0xCAFE);
+        assertTrue(secondCaller != wrapper.owner(), "caller is not owner");
+        vm.prank(secondCaller);
+        wrapper.syncCache();
+
+        assertEq(wrapper.cachedBaseRoundId(), 3, "another non-owner can sync");
+        assertEq(wrapper.cachedCompositePrice(), 3250e18, "price re-synced");
+    }
+
+    function testSyncCacheRevertsOnNonPositivePrice() public {
+        ChainlinkCompositeOEVWrapper wrapper = _deployCachedAt1000(
+            chainlinkOracle
+        );
+
+        vm.warp(1_100);
+        baseFeed.set(2, 3100e8, block.timestamp, block.timestamp, 2);
+        vm.warp(1_100 + defaultMaxRoundDelay);
+        compositeOracle.setPrice(0);
+
+        vm.expectRevert(bytes("Chainlink price cannot be lower or equal to 0"));
+        wrapper.syncCache();
+    }
+
+    /// @notice syncCache cannot run inside the nested OEV liquidation (where the cache is transiently fresh).
+    function testSyncCacheCannotReenterDuringLiquidation() public {
+        address mockOracleAddr = address(0x1111);
+        ChainlinkCompositeOEVWrapper wrapper = _deployCachedAt1000(
+            mockOracleAddr
+        );
+
+        vm.warp(1_100);
+        baseFeed.set(2, 2400e8, block.timestamp, block.timestamp, 2);
+        compositeOracle.setPrice(2800e18);
+
+        MockERC20Decimals underlyingCollateral = new MockERC20Decimals(
+            "Collateral",
+            "COLL",
+            18
+        );
+        MockERC20Decimals underlyingLoan = new MockERC20Decimals(
+            "Loan",
+            "LOAN",
+            18
+        );
+        MockLiquidationMToken collateralMarket = new MockLiquidationMToken(
+            address(underlyingCollateral),
+            1e18
+        );
+        MockLiquidationMToken mTokenLoan = new MockLiquidationMToken(
+            address(underlyingLoan),
+            1e18
+        );
+        mTokenLoan.setCollateralToSeize(address(collateralMarket), 2e6);
+        mTokenLoan.setSyncReentryTarget(address(wrapper));
+
+        vm.mockCall(
+            mockOracleAddr,
+            abi.encodeWithSignature("getFeed(string)", "COLL"),
+            abi.encode(address(wrapper))
+        );
+
+        underlyingLoan.mint(address(this), 1e6);
+        underlyingLoan.approve(address(wrapper), 1e6);
+        vm.expectRevert(bytes("ReentrancyGuard: reentrant call"));
+        wrapper.updatePriceEarlyAndLiquidate(
+            address(0xB0B),
+            1e6,
+            address(collateralMarket),
+            address(mTokenLoan)
+        );
+    }
 }
 
 // ==================== Mock Contracts ====================
@@ -1250,5 +1603,81 @@ contract MockMToken {
 
     function exchangeRateStored() external view returns (uint256) {
         return _exchangeRate;
+    }
+}
+
+/// @notice mToken mock whose liquidateBorrow() pulls the repay and credits configured collateral; also acts as the collateral market.
+contract MockLiquidationMToken {
+    address public underlying;
+    uint256 private _exchangeRate;
+    mapping(address => uint256) public balanceOf;
+
+    address private _collateralMToken;
+    uint256 private _collateralToSeize;
+
+    // Optional: record the price exposed by a source oracle during liquidation.
+    address private _priceObserver;
+    int256 public observedPrice;
+
+    // Optional: attempt to re-enter the wrapper's syncCache() during liquidation.
+    address private _syncReentryTarget;
+
+    constructor(address underlying_, uint256 exchangeRate_) {
+        underlying = underlying_;
+        _exchangeRate = exchangeRate_;
+    }
+
+    function exchangeRateStored() external view returns (uint256) {
+        return _exchangeRate;
+    }
+
+    function setCollateralToSeize(
+        address collateralMToken_,
+        uint256 amount_
+    ) external {
+        _collateralMToken = collateralMToken_;
+        _collateralToSeize = amount_;
+    }
+
+    function setPriceObserver(address source) external {
+        _priceObserver = source;
+    }
+
+    function setSyncReentryTarget(address target) external {
+        _syncReentryTarget = target;
+    }
+
+    /// @notice Called on the LOAN market by the wrapper.
+    function liquidateBorrow(
+        address,
+        uint256 repayAmount,
+        address mTokenCollateral
+    ) external returns (uint256) {
+        if (_priceObserver != address(0)) {
+            (, observedPrice, , , ) = AggregatorV3Interface(_priceObserver)
+                .latestRoundData();
+        }
+        if (_syncReentryTarget != address(0)) {
+            ChainlinkCompositeOEVWrapper(payable(_syncReentryTarget))
+                .syncCache();
+        }
+        // Pull the repaid loan underlying from the caller (the wrapper).
+        IERC20(underlying).transferFrom(msg.sender, address(this), repayAmount);
+        // Seize: credit collateral mTokens to the caller (the wrapper).
+        MockLiquidationMToken(mTokenCollateral).creditMTokens(
+            msg.sender,
+            _collateralToSeize
+        );
+        return 0;
+    }
+
+    function creditMTokens(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        return true;
     }
 }

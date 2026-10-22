@@ -244,8 +244,11 @@ contract ChainlinkOEVMorphoWrapper is
 
     /**
      * @notice Returns data from the latest round, with OEV protection mechanism
-     * @dev If the latest round hasn't been paid for (via updatePriceEarlyAndLiquidate) and is recent,
-     *      this function will return data from a previous round instead
+     * @dev While the latest round is younger than `maxRoundDelay` and differs from `cachedRoundId`,
+     *      this function returns data from a previous round instead. The fresh round is exposed early
+     *      only to the nested Morpho liquidation inside `updatePriceEarlyAndLiquidate`, which restores
+     *      `cachedRoundId` before any further external call, so ordinary consumers keep seeing the
+     *      delayed round until `maxRoundDelay` elapses
      * @return roundId The round ID
      * @return answer The latest price
      * @return startedAt The timestamp when the round started
@@ -267,9 +270,10 @@ contract ChainlinkOEVMorphoWrapper is
         (roundId, answer, startedAt, updatedAt, answeredInRound) = priceFeed
             .latestRoundData();
 
-        // The default behavior is to delay the price update unless someone has paid for the current round.
-        // If the current round is not too old (maxRoundDelay seconds) and hasn't been paid for,
-        // attempt to find the most recent valid round by checking previous rounds
+        // The default behavior is to delay the price update for maxRoundDelay seconds. The latest round
+        // is only served early while it equals cachedRoundId, and updatePriceEarlyAndLiquidate sets that
+        // only for the duration of its nested liquidation. Otherwise, if the current round is not too
+        // old, attempt to find the most recent valid round by checking previous rounds
         if (
             roundId != cachedRoundId &&
             block.timestamp < updatedAt + maxRoundDelay
@@ -362,9 +366,9 @@ contract ChainlinkOEVMorphoWrapper is
 
     /**
      * @notice Approve or unapprove a Morpho market for early price updates and liquidation
-     * @dev Only approved markets may advance `cachedRoundId` via `updatePriceEarlyAndLiquidate`.
-     *      This prevents an attacker from spinning up a permissionless dust market with this
-     *      wrapper as base feed and using it to unlock the fresh price for free.
+     * @dev Only approved markets may use `updatePriceEarlyAndLiquidate`, which exposes the fresh
+     *      round to its nested Morpho liquidation. This prevents an attacker from spinning up a
+     *      permissionless dust market with this wrapper as base feed to reach that path.
      * @param id The canonical Morpho Blue market id (`keccak256(abi.encode(MarketParams))`)
      * @param approved Whether the market is approved
      */
@@ -408,8 +412,13 @@ contract ChainlinkOEVMorphoWrapper is
     }
 
     /**
-     * @notice Updates the cached round ID to allow early access to the latest price and executes a liquidation
-     * @dev This function collects a fee from the caller, updates the cached price, and performs the liquidation on Morpho Blue
+     * @notice Executes a Morpho Blue liquidation priced at the latest (fresh) Chainlink round, ahead of the
+     *         `maxRoundDelay` delay that ordinary `latestRoundData()` consumers are subject to
+     * @dev This function pulls the caller's loan tokens, sets `cachedRoundId` to the fresh round only for the
+     *      nested `morphoBlue.liquidate` call, and restores the previous `cachedRoundId` before any external
+     *      call that follows the liquidation (allowance scrub, excess refund, collateral split). The fresh
+     *      round is therefore never persisted for shared consumers, who keep seeing the delayed round until
+     *      `maxRoundDelay` elapses. Seized collateral is split between the caller and `feeRecipient`
      * @dev The actual repayment amount is calculated by Morpho based on seizedAssets, oracle price, and liquidation incentive
      * @param marketParams The Morpho market parameters identifying the market
      * @param borrower The address of the borrower to liquidate
@@ -440,11 +449,11 @@ contract ChainlinkOEVMorphoWrapper is
             "ChainlinkOEVMorphoWrapper: max repay amount cannot be zero"
         );
 
-        // gate: only approved markets may advance cachedRoundId. Without this an attacker
-        // could create a permissionless Morpho market + oracle pointing at this wrapper,
-        // self-liquidate a dust position, unlock the fresh price for shared consumers, and
-        // then liquidate real positions through Morpho Blue's native `liquidate()` at zero
-        // OEV cost. (C4 #195)
+        // gate: only approved markets may expose the fresh round to a nested liquidation.
+        // Without this an attacker could create a permissionless Morpho market + oracle
+        // pointing at this wrapper and reach the fresh-price liquidation path through a
+        // market the protocol never vetted. (C4 #195) The fresh round itself is scoped to
+        // the nested liquidation below and never persisted for shared consumers. (C4 #289)
         require(
             approvedMarkets[keccak256(abi.encode(marketParams))],
             "ChainlinkOEVMorphoWrapper: market not approved"
@@ -457,8 +466,17 @@ contract ChainlinkOEVMorphoWrapper is
             "ChainlinkOEVMorphoWrapper: oracle must be the same as the base feed 1"
         );
 
+        EIP20Interface loanToken = EIP20Interface(marketParams.loanToken);
+        IERC20(address(loanToken)).safeTransferFrom(
+            msg.sender,
+            address(this),
+            maxRepayAmount
+        );
+
         // get the latest round data and update cached round id
         int256 collateralAnswer;
+        // snapshot so the fresh-round unlock is scoped to this nested liquidation, not persisted globally.
+        uint256 previousCachedRoundId = cachedRoundId;
         {
             (
                 uint80 roundId,
@@ -480,15 +498,6 @@ contract ChainlinkOEVMorphoWrapper is
         uint256 actualSeizedAssets;
         uint256 actualRepaidAssets;
         {
-            EIP20Interface loanToken = EIP20Interface(marketParams.loanToken);
-
-            // Morpho will pull the actual amount needed, and we'll return any excess
-            IERC20(address(loanToken)).safeTransferFrom(
-                msg.sender,
-                address(this),
-                maxRepayAmount
-            );
-
             IERC20(address(loanToken)).forceApprove(
                 address(morphoBlue),
                 maxRepayAmount
@@ -500,8 +509,11 @@ contract ChainlinkOEVMorphoWrapper is
                 0,
                 ""
             );
-            // HAL-08: zero out the residual allowance so a future caller can't
-            // skip a fresh approval for the leftover (maxRepay - actualRepaid).
+            // restore before the refund below (which yields control to the loan token), so the fresh round is not globally unlocked.
+            // The unlock is per-wrapper and per-call: a shortfall that also needs a second
+            // OEV-wrapped feed to be fresh waits out that feed's maxRoundDelay.
+            cachedRoundId = previousCachedRoundId;
+            // zero out the residual allowance so a future caller can't skip a fresh approval for the leftover
             IERC20(address(loanToken)).forceApprove(address(morphoBlue), 0);
 
             require(
@@ -509,9 +521,7 @@ contract ChainlinkOEVMorphoWrapper is
                 "ChainlinkOEVMorphoWrapper: repaid amount exceeds maximum"
             );
 
-            // HAL-03: return excess via safeTransfer so void-return tokens
-            // (e.g. USDT-class) on permissionless Morpho markets don't brick
-            // the refund path.
+            // return excess loan tokens to the caller
             uint256 excessLoanTokens = maxRepayAmount - actualRepaidAssets;
             if (excessLoanTokens > 0) {
                 IERC20(address(loanToken)).safeTransfer(

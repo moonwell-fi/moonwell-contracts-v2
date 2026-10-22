@@ -12,15 +12,15 @@
         "market": "MOONWELL_DAI"
     },
     {
-        "chainlinkFeed": "CHAINLINK_ETH_USD",
+        "chainlinkFeed": "CHAINLINK_ETH_USD_SVR",
         "market": "MOONWELL_WETH"
     },
     {
-        "chainlinkFeed": "cbETH_COMPOSITE_ORACLE",
+        "chainlinkFeed": "cbETH_COMPOSITE_ORACLE_DEPRECATED_SVR",
         "market": "MOONWELL_cbETH"
     },
     {
-        "chainlinkFeed": "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE",
+        "chainlinkFeed": "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE_DEPRECATED_SVR",
         "market": "MOONWELL_wstETH"
     },
     {
@@ -32,11 +32,11 @@
         "market": "MOONWELL_AERO"
     },
     {
-        "chainlinkFeed": "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE",
+        "chainlinkFeed": "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE_DEPRECATED_SVR",
         "market": "MOONWELL_weETH"
     },
     {
-        "chainlinkFeed": "CHAINLINK_BTC_USD",
+        "chainlinkFeed": "CHAINLINK_BTC_USD_SVR",
         "market": "MOONWELL_cbBTC"
     },
     {
@@ -56,7 +56,7 @@
         "market": "MOONWELL_TBTC"
     },
     {
-        "chainlinkFeed": "CHAINLINK_LBTC_BTC_COMPOSITE_ORACLE",
+        "chainlinkFeed": "CHAINLINK_LBTC_BTC_COMPOSITE_ORACLE_DEPRECATED_SVR",
         "market": "MOONWELL_LBTC"
     },
     {
