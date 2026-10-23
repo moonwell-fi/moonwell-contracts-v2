@@ -32,7 +32,7 @@ contract PostProposalCheck is LiveProposalCheck {
     address[] internal _priceChangeAllowlist;
 
     /// @notice union of simulated proposals' expectedMarketStateChanges()
-    address[] internal _marketStateChangeAllowlist;
+    Proposal.MarketStateChange[] internal _marketStateChanges;
 
     /// @notice store the proposal start time so that tests can go back in time
     /// to this point if needed. Used in ReserveAutomationDeploy Integration Test
@@ -213,9 +213,10 @@ contract PostProposalCheck is LiveProposalCheck {
             _priceChangeAllowlist.push(declared[i]);
         }
 
-        declared = stateGuard.declaredChanges(addresses, proposal);
-        for (uint256 i = 0; i < declared.length; i++) {
-            _marketStateChangeAllowlist.push(declared[i]);
+        Proposal.MarketStateChange[] memory changes = stateGuard
+            .declaredChanges(addresses, proposal);
+        for (uint256 i = 0; i < changes.length; i++) {
+            _marketStateChanges.push(changes[i]);
         }
     }
 

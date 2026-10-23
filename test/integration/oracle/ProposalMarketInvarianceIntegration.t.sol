@@ -10,12 +10,14 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {MarketStateGuard} from "@test/utils/MarketStateGuard.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
 /// @notice Proves the pending proposals (every id:0 MIP and every pending
 /// MultichainGovernorV2 proposal) leave each market on every chain unchanged
 /// and usable, except what a proposal declares via expectedPriceChanges()
-/// (prices, Morpho oracles) or expectedMarketStateChanges() (risk, accounting).
+/// (prices, Morpho oracles) or expectedMarketStateChanges() (risk, accounting,
+/// per chain). Markets listed by a pending proposal must be wired and usable.
 contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
     using ChainIds for uint256;
 
@@ -46,7 +48,7 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
             Comptroller comptroller = _comptroller();
             string memory chain = vm.toString(block.chainid);
 
-            if (!_declared(address(comptroller))) {
+            if (!_declared(address(comptroller), true)) {
                 _assertComptrollerUnchanged(
                     stateGuard.comptrollerBefore(f),
                     stateGuard.readComptroller(comptroller),
@@ -56,7 +58,7 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
 
             address[] memory markets = stateGuard.marketsBefore(f);
             for (uint256 i = 0; i < markets.length; i++) {
-                if (_declared(markets[i])) continue;
+                if (_declared(markets[i], true)) continue;
                 MarketStateGuard.MarketState memory b = stateGuard.marketBefore(
                     f,
                     markets[i]
@@ -114,6 +116,8 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
                     string.concat("comptroller ", label)
                 );
             }
+
+            _assertNewMarketsWired(f, comptroller);
         }
         assertGt(chains, 0, "no chain snapshotted");
     }
@@ -129,7 +133,7 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
             address[] memory markets = stateGuard.marketsBefore(f);
 
             for (uint256 i = 0; i < markets.length; i++) {
-                if (_declared(markets[i])) continue;
+                if (_declared(markets[i], false)) continue;
                 checked++;
                 MarketStateGuard.MarketState memory b = stateGuard.marketBefore(
                     f,
@@ -293,7 +297,24 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
         address[] memory toEnter = new address[](markets.length);
         uint256 entered;
         for (uint256 i = 0; i < markets.length; i++) {
-            if (!stateGuard.marketBefore(forkId, address(markets[i])).priced) {
+            MarketStateGuard.MarketState memory b = stateGuard.marketBefore(
+                forkId,
+                address(markets[i])
+            );
+            // listed by a pending proposal: no baseline, so it must price now
+            if (!b.isListed) {
+                assertGt(
+                    _readPrice(oracle, markets[i]),
+                    0,
+                    string.concat(
+                        "new market is unpriced: ",
+                        _label(address(markets[i]))
+                    )
+                );
+                toEnter[entered++] = address(markets[i]);
+                continue;
+            }
+            if (!b.priced) {
                 continue;
             }
             if (_readPrice(oracle, markets[i]) == 0) {
@@ -508,6 +529,35 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
         require(ok, "approve failed");
     }
 
+    /// @notice markets listed by a pending proposal have no baseline to diff;
+    /// they must at least be listed on, and point back at, this Comptroller
+    function _assertNewMarketsWired(
+        uint256 forkId,
+        Comptroller comptroller
+    ) internal {
+        MToken[] memory markets = comptroller.getAllMarkets();
+        for (uint256 i = 0; i < markets.length; i++) {
+            if (stateGuard.marketBefore(forkId, address(markets[i])).isListed) {
+                continue;
+            }
+            MarketStateGuard.MarketState memory a = stateGuard.readMarket(
+                comptroller,
+                markets[i]
+            );
+            string memory label = _label(address(markets[i]));
+            assertTrue(
+                a.isListed,
+                string.concat("new market not listed ", label)
+            );
+            assertEq(
+                a.comptroller,
+                address(comptroller),
+                string.concat("new market comptroller ", label)
+            );
+            console.log("new market wired:", label);
+        }
+    }
+
     function _assertComptrollerUnchanged(
         MarketStateGuard.ComptrollerState memory b,
         MarketStateGuard.ComptrollerState memory a,
@@ -554,11 +604,6 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
             b.implementation,
             string.concat("implementation ", chain)
         );
-        assertEq(
-            a.marketCount,
-            b.marketCount,
-            string.concat("market count ", chain)
-        );
     }
 
     function _readPrice(
@@ -576,8 +621,20 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
         return Comptroller(addresses.getAddress("UNITROLLER"));
     }
 
-    function _declared(address target) internal view returns (bool) {
-        return _contains(_marketStateChangeAllowlist, target);
+    /// @notice true when a proposal declared `target` on this chain for the
+    /// given kind of change (risk parameters, else stored accounting)
+    function _declared(address target, bool risk) internal view returns (bool) {
+        for (uint256 i = 0; i < _marketStateChanges.length; i++) {
+            Proposal.MarketStateChange memory c = _marketStateChanges[i];
+            if (
+                c.chainId == block.chainid &&
+                c.target == target &&
+                (risk ? c.riskParameters : c.accounting)
+            ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function _label(address market) internal view returns (string memory) {

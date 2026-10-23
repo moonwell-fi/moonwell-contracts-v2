@@ -30,7 +30,6 @@ contract MarketStateGuard {
         bool transferPaused;
         bool seizePaused;
         address implementation;
-        uint256 marketCount;
     }
 
     struct MarketState {
@@ -142,7 +141,7 @@ contract MarketStateGuard {
     function declaredChanges(
         Addresses addresses,
         Proposal proposal
-    ) external returns (address[] memory declared) {
+    ) external returns (Proposal.MarketStateChange[] memory declared) {
         uint256 activeFork = vm.activeFork();
         try proposal.primaryForkId() returns (uint256 primaryFork) {
             vm.selectFork(primaryFork);
@@ -157,7 +156,7 @@ contract MarketStateGuard {
             )
         );
         if (ok && ret.length > 0) {
-            declared = abi.decode(ret, (address[]));
+            declared = abi.decode(ret, (Proposal.MarketStateChange[]));
         }
 
         vm.selectFork(activeFork);
@@ -182,7 +181,6 @@ contract MarketStateGuard {
         s.transferPaused = comptroller.transferGuardianPaused();
         s.seizePaused = comptroller.seizeGuardianPaused();
         s.implementation = comptroller.comptrollerImplementation();
-        s.marketCount = comptroller.getAllMarkets().length;
     }
 
     function readMarket(

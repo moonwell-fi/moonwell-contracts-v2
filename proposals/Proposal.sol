@@ -111,12 +111,20 @@ abstract contract Proposal is Script, Test {
         Addresses
     ) public view virtual returns (address[] memory) {}
 
-    /// @notice mTokens whose risk parameters or stored accounting this proposal
-    /// changes on purpose (CF, caps, pauses, reserves, IRM). Include UNITROLLER
-    /// for comptroller-wide changes. Same fork rules as expectedPriceChanges.
+    /// @notice one market (or UNITROLLER) on one chain whose risk parameters
+    /// and/or stored accounting a proposal changes on purpose
+    struct MarketStateChange {
+        uint256 chainId;
+        address target;
+        bool riskParameters;
+        bool accounting;
+    }
+
+    /// @notice intended market state changes; anything else must stay identical.
+    /// Chain-scoped because market addresses repeat across chains (mweETH).
     function expectedMarketStateChanges(
         Addresses
-    ) public view virtual returns (address[] memory) {}
+    ) public view virtual returns (MarketStateChange[] memory) {}
 
     /// @notice initialize the proposal after the proposal is created and the
     /// live fork is selected
