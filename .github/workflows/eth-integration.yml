@@ -87,6 +87,7 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 40
            max_attempts: 3
-           # Snapshots every market on Base/OP/Ethereum, runs MIP-X72 alone, then
-           # diffs. No --fork-url: the test creates all forks itself.
+           # Snapshots every market on every chain before PostProposalCheck runs
+           # the pending proposals, then diffs. No --fork-url: forks are managed
+           # by PostProposalCheck.
            command: time forge test --match-contract ProposalMarketInvarianceIntegrationTest -vvv --ffi

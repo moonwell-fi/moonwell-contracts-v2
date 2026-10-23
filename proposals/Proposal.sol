@@ -111,6 +111,13 @@ abstract contract Proposal is Script, Test {
         Addresses
     ) public view virtual returns (address[] memory) {}
 
+    /// @notice mTokens whose risk parameters or stored accounting this proposal
+    /// changes on purpose (CF, caps, pauses, reserves, IRM). Include UNITROLLER
+    /// for comptroller-wide changes. Same fork rules as expectedPriceChanges.
+    function expectedMarketStateChanges(
+        Addresses
+    ) public view virtual returns (address[] memory) {}
+
     /// @notice initialize the proposal after the proposal is created and the
     /// live fork is selected
     function initProposal(Addresses) public virtual {}

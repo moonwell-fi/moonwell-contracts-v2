@@ -9,6 +9,7 @@ import {String} from "@utils/String.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {MarketPriceGuard} from "@test/utils/MarketPriceGuard.sol";
+import {MarketStateGuard} from "@test/utils/MarketStateGuard.sol";
 import {LiveProposalCheck} from "@test/utils/LiveProposalCheck.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichainGovernorV2.sol";
@@ -30,6 +31,9 @@ contract PostProposalCheck is LiveProposalCheck {
     /// @notice union of simulated proposals' expectedPriceChanges()
     address[] internal _priceChangeAllowlist;
 
+    /// @notice union of simulated proposals' expectedMarketStateChanges()
+    address[] internal _marketStateChangeAllowlist;
+
     /// @notice store the proposal start time so that tests can go back in time
     /// to this point if needed. Used in ReserveAutomationDeploy Integration Test
     uint256 public proposalStartTime;
@@ -37,6 +41,9 @@ contract PostProposalCheck is LiveProposalCheck {
     /// @notice snapshots every market's oracle price before the pending
     /// proposals run and fails setUp if any price moved afterwards
     MarketPriceGuard public priceGuard;
+
+    /// @notice resolves expectedMarketStateChanges(); snapshots on demand
+    MarketStateGuard public stateGuard;
 
     function setUp() public virtual override {
         uint256 primaryForkBefore = vm.envOr("PRIMARY_FORK_ID", uint256(0));
@@ -60,6 +67,7 @@ contract PostProposalCheck is LiveProposalCheck {
 
         // baseline before any not-yet-executed proposal, on-chain or in dev
         _snapshotMarketPrices();
+        _beforePendingProposals();
 
         // execute proposals that are succeeded but not executed yet
         executeSucceededProposals(addresses, governor);
@@ -147,6 +155,9 @@ contract PostProposalCheck is LiveProposalCheck {
         priceGuard = new MarketPriceGuard();
         vm.makePersistent(address(priceGuard));
 
+        stateGuard = new MarketStateGuard();
+        vm.makePersistent(address(stateGuard));
+
         for (uint256 i = MOONBEAM_FORK_ID; i <= ETHEREUM_FORK_ID; i++) {
             priceGuard.snapshot(addresses, i);
         }
@@ -183,6 +194,10 @@ contract PostProposalCheck is LiveProposalCheck {
         require(total == 0, firstSummary);
     }
 
+    /// @notice runs after the price snapshot, before any pending proposal;
+    /// suites that diff pre/post state take their snapshot here
+    function _beforePendingProposals() internal virtual {}
+
     function _onOnChainProposal(Proposal proposal) internal override {
         _recordExpectedPriceChanges(proposal);
     }
@@ -196,6 +211,11 @@ contract PostProposalCheck is LiveProposalCheck {
         );
         for (uint256 i = 0; i < declared.length; i++) {
             _priceChangeAllowlist.push(declared[i]);
+        }
+
+        declared = stateGuard.declaredChanges(addresses, proposal);
+        for (uint256 i = 0; i < declared.length; i++) {
+            _marketStateChangeAllowlist.push(declared[i]);
         }
     }
 
