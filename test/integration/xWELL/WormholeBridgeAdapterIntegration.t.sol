@@ -528,11 +528,12 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         address user,
         uint256 bridgeAmount
     ) internal {
-        // Dest fork must trust the current source: Ethereum <-> Base/Optimism
-        // are wired both ways since MIP-X55.
+        // Dest fork must trust the current source (Ethereum <-> Base/Optimism
+        // since MIP-X55) and not have processed its sequence 0 yet, which
+        // Base already has for Ethereum.
         vm.selectFork(
             currentWormholeChainId == ETHEREUM_WORMHOLE_CHAIN_ID
-                ? BASE_FORK_ID
+                ? OPTIMISM_FORK_ID
                 : ETHEREUM_FORK_ID
         );
 

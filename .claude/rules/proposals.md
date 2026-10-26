@@ -120,7 +120,6 @@
 - `PostProposalCheck.setUp` snapshots `getUnderlyingPrice` for every listed
   market on every fork before simulating pending proposals and fails if any
   price moves more than 1% afterwards (MIP-X43 cbETH mispricing guard, see
-  `test/utils/MarketPriceGuard.sol`). A proposal that changes a market's
-  price on purpose must list the mTokens in
-  `expectedPriceChanges(Addresses)`; undeclared moves fail every integration
-  job.
+  `test/utils/MarketPriceGuard.sol`). A proposal that changes a market's price
+  on purpose must list the mTokens in `expectedPriceChanges(Addresses)`;
+  undeclared moves fail every integration job.
