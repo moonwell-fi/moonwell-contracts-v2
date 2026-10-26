@@ -15,10 +15,9 @@ import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichain
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {VotingPowerAggregator} from "@protocol/governance/multichain/VotingPowerAggregator.sol";
 import {MultichainVoteCollectionV2} from "@protocol/governance/multichain/MultichainVoteCollectionV2.sol";
-import {MultichainVoteCollectionMoonbeam} from "@protocol/governance/multichain/MultichainVoteCollectionMoonbeam.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// @notice Comprehensive tests for MultichainGovernorV2 including multi-step proposal edge cases
 /// @dev Primary fork is now Ethereum (not Moonbeam), voting uses timestamps only (no block numbers),
@@ -29,29 +28,24 @@ contract MultichainProposalTestV2 is PostProposalCheck {
 
     /// @notice VotingPowerAggregator instances
     VotingPowerAggregator public ethereumVotingPower;
-    VotingPowerAggregator public moonbeamVotingPower;
     VotingPowerAggregator public baseVotingPower;
     VotingPowerAggregator public optimismVotingPower;
 
     /// @notice xWELL instances across chains
     xWELL public ethereumXWell;
-    xWELL public moonbeamXWell;
     xWELL public baseXWell;
     xWELL public optimismXWell;
 
     /// @notice Staked WELL instances
     IStakedWell public ethereumStkWell;
-    IStakedWell public moonbeamStkWell;
     IStakedWell public baseStkWell;
     IStakedWell public optimismStkWell;
 
     /// @notice Vote Collection instances
-    MultichainVoteCollectionMoonbeam public moonbeamVoteCollection;
     MultichainVoteCollectionV2 public baseVoteCollection;
     MultichainVoteCollectionV2 public optimismVoteCollection;
 
     /// @notice Temporal Governor instances
-    TemporalGovernor public moonbeamTemporalGov;
     TemporalGovernor public baseTemporalGov;
     TemporalGovernor public optimismTemporalGov;
 
@@ -116,22 +110,6 @@ contract MultichainProposalTestV2 is PostProposalCheck {
         ethereumXWell = xWELL(addresses.getAddress("xWELL_PROXY"));
         ethereumStkWell = IStakedWell(
             addresses.getAddress("STK_GOVTOKEN_PROXY")
-        );
-
-        // Load Moonbeam contracts
-        vm.selectFork(MOONBEAM_FORK_ID);
-        moonbeamVotingPower = VotingPowerAggregator(
-            addresses.getAddress("VOTING_POWER_AGGREGATOR")
-        );
-        moonbeamXWell = xWELL(addresses.getAddress("xWELL_PROXY"));
-        moonbeamStkWell = IStakedWell(
-            addresses.getAddress("STK_GOVTOKEN_PROXY")
-        );
-        moonbeamVoteCollection = MultichainVoteCollectionMoonbeam(
-            addresses.getAddress("VOTE_COLLECTION_V2_PROXY")
-        );
-        moonbeamTemporalGov = TemporalGovernor(
-            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
         // Load Base contracts
@@ -275,17 +253,6 @@ contract MultichainProposalTestV2 is PostProposalCheck {
         assertEq(governorV2.quorum(), 100_000_000 * 1e18, "incorrect quorum");
 
         // Verify contracts are properly deployed on all chains
-        vm.selectFork(MOONBEAM_FORK_ID);
-        assertNotEq(
-            address(moonbeamVoteCollection),
-            address(0),
-            "moonbeam vote collection not deployed"
-        );
-        assertNotEq(
-            address(moonbeamTemporalGov),
-            address(0),
-            "moonbeam temporal gov not deployed"
-        );
 
         vm.selectFork(BASE_FORK_ID);
         assertNotEq(

@@ -989,11 +989,8 @@ abstract contract HybridProposalV2 is
                 ProposalAction[] memory moonbeamActions = actions.filter(
                     ActionType.Moonbeam
                 );
-                // Only touch the Moonbeam fork when there is something to
-                // check. With Moonbeam wound down, fork id 0 may be the
-                // placeholder stood up when its RPC is unreachable (see
-                // ChainIds.createForksAndSelect), and selecting it would fail
-                // checkMoonbeamActions' chain-id guard over an empty list.
+                // fork id 0 is a placeholder (ChainIds.createForksAndSelect);
+                // only select it when there are Moonbeam actions to check.
                 if (moonbeamActions.length > 0) {
                     vm.selectFork(MOONBEAM_FORK_ID);
 

@@ -32,7 +32,7 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
 
     function _beforePendingProposals() internal override {
         uint256 activeFork = vm.activeFork();
-        for (uint256 i = MOONBEAM_FORK_ID; i <= ETHEREUM_FORK_ID; i++) {
+        for (uint256 i = BASE_FORK_ID; i <= ETHEREUM_FORK_ID; i++) {
             stateGuard.snapshot(addresses, i);
         }
         vm.selectFork(activeFork);
@@ -41,7 +41,7 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
     /// @notice Comptroller-level and per-market risk parameters are untouched.
     function testRiskParametersUnchanged() public {
         uint256 chains;
-        for (uint256 f = MOONBEAM_FORK_ID; f <= ETHEREUM_FORK_ID; f++) {
+        for (uint256 f = BASE_FORK_ID; f <= ETHEREUM_FORK_ID; f++) {
             if (!stateGuard.snapshotTaken(f)) continue;
             vm.selectFork(f);
             chains++;
@@ -126,7 +126,7 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
     /// funds, mints shares or accrues interest on a market.
     function testMarketAccountingUnchanged() public {
         uint256 checked;
-        for (uint256 f = MOONBEAM_FORK_ID; f <= ETHEREUM_FORK_ID; f++) {
+        for (uint256 f = BASE_FORK_ID; f <= ETHEREUM_FORK_ID; f++) {
             if (!stateGuard.snapshotTaken(f)) continue;
             vm.selectFork(f);
             Comptroller comptroller = _comptroller();
@@ -186,7 +186,7 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
     /// expectedPriceChanges().
     function testMorphoBlueOraclePricesPreserved() public {
         uint256 checked;
-        for (uint256 f = MOONBEAM_FORK_ID; f <= ETHEREUM_FORK_ID; f++) {
+        for (uint256 f = BASE_FORK_ID; f <= ETHEREUM_FORK_ID; f++) {
             if (!stateGuard.snapshotTaken(f)) continue;
             vm.selectFork(f);
             address[] memory oracles = stateGuard.morphoOraclesBefore(f);
@@ -227,7 +227,7 @@ contract ProposalMarketInvarianceIntegrationTest is PostProposalCheck {
     /// priced that way before the proposals are logged, not failed.
     function testNoMarketRoutedThroughRetiredFeed() public {
         uint256 checked;
-        for (uint256 f = MOONBEAM_FORK_ID; f <= ETHEREUM_FORK_ID; f++) {
+        for (uint256 f = BASE_FORK_ID; f <= ETHEREUM_FORK_ID; f++) {
             if (!stateGuard.snapshotTaken(f)) continue;
             vm.selectFork(f);
             address[] memory retired = stateGuard.retiredOf(block.chainid);

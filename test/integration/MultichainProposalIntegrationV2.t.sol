@@ -16,11 +16,10 @@ import {IMultichainGovernorV2} from "@protocol/governance/multichain/IMultichain
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {VotingPowerAggregator} from "@protocol/governance/multichain/VotingPowerAggregator.sol";
 import {MultichainVoteCollectionV2} from "@protocol/governance/multichain/MultichainVoteCollectionV2.sol";
-import {MultichainVoteCollectionMoonbeam} from "@protocol/governance/multichain/MultichainVoteCollectionMoonbeam.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, MOONBEAM_FORK_ID, ETHEREUM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBEAM_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ETHEREUM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBEAM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {EthereumPostDeploymentActions} from "@protocol/xWELL/EthereumPostDeploymentActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {BridgeOutHelper} from "@test/helper/BridgeOutHelper.sol";
@@ -41,29 +40,24 @@ contract MultichainProposalIntegrationV2 is
 
     /// @notice VotingPowerAggregator instances
     VotingPowerAggregator public ethereumVotingPower;
-    VotingPowerAggregator public moonbeamVotingPower;
     VotingPowerAggregator public baseVotingPower;
     VotingPowerAggregator public optimismVotingPower;
 
     /// @notice xWELL instances across chains
     xWELL public ethereumXWell;
-    xWELL public moonbeamXWell;
     xWELL public baseXWell;
     xWELL public optimismXWell;
 
     /// @notice Staked WELL instances
     IStakedWell public ethereumStkWell;
-    IStakedWell public moonbeamStkWell;
     IStakedWell public baseStkWell;
     IStakedWell public optimismStkWell;
 
     /// @notice Vote Collection instances
-    MultichainVoteCollectionMoonbeam public moonbeamVoteCollection;
     MultichainVoteCollectionV2 public baseVoteCollection;
     MultichainVoteCollectionV2 public optimismVoteCollection;
 
     /// @notice Temporal Governor instances
-    TemporalGovernor public moonbeamTemporalGov;
     TemporalGovernor public baseTemporalGov;
     TemporalGovernor public optimismTemporalGov;
 
@@ -136,22 +130,6 @@ contract MultichainProposalIntegrationV2 is
         // This configures the xWELL ecosystem after MultichainGovernorV2 deployment
         _configureEthereumPostDeployment();
 
-        // Load Moonbeam contracts
-        vm.selectFork(MOONBEAM_FORK_ID);
-        moonbeamVotingPower = VotingPowerAggregator(
-            addresses.getAddress("VOTING_POWER_AGGREGATOR")
-        );
-        moonbeamXWell = xWELL(addresses.getAddress("xWELL_PROXY"));
-        moonbeamStkWell = IStakedWell(
-            addresses.getAddress("STK_GOVTOKEN_PROXY")
-        );
-        moonbeamVoteCollection = MultichainVoteCollectionMoonbeam(
-            addresses.getAddress("VOTE_COLLECTION_V2_PROXY")
-        );
-        moonbeamTemporalGov = TemporalGovernor(
-            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
-        );
-
         // Load Base contracts
         vm.selectFork(BASE_FORK_ID);
         baseVotingPower = VotingPowerAggregator(
@@ -182,9 +160,6 @@ contract MultichainProposalIntegrationV2 is
             payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
-        // Accept pending ownership transfers on Moonbeam (for 2-step ownership contracts)
-        _acceptPendingOwnershipsOnMoonbeam();
-
         // Setup wormhole relayer mock for cross-chain bridging
         _setupWormholeRelayerMock();
 
@@ -195,27 +170,6 @@ contract MultichainProposalIntegrationV2 is
     /// --------------------------------------------------------- ///
     /// -------------------- SETUP HELPERS ---------------------- ///
     /// --------------------------------------------------------- ///
-
-    /// @notice Accept pending ownership transfers on Moonbeam for contracts that use 2-step ownership
-    /// @dev After the proposal executes and calls transferOwnership(), the new owner (TemporalGovernor)
-    ///      needs to call acceptOwnership() to complete the transfer
-    function _acceptPendingOwnershipsOnMoonbeam() internal {
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-
-        // WORMHOLE_BRIDGE_ADAPTER_PROXY uses Ownable2Step
-        address bridgeAdapter = addresses.getAddress(
-            "WORMHOLE_BRIDGE_ADAPTER_PROXY"
-        );
-
-        _acceptIfPending(bridgeAdapter, temporalGovernor);
-
-        // VotingPowerAggregator on Moonbeam uses Ownable2Step. mip-x58 proposal
-        // set pendingOwner=TemporalGovernor; simulate the first Ethereum
-        // follow-up proposal relaying a Wormhole message → TemporalGovernor
-        // calling acceptOwnership().
-        _acceptIfPending(address(moonbeamVotingPower), temporalGovernor);
-    }
 
     /// @notice If pendingOwner on the target is `expected`, prank as `expected`
     ///         and call acceptOwnership(). Silently skips contracts that don't
@@ -278,12 +232,6 @@ contract MultichainProposalIntegrationV2 is
         vm.selectFork(OPTIMISM_FORK_ID);
         _overrideWormholeCore(
             address(optimismVoteCollection),
-            address(wormholeRelayerAdapter)
-        );
-
-        vm.selectFork(MOONBEAM_FORK_ID);
-        _overrideWormholeCore(
-            address(moonbeamVoteCollection),
             address(wormholeRelayerAdapter)
         );
     }
@@ -456,18 +404,6 @@ contract MultichainProposalIntegrationV2 is
         assertEq(governorV2.quorum(), 100_000_000 * 1e18, "incorrect quorum");
 
         // Verify contracts are properly deployed on all chains
-        vm.selectFork(MOONBEAM_FORK_ID);
-        assertNotEq(
-            address(moonbeamVoteCollection),
-            address(0),
-            "moonbeam vote collection not deployed"
-        );
-        assertNotEq(
-            address(moonbeamTemporalGov),
-            address(0),
-            "moonbeam temporal gov not deployed"
-        );
-
         vm.selectFork(BASE_FORK_ID);
         assertNotEq(
             address(baseVoteCollection),
@@ -608,38 +544,6 @@ contract MultichainProposalIntegrationV2 is
             "stkWELL should be a snapshot source on Optimism"
         );
 
-        // ============ MOONBEAM VALIDATIONS ============
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        // Verify VotingPowerAggregator on Moonbeam
-        assertEq(
-            address(moonbeamVotingPower.xWell()),
-            addresses.getAddress("xWELL_PROXY"),
-            "incorrect xWELL on Moonbeam VotingPowerAggregator"
-        );
-
-        // Verify VotingPowerAggregator ownership transferred to TemporalGovernor
-        assertEq(
-            moonbeamVotingPower.owner(),
-            address(moonbeamTemporalGov),
-            "VotingPowerAggregator owner should be TemporalGovernor on Moonbeam"
-        );
-
-        // Verify Ethereum MultichainGovernorV2 is trusted sender on Moonbeam TemporalGovernor
-        assertTrue(
-            moonbeamTemporalGov.isTrustedSender(
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                address(governorV2)
-            ),
-            "Ethereum MultichainGovernorV2 should be trusted sender on Moonbeam"
-        );
-
-        // Verify stkWELL has been added as snapshot source
-        assertTrue(
-            moonbeamVotingPower.isSnapshotSource(address(moonbeamStkWell)),
-            "stkWELL should be a snapshot source on Moonbeam"
-        );
-
         // Verify wormhole core mock is properly configured (bridgeCost = messageFee = 0)
         vm.selectFork(BASE_FORK_ID);
         assertEq(
@@ -653,13 +557,6 @@ contract MultichainProposalIntegrationV2 is
             optimismVoteCollection.bridgeCost(ETHEREUM_WORMHOLE_CHAIN_ID),
             0,
             "Optimism bridge cost should be 0 (messageFee)"
-        );
-
-        vm.selectFork(MOONBEAM_FORK_ID);
-        assertEq(
-            moonbeamVoteCollection.bridgeCost(ETHEREUM_WORMHOLE_CHAIN_ID),
-            0,
-            "Moonbeam bridge cost should be 0 (messageFee)"
         );
     }
 
@@ -2262,60 +2159,6 @@ contract MultichainProposalIntegrationV2 is
         assertEq(abstainVotes, 0, "abstainVotes should be 0");
     }
 
-    /// @notice After MIP-X64 (Moonbeam "Before Sunset"), Moonbeam is removed
-    ///         from the Ethereum governor's external chain configs, so a
-    ///         governor proposal is no longer broadcast to the Moonbeam
-    ///         VoteCollection and cross-chain voting from Moonbeam is disabled.
-    ///         This test asserts that disabled state: the Moonbeam collector
-    ///         never registers the proposal, and casting a vote reverts because
-    ///         there is no such proposal on Moonbeam. (Base/Optimism vote
-    ///         collection is covered by testCrossChainVotingOnBaseVoteCollection
-    ///         and testCrossChainVoteRoundTrip.)
-    function testCrossChainVotingOnMoonbeamVoteCollectionDisabledAfterX64()
-        public
-    {
-        vm.selectFork(ETHEREUM_FORK_ID);
-
-        // Create proposal on Ethereum
-        uint256 proposalId = _createAndFinalizeProposal(
-            PROPOSER,
-            address(0x1111),
-            abi.encodeWithSignature("someFunction()"),
-            "Moonbeam cross-chain voting disabled test"
-        );
-
-        // Switch to Moonbeam and verify the proposal was NOT received
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        (
-            ,
-            uint256 votingStartTime,
-            ,
-            ,
-            uint256 totalVotes,
-            ,
-            ,
-
-        ) = moonbeamVoteCollection.proposalInformation(proposalId);
-
-        assertEq(
-            votingStartTime,
-            0,
-            "Moonbeam VoteCollection should NOT receive proposals after MIP-X64"
-        );
-        assertEq(totalVotes, 0, "totalVotes should be 0");
-
-        // Casting a vote on Moonbeam must revert. For an unregistered proposal
-        // votingStartTime == 0 passes the "not started" guard, so the guard
-        // that fires is votingEndTime (0) >= block.timestamp — "Voting has
-        // ended". Pinning the reason keeps this from silently passing via the
-        // "voter has no votes" path if the proposal WERE still broadcast here.
-        address moonbeamVoter = address(0x8000);
-        vm.prank(moonbeamVoter);
-        vm.expectRevert("MultichainVoteCollection: Voting has ended");
-        moonbeamVoteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
-    }
-
     function testProposalReceiptOnSatelliteChains() public {
         vm.selectFork(ETHEREUM_FORK_ID);
 
@@ -2342,12 +2185,6 @@ contract MultichainProposalIntegrationV2 is
             proposalId,
             "Optimism"
         );
-
-        // Verify on Moonbeam: after MIP-X64 (Moonbeam "Before Sunset") the
-        // Ethereum governor no longer broadcasts proposals to Moonbeam, so the
-        // Moonbeam VoteCollection must NOT receive this proposal.
-        vm.selectFork(MOONBEAM_FORK_ID);
-        _assertMoonbeamProposalNotReceived(proposalId);
     }
 
     /// @notice Helper to verify a proposal was received on a V2 VoteCollection
@@ -2385,23 +2222,6 @@ contract MultichainProposalIntegrationV2 is
         );
     }
 
-    /// @notice Helper to verify a proposal was NOT received on the Moonbeam
-    ///         VoteCollection. After MIP-X64 removed Moonbeam from the Ethereum
-    ///         governor's external chain configs, governor.propose() no longer
-    ///         publishes a Wormhole message to Moonbeam, so the collector never
-    ///         registers the proposal (votingStartTime stays 0).
-    function _assertMoonbeamProposalNotReceived(
-        uint256 proposalId
-    ) internal view {
-        (, uint256 startTime, , , , , , ) = moonbeamVoteCollection
-            .proposalInformation(proposalId);
-        assertEq(
-            startTime,
-            0,
-            "Moonbeam should NOT receive proposals after MIP-X64 sunset"
-        );
-    }
-
     /// --------------------------------------------------------- ///
     /// ----------- RE-INITIALIZATION GUARD TESTS --------------- ///
     /// --------------------------------------------------------- ///
@@ -2430,17 +2250,6 @@ contract MultichainProposalIntegrationV2 is
         vm.selectFork(OPTIMISM_FORK_ID);
         vm.expectRevert("Initializable: contract is already initialized");
         optimismVoteCollection.initializeV3(address(1), 2, address(1));
-
-        // Moonbeam VoteCollection
-        vm.selectFork(MOONBEAM_FORK_ID);
-        vm.expectRevert("Initializable: contract is already initialized");
-        moonbeamVoteCollection.initialize(
-            address(1),
-            address(1),
-            address(1),
-            2,
-            address(1)
-        );
     }
 
     /// --------------------------------------------------------- ///
@@ -2518,23 +2327,6 @@ contract MultichainProposalIntegrationV2 is
         assertFalse(
             optimismTemporalGov.guardianPauseAllowed(),
             "Optimism: guardian pause should be disallowed after pause"
-        );
-
-        // Moonbeam TemporalGovernor
-        vm.selectFork(MOONBEAM_FORK_ID);
-        address moonbeamGuardian = moonbeamTemporalGov.owner();
-        assertTrue(
-            moonbeamTemporalGov.guardianPauseAllowed(),
-            "Moonbeam: guardian pause should be allowed"
-        );
-
-        vm.prank(moonbeamGuardian);
-        moonbeamTemporalGov.togglePause();
-
-        assertTrue(moonbeamTemporalGov.paused(), "Moonbeam: should be paused");
-        assertFalse(
-            moonbeamTemporalGov.guardianPauseAllowed(),
-            "Moonbeam: guardian pause should be disallowed after pause"
         );
     }
 
@@ -2829,43 +2621,8 @@ contract MultichainProposalIntegrationV2 is
         }
     }
 
-    /// @notice Execute break-glass and assert the Moonbeam TemporalGovernor's
-    ///         trusted-sender set is unwound: Ethereum V2 governor removed, old
-    ///         Moonbeam MULTICHAIN_GOVERNOR_PROXY restored. Cross-chain delivery
-    ///         is simulated by pranking as the TemporalGovernor (its
-    ///         setTrustedSenders / unSetTrustedSenders are gated only on
-    ///         msg.sender == address(this); the Wormhole envelope check is
-    ///         covered separately by TemporalGovernor unit tests).
-    function testBreakGlassUnwindsMoonbeamTrustedSenders() public {
-        bytes[] memory cd = _expectedBreakGlassCalldatas();
-
-        _executeBreakGlassOnce(cd);
-
-        address oldMoonbeamGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY",
-            MOONBEAM_CHAIN_ID
-        );
-
-        _applyUnwindOnFork(MOONBEAM_FORK_ID, cd[0]);
-
-        vm.selectFork(MOONBEAM_FORK_ID);
-        assertTrue(
-            moonbeamTemporalGov.isTrustedSender(
-                MOONBEAM_WORMHOLE_CHAIN_ID,
-                oldMoonbeamGovernor
-            ),
-            "old Moonbeam governor should be trusted on Moonbeam TemporalGov after unwind"
-        );
-        assertFalse(
-            moonbeamTemporalGov.isTrustedSender(
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                address(governorV2)
-            ),
-            "Ethereum V2 governor should NOT be trusted on Moonbeam TemporalGov after unwind"
-        );
-    }
-
-    /// @notice Same as the Moonbeam test but for Base TemporalGovernor.
+    /// @notice Execute break-glass and assert the Base TemporalGovernor's
+    ///         trusted-sender set is unwound.
     function testBreakGlassUnwindsBaseTrustedSenders() public {
         bytes[] memory cd = _expectedBreakGlassCalldatas();
 
@@ -2895,7 +2652,7 @@ contract MultichainProposalIntegrationV2 is
         );
     }
 
-    /// @notice Same as the Moonbeam test but for Optimism TemporalGovernor.
+    /// @notice Same as the Base test but for Optimism TemporalGovernor.
     function testBreakGlassUnwindsOptimismTrustedSenders() public {
         bytes[] memory cd = _expectedBreakGlassCalldatas();
 
@@ -2962,15 +2719,15 @@ contract MultichainProposalIntegrationV2 is
             MOONBEAM_CHAIN_ID
         );
 
-        vm.selectFork(MOONBEAM_FORK_ID);
+        vm.selectFork(BASE_FORK_ID);
         assertTrue(
-            moonbeamTemporalGov.isTrustedSender(
+            baseTemporalGov.isTrustedSender(
                 ETHEREUM_WORMHOLE_CHAIN_ID,
                 address(governorV2)
             )
         );
         assertFalse(
-            moonbeamTemporalGov.isTrustedSender(
+            baseTemporalGov.isTrustedSender(
                 MOONBEAM_WORMHOLE_CHAIN_ID,
                 oldMoonbeamGovernor
             )
@@ -2980,29 +2737,12 @@ contract MultichainProposalIntegrationV2 is
         bytes[] memory expected = _expectedBreakGlassCalldatas();
         _executeBreakGlassOnce(expected);
 
-        // 3. Simulate Wormhole delivery on all three satellite chains.
-        _applyUnwindOnFork(MOONBEAM_FORK_ID, expected[0]);
+        // 3. Simulate Wormhole delivery on the satellite chains.
         _applyUnwindOnFork(BASE_FORK_ID, expected[1]);
         _applyUnwindOnFork(OPTIMISM_FORK_ID, expected[2]);
 
         // 4. Post-state: old Moonbeam governor is the sole trusted sender on
         //    every satellite TemporalGovernor; Ethereum V2 governor is evicted.
-        vm.selectFork(MOONBEAM_FORK_ID);
-        assertTrue(
-            moonbeamTemporalGov.isTrustedSender(
-                MOONBEAM_WORMHOLE_CHAIN_ID,
-                oldMoonbeamGovernor
-            ),
-            "Moonbeam TemporalGov should trust old governor after unwind"
-        );
-        assertFalse(
-            moonbeamTemporalGov.isTrustedSender(
-                ETHEREUM_WORMHOLE_CHAIN_ID,
-                address(governorV2)
-            ),
-            "Moonbeam TemporalGov must not trust V2 governor after unwind"
-        );
-
         vm.selectFork(BASE_FORK_ID);
         assertTrue(
             baseTemporalGov.isTrustedSender(
@@ -3303,24 +3043,24 @@ contract MultichainProposalIntegrationV2 is
             "MULTICHAIN_GOVERNOR_V2_PROXY"
         );
 
-        vm.selectFork(MOONBEAM_FORK_ID);
         address oldMoonbeamGovernor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
+            "MULTICHAIN_GOVERNOR_PROXY",
+            MOONBEAM_CHAIN_ID
         );
 
         bytes[] memory cd = new bytes[](9);
         cd[0] = _expectedUnwindCalldata(
-            MOONBEAM_FORK_ID,
+            MOONBEAM_CHAIN_ID,
             ethereumGovernorV2,
             oldMoonbeamGovernor
         );
         cd[1] = _expectedUnwindCalldata(
-            BASE_FORK_ID,
+            BASE_CHAIN_ID,
             ethereumGovernorV2,
             oldMoonbeamGovernor
         );
         cd[2] = _expectedUnwindCalldata(
-            OPTIMISM_FORK_ID,
+            OPTIMISM_CHAIN_ID,
             ethereumGovernorV2,
             oldMoonbeamGovernor
         );
@@ -3421,12 +3161,14 @@ contract MultichainProposalIntegrationV2 is
 
     /// @notice Build the publishMessage unwind calldata for one satellite chain.
     function _expectedUnwindCalldata(
-        uint256 satelliteForkId,
+        uint256 satelliteChainId,
         address ethereumGovernorV2,
         address oldMoonbeamGovernor
-    ) internal returns (bytes memory) {
-        vm.selectFork(satelliteForkId);
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+    ) internal view returns (bytes memory) {
+        address temporalGovernor = addresses.getAddress(
+            "TEMPORAL_GOVERNOR",
+            satelliteChainId
+        );
 
         ITemporalGovernor.TrustedSender[]
             memory ethSender = new ITemporalGovernor.TrustedSender[](1);
