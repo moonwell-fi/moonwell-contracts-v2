@@ -75,6 +75,14 @@ contract MarketPriceGuard {
             if (price == 0) {
                 continue;
             }
+            // fork warped behind the feed's data: OEV round selection is not comparable
+            if (_feedAheadOfClock(oracle, markets[i])) {
+                console.log(
+                    "MarketPriceGuard: clock behind feed data, not guarded:",
+                    markets[i].symbol()
+                );
+                continue;
+            }
             _markets[forkId].push(address(markets[i]));
             _priceBefore[forkId][address(markets[i])] = price;
         }
@@ -284,6 +292,45 @@ contract MarketPriceGuard {
                 pair
             );
         }
+    }
+
+    /// @notice true when the market's feed reports a round newer than block.timestamp
+    function _feedAheadOfClock(
+        PriceOracle oracle,
+        MToken mToken
+    ) internal view returns (bool) {
+        address underlying;
+        try MErc20(address(mToken)).underlying() returns (address u) {
+            underlying = u;
+        } catch {
+            return false;
+        }
+
+        (bool ok, bytes memory ret) = address(oracle).staticcall(
+            abi.encodeWithSignature(
+                "getFeed(string)",
+                EIP20Interface(underlying).symbol()
+            )
+        );
+        if (!ok || ret.length != 32) {
+            return false;
+        }
+        address feed = abi.decode(ret, (address));
+        if (feed.code.length == 0) {
+            return false;
+        }
+
+        (ok, ret) = feed.staticcall(
+            abi.encodeWithSignature("latestRoundData()")
+        );
+        if (!ok || ret.length != 160) {
+            return false;
+        }
+        (, , , uint256 updatedAt, ) = abi.decode(
+            ret,
+            (uint80, int256, uint256, uint256, uint80)
+        );
+        return updatedAt > block.timestamp;
     }
 
     function _readPrice(
