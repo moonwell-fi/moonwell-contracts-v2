@@ -10,8 +10,7 @@
             "env": {
                 "ETHEREUM_RPC_URL": "${ETH_RPC_URL}",
                 "BASE_RPC_URL": "${BASE_RPC_URL}",
-                "OPTIMISM_RPC_URL": "${OP_RPC_URL}",
-                "MOONBEAM_RPC_URL": "${MOONBEAM_RPC_URL}"
+                "OPTIMISM_RPC_URL": "${OP_RPC_URL}"
             }
         }
     }
