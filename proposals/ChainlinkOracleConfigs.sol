@@ -85,6 +85,9 @@ abstract contract ChainlinkOracleConfigs is Test {
         );
 
         /// Initialize composite oracle configurations for Base
+        /// ETH-based entries keep the raw feed name (MIP-X72 validates on it),
+        /// but since MIP-B61 they read CHAINLINK_ETH_USD_OEV_WRAPPER: an ETH
+        /// wrapper redeploy must rebuild them (LSTCompositeOEVLockstep test)
         _compositeOracleConfigs[BASE_CHAIN_ID].push(
             CompositeOracleConfig(
                 "cbETH_COMPOSITE_ORACLE",

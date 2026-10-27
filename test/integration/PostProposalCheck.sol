@@ -203,8 +203,9 @@ contract PostProposalCheck is Test {
     /// markets). Already-executed proposals are
     /// skipped so we never re-run finalized governance.
     function simulatePendingGovernorV2Proposals() internal {
-        ProposalMap.ProposalFields[] memory v2Proposals = proposalMap
-            .filterByGovernor("MultichainGovernorV2");
+        ProposalMap.ProposalFields[] memory v2Proposals = _sortById(
+            proposalMap.filterByGovernor("MultichainGovernorV2")
+        );
 
         for (uint256 i = 0; i < v2Proposals.length; i++) {
             // id:0 entries are handled by the in-development loop above.
@@ -254,5 +255,22 @@ contract PostProposalCheck is Test {
             proposals.push(proposal);
             _recordExpectedPriceChanges(proposal);
         }
+    }
+
+    /// @notice ascending by id: mips.json is newest-first, and a later
+    /// proposal's afterDeploy may require an earlier one to have executed
+    function _sortById(
+        ProposalMap.ProposalFields[] memory list
+    ) internal pure returns (ProposalMap.ProposalFields[] memory) {
+        for (uint256 i = 1; i < list.length; i++) {
+            ProposalMap.ProposalFields memory item = list[i];
+            uint256 j = i;
+            while (j > 0 && list[j - 1].id > item.id) {
+                list[j] = list[j - 1];
+                j--;
+            }
+            list[j] = item;
+        }
+        return list;
     }
 }
