@@ -12,10 +12,10 @@ import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOrac
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ChainlinkOracleConfigs} from "@proposals/ChainlinkOracleConfigs.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 
-/// @notice MOO-1023: Base ETH-derivative composites and WETH read the same
-/// delayed ETH/USD round, so liquidations seize exactly the configured incentive.
+/// @notice MOO-1023: on Base and Optimism, ETH-derivative composites and WETH read
+/// the same delayed ETH/USD round, so liquidations seize exactly the configured incentive.
 contract LSTCompositeOEVLockstepIntegrationTest is
     PostProposalCheck,
     ChainlinkOracleConfigs
@@ -24,8 +24,6 @@ contract LSTCompositeOEVLockstepIntegrationTest is
     int256 internal constant MOVE_BPS = 100;
 
     uint256 internal constant REPAY = 10e18;
-
-    string internal constant DEPRECATED_SUFFIX = "_DEPRECATED_RAW_BASE";
 
     Comptroller internal comptroller;
     ChainlinkOracle internal oracle;
@@ -36,7 +34,11 @@ contract LSTCompositeOEVLockstepIntegrationTest is
 
     function setUp() public override {
         super.setUp();
-        vm.selectFork(BASE_FORK_ID);
+    }
+
+    /// @notice select `forkId` and load its WETH/LST pricing, outside any delay window
+    function _useFork(uint256 forkId) internal {
+        vm.selectFork(forkId);
 
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         oracle = ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
@@ -48,6 +50,7 @@ contract LSTCompositeOEVLockstepIntegrationTest is
         );
         mWeth = MToken(addresses.getAddress("MOONWELL_WETH"));
 
+        delete lsts;
         CompositeOracleConfig[]
             memory configs = getCompositeOracleConfigurations(block.chainid);
         for (uint256 i = 0; i < configs.length; i++) {
@@ -67,7 +70,47 @@ contract LSTCompositeOEVLockstepIntegrationTest is
         assertEq(wrapped, raw, "fork still inside a delay window");
     }
 
-    function testLstCompositesReadTheWethWrapper() public view {
+    function testLstCompositesReadTheWethWrapperBase() public {
+        _useFork(BASE_FORK_ID);
+        _assertLstCompositesReadTheWethWrapper();
+    }
+
+    function testLstCompositesReadTheWethWrapperOptimism() public {
+        _useFork(OPTIMISM_FORK_ID);
+        _assertLstCompositesReadTheWethWrapper();
+    }
+
+    function testSeizeIncentiveExactInsideFallingWindowBase() public {
+        _useFork(BASE_FORK_ID);
+        _assertSeizeUnaffectedByWindow(-MOVE_BPS);
+    }
+
+    function testSeizeIncentiveExactInsideFallingWindowOptimism() public {
+        _useFork(OPTIMISM_FORK_ID);
+        _assertSeizeUnaffectedByWindow(-MOVE_BPS);
+    }
+
+    function testSeizeIncentiveExactInsideRisingWindowBase() public {
+        _useFork(BASE_FORK_ID);
+        _assertSeizeUnaffectedByWindow(MOVE_BPS);
+    }
+
+    function testSeizeIncentiveExactInsideRisingWindowOptimism() public {
+        _useFork(OPTIMISM_FORK_ID);
+        _assertSeizeUnaffectedByWindow(MOVE_BPS);
+    }
+
+    function testRawBaseCompositeOverSeizesInsideWindowBase() public {
+        _useFork(BASE_FORK_ID);
+        _assertRawBaseOverSeizes();
+    }
+
+    function testRawBaseCompositeOverSeizesInsideWindowOptimism() public {
+        _useFork(OPTIMISM_FORK_ID);
+        _assertRawBaseOverSeizes();
+    }
+
+    function _assertLstCompositesReadTheWethWrapper() internal view {
         address wethFeed = address(oracle.getFeed("WETH"));
         assertEq(wethFeed, address(wrapper), "WETH feed is not the wrapper");
 
@@ -86,21 +129,14 @@ contract LSTCompositeOEVLockstepIntegrationTest is
         }
     }
 
-    function testSeizeIncentiveExactInsideFallingWindow() public {
-        _assertSeizeUnaffectedByWindow(-MOVE_BPS);
-    }
-
-    function testSeizeIncentiveExactInsideRisingWindow() public {
-        _assertSeizeUnaffectedByWindow(MOVE_BPS);
-    }
-
-    /// @notice control: the pre-fix raw-base composite over-seizes in the same window
-    function testRawBaseCompositeOverSeizesInsideWindow() public {
+    /// @notice control: a raw-base composite (the pre-fix shape) over-seizes in the same window
+    function _assertRawBaseOverSeizes() internal {
         uint256 incentive = comptroller.liquidationIncentiveMantissa();
+        ChainlinkCompositeOracle[] memory raws = _rawComposites();
 
         for (uint256 i = 0; i < lsts.length; i++) {
             uint256 snapshot = vm.snapshot();
-            ChainlinkCompositeOracle rawComposite = _deprecated(lsts[i]);
+            ChainlinkCompositeOracle rawComposite = raws[i];
 
             // hoisted: an external call in argument position would consume the prank
             string memory symbol = _symbol(lsts[i]);
@@ -144,6 +180,7 @@ contract LSTCompositeOEVLockstepIntegrationTest is
         for (uint256 i = 0; i < lsts.length; i++) {
             seizedOutside[i] = _seize(lsts[i]);
         }
+        ChainlinkCompositeOracle[] memory raws = _rawComposites();
 
         uint256 wethPriceBefore = oracle.getUnderlyingPrice(mWeth);
         int256 fresh = _openWindow(moveBps);
@@ -155,7 +192,7 @@ contract LSTCompositeOEVLockstepIntegrationTest is
 
         for (uint256 i = 0; i < lsts.length; i++) {
             MToken mLst = MToken(addresses.getAddress(lsts[i].mTokenKey));
-            ChainlinkCompositeOracle rawComposite = _deprecated(lsts[i]);
+            ChainlinkCompositeOracle rawComposite = raws[i];
             ChainlinkCompositeOracle composite = ChainlinkCompositeOracle(
                 address(oracle.getFeed(_symbol(lsts[i])))
             );
@@ -231,15 +268,22 @@ contract LSTCompositeOEVLockstepIntegrationTest is
         return (seizedUsd * 1e18) / repayUsd;
     }
 
-    function _deprecated(
-        CompositeOracleConfig memory config
-    ) internal view returns (ChainlinkCompositeOracle) {
-        return
-            ChainlinkCompositeOracle(
-                addresses.getAddress(
-                    string.concat(config.compositeOracleName, DEPRECATED_SUFFIX)
-                )
+    /// @notice per LST, the live composite's multipliers on the raw ETH/USD feed
+    function _rawComposites()
+        internal
+        returns (ChainlinkCompositeOracle[] memory raws)
+    {
+        raws = new ChainlinkCompositeOracle[](lsts.length);
+        for (uint256 i = 0; i < lsts.length; i++) {
+            ChainlinkCompositeOracle live = ChainlinkCompositeOracle(
+                address(oracle.getFeed(_symbol(lsts[i])))
             );
+            raws[i] = new ChainlinkCompositeOracle(
+                address(ethFeed),
+                live.multiplier(),
+                live.secondMultiplier()
+            );
+        }
     }
 
     function _symbol(

@@ -10,15 +10,15 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
-import {BASE_FORK_ID, BASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_FORK_ID, BASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
-/// @notice MIP-B61: rebuild the Base ETH-derivative composites on top of the
-/// ETH/USD OEV wrapper that prices WETH, so both legs of a WETH/LST liquidation
-/// read the same delayed round (MOO-1023).
-contract mipb61 is HybridProposalV2, ChainlinkOracleConfigs {
+/// @notice MIP-X74: rebuild the Base and Optimism ETH-derivative composites on
+/// top of the ETH/USD OEV wrapper that prices WETH, so both legs of a WETH/LST
+/// liquidation read the same delayed round (MOO-1023).
+contract mipx74 is HybridProposalV2, ChainlinkOracleConfigs {
     using ChainIds for uint256;
 
-    string public constant override name = "MIP-B61";
+    string public constant override name = "MIP-X74";
 
     /// @notice composites rebuilt by this proposal are the ones based on this feed
     string public constant ETH_FEED = "CHAINLINK_ETH_USD";
@@ -26,26 +26,32 @@ contract mipb61 is HybridProposalV2, ChainlinkOracleConfigs {
     /// @notice OEV wrapper over ETH_FEED that prices WETH (deployed by MIP-X72)
     string public constant ETH_WRAPPER = "CHAINLINK_ETH_USD_OEV_WRAPPER";
 
-    /// @notice archive suffix for the composites that read the raw ETH/USD feed
-    string public constant DEPRECATED_SUFFIX = "_DEPRECATED_RAW_BASE";
+    /// @notice pre-V2 ETH wrapper; Optimism weETH still reads it
+    string public constant LEGACY_ETH_WRAPPER =
+        "CHAINLINK_ETH_USD_OEV_WRAPPER_DEPRECATED";
+
+    /// @notice archive suffix for the replaced (live) composites
+    string public constant DEPRECATED_SUFFIX = "_DEPRECATED_X74";
 
     constructor() {
         _setProposalDescription(
-            bytes(vm.readFile("./proposals/mips/mip-b61/b61.md"))
+            bytes(vm.readFile("./proposals/mips/mip-x74/x74.md"))
         );
     }
 
     function primaryForkId() public pure override returns (uint256) {
-        return BASE_FORK_ID;
+        return ETHEREUM_FORK_ID;
     }
 
-    /// @notice Proposal.run() without the top-level broadcast: deploy() opens
-    /// its own after selecting the Base fork (same pattern as MIP-B60/X72).
+    /// @notice Proposal.run() without the top-level broadcast: each chain's
+    /// deploy opens its own after selecting its fork (same pattern as MIP-X72).
     function run() public override {
         primaryForkId().createForksAndSelect();
 
         Addresses addresses = new Addresses();
         vm.makePersistent(address(addresses));
+
+        vm.selectFork(primaryForkId());
 
         setProposalDescriptionUri(_resolveProposalDescriptionUri(this.name()));
 
@@ -75,13 +81,58 @@ contract mipb61 is HybridProposalV2, ChainlinkOracleConfigs {
 
     function deploy(Addresses addresses, address) public override {
         vm.selectFork(BASE_FORK_ID);
+        _deployComposites(addresses);
 
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _deployComposites(addresses);
+
+        vm.selectFork(primaryForkId());
+    }
+
+    /// @notice MIP-X72 must have executed: WETH has to be priced by the same
+    /// wrapper the new composites read, otherwise the legs stay out of lockstep.
+    function afterDeploy(Addresses addresses, address) public override {
+        vm.selectFork(BASE_FORK_ID);
+        _assertWethOnWrapper(addresses);
+
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _assertWethOnWrapper(addresses);
+
+        vm.selectFork(primaryForkId());
+    }
+
+    function build(Addresses addresses) public override {
+        vm.selectFork(BASE_FORK_ID);
+        _buildSetFeeds(addresses);
+
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _buildSetFeeds(addresses);
+
+        vm.selectFork(primaryForkId());
+    }
+
+    function validate(Addresses addresses, address) public override {
+        vm.selectFork(BASE_FORK_ID);
+        _validateComposites(addresses);
+
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _validateComposites(addresses);
+
+        vm.selectFork(primaryForkId());
+    }
+
+    /// @notice Deploy a wrapper-based composite per ETH derivative on the active
+    /// chain, mirroring the live feed's multipliers, and archive the live feed.
+    function _deployComposites(Addresses addresses) internal {
+        ChainlinkOracle oracle = ChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
         address wrapper = addresses.getAddress(ETH_WRAPPER);
         address ethFeed = addresses.getAddress(ETH_FEED);
         require(
             address(ChainlinkOEVWrapper(payable(wrapper)).priceFeed()) ==
                 ethFeed,
-            "MIP-B61: ETH OEV wrapper does not wrap the standard ETH/USD feed"
+            "MIP-X74: ETH OEV wrapper does not wrap the standard ETH/USD feed"
         );
 
         CompositeOracleConfig[] memory configs = _ethComposites();
@@ -96,13 +147,15 @@ contract mipb61 is HybridProposalV2, ChainlinkOracleConfigs {
                 continue;
             }
 
+            // the live feed, not the registry key: Optimism weETH is priced by a
+            // composite registered under a different key
             ChainlinkCompositeOracle old = ChainlinkCompositeOracle(
-                addresses.getAddress(configs[i].compositeOracleName)
+                address(oracle.getFeed(_symbol(addresses, configs[i])))
             );
             require(
-                old.base() == ethFeed,
+                _isReplaceableBase(addresses, old.base(), ethFeed),
                 string.concat(
-                    "MIP-B61: unexpected base for ",
+                    "MIP-X74: unexpected base for ",
                     configs[i].compositeOracleName
                 )
             );
@@ -121,37 +174,25 @@ contract mipb61 is HybridProposalV2, ChainlinkOracleConfigs {
             );
         }
         vm.stopBroadcast();
-
-        vm.selectFork(primaryForkId());
     }
 
-    /// @notice MIP-X72 must have executed: WETH has to be priced by the same
-    /// wrapper the new composites read, otherwise the legs stay out of lockstep.
-    function afterDeploy(Addresses addresses, address) public override {
-        vm.selectFork(BASE_FORK_ID);
-
+    function _assertWethOnWrapper(Addresses addresses) internal view {
         assertEq(
             address(
                 ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"))
                     .getFeed(ERC20(addresses.getAddress("WETH")).symbol())
             ),
             addresses.getAddress(ETH_WRAPPER),
-            "MIP-B61: WETH is not priced by the ETH OEV wrapper (execute MIP-X72 first)"
+            "MIP-X74: WETH is not priced by the ETH OEV wrapper (execute MIP-X72 first)"
         );
-
-        vm.selectFork(primaryForkId());
     }
 
-    function build(Addresses addresses) public override {
-        vm.selectFork(BASE_FORK_ID);
-
+    function _buildSetFeeds(Addresses addresses) internal {
         CompositeOracleConfig[] memory configs = _ethComposites();
         address chainlinkOracle = addresses.getAddress("CHAINLINK_ORACLE");
 
         for (uint256 i = 0; i < configs.length; i++) {
-            string memory symbol = ERC20(
-                addresses.getAddress(configs[i].symbol)
-            ).symbol();
+            string memory symbol = _symbol(addresses, configs[i]);
 
             _pushAction(
                 chainlinkOracle,
@@ -163,30 +204,22 @@ contract mipb61 is HybridProposalV2, ChainlinkOracleConfigs {
                 string.concat(
                     "Repoint ",
                     symbol,
-                    " feed at a composite oracle based on the ETH/USD OEV wrapper"
+                    " feed on ",
+                    _chainName(),
+                    " at a composite oracle based on the ETH/USD OEV wrapper"
                 )
             );
         }
-
-        vm.selectFork(primaryForkId());
     }
 
-    function validate(Addresses addresses, address) public override {
-        vm.selectFork(BASE_FORK_ID);
-
+    function _validateComposites(Addresses addresses) internal view {
         ChainlinkOracle oracle = ChainlinkOracle(
             addresses.getAddress("CHAINLINK_ORACLE")
         );
         address wrapper = addresses.getAddress(ETH_WRAPPER);
         address ethFeed = addresses.getAddress(ETH_FEED);
 
-        assertEq(
-            address(
-                oracle.getFeed(ERC20(addresses.getAddress("WETH")).symbol())
-            ),
-            wrapper,
-            "MIP-B61: WETH feed is not the ETH OEV wrapper"
-        );
+        _assertWethOnWrapper(addresses);
 
         CompositeOracleConfig[] memory configs = _ethComposites();
         for (uint256 i = 0; i < configs.length; i++) {
@@ -197,37 +230,34 @@ contract mipb61 is HybridProposalV2, ChainlinkOracleConfigs {
             ChainlinkCompositeOracle old = ChainlinkCompositeOracle(
                 addresses.getAddress(string.concat(name_, DEPRECATED_SUFFIX))
             );
-            string memory symbol = ERC20(
-                addresses.getAddress(configs[i].symbol)
-            ).symbol();
+            string memory symbol = _symbol(addresses, configs[i]);
 
             assertEq(
                 address(oracle.getFeed(symbol)),
                 address(composite),
-                string.concat("MIP-B61: feed not repointed for ", symbol)
+                string.concat("MIP-X74: feed not repointed for ", symbol)
             );
             assertEq(
                 composite.base(),
                 wrapper,
                 string.concat(
-                    "MIP-B61: base is not the OEV wrapper for ",
+                    "MIP-X74: base is not the OEV wrapper for ",
                     name_
                 )
             );
-            assertEq(
-                old.base(),
-                ethFeed,
-                string.concat("MIP-B61: archived base is not raw for ", name_)
+            assertTrue(
+                _isReplaceableBase(addresses, old.base(), ethFeed),
+                string.concat("MIP-X74: unexpected archived base for ", name_)
             );
             assertEq(
                 composite.multiplier(),
                 old.multiplier(),
-                string.concat("MIP-B61: multiplier drift for ", name_)
+                string.concat("MIP-X74: multiplier drift for ", name_)
             );
             assertEq(
                 composite.secondMultiplier(),
                 old.secondMultiplier(),
-                string.concat("MIP-B61: secondMultiplier drift for ", name_)
+                string.concat("MIP-X74: secondMultiplier drift for ", name_)
             );
 
             // at most one ETH/USD round apart, i.e. well under 1%
@@ -237,21 +267,33 @@ contract mipb61 is HybridProposalV2, ChainlinkOracleConfigs {
                 uint256(newAnswer),
                 uint256(oldAnswer),
                 0.01e18,
-                string.concat("MIP-B61: price drifted >1% for ", name_)
+                string.concat("MIP-X74: price drifted >1% for ", name_)
             );
         }
-
-        vm.selectFork(primaryForkId());
     }
 
-    /// @notice Base composites whose base leg is ETH/USD (cbETH, wstETH, rETH, weETH, wrsETH)
+    /// @notice a composite this proposal replaces reads ETH/USD raw, or through
+    /// the pre-V2 ETH wrapper (separate cachedRoundId from WETH's wrapper)
+    function _isReplaceableBase(
+        Addresses addresses,
+        address base,
+        address ethFeed
+    ) internal view returns (bool) {
+        if (base == ethFeed) return true;
+        return
+            addresses.isAddressSet(LEGACY_ETH_WRAPPER) &&
+            base == addresses.getAddress(LEGACY_ETH_WRAPPER);
+    }
+
+    /// @notice active chain's composites whose base leg is ETH/USD
+    /// (cbETH, wstETH, rETH, weETH, wrsETH on both Base and Optimism)
     function _ethComposites()
         internal
         view
         returns (CompositeOracleConfig[] memory ethConfigs)
     {
         CompositeOracleConfig[]
-            memory configs = getCompositeOracleConfigurations(BASE_CHAIN_ID);
+            memory configs = getCompositeOracleConfigurations(block.chainid);
 
         uint256 count;
         for (uint256 i = 0; i < configs.length; i++) {
@@ -270,5 +312,16 @@ contract mipb61 is HybridProposalV2, ChainlinkOracleConfigs {
     ) internal pure returns (bool) {
         return
             keccak256(bytes(config.baseFeedName)) == keccak256(bytes(ETH_FEED));
+    }
+
+    function _symbol(
+        Addresses addresses,
+        CompositeOracleConfig memory config
+    ) internal view returns (string memory) {
+        return ERC20(addresses.getAddress(config.symbol)).symbol();
+    }
+
+    function _chainName() internal view returns (string memory) {
+        return block.chainid == BASE_CHAIN_ID ? "Base" : "Optimism";
     }
 }
