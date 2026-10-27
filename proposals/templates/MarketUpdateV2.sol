@@ -9,7 +9,6 @@ import "@forge-std/StdJson.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
-import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
 import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
@@ -61,8 +60,7 @@ contract MarketUpdateV2Template is
         private _irModels;
 
     /// @notice true when the proposal JSON carries a 1284 block; gates every
-    /// touch of fork id 0, which may be a placeholder when the Moonbeam RPC
-    /// is unreachable
+    /// touch of fork id 0, which is a placeholder
     bool internal _hasMoonbeamActions;
 
     constructor() {
@@ -118,22 +116,11 @@ contract MarketUpdateV2Template is
     function initProposal(Addresses addresses) public override {
         string memory encodedJson = vm.readFile(vm.envString("JSON_PATH"));
 
-        // Moonbeam is wound down: most proposals no longer carry a 1284
-        // block, and fork id 0 may be the placeholder stood up when the
-        // Moonbeam RPC is unreachable. Only touch that fork when this
-        // proposal actually has Moonbeam updates, and fail loudly (via the
-        // shared ChainIds message) if it does but the fork is not real.
-        // Mirrors RewardsDistributionV2.initProposal.
+        // fork id 0 is a placeholder: a proposal with a 1284 block cannot run
         _hasMoonbeamActions = vm.keyExistsJson(encodedJson, ".1284");
 
         if (_hasMoonbeamActions) {
             ChainIds.requireMoonbeamFork();
-
-            // the xcUSDT/xcUSDC/xcDOT precompile mocks only exist on
-            // Moonbeam, so the etch must run on that fork (the primary fork
-            // is Ethereum)
-            vm.selectFork(MOONBEAM_FORK_ID);
-            etch(vm, addresses);
         }
 
         // the Moonbeam skips below are defense in depth here and in
