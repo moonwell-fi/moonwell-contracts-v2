@@ -13,7 +13,6 @@ import {MToken} from "@protocol/MToken.sol";
 import {OPTIMISM_CHAIN_ID, BASE_CHAIN_ID, ETHEREUM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
-import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ReserveAutomation} from "@protocol/market/ReserveAutomation.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -171,8 +170,7 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
 
     /// @notice whether this epoch's JSON carries a 1284 block. False once the
     /// reward-automation worker drops Moonbeam entirely (wind-down), in which
-    /// case the Moonbeam fork is never selected — it may be the placeholder
-    /// stood up when the Moonbeam RPC is unreachable.
+    /// case fork id 0 (a placeholder) is never selected.
     bool internal _hasMoonbeamActions;
 
     /// @notice xWELL bridge-outs executed on Ethereum (the source chain)
@@ -235,21 +233,11 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
             vm.envString("MIP_REWARDS_PATH")
         );
 
-        // Moonbeam is wound down: once the worker stops emitting a 1284 block
-        // the epoch has no Moonbeam actions, and fork id 0 may be the
-        // placeholder stood up when the Moonbeam RPC is unreachable. Only
-        // touch that fork when this epoch actually has Moonbeam work, and fail
-        // loudly if it does but the fork is not real.
+        // fork id 0 is a placeholder: an epoch with a 1284 block cannot run
         _hasMoonbeamActions = vm.keyExistsJson(encodedJson, ".1284");
 
         if (_hasMoonbeamActions) {
             ChainIds.requireMoonbeamFork();
-
-            // the etched mock precompiles (xcUSDT/xcUSDC/xcDOT) only exist on
-            // Moonbeam, so the etching must run with the Moonbeam fork active
-            // (the primary fork is now Ethereum)
-            vm.selectFork(MOONBEAM_FORK_ID);
-            etch(vm, addresses);
         }
 
         _parseTimestamps(encodedJson);
@@ -366,7 +354,7 @@ contract RewardsDistributionV2Template is HybridProposalV2, Networks {
     }
 
     function build(Addresses addresses) public virtual override {
-        // no Moonbeam actions => never select fork 0 (may be the placeholder)
+        // no Moonbeam actions => never select fork 0 (the placeholder)
         if (_hasMoonbeamActions) {
             _buildMoonbeamDestinationActions(addresses);
         }

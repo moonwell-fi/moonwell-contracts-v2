@@ -7,7 +7,8 @@
 - Fuzz tests: `test/fuzzing/`
 - Formal verification: `test/certora/`
 - `PRIMARY_FORK_ID` is the foundry FORK INDEX, not a chain ID. Forks are created
-  in order in `PostProposalCheck.setUp`: 0=Moonbeam, 1=Base, 2=Optimism,
+  in order in `PostProposalCheck.setUp`: 0=placeholder (an Ethereum fork in
+  Moonbeam's old slot; Moonbeam is no longer forked), 1=Base, 2=Optimism,
   3=Ethereum. CI uses `PRIMARY_FORK_ID=1` for Base jobs and `PRIMARY_FORK_ID=2`
   for Optimism jobs (per `.github/workflows/*-integration.yml`).
 - `PostProposalCheck.setUp` simulates every MIP with `id:0` in `mips.json`
@@ -17,10 +18,9 @@
   otherwise they break post-simulate.
 - For proposal-specific tests, inherit from `PostProposalCheck`
 - CI profile: `FOUNDRY_PROFILE=ci forge test` (1000 fuzz runs)
-- Integration tests inheriting from `PostProposalCheck` fork all chains in
-  `setUp` — Moonbeam RPC flakes (`rpc.moonwell.fi/main/evm/1284` connection
-  reset / timeout) are environmental, not test code; retry once before treating
-  as a failure
+- Integration tests inheriting from `PostProposalCheck` fork Base, Optimism and
+  Ethereum in `setUp`; no Moonbeam RPC is needed. Proposals with Moonbeam
+  actions revert via `ChainIds.requireMoonbeamFork()`
 - Run `forge test --ffi` for any integration test using `PostProposalCheck` —
   without it, setUp reverts with `vm.ffi: FFI is disabled`
 - Use `forge test --ffi` for any test that runs a proposal — they source `.sh`
