@@ -305,9 +305,14 @@
         "name": "MRD_PROXY"
     },
     {
-        "addr": "0xA9CE0A4DE55791c5792B50531b18Befc30B09dcC",
+        "addr": "0x48e70f68712bD275982e8351DFe1993A828c6412",
         "isContract": true,
         "name": "MTOKEN_IMPLEMENTATION"
+    },
+    {
+        "addr": "0xA9CE0A4DE55791c5792B50531b18Befc30B09dcC",
+        "isContract": true,
+        "name": "MTOKEN_IMPLEMENTATION_DEPRECATED_V1"
     },
     {
         "addr": "0xa962F2974A846b30366251f4634384C1e42aeF16",
@@ -315,9 +320,14 @@
         "name": "WETH_UNWRAPPER"
     },
     {
-        "addr": "0x66Fb793e75053A07301c7c21A3cF77616123227b",
+        "addr": "0x65299Eb6a77ee1b1a7eF7051cce71005b2A707aB",
         "isContract": true,
         "name": "MWETH_IMPLEMENTATION"
+    },
+    {
+        "addr": "0x66Fb793e75053A07301c7c21A3cF77616123227b",
+        "isContract": true,
+        "name": "MWETH_IMPLEMENTATION_DEPRECATED_V1"
     },
     {
         "addr": "0xBD2FcfB778fef7a1650E19a6E0754E982F0fAae2",

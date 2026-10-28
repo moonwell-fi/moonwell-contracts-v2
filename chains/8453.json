@@ -380,8 +380,13 @@
         "isContract": true
     },
     {
-        "addr": "0x1FADFF493529C3Fcc7EE04F1f15D19816ddA45B7",
+        "addr": "0x85B3A4D84d5A6d5a8606968b223C3b4648D59D98",
         "name": "MTOKEN_IMPLEMENTATION",
+        "isContract": true
+    },
+    {
+        "addr": "0x1FADFF493529C3Fcc7EE04F1f15D19816ddA45B7",
+        "name": "MTOKEN_IMPLEMENTATION_DEPRECATED_V1",
         "isContract": true
     },
     {
@@ -540,8 +545,13 @@
         "isContract": true
     },
     {
-        "addr": "0x599D4a1538d686814eE11b331EACBBa166D7C41a",
+        "addr": "0x2dc66C40bb15F0470e40508B43cD64D0b4F57180",
         "name": "MWETH_IMPLEMENTATION",
+        "isContract": true
+    },
+    {
+        "addr": "0x599D4a1538d686814eE11b331EACBBa166D7C41a",
+        "name": "MWETH_IMPLEMENTATION_DEPRECATED_V1",
         "isContract": true
     },
     {
@@ -1410,9 +1420,14 @@
         "name": "BAD_DEBT_REPAYER_EOA"
     },
     {
-        "addr": "0x1796720C9441F8f18a3AA570aB7c10597a57C08e",
+        "addr": "0xa8A334ffaba129C07Df4740001ceE7c0D838ddB9",
         "isContract": true,
         "name": "MWETH_OWNER_WRAPPER_IMPL"
+    },
+    {
+        "addr": "0x1796720C9441F8f18a3AA570aB7c10597a57C08e",
+        "isContract": true,
+        "name": "MWETH_OWNER_WRAPPER_IMPL_DEPRECATED_V1"
     },
     {
         "addr": "0x82e5e038A1D93f371f02768b09B2C6C4b98f6250",
