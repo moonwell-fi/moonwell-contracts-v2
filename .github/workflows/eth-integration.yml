@@ -5,7 +5,6 @@ on: [pull_request]
 env:
   OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
-  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
   FOUNDRY_PROFILE: ci
   ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
   PRIMARY_FORK_ID: 3
@@ -64,3 +63,30 @@ jobs:
            # fork, so SupplyBorrowLiveSystem exercises the MIP-E00 markets.
            # No --fork-url: PostProposalCheck manages all four forks itself.
            command: time forge test --match-contract SupplyBorrowLiveSystem -vvv --ffi
+
+  proposal-market-invariance-tests:
+    name: Proposal Market Invariance Integration Test
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Setup MIPs Permissions
+        uses: ./.github/actions/setup-mips-permissions
+
+      - name: Proposal Market Invariance Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 40
+           max_attempts: 3
+           # Snapshots every market on every chain before PostProposalCheck runs
+           # the pending proposals, then diffs. No --fork-url: forks are managed
+           # by PostProposalCheck.
+           command: time forge test --match-contract ProposalMarketInvarianceIntegrationTest -vvv --ffi

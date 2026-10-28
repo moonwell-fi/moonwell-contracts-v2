@@ -18,7 +18,7 @@ import {MaliciousBorrower} from "@test/mock/MaliciousBorrower.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ComptrollerErrorReporter} from "@protocol/TokenErrorReporter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// verify that the new MWETH Delegate and Unwrapper are working as expected
 contract WETHPostProposalCheck is Configs, PostProposalCheck {

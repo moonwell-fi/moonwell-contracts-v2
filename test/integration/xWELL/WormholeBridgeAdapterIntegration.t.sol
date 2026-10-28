@@ -7,16 +7,14 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {MockExecutorQuoterRouter} from "@test/mock/MockExecutorQuoterRouter.sol";
-import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {Address} from "@utils/Address.sol";
 import {EnableEthereumXWellBridging} from "@script/EnableEthereumXWellBridging.s.sol";
-import {MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, BASE_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID, ETHEREUM_FORK_ID, OPTIMISM_FORK_ID, ETHEREUM_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// @title WormholeBridgeAdapter V4 Integration Tests (Executor framework)
 /// @notice Run with PRIMARY_FORK_ID env var to test on different chains:
-///         PRIMARY_FORK_ID=0 (Moonbeam), 1 (Base), 2 (Optimism), 3 (Ethereum)
+///         PRIMARY_FORK_ID=1 (Base), 2 (Optimism), 3 (Ethereum)
 /// @dev    Ethereum coverage assumes MIP-X55's deployer-side bootstrap
 ///         (`script/EnableEthereumXWellBridging.s.sol`) has run. When the
 ///         live adapter is not yet wired (owner == MOONWELL_DEPLOYER),
@@ -68,16 +66,10 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         wormholeCoreAddr = addresses.getAddress("WORMHOLE_CORE");
         wormholeRelayerAddr = address(adapter.wormholeRelayer());
 
-        // Determine wormhole chain IDs based on current chain. Source for the
-        // mocked VAAs is any chain other than the current one; we pick a peer
-        // that's actually wired so executeVAAv1 doesn't bail on "sender not
-        // trusted" before mint/burn can run.
+        // Source for the mocked VAAs: Moonbeam is still a trusted sender on
+        // every adapter, so executeVAAv1 reaches mint/burn.
         currentWormholeChainId = block.chainid.toWormholeChainId();
-        if (currentWormholeChainId == MOONBEAM_WORMHOLE_CHAIN_ID) {
-            sourceWormholeChainId = BASE_WORMHOLE_CHAIN_ID;
-        } else {
-            sourceWormholeChainId = MOONBEAM_WORMHOLE_CHAIN_ID;
-        }
+        sourceWormholeChainId = MOONBEAM_WORMHOLE_CHAIN_ID;
 
         // Outbound bridge peer for the bridge()/targetAddress assertions.
         // Kept SEPARATE from sourceWormholeChainId (the inbound VAA emitter)
@@ -88,10 +80,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         // outbound route survives the sunset:
         //   - Base / Optimism -> Ethereum (wired in MIP-X55)
         //   - Ethereum         -> Base     (wired by EnableEthereumXWellBridging)
-        //   - Moonbeam         -> Base     (Moonbeam side untouched by MIP-X64)
-        if (currentWormholeChainId == MOONBEAM_WORMHOLE_CHAIN_ID) {
-            outboundPeerWormholeChainId = BASE_WORMHOLE_CHAIN_ID;
-        } else if (currentWormholeChainId == ETHEREUM_WORMHOLE_CHAIN_ID) {
+        if (currentWormholeChainId == ETHEREUM_WORMHOLE_CHAIN_ID) {
             outboundPeerWormholeChainId = BASE_WORMHOLE_CHAIN_ID;
         } else {
             outboundPeerWormholeChainId = ETHEREUM_WORMHOLE_CHAIN_ID;
@@ -124,14 +113,10 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     // ---------------------------------------------------------------
 
     function testUpgradePreservesExistingState() public view {
-        /// gasLimit: Base + Optimism + Ethereum all run at 700_000; Moonbeam
-        /// is the outlier and stays at the contract default of 300_000.
-        uint96 expectedGasLimit = block.chainid == MOONBEAM_CHAIN_ID
-            ? 300_000
-            : 700_000;
+        /// gasLimit: Base + Optimism + Ethereum all run at 700_000
         assertEq(
             adapter.gasLimit(),
-            expectedGasLimit,
+            700_000,
             "gasLimit not at expected value after upgrade"
         );
 
@@ -149,17 +134,10 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             "xERC20 address corrupted after upgrade"
         );
 
-        /// owner preserved. On Moonbeam the governor owns the adapter; on
-        /// Base/Optimism the TemporalGovernor owns it. On Ethereum, MIP-E00's
-        /// acceptOwnership() runs in PostProposalCheck.setUp, handing the
-        /// adapter from PAUSE_GUARDIAN to MultichainGovernorV2.
-        if (block.chainid == MOONBEAM_CHAIN_ID) {
-            assertEq(
-                adapter.owner(),
-                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
-                "owner changed after upgrade"
-            );
-        } else if (block.chainid == ETHEREUM_CHAIN_ID) {
+        /// owner preserved. On Base/Optimism the TemporalGovernor owns it. On
+        /// Ethereum, MIP-E00's acceptOwnership() runs in PostProposalCheck.setUp,
+        /// handing the adapter from PAUSE_GUARDIAN to MultichainGovernorV2.
+        if (block.chainid == ETHEREUM_CHAIN_ID) {
             assertEq(
                 adapter.owner(),
                 addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY"),
@@ -370,8 +348,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     // ---------------------------------------------------------------
     // On-chain quote bridge tests (the bridge(uint256,uint256,address)
     // overload). After mip-x53 fixes quoterAddress on Base + Optimism,
-    // bridgeCost > 0 and the on-chain-quote path becomes usable. Moonbeam
-    // has no on-chain quoter — the path always reverts up front there.
+    // bridgeCost > 0 and the on-chain-quote path becomes usable.
     // ---------------------------------------------------------------
 
     function testBridgeOnchainQuoteFailsZeroValue() public {
@@ -382,13 +359,7 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         vm.startPrank(user);
         xwellProxy.approve(address(adapter), amount);
 
-        if (block.chainid == MOONBEAM_CHAIN_ID) {
-            vm.expectRevert(
-                "WormholeBridge: onchain quoting not available, use bridge with signedQuote"
-            );
-        } else {
-            vm.expectRevert("WormholeBridge: cost not equal to quote");
-        }
+        vm.expectRevert("WormholeBridge: cost not equal to quote");
         adapter.bridge{value: 0}(
             uint256(outboundPeerWormholeChainId),
             amount,
@@ -398,10 +369,6 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     }
 
     function testBridgeOnchainQuoteSucceeds() public {
-        if (block.chainid == MOONBEAM_CHAIN_ID) {
-            // Moonbeam has no on-chain quoter — covered by the failure test
-            return;
-        }
         if (block.chainid == ETHEREUM_CHAIN_ID) {
             // Skip on Ethereum: see comment on testBridgeOutAfterUpgrade —
             // the burn path underflows under our fresh-bridge MintLimits state.
@@ -507,27 +474,16 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
         address user = address(0xBEEF);
         uint256 bridgeAmount = 1000e18;
 
-        /// Get xWELL to user. On Moonbeam (unwrapper), deposit WELL via lockbox.
-        /// On Base/Optimism, mint via executeVAAv1 (properly updates rate limiter).
-        if (block.chainid == MOONBEAM_CHAIN_ID) {
-            IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
-            address lockbox = addresses.getAddress("xWELL_LOCKBOX");
-            deal(address(well), user, bridgeAmount);
-            vm.startPrank(user);
-            well.approve(lockbox, bridgeAmount);
-            XERC20Lockbox(lockbox).deposit(bridgeAmount);
-            vm.stopPrank();
-        } else {
-            bytes32 emitterAddr = bytes32(uint256(uint160(address(adapter))));
-            mockWormholeCore.setStorage(
-                true,
-                sourceWormholeChainId,
-                emitterAddr,
-                "",
-                abi.encode(user, bridgeAmount, currentWormholeChainId)
-            );
-            adapter.executeVAAv1(abi.encode("mint-for-bridge-out"));
-        }
+        /// Get xWELL to user: mint via executeVAAv1 (properly updates rate limiter).
+        bytes32 emitterAddr = bytes32(uint256(uint160(address(adapter))));
+        mockWormholeCore.setStorage(
+            true,
+            sourceWormholeChainId,
+            emitterAddr,
+            "",
+            abi.encode(user, bridgeAmount, currentWormholeChainId)
+        );
+        adapter.executeVAAv1(abi.encode("mint-for-bridge-out"));
 
         /// Etch mock executor so requestExecution succeeds
         address executorAddr = address(adapter.executor());
@@ -568,25 +524,18 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
     }
 
     /// @notice Helper: switch to dest fork, etch mock, executeVAAv1, verify mint + replay.
-    ///         Handles Moonbeam (unwrapper delivers WELL) vs Base/Optimism/Ethereum
-    ///         (delivers xWELL).
     function _executeVAAOnDestFork(
         address user,
         uint256 bridgeAmount
     ) internal {
-        // Pick a dest fork that's already wired bidirectionally with the
-        // current source. For Moonbeam→Base, Base→Moonbeam, Optimism→Moonbeam
-        // the existing fixture works. For Ethereum→? we route to Moonbeam,
-        // which after MIP-X55 trusts Ethereum.
-        uint256 destForkId;
-        if (currentWormholeChainId == MOONBEAM_WORMHOLE_CHAIN_ID) {
-            destForkId = BASE_FORK_ID;
-        } else if (currentWormholeChainId == ETHEREUM_WORMHOLE_CHAIN_ID) {
-            destForkId = MOONBEAM_FORK_ID;
-        } else {
-            destForkId = MOONBEAM_FORK_ID;
-        }
-        vm.selectFork(destForkId);
+        // Dest fork must trust the current source (Ethereum <-> Base/Optimism
+        // since MIP-X55) and not have processed its sequence 0 yet, which
+        // Base already has for Ethereum.
+        vm.selectFork(
+            currentWormholeChainId == ETHEREUM_WORMHOLE_CHAIN_ID
+                ? OPTIMISM_FORK_ID
+                : ETHEREUM_FORK_ID
+        );
 
         WormholeBridgeAdapter destAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
@@ -600,30 +549,14 @@ contract WormholeBridgeAdapterIntegrationTest is PostProposalCheck {
             abi.encode(user, bridgeAmount, destWormholeChainId)
         );
 
-        if (block.chainid == MOONBEAM_CHAIN_ID) {
-            /// Moonbeam: unwrapper delivers WELL via lockbox
-            IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
-            address lockbox = addresses.getAddress("xWELL_LOCKBOX");
-            deal(address(well), lockbox, bridgeAmount);
-
-            uint256 wellBefore = well.balanceOf(user);
-            destAdapter.executeVAAv1(abi.encode("e2e-cross-chain-vaa"));
-            assertEq(
-                well.balanceOf(user) - wellBefore,
-                bridgeAmount,
-                "dest (Moonbeam): WELL not delivered correctly"
-            );
-        } else {
-            /// Base/Optimism: regular adapter delivers xWELL
-            xWELL destXwell = xWELL(addresses.getAddress("xWELL_PROXY"));
-            uint256 destBalanceBefore = destXwell.balanceOf(user);
-            destAdapter.executeVAAv1(abi.encode("e2e-cross-chain-vaa"));
-            assertEq(
-                destXwell.balanceOf(user) - destBalanceBefore,
-                bridgeAmount,
-                "dest: xWELL not minted correctly"
-            );
-        }
+        xWELL destXwell = xWELL(addresses.getAddress("xWELL_PROXY"));
+        uint256 destBalanceBefore = destXwell.balanceOf(user);
+        destAdapter.executeVAAv1(abi.encode("e2e-cross-chain-vaa"));
+        assertEq(
+            destXwell.balanceOf(user) - destBalanceBefore,
+            bridgeAmount,
+            "dest: xWELL not minted correctly"
+        );
 
         /// Verify replay protection on destination (same sequence reverts)
         vm.expectRevert();

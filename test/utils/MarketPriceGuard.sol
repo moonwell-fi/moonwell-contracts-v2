@@ -54,7 +54,7 @@ contract MarketPriceGuard {
         Comptroller comptroller = Comptroller(
             addresses.getAddress("UNITROLLER")
         );
-        // placeholder fork (RPC unavailable): typed calls revert in the caller, uncaught by try/catch
+        // no comptroller on this fork: typed calls revert in the caller, uncaught by try/catch
         if (address(comptroller).code.length == 0) {
             return;
         }

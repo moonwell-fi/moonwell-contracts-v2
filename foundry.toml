@@ -44,7 +44,6 @@ verbosity = 4
 [rpc_endpoints]
 localhost = "http://127.0.0.1:8545"
 moonriver = { endpoint= "${MOONRIVER_RPC_URL}", retries = 3, retry_backoff = 1000 }
-moonbeam = { endpoint= "${MOONBEAM_RPC_URL}", retries = 3, retry_backoff = 1000 }
 moonbase = { endpoint= "${MOONBASE_RPC_URL}", retries = 3, retry_backoff = 1000 }
 ethereum = { endpoint= "${ETH_RPC_URL}", retries = 3, retry_backoff = 1000 }
 base = { endpoint= "${BASE_RPC_URL}", retries = 3, retry_backoff = 1000 }

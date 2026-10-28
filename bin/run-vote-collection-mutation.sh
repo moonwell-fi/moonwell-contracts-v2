@@ -128,13 +128,6 @@ for (( i=1; i <= num_files; i++ )); do
     # Process unit test outputs using the function
     process_test_output "Unit and Multichain Tests" "$temp_output_file"
 
-    # Run moonbeam integration tests and capture output
-    integration_command_output=$(forge test --match-contract MoonbeamTest --fork-url moonbeam -v --fork-block-number $MOONBEAM_FORK_BLOCK_NUMBER --block-number $MOONBEAM_BLOCK_NUMBER --block-timestamp $MOONBEAM_TIMESTAMP --chain-id $MOONBEAM_CHAIN_ID)
-    echo "$integration_command_output" > "$temp_output_file"
-
-    # Process integration test outputs using the function
-    process_test_output "Moonbeam Integration Tests" "$temp_output_file"
-
     # Run base integration tests and capture output
     integration_command_output=$(forge test --match-contract LiveSystemBaseTest --fork-url base -v --fork-block-number $BASE_FORK_BLOCK_NUMBER --block-number $BASE_BLOCK_NUMBER --block-timestamp $BASE_TIMESTAMP --chain-id $BASE_CHAIN_ID)
     echo "$integration_command_output" > "$temp_output_file"
