@@ -29,6 +29,14 @@ contract MWethOwnerWrapperUnitTest is Test {
         address indexed to,
         uint256 amount
     );
+    event OwnershipTransferStarted(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     function setUp() public {
         // Deploy mocks
@@ -69,6 +77,154 @@ contract MWethOwnerWrapperUnitTest is Test {
     function testInitialization() public view {
         assertEq(address(wrapper.mToken()), address(mToken));
         assertEq(address(wrapper.weth()), address(weth));
+        assertEq(wrapper.owner(), owner);
+        assertEq(wrapper.pendingOwner(), address(0));
+    }
+
+    /// @notice pins the proxy layout: existing vars unshifted, pendingOwner
+    /// appended at the next slot
+    function testStorageLayout() public {
+        address newOwner = address(0x3);
+        vm.prank(owner);
+        wrapper.transferOwnership(newOwner);
+
+        assertEq(
+            vm.load(address(wrapper), bytes32(uint256(51))),
+            bytes32(uint256(uint160(owner)))
+        );
+        assertEq(
+            vm.load(address(wrapper), bytes32(uint256(101))),
+            bytes32(uint256(uint160(address(mToken))))
+        );
+        assertEq(
+            vm.load(address(wrapper), bytes32(uint256(102))),
+            bytes32(uint256(uint160(address(weth))))
+        );
+        assertEq(
+            vm.load(address(wrapper), bytes32(uint256(103))),
+            bytes32(uint256(uint160(newOwner)))
+        );
+    }
+
+    // ============================================
+    // Ownership Tests
+    // ============================================
+
+    function testTransferOwnershipOnlySetsPending() public {
+        address newOwner = address(0x3);
+
+        vm.expectEmit(true, true, false, false, address(wrapper));
+        emit OwnershipTransferStarted(owner, newOwner);
+        vm.prank(owner);
+        wrapper.transferOwnership(newOwner);
+
+        assertEq(wrapper.owner(), owner);
+        assertEq(wrapper.pendingOwner(), newOwner);
+
+        // the pending owner has no admin rights yet
+        vm.prank(newOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper._syncCashDown();
+    }
+
+    function testTransferOwnershipOnlyOwner() public {
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper.transferOwnership(notOwner);
+    }
+
+    function testAcceptOwnership() public {
+        address newOwner = address(0x3);
+        vm.prank(owner);
+        wrapper.transferOwnership(newOwner);
+
+        vm.expectEmit(true, true, false, false, address(wrapper));
+        emit OwnershipTransferred(owner, newOwner);
+        vm.prank(newOwner);
+        wrapper.acceptOwnership();
+
+        assertEq(wrapper.owner(), newOwner);
+        assertEq(wrapper.pendingOwner(), address(0));
+
+        // the old owner lost its rights, the new one has them
+        vm.prank(owner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper.transferOwnership(owner);
+
+        vm.prank(newOwner);
+        wrapper.transferOwnership(owner);
+        assertEq(wrapper.pendingOwner(), owner);
+    }
+
+    function testAcceptOwnershipOnlyPendingOwner() public {
+        address newOwner = address(0x3);
+        vm.prank(owner);
+        wrapper.transferOwnership(newOwner);
+
+        vm.prank(notOwner);
+        vm.expectRevert("MWethOwnerWrapper: caller is not the pending owner");
+        wrapper.acceptOwnership();
+
+        // not even the current owner can accept on the pending owner's behalf
+        vm.prank(owner);
+        vm.expectRevert("MWethOwnerWrapper: caller is not the pending owner");
+        wrapper.acceptOwnership();
+
+        assertEq(wrapper.owner(), owner);
+        assertEq(wrapper.pendingOwner(), newOwner);
+    }
+
+    function testAcceptOwnershipRevertsWithoutPending() public {
+        vm.prank(owner);
+        vm.expectRevert("MWethOwnerWrapper: caller is not the pending owner");
+        wrapper.acceptOwnership();
+    }
+
+    function testSecondTransferOwnershipOverwritesPending() public {
+        address first = address(0x3);
+        address second = address(0x4);
+
+        vm.startPrank(owner);
+        wrapper.transferOwnership(first);
+        wrapper.transferOwnership(second);
+        vm.stopPrank();
+
+        assertEq(wrapper.pendingOwner(), second);
+
+        vm.prank(first);
+        vm.expectRevert("MWethOwnerWrapper: caller is not the pending owner");
+        wrapper.acceptOwnership();
+
+        vm.prank(second);
+        wrapper.acceptOwnership();
+        assertEq(wrapper.owner(), second);
+    }
+
+    function testTransferOwnershipToZeroCancelsPending() public {
+        address newOwner = address(0x3);
+
+        vm.startPrank(owner);
+        wrapper.transferOwnership(newOwner);
+        wrapper.transferOwnership(address(0));
+        vm.stopPrank();
+
+        assertEq(wrapper.pendingOwner(), address(0));
+        assertEq(wrapper.owner(), owner);
+
+        vm.prank(newOwner);
+        vm.expectRevert("MWethOwnerWrapper: caller is not the pending owner");
+        wrapper.acceptOwnership();
+    }
+
+    function testRenounceOwnershipReverts() public {
+        vm.prank(owner);
+        vm.expectRevert("MWethOwnerWrapper: cannot renounce ownership");
+        wrapper.renounceOwnership();
+
+        vm.prank(notOwner);
+        vm.expectRevert("MWethOwnerWrapper: cannot renounce ownership");
+        wrapper.renounceOwnership();
+
         assertEq(wrapper.owner(), owner);
     }
 
@@ -353,6 +509,61 @@ contract MWethOwnerWrapperUnitTest is Test {
     // ============================================
     // Token Withdrawal Tests
     // ============================================
+
+    function testSetImplementation() public {
+        mToken._setPendingAdmin(payable(address(wrapper)));
+        vm.prank(address(wrapper));
+        mToken._acceptAdmin();
+
+        address newImplementation = address(0xBEEF);
+
+        vm.prank(owner);
+        wrapper._setImplementation(newImplementation, true, hex"1234");
+
+        assertEq(mToken.implementation(), newImplementation);
+        assertTrue(mToken.lastAllowResign());
+        assertEq(mToken.lastBecomeImplementationData(), hex"1234");
+    }
+
+    function testSetImplementationOnlyOwner() public {
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper._setImplementation(address(0xBEEF), true, "");
+    }
+
+    function testSweepExcessCash() public {
+        mToken._setPendingAdmin(payable(address(wrapper)));
+        vm.prank(address(wrapper));
+        mToken._acceptAdmin();
+
+        vm.prank(owner);
+        wrapper._sweepExcessCash();
+
+        assertEq(mToken.sweepExcessCashCallCount(), 1);
+    }
+
+    function testSweepExcessCashOnlyOwner() public {
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper._sweepExcessCash();
+    }
+
+    function testSyncCashDown() public {
+        mToken._setPendingAdmin(payable(address(wrapper)));
+        vm.prank(address(wrapper));
+        mToken._acceptAdmin();
+
+        vm.prank(owner);
+        wrapper._syncCashDown();
+
+        assertEq(mToken.syncCashDownCallCount(), 1);
+    }
+
+    function testSyncCashDownOnlyOwner() public {
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper._syncCashDown();
+    }
 
     function testWithdrawToken() public {
         uint256 amount = 10 ether;
