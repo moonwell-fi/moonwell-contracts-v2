@@ -235,7 +235,7 @@
         "name": "SECURITY_COUNCIL"
     },
     {
-        "addr": "0xf9564270C1a08b386E77397d38E90bde96f900e2",
+        "addr": "0x39Bd42ce85CcC2f8792f13B2726369cD3F946D7c",
         "isContract": true,
         "name": "CAP_GUARDIAN"
     },

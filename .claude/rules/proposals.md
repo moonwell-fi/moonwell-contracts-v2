@@ -155,3 +155,12 @@
   `test/utils/MarketPriceGuard.sol`). A proposal that changes a market's price
   on purpose must list the mTokens in `expectedPriceChanges(Addresses)`;
   undeclared moves fail every integration job.
+- A proposal that rotates a privileged role (`_setPauseGuardian`,
+  `_setBorrowCapGuardian`, `_setSupplyCapGuardian`, `_setPendingAdmin`,
+  `transferOwnership`, ...) must update the matching `chains/<id>.json` entry
+  (`PAUSE_GUARDIAN`, `BORROW_SUPPLY_GUARDIAN` / `CAP_GUARDIAN`, ...) in the same
+  PR. Unlike new deployments, the new holder already exists on-chain, so the
+  registry edit is safe pre-execution. `PrivilegedRoleRegistryIntegrationTest`
+  compares every Comptroller role with the registry after the pending proposals
+  run (MOO-586: MIP-X61 moved the Ethereum cap guardians to Anthias without
+  touching `1.json`).

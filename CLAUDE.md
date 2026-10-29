@@ -100,4 +100,7 @@ sanity-check before committing.
 - Scan ALL related contracts before concluding something is unused — cross-chain
   dependencies are easy to miss
 - Check chain-specific configs in `chains/` when working with deployments
+- A proposal that changes a privileged role (guardian, admin, owner) must update
+  the matching `chains/<id>.json` entry in the same PR;
+  `PrivilegedRoleRegistryIntegrationTest` enforces it for Comptroller roles
 - Run `forge test` before committing contract changes
