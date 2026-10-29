@@ -207,40 +207,42 @@ contract PostProposalCheck is Test {
             proposalMap.filterByGovernor("MultichainGovernorV2")
         );
 
+        vm.selectFork(ETHEREUM_FORK_ID);
+        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
+            return;
+        }
+        IMultichainGovernorV2 governorV2 = IMultichainGovernorV2(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY")
+        );
+
+        // Read every state before simulating any: a simulation warps the
+        // Ethereum fork past later proposals' voting end, so they read Defeated.
+        bool[] memory pending = new bool[](v2Proposals.length);
         for (uint256 i = 0; i < v2Proposals.length; i++) {
-            // id:0 entries are handled by the in-development loop above.
+            // id:0 entries are handled by the in-development loop.
             if (v2Proposals[i].id == 0) {
                 continue;
             }
-
-            vm.selectFork(ETHEREUM_FORK_ID);
-
-            if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
-                continue;
-            }
-
-            IMultichainGovernorV2 governorV2 = IMultichainGovernorV2(
-                addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY")
-            );
 
             // A proposal whose id exists but has not executed yet still needs
             // its effects applied to the fork. Defeated and Canceled proposals
             // never will, so simulating them would apply state that never
             // lands on-chain. If state() reverts the id was never created
             // on-chain — treat as pending.
-            bool pending;
             try governorV2.state(v2Proposals[i].id) returns (
                 IMultichainGovernorV2.ProposalState state
             ) {
-                pending =
+                pending[i] =
                     state != IMultichainGovernorV2.ProposalState.Executed &&
                     state != IMultichainGovernorV2.ProposalState.Defeated &&
                     state != IMultichainGovernorV2.ProposalState.Canceled;
             } catch {
-                pending = true;
+                pending[i] = true;
             }
+        }
 
-            if (!pending) {
+        for (uint256 i = 0; i < v2Proposals.length; i++) {
+            if (!pending[i]) {
                 continue;
             }
 
