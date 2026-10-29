@@ -275,7 +275,7 @@
         "isContract": true
     },
     {
-        "addr": "0x3D66358C9D6A34a16cc39f2a949099770944311d",
+        "addr": "0x78C504b6C0eA2AdbF6A58B208C9888f3692db169",
         "isContract": true,
         "name": "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE"
     },
@@ -345,7 +345,7 @@
         "isContract": true
     },
     {
-        "addr": "0x6b961D254d6581a313Cb88883B1AAcFDeC214E59",
+        "addr": "0xb46b3856f87305Aa76DC59349de0b518368e318b",
         "name": "cbETH_COMPOSITE_ORACLE",
         "isContract": true
     },
@@ -580,7 +580,7 @@
         "isContract": true
     },
     {
-        "addr": "0xd70e089C9EAC890A73a69131757b3457A8C26C07",
+        "addr": "0x826D8ECd5E9EC46A63f1B0a2da7a8929a8590c29",
         "name": "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE",
         "isContract": true
     },
@@ -1405,7 +1405,7 @@
         "name": "CHAINLINK_wrsETH_ETH_EXCHANGE_RATE"
     },
     {
-        "addr": "0x9f8F762Dc383A3D45dc900aa9a34bCf260AB36e5",
+        "addr": "0x8769B70ac7c93AF0e75de0D69877709B66d75838",
         "isContract": true,
         "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE"
     },
@@ -1465,7 +1465,7 @@
         "name": "CHAINLINK_RETH_ETH_EXCHANGE_RATE"
     },
     {
-        "addr": "0x95f5d6BB3Cfa302De88E74791689291505EbDEB7",
+        "addr": "0x24Af32b0C4c94f0D406fBC3C8815666356299c58",
         "isContract": true,
         "name": "CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE"
     },
@@ -1813,5 +1813,30 @@
         "addr": "0x9f0C1dD78C4CBdF5b9cf923a549A201EdC676D34",
         "isContract": true,
         "name": "CHAINLINK_cbXRP_USD_SVR"
+    },
+    {
+        "addr": "0x6b961D254d6581a313Cb88883B1AAcFDeC214E59",
+        "isContract": true,
+        "name": "cbETH_COMPOSITE_ORACLE_DEPRECATED_X74"
+    },
+    {
+        "addr": "0xd70e089C9EAC890A73a69131757b3457A8C26C07",
+        "isContract": true,
+        "name": "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE_DEPRECATED_X74"
+    },
+    {
+        "addr": "0x95f5d6BB3Cfa302De88E74791689291505EbDEB7",
+        "isContract": true,
+        "name": "CHAINLINK_RETH_ETH_EXCHANGE_RATE_ORACLE_DEPRECATED_X74"
+    },
+    {
+        "addr": "0x3D66358C9D6A34a16cc39f2a949099770944311d",
+        "isContract": true,
+        "name": "CHAINLINK_WEETH_USD_COMPOSITE_ORACLE_DEPRECATED_X74"
+    },
+    {
+        "addr": "0x9f8F762Dc383A3D45dc900aa9a34bCf260AB36e5",
+        "isContract": true,
+        "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE_DEPRECATED_X74"
     }
 ]

@@ -66,6 +66,12 @@ contract PostProposalCheck is Test {
         _snapshotMarketPrices();
         _beforePendingProposals();
 
+        // Simulate MultichainGovernorV2 proposals that already carry an
+        // on-chain id but have not been executed yet (e.g. MIP-E00). Runs
+        // before the dev loop: a submitted proposal executes before any
+        // unsubmitted one.
+        simulatePendingGovernorV2Proposals();
+
         // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
             .getAllProposalsInDevelopment();
@@ -83,10 +89,6 @@ contract PostProposalCheck is Test {
             proposals.push(proposal);
             _recordExpectedPriceChanges(proposal);
         }
-
-        // Simulate MultichainGovernorV2 proposals that already carry an
-        // on-chain id but have not been executed yet (e.g. MIP-E00).
-        simulatePendingGovernorV2Proposals();
 
         // Sync all fork timestamps to the maximum observed across all forks.
         // Proposal execution may warp some forks forward (e.g. Base during
@@ -201,43 +203,46 @@ contract PostProposalCheck is Test {
     /// markets). Already-executed proposals are
     /// skipped so we never re-run finalized governance.
     function simulatePendingGovernorV2Proposals() internal {
-        ProposalMap.ProposalFields[] memory v2Proposals = proposalMap
-            .filterByGovernor("MultichainGovernorV2");
+        ProposalMap.ProposalFields[] memory v2Proposals = _sortById(
+            proposalMap.filterByGovernor("MultichainGovernorV2")
+        );
 
+        vm.selectFork(ETHEREUM_FORK_ID);
+        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
+            return;
+        }
+        IMultichainGovernorV2 governorV2 = IMultichainGovernorV2(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY")
+        );
+
+        // Read every state before simulating any: a simulation warps the
+        // Ethereum fork past later proposals' voting end, so they read Defeated.
+        bool[] memory pending = new bool[](v2Proposals.length);
         for (uint256 i = 0; i < v2Proposals.length; i++) {
-            // id:0 entries are handled by the in-development loop above.
+            // id:0 entries are handled by the in-development loop.
             if (v2Proposals[i].id == 0) {
                 continue;
             }
-
-            vm.selectFork(ETHEREUM_FORK_ID);
-
-            if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_V2_PROXY")) {
-                continue;
-            }
-
-            IMultichainGovernorV2 governorV2 = IMultichainGovernorV2(
-                addresses.getAddress("MULTICHAIN_GOVERNOR_V2_PROXY")
-            );
 
             // A proposal whose id exists but has not executed yet still needs
             // its effects applied to the fork. Defeated and Canceled proposals
             // never will, so simulating them would apply state that never
             // lands on-chain. If state() reverts the id was never created
             // on-chain — treat as pending.
-            bool pending;
             try governorV2.state(v2Proposals[i].id) returns (
                 IMultichainGovernorV2.ProposalState state
             ) {
-                pending =
+                pending[i] =
                     state != IMultichainGovernorV2.ProposalState.Executed &&
                     state != IMultichainGovernorV2.ProposalState.Defeated &&
                     state != IMultichainGovernorV2.ProposalState.Canceled;
             } catch {
-                pending = true;
+                pending[i] = true;
             }
+        }
 
-            if (!pending) {
+        for (uint256 i = 0; i < v2Proposals.length; i++) {
+            if (!pending[i]) {
                 continue;
             }
 
@@ -252,5 +257,22 @@ contract PostProposalCheck is Test {
             proposals.push(proposal);
             _recordExpectedPriceChanges(proposal);
         }
+    }
+
+    /// @notice ascending by id: mips.json is newest-first, and a later
+    /// proposal's afterDeploy may require an earlier one to have executed
+    function _sortById(
+        ProposalMap.ProposalFields[] memory list
+    ) internal pure returns (ProposalMap.ProposalFields[] memory) {
+        for (uint256 i = 1; i < list.length; i++) {
+            ProposalMap.ProposalFields memory item = list[i];
+            uint256 j = i;
+            while (j > 0 && list[j - 1].id > item.id) {
+                list[j] = list[j - 1];
+                j--;
+            }
+            list[j] = item;
+        }
+        return list;
     }
 }
