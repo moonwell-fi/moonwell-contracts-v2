@@ -155,12 +155,16 @@
   `test/utils/MarketPriceGuard.sol`). A proposal that changes a market's price
   on purpose must list the mTokens in `expectedPriceChanges(Addresses)`;
   undeclared moves fail every integration job.
-- A proposal that rotates a privileged role (`_setPauseGuardian`,
-  `_setBorrowCapGuardian`, `_setSupplyCapGuardian`, `_setPendingAdmin`,
-  `transferOwnership`, ...) must update the matching `chains/<id>.json` entry
-  (`PAUSE_GUARDIAN`, `BORROW_SUPPLY_GUARDIAN` / `CAP_GUARDIAN`, ...) in the same
-  PR. Unlike new deployments, the new holder already exists on-chain, so the
-  registry edit is safe pre-execution. `PrivilegedRoleRegistryIntegrationTest`
-  compares every Comptroller role with the registry after the pending proposals
-  run (MOO-586: MIP-X61 moved the Ethereum cap guardians to Anthias without
-  touching `1.json`).
+- Every address a proposal calls or passes as an argument, contract or EOA, must
+  be in `chains/<id>.json` — never a literal in the `.sol`. A proposal that
+  rotates a privileged role (`_setPauseGuardian`, `_setBorrowCapGuardian`,
+  `_setSupplyCapGuardian`, `_setPendingAdmin`, `transferOwnership`, ...) must
+  update the matching entry (`PAUSE_GUARDIAN`, `BORROW_SUPPLY_GUARDIAN` /
+  `CAP_GUARDIAN`, ...) in the same PR; the new holder already exists on-chain,
+  so the registry edit is safe pre-execution. Addresses the proposal itself
+  registers in `deploy()` are accepted and land in the json after execution.
+  `ProposalAddressRegistryIntegrationTest` checks every target and every
+  address-shaped calldata word of the pending proposals against the registry;
+  `PrivilegedRoleRegistryIntegrationTest` compares every Comptroller role with
+  the registry after the pending proposals run (MOO-586: MIP-X61 moved the
+  Ethereum cap guardians to Anthias without touching `1.json`).
