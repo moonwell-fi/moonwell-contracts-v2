@@ -100,4 +100,9 @@ sanity-check before committing.
 - Scan ALL related contracts before concluding something is unused — cross-chain
   dependencies are easy to miss
 - Check chain-specific configs in `chains/` when working with deployments
+- Every address a proposal calls or passes as an argument (contract or EOA) must
+  be in `chains/<id>.json`; a proposal that rotates a privileged role must
+  update the matching entry in the same PR.
+  `ProposalAddressRegistryIntegrationTest` and
+  `PrivilegedRoleRegistryIntegrationTest` enforce it
 - Run `forge test` before committing contract changes
