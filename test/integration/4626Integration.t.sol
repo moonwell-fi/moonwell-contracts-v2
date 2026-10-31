@@ -175,6 +175,7 @@ contract ERC4626LiveIntegrationTest is Test {
     function testWithdrawWithZeroCashFails() public {
         testMaxMintDepositSucceedsMaxMintGtZero();
         deal(address(underlying), address(mToken), 0);
+        vm.store(address(mToken), bytes32(uint256(20)), 0); /// MIP-X73 internalCash
 
         uint256 withdrawAmount = vault.balanceOf(address(this));
 
