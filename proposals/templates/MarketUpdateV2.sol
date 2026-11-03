@@ -15,8 +15,6 @@ import {HybridProposalV2} from "@proposals/proposalTypes/HybridProposalV2.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MockRedstoneMultiFeedAdapter} from "@test/mock/MockRedstoneMultiFeedAdapter.sol";
-import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-import {MErc20} from "@protocol/MErc20.sol";
 
 /// @title MarketUpdateV2Template
 /// @notice post-x58 version of MarketUpdateTemplate: same JSON-driven market
@@ -45,13 +43,6 @@ contract MarketUpdateV2Template is
         int256 reserveFactor;
     }
 
-    /// @notice fixed price set on ChainlinkOracle, raw as stored (unscaled
-    /// by the underlying's decimals)
-    struct PriceUpdate {
-        string market;
-        uint256 price;
-    }
-
     struct JRM {
         uint256 baseRatePerYear;
         uint256 jumpMultiplierPerYear;
@@ -61,19 +52,12 @@ contract MarketUpdateV2Template is
     }
 
     mapping(uint256 chainId => MarketUpdate[]) public marketUpdates;
-    mapping(uint256 chainId => PriceUpdate[]) public priceUpdates;
     mapping(uint256 chainId => mapping(string name => JRM)) public irModels;
     mapping(uint256 chainId => string[] names) private _irmNames;
     mapping(uint256 chainId => EnumerableSet.AddressSet markets)
         private _markets;
     mapping(uint256 chainId => EnumerableSet.Bytes32Set models)
         private _irModels;
-
-    /// @notice mTokens whose price this proposal fixes, for the price guard
-    address[] private _priceChangeMarkets;
-
-    /// @notice markets whose risk parameters this proposal changes
-    MarketStateChange[] private _riskChanges;
 
     /// @notice true when the proposal JSON carries a 1284 block; gates every
     /// touch of fork id 0, which is a placeholder
@@ -153,7 +137,6 @@ contract MarketUpdateV2Template is
 
             _saveChainMarketUpdate(addresses, chainId, encodedJson);
             _saveIRModels(chainId, encodedJson);
-            _savePriceUpdates(addresses, chainId, encodedJson);
         }
     }
 
@@ -223,58 +206,9 @@ contract MarketUpdateV2Template is
             address market = addresses.getAddress(rec.market);
 
             require(_markets[chainId].add(market), "Duplication in Markets");
-            _riskChanges.push(
-                MarketStateChange({
-                    chainId: chainId,
-                    target: market,
-                    riskParameters: true,
-                    accounting: false
-                })
-            );
 
             marketUpdates[chainId].push(rec);
         }
-    }
-
-    function _savePriceUpdates(
-        Addresses addresses,
-        uint256 chainId,
-        string memory data
-    ) internal {
-        string memory chain = string.concat(
-            ".",
-            vm.toString(chainId),
-            ".prices"
-        );
-
-        if (!vm.keyExistsJson(data, chain)) {
-            return;
-        }
-
-        vm.selectFork(chainId.toForkId());
-
-        PriceUpdate[] memory updates = abi.decode(
-            vm.parseJson(data, chain),
-            (PriceUpdate[])
-        );
-
-        for (uint256 i = 0; i < updates.length; i++) {
-            require(updates[i].price != 0, "zero price clears the override");
-            priceUpdates[chainId].push(updates[i]);
-            _priceChangeMarkets.push(addresses.getAddress(updates[i].market));
-        }
-    }
-
-    function expectedPriceChanges(
-        Addresses
-    ) public view virtual override returns (address[] memory) {
-        return _priceChangeMarkets;
-    }
-
-    function expectedMarketStateChanges(
-        Addresses
-    ) public view virtual override returns (MarketStateChange[] memory) {
-        return _riskChanges;
     }
 
     function _saveIRModels(uint256 chainId, string memory data) internal {
@@ -397,50 +331,16 @@ contract MarketUpdateV2Template is
                 );
             }
         }
-
-        PriceUpdate[] memory prices = priceUpdates[chainId];
-        for (uint256 i = 0; i < prices.length; i++) {
-            _pushAction(
-                addresses.getAddress("CHAINLINK_ORACLE"),
-                abi.encodeWithSignature(
-                    "setUnderlyingPrice(address,uint256)",
-                    addresses.getAddress(prices[i].market),
-                    prices[i].price
-                ),
-                string(
-                    abi.encodePacked(
-                        "Set fixed price to ",
-                        vm.toString(prices[i].price),
-                        " for ",
-                        prices[i].market
-                    )
-                )
-            );
-        }
     }
 
     function _validateChain(Addresses addresses, uint256 chainId) internal {
         MarketUpdate[] memory updates = marketUpdates[chainId];
-        PriceUpdate[] memory prices = priceUpdates[chainId];
 
-        if (updates.length == 0 && prices.length == 0) {
+        if (updates.length == 0) {
             return;
         }
 
         vm.selectFork(chainId.toForkId());
-
-        ChainlinkOracle oracle = ChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
-        );
-        for (uint256 i = 0; i < prices.length; i++) {
-            address underlying = MErc20(addresses.getAddress(prices[i].market))
-                .underlying();
-            assertEq(
-                oracle.assetPrices(underlying),
-                prices[i].price,
-                "fixed price not set"
-            );
-        }
 
         for (uint256 i = 0; i < updates.length; i++) {
             MarketUpdate memory rec = updates[i];

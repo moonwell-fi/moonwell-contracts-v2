@@ -31,7 +31,7 @@
     "10": {
         "markets": [
             {
-                "collateralFactor": 0.48e18,
+                "collateralFactor": 0,
                 "irm": "",
                 "market": "MOONWELL_VELO",
                 "reserveFactor": -1
