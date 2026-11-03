@@ -20,7 +20,12 @@
                 "reserveFactor": -1
             }
         ],
-        "irModels": [
+        "irModels": [],
+        "prices": [
+            {
+                "market": "MOONWELL_MAMO",
+                "price": 0.01e18
+            }
         ]
     },
     "10": {
