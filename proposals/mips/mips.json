@@ -4,7 +4,8 @@
         "governor": "MultichainGovernorV2",
         "id": 0,
         "path": "RewardsDistributionV2.sol/RewardsDistributionV2Template.json",
-        "proposalType": "HybridProposalV2"
+        "proposalType": "HybridProposalV2",
+        "descriptionUri": "ipfs://bafkreibg7gca5gh3ivk63bolyvxkeb4hanqdpx2daznmaecrvmkpc7zf7u"
     },
     {
         "envpath": "",
