@@ -123,6 +123,7 @@ gambit_out*
 cache/
 
 proposal.sh
+proposal-[0-9]*.sh
 
 *.local.json
 
