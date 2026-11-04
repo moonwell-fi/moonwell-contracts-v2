@@ -2,7 +2,7 @@
     {
         "envpath": "proposals/mips/mip-x75/x75.sh",
         "governor": "MultichainGovernorV2",
-        "id": 0,
+        "id": 196,
         "path": "mip-x75.sol/mipx75.json",
         "proposalType": "HybridProposalV2",
         "descriptionUri": "ipfs://bafkreibjgmbmt22rorjj5makd6jqj2sxv56fdwowa6bgv2efukfeeecale"
