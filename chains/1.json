@@ -95,8 +95,13 @@
         "isContract": false
     },
     {
-        "addr": "0x5B710010586C1b728B047c3E42473c700eeA4026",
+        "addr": "0x08eDEbFFaE68970DCf751baa826182b3a4aCFC05",
         "name": "BORROW_SUPPLY_GUARDIAN",
+        "isContract": true
+    },
+    {
+        "addr": "0x08eDEbFFaE68970DCf751baa826182b3a4aCFC05",
+        "name": "ANTHIAS_MULTISIG",
         "isContract": true
     },
     {

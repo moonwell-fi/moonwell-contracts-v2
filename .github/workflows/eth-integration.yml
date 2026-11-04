@@ -90,3 +90,32 @@ jobs:
            # the pending proposals, then diffs. No --fork-url: forks are managed
            # by PostProposalCheck.
            command: time forge test --match-contract ProposalMarketInvarianceIntegrationTest -vvv --ffi
+
+  address-registry-integration:
+    name: Address Registry Integration Test
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Setup MIPs Permissions
+        uses: ./.github/actions/setup-mips-permissions
+
+      - name: Address Registry Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 40
+           max_attempts: 3
+           # After PostProposalCheck runs the pending proposals, every
+           # Comptroller role on every chain must match chains/<id>.json, and
+           # every address a pending proposal calls or passes must be in the
+           # registry (MOO-586). No --fork-url: forks are managed by
+           # PostProposalCheck.
+           command: time forge test --match-contract RegistryIntegrationTest -vvv --ffi
