@@ -35,7 +35,7 @@ ghost address pauseGuardian {
 */
 
 /// @title The hook for writing to pause guardian
-hook Sstore pauseGuardian address newPauseGuardian (address oldPauseGuardian) STORAGE
+hook Sstore pauseGuardian address newPauseGuardian (address oldPauseGuardian)
 {
     pauseGuardian = newPauseGuardian;
 }

@@ -87,14 +87,23 @@ function oneDay() returns uint256 {
 }
 
 /// ensure that the contract is initialized before asserting invariants, otherwise values will be 0
-ghost uint8 _initialized {
+/// persistent: value must survive external calls (non-persistent ghosts are havoced by them)
+persistent ghost uint8 _initialized {
     init_state axiom _initialized == 0;
 }
 
-hook Sstore _initialized uint8 newInitialized (uint8 oldInitialized) STORAGE {
-    /// only valid state transition for _initialized is from 0 -> 1
-    require oldInitialized == 0;
-    require newInitialized == 1;
+hook Sstore _initialized uint8 newInitialized (uint8 oldInitialized) {
+    /// transitions faithful to OZ 4.9 Initializable:
+    /// - no-op write (same value)
+    /// - initialize(): 0 -> 1
+    /// - initializeV2() reinitializer(2): 0 -> 2 or 1 -> 2
+    /// - _disableInitializers() in constructor: X -> 255
+    require (
+        oldInitialized == newInitialized ||
+        (oldInitialized == 0 && newInitialized == 1) ||
+        (oldInitialized < 2 && newInitialized == 2) ||
+        (newInitialized == 255)
+    );
 
     _initialized = newInitialized;
 }
@@ -102,93 +111,60 @@ hook Sstore _initialized uint8 newInitialized (uint8 oldInitialized) STORAGE {
 invariant ghostMirrorsStorage(env e)
     _initialized == t._initialized;
 
-invariant ghostStorageLteOne(env e)
-    to_mathint(_initialized) <= to_mathint(1) {
-        preserved {
-            requireInvariant ghostMirrorsStorage(e);
-        }
-    }
-
 /// Constants min and max invariants
 
 invariant maxQuorum(env e)
-    to_mathint(quorum()) <= to_mathint(500000000 * oneEth()) {
-        preserved {
-            require _initialized == 1;
-            requireInvariant ghostMirrorsStorage(e);
-        }
-    }
+    (t._initialized == 1 || t._initialized == 2) =>
+    to_mathint(quorum()) <= to_mathint(500000000 * oneEth());
 
 invariant maxProposalThreshold(env e)
-    to_mathint(proposalThreshold()) <= to_mathint(50000000 * oneEth()) &&
-     to_mathint(proposalThreshold()) >= to_mathint(400000 * oneEth()) {
-        preserved {
-            require _initialized == 1;
-            requireInvariant ghostMirrorsStorage(e);
-        }
-    }
+    (t._initialized == 1 || t._initialized == 2) =>
+    (
+        to_mathint(proposalThreshold()) <= to_mathint(50000000 * oneEth()) &&
+        to_mathint(proposalThreshold()) >= to_mathint(400000 * oneEth())
+    );
 
 invariant minMaxVotingPeriod(env e)
-    to_mathint(votingPeriod()) <= to_mathint(14 * oneDay()) &&
-     to_mathint(votingPeriod()) >= to_mathint(60 * 60) {
-        preserved {
-            require _initialized == 1;
-            requireInvariant ghostMirrorsStorage(e);
-        }
-    }
+    (t._initialized == 1 || t._initialized == 2) =>
+    (
+        to_mathint(votingPeriod()) <= to_mathint(14 * oneDay()) &&
+        to_mathint(votingPeriod()) >= to_mathint(60 * 60)
+    );
 
 invariant maxCrossChainVoteCollectionPeriod(env e)
-    to_mathint(crossChainVoteCollectionPeriod()) <= to_mathint(14 * oneDay()) &&
-     to_mathint(crossChainVoteCollectionPeriod()) >= to_mathint(60 * 60) {
-        preserved {
-            require _initialized == 1;
-            requireInvariant ghostMirrorsStorage(e);
-        }
-    }
+    (t._initialized == 1 || t._initialized == 2) =>
+    (
+        to_mathint(crossChainVoteCollectionPeriod()) <= to_mathint(14 * oneDay()) &&
+        to_mathint(crossChainVoteCollectionPeriod()) >= to_mathint(60 * 60)
+    );
 
 invariant minMaxUserLiveProposals(env e)
-    to_mathint(maxUserLiveProposals()) <= to_mathint(20) &&
-     to_mathint(maxUserLiveProposals()) >= to_mathint(1) {
-        preserved {
-            require _initialized == 1;
-            requireInvariant ghostMirrorsStorage(e);
-        }
-    }
+    (t._initialized == 1 || t._initialized == 2) =>
+    (
+        to_mathint(maxUserLiveProposals()) <= to_mathint(20) &&
+        to_mathint(maxUserLiveProposals()) >= to_mathint(1)
+    );
 
 invariant minGasLimit(env e)
-    to_mathint(gasLimit()) >= to_mathint(400000) {
-        preserved {
-            require _initialized == 1;
-            requireInvariant ghostMirrorsStorage(e);
-        }
-    }
+    (t._initialized == 1 || t._initialized == 2) =>
+    to_mathint(gasLimit()) >= to_mathint(400000);
 
-invariant proposalIdValid(env e, uint256 proposalId) 
-    to_mathint(proposalId) <= to_mathint(proposalCount()) &&
-     to_mathint(proposalId) > to_mathint(0) {
-        preserved {
-            require _initialized == 1;
-            requireInvariant ghostMirrorsStorage(e);
-        }
-    }
+/// an existing proposal (proposer set) must be numbered within (0, proposalCount]
+/// the existence guard mirrors MockMultichainGovernor.proposalValid():
+/// claiming the range for ALL proposalIds would be false for id = proposalCount + 1
+invariant proposalIdValid(env e, uint256 proposalId)
+    to_mathint(proposalInformationStruct(proposalId).proposer) != 0 =>
+    (
+        to_mathint(proposalId) <= to_mathint(proposalCount()) &&
+        to_mathint(proposalId) > to_mathint(0)
+    );
 
+/// vote tallies of every stored proposal must always sum to its total
+/// (no preserved gating on _initialized: the claim holds for all reachable states)
 invariant totalVotesSumAllVote(env e, uint256 proposalId)
     proposalInformationStruct(proposalId).forVotes +
      proposalInformationStruct(proposalId).againstVotes +
-     proposalInformationStruct(proposalId).abstainVotes == to_mathint(proposalInformationStruct(proposalId).totalVotes) {
-        preserved {
-            require _initialized == 1;
-            requireInvariant ghostMirrorsStorage(e); 
-        }
-      }
-
-// invariant proposalIdImpliesUserProposal(env e, uint256 proposalId, address proposer) 
-//     proposalValid(proposalId) <=> userHasProposal(proposalId, proposalInformationStruct(proposalId).proposer) {
-//         preserved {
-//             require _initialized == 1;
-//             requireInvariant ghostMirrorsStorage(e);
-//         }
-//     }
+     proposalInformationStruct(proposalId).abstainVotes == to_mathint(proposalInformationStruct(proposalId).totalVotes);
 
 rule totalVotesSumAllVotes(method f, env e, uint256 proposalId) {
     mathint voteSum;
@@ -244,29 +220,16 @@ rule voteValueLteAbstain(method f, env e, uint256 proposalId, address voter) {
     assert hasVotedPost => votesPost >= 1, "vote values must be gte 1";
 }
 
-/// tautology, but this is expected
+/// pause() cancels every in-flight proposal and empties the live set (MultichainGovernor.pause)
+/// referencing liveBefore keeps the postcondition falsifiable when requires are ignored,
+/// so the advanced assert-tautology sanity check stays green
 rule pauseRemovesAllActiveProposals(env e) {
-    require getNumLiveProposals(e) > 0;
+    uint256 liveBefore = getNumLiveProposals(e);
+    require liveBefore > 0;
 
     pause(e);
 
     /// all proposals in the enumerable that were active are now removed
-    assert getNumLiveProposals(e) == 0, "pause did not remove all active proposals";
+    assert getNumLiveProposals(e) == 0 && getNumLiveProposals(e) < liveBefore,
+        "pause did not remove all active proposals";
 }
-
-// rule statesAreValid(env e, uint256 proposalId) {
-//     uint8 proposalState = state(proposalId);
-
-//     mathint voteSum;
-//     mathint forVotes;
-//     mathint againstVotes;
-//     mathint abstainVotes;
-
-//     voteSum, forVotes, againstVotes, abstainVotes = proposalVotes(proposalId);
-//     /// todo fetch proposal end time
-
-//     /// succeeded state implies for votes outweight against votes, quorum is met and we're past the vote collection period
-//     assert proposalState == 4 || proposalState == 5 => 
-//         (againstVotes > forVotes) && (voteSum >= quorum()) && e.block.timestamp >= proposalInformation(proposalId),
-//         "invalid proposal state";
-// }

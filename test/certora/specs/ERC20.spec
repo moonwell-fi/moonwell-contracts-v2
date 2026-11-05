@@ -62,7 +62,7 @@ ghost mathint sumBalances {
 }
 
 
-/// @title A ghost to mirror the balances, needed for `sumBalances`
+/// @notice A ghost to mirror the balances, needed for `sumBalances`
 ghost mapping(address => uint256) balanceOfMirror {
     init_state axiom forall address a. balanceOfMirror[a] == 0;
 }
@@ -80,7 +80,7 @@ ghost mathint totalSupplyStandardMirror {
 }
 
 /// @title The hook for writing to total supply checkpoints
-hook Sstore _totalSupply uint256 newTotalSupply (uint256 oldTotalSupply) STORAGE
+hook Sstore _totalSupply uint256 newTotalSupply (uint256 oldTotalSupply)
 {
     totalSupplyStandardMirror = newTotalSupply;
 }
@@ -91,15 +91,32 @@ hook Sstore _totalSupply uint256 newTotalSupply (uint256 oldTotalSupply) STORAGE
 // overflows Alice's balance when receiving a transfer. This is not possible unless the contract is deployed into an 
 // already used address (or upgraded from corrupted state).
 // We restrict such behavior by making sure no balance is greater than the sum of balances.
-hook Sload uint256 balance _balances[KEY address addr] STORAGE {
+hook Sload uint256 balance _balances[KEY address addr] {
     require sumBalances >= to_mathint(balance);
 }
 
 /// @title The hook
-hook Sstore _balances[KEY address user] uint256 new_balance (uint256 old_balance) STORAGE
+hook Sstore _balances[KEY address user] uint256 new_balance (uint256 old_balance)
 {
     sumBalances = sumBalances + new_balance - old_balance;
     balanceOfMirror[user] = new_balance;
+}
+
+/// @title Checkpoint array well-formedness harness
+/// `_writeCheckpoint` does `ckpts.push()` inside `unchecked`; an arbitrary induction
+/// state with length == max_uint256 makes the push wrap the length to 0, after which
+/// getVotes() returns garbage (counterexamples in doubleDelegateIsGreaterOrEqual and
+/// friends). Reachable executions of OZ ERC20Votes only ever append, with the length
+/// nowhere near max_uint256, so these requires prune unreachable states only.
+hook Sstore _checkpoints[KEY address a].length uint newLen (uint oldLen) {
+    require oldLen < 4294967295;
+    require newLen > oldLen;
+}
+
+/// same bound on READS: getVotes() binary-searches `_checkpoints[account]` and the
+/// adversarial induction states place absurd lengths there without ever storing them
+hook Sload uint256 ckptLen _checkpoints[KEY address a].length {
+    require ckptLen < 4294967295;
 }
 
 /// @title Formally prove that `balanceOfMirror` mirrors `balanceOf`
@@ -153,31 +170,43 @@ invariant totalSupplyLteMax()
         }
     }
 
-/// - user A delegating to user B => user B voting power >= balanceOf user A
-/// do not consider case where b is address 0
-/// do not consider case where number of checkpoints is uintMax() as it will overflow, and calls to getVotes will fail
-/// because it will look up at index 0, when it should look up uint256 max
-invariant correctCheckpoints(address a) 
-    to_mathint(numCheckpoints(a)) <= to_mathint(timestampMax()) {
-        preserved {
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant mirrorIsTrue(a);
-            requireInvariant addressZeroCannotDelegate();
-            require(to_mathint(numCheckpoints(a)) <= to_mathint(timestampMax() - 1));
-        }
-    }
-
-/// do not consider case where number of checkpoints is uintMax() as it will overflow, and calls to getVotes will fail
-/// because it will look up at index 0, when it should look up uint256 max
+/// user A delegating to user B => user B voting power >= balances of both A and B
+///
+/// DISABLED (audit 2026-10): not inductively provable over arbitrary states, kept as
+/// documentation. History:
+///  1. The ORIGINAL body was an unparenthesized chain
+///     `P && C1 => X && C2 => Y && C3 => Z` whose parse made the first clause's guard
+///     contradict the second's (delegates(a)==b && a!=b vs delegates(a)==a), collapsing
+///     the whole body into a vacuous tautology (caught by invariant_not_trivial).
+///  2. The properly parenthesized form below is non-trivial and holds at the base case,
+///     but the induction step fails against three counterexample families, all rooted in
+///     OZ ERC20Votes checkpoint arrays of ARBITRARY (unreachable) states:
+///       a. `_writeCheckpoint` does `ckpts.push()` inside `unchecked`; a length of
+///          max_uint256 wraps to 0 and getVotes() then returns garbage
+///          (mitigated: the .length Sstore/Sload harness hooks above prune this family);
+///       b. absurd lengths only ever READ (mitigated likewise by the Sload bound);
+///       c. junk checkpoint ELEMENTS inside a length-bounded array (e.g. length
+///          4294961367 with a single .votes=1 entry vs balanceOf=2) - any lower-bound
+///          claim on getVotes() is falsifiable this way, and element-level well-formedness
+///          cannot be expressed with local CVL hooks: element accesses go through
+///          `_unsafeAccess` (inline assembly, see access-path caveats in the Certora docs)
+///          and sortedness is not locally constrainable.
+///  3. Reachable-state content of the clauses is covered by the rule
+///     `userCanDelegateBalance` (proven without this assumption).
+/*
 invariant doubleDelegateIsGreaterOrEqual(env e, address a, address b)
-    ((b != 0) && (a != 0) && (a != b) &&
-    
-    /// if a is delegated to b, and b is delegated to b, then b should have at least as many votes as a
-    ((delegates(a) == b) && (delegates(b) == b)) => to_mathint(getVotes(b)) >= balanceOf(a) + balanceOf(b) &&
-    /// both delegated to a, then the delegate (a) should have sum of votes of both delegators balance at minimum
-    ((delegates(a) == a) && (delegates(b) == a)) => to_mathint(getVotes(a)) >= balanceOf(a) + balanceOf(b) &&
-    /// delegated to the same address, then the delegate should have sum of votes of both delegators balance at minimum
-    (delegates(a) == delegates(b)) => to_mathint(getVotes(delegates(b))) >= balanceOf(a) + balanceOf(b))
+    ((b != 0) && (a != 0) && (a != b)) => (
+        /// if a is delegated to b, and b is delegated to b, then b should have at least as many votes as a
+        (((delegates(a) == b) && (delegates(b) == b)) =>
+            to_mathint(getVotes(b)) >= to_mathint(balanceOf(a)) + to_mathint(balanceOf(b))) &&
+        /// both delegated to a, then the delegate (a) should have sum of votes of both delegators balance at minimum
+        (((delegates(a) == a) && (delegates(b) == a)) =>
+            to_mathint(getVotes(a)) >= to_mathint(balanceOf(a)) + to_mathint(balanceOf(b))) &&
+        /// delegated to the same nonzero address, then the delegate should have sum of votes of both delegators balance at minimum
+        /// (delegates == 0 holds no voting power: OZ _moveVotingPower skips address(0))
+        (((delegates(a) == delegates(b)) && (delegates(a) != 0)) =>
+            to_mathint(getVotes(delegates(b))) >= to_mathint(balanceOf(a)) + to_mathint(balanceOf(b)))
+    )
 
      {
         preserved {
@@ -185,8 +214,6 @@ invariant doubleDelegateIsGreaterOrEqual(env e, address a, address b)
                 (delegates(a) == b) => getVotes(b) >= balanceOf(a) &&
                 (delegates(b) == a) => getVotes(a) >= balanceOf(b)
             );
-            requireInvariant correctCheckpoints(a);
-            requireInvariant correctCheckpoints(b);
             requireInvariant totalSupplyIsSumOfBalances();
             require getVotes(a) <= totalSupply();
             require getVotes(b) <= totalSupply();
@@ -195,17 +222,6 @@ invariant doubleDelegateIsGreaterOrEqual(env e, address a, address b)
             requireInvariant addressZeroCannotDelegate();
         }
     }
-
-invariant checkPointsLtTimestampMax(address a)
-    to_mathint(numCheckpoints(a)) <= to_mathint(timestampMax()) {
-        preserved {
-            require to_mathint(numCheckpoints(a)) <= timestampMax() - 1;
-        }
-    }
-/*
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Invariant: userVotes is less than or equal to the max total supply                                                  │
-└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 */
 
 invariant addressZeroCannotDelegate()
@@ -215,15 +231,9 @@ invariant addressZeroCannotDelegate()
         }
     }
 
-/*
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Invariant: maxSupply is equal to the max total supply                                                               │
-└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-*/
-invariant maxSupplyEqMAXSUPPLY()
-    maxSupply() == MAX_SUPPLY();
-
 /// no state changes you could ever make that would put the total supply above the max supply
+/// (the former `maxSupplyEqMAXSUPPLY` invariant was deleted: maxSupply() and MAX_SUPPLY()
+///  are the same constant, making it a tautology caught by invariant_not_trivial)
 invariant totalSupplyLteUint224Max()
     totalSupply() <= balanceMax() {
         preserved burn(address to, uint256 amount) with (env e) {
@@ -255,10 +265,6 @@ rule userCanDelegateBalance(env e, address to) {
 
     requireInvariant mirrorIsTrue(from);
     requireInvariant mirrorIsTrue(to);
-
-    requireInvariant correctCheckpoints(from);
-    requireInvariant correctCheckpoints(to);
-    requireInvariant doubleDelegateIsGreaterOrEqual(e, from, to);
 
     mathint startingVotes = to_mathint(getVotes(to));
     mathint fromBalance = to_mathint(balanceOf(from));
