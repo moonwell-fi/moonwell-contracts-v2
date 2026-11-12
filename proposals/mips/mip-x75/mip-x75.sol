@@ -95,27 +95,4 @@ contract mipx75 is MarketUpdateV2Template {
         changes[0] = addresses.getAddress("MOONWELL_MAMO", BASE_CHAIN_ID);
         changes[1] = addresses.getAddress("MOONWELL_VELO", OPTIMISM_CHAIN_ID);
     }
-
-    function expectedMarketStateChanges(
-        Addresses addresses
-    ) public view override returns (MarketStateChange[] memory changes) {
-        uint256[2] memory chains = [BASE_CHAIN_ID, OPTIMISM_CHAIN_ID];
-        changes = new MarketStateChange[](
-            marketUpdates[BASE_CHAIN_ID].length +
-                marketUpdates[OPTIMISM_CHAIN_ID].length
-        );
-
-        uint256 n;
-        for (uint256 c = 0; c < chains.length; c++) {
-            MarketUpdate[] storage updates = marketUpdates[chains[c]];
-            for (uint256 i = 0; i < updates.length; i++) {
-                changes[n++] = MarketStateChange({
-                    chainId: chains[c],
-                    target: addresses.getAddress(updates[i].market, chains[c]),
-                    riskParameters: true,
-                    accounting: false
-                });
-            }
-        }
-    }
 }

@@ -376,6 +376,37 @@ contract MarketUpdateV2Template is
         }
     }
 
+    /// @notice every market in the proposal JSON changes risk parameters
+    function expectedMarketStateChanges(
+        Addresses addresses
+    )
+        public
+        view
+        virtual
+        override
+        returns (MarketStateChange[] memory changes)
+    {
+        uint256 total;
+        for (uint256 i = 0; i < networks.length; i++) {
+            total += marketUpdates[networks[i].chainId].length;
+        }
+        changes = new MarketStateChange[](total);
+
+        uint256 n;
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            MarketUpdate[] storage updates = marketUpdates[chainId];
+            for (uint256 j = 0; j < updates.length; j++) {
+                changes[n++] = MarketStateChange({
+                    chainId: chainId,
+                    target: addresses.getAddress(updates[j].market, chainId),
+                    riskParameters: true,
+                    accounting: false
+                });
+            }
+        }
+    }
+
     function beforeSimulationHook(Addresses addresses) public virtual override {
         uint256 forkBefore = vm.activeFork();
         vm.selectFork(BASE_FORK_ID);
